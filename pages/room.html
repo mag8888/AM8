@@ -108,22 +108,20 @@
                         
                         <div class="dream-form">
                             <div class="form-group">
-                                <label for="dream-title">Название мечты</label>
-                                <input 
-                                    type="text" 
-                                    id="dream-title" 
-                                    placeholder="Например: Купить дом у моря"
-                                    maxlength="100"
-                                >
+                                <label for="dream-select">Выберите мечту</label>
+                                <select id="dream-select">
+                                    <option value="">Выберите свою мечту...</option>
+                                </select>
                             </div>
                             
                             <div class="form-group">
                                 <label for="dream-description">Описание мечты</label>
                                 <textarea 
                                     id="dream-description" 
-                                    placeholder="Подробно опишите свою мечту: где, когда, сколько это стоит..."
-                                    rows="4"
+                                    placeholder="Дополните описание своей мечты..."
+                                    rows="3"
                                     maxlength="500"
+                                    readonly
                                 ></textarea>
                             </div>
                             
@@ -132,9 +130,10 @@
                                 <input 
                                     type="number" 
                                     id="dream-cost" 
-                                    placeholder="1000000"
+                                    placeholder="0"
                                     min="0"
                                     step="1000"
+                                    readonly
                                 >
                                 <span class="currency">₽</span>
                             </div>

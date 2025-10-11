@@ -15,6 +15,80 @@ let dreamData = {
     cost: 0
 };
 
+// Конфигурация мечт (10 популярных финансовых целей)
+const DREAMS_CONFIG = [
+    {
+        id: 'house_by_sea',
+        name: 'Дом у моря',
+        description: 'Собственный дом на берегу моря для отдыха и инвестиций',
+        cost: 15000000,
+        icon: '🏖️'
+    },
+    {
+        id: 'luxury_car',
+        name: 'Роскошный автомобиль',
+        description: 'Премиальный автомобиль для комфортных поездок',
+        cost: 5000000,
+        icon: '🚗'
+    },
+    {
+        id: 'world_travel',
+        name: 'Путешествие по миру',
+        description: 'Посетить все континенты и увидеть чудеса света',
+        cost: 3000000,
+        icon: '✈️'
+    },
+    {
+        id: 'business_startup',
+        name: 'Собственный бизнес',
+        description: 'Открыть собственное дело и стать предпринимателем',
+        cost: 10000000,
+        icon: '🏢'
+    },
+    {
+        id: 'education_abroad',
+        name: 'Образование за рубежом',
+        description: 'Получить престижное образование в лучших университетах',
+        cost: 8000000,
+        icon: '🎓'
+    },
+    {
+        id: 'charity_foundation',
+        name: 'Благотворительный фонд',
+        description: 'Создать фонд для помощи нуждающимся',
+        cost: 20000000,
+        icon: '❤️'
+    },
+    {
+        id: 'art_collection',
+        name: 'Коллекция произведений искусства',
+        description: 'Собрать коллекцию картин и скульптур известных художников',
+        cost: 50000000,
+        icon: '🎨'
+    },
+    {
+        id: 'yacht',
+        name: 'Яхта',
+        description: 'Собственная яхта для морских путешествий',
+        cost: 80000000,
+        icon: '⛵'
+    },
+    {
+        id: 'private_jet',
+        name: 'Частный самолет',
+        description: 'Личный самолет для быстрых и комфортных перелетов',
+        cost: 200000000,
+        icon: '🛩️'
+    },
+    {
+        id: 'financial_freedom',
+        name: 'Финансовая независимость',
+        description: 'Достичь состояния, когда деньги работают на вас',
+        cost: 100000000,
+        icon: '💰'
+    }
+];
+
 // Конфигурация фишек (10 животных)
 const TOKENS_CONFIG = [
     {
@@ -87,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     loadRoomData();
     displayUserInfo();
+    loadDreams();
     loadTokens();
 });
 
@@ -131,12 +206,12 @@ function setupEventListeners() {
     }
     
     // Поля формы мечты
-    const dreamTitle = document.getElementById('dream-title');
+    const dreamSelect = document.getElementById('dream-select');
     const dreamDescription = document.getElementById('dream-description');
     const dreamCost = document.getElementById('dream-cost');
     
-    if (dreamTitle) {
-        dreamTitle.addEventListener('input', updateDreamData);
+    if (dreamSelect) {
+        dreamSelect.addEventListener('change', handleDreamSelection);
     }
     if (dreamDescription) {
         dreamDescription.addEventListener('input', updateDreamData);
@@ -368,6 +443,77 @@ function displayUserInfo() {
 }
 
 /**
+ * Загрузка мечт в выпадающий список
+ */
+function loadDreams() {
+    const dreamSelect = document.getElementById('dream-select');
+    if (!dreamSelect) return;
+    
+    // Очищаем список (кроме первого элемента)
+    dreamSelect.innerHTML = '<option value="">Выберите свою мечту...</option>';
+    
+    DREAMS_CONFIG.forEach(dream => {
+        const option = document.createElement('option');
+        option.value = dream.id;
+        option.textContent = `${dream.icon} ${dream.name} - ${formatCurrency(dream.cost)}`;
+        dreamSelect.appendChild(option);
+    });
+    
+    console.log('✅ Room: Мечты загружены');
+}
+
+/**
+ * Обработка выбора мечты
+ */
+function handleDreamSelection() {
+    const dreamSelect = document.getElementById('dream-select');
+    const dreamDescription = document.getElementById('dream-description');
+    const dreamCost = document.getElementById('dream-cost');
+    
+    if (!dreamSelect || !dreamDescription || !dreamCost) return;
+    
+    const selectedDreamId = dreamSelect.value;
+    
+    if (selectedDreamId) {
+        const dream = DREAMS_CONFIG.find(d => d.id === selectedDreamId);
+        if (dream) {
+            // Заполняем поля выбранной мечтой
+            dreamDescription.value = dream.description;
+            dreamCost.value = dream.cost;
+            
+            // Разблокируем поля для редактирования
+            dreamDescription.removeAttribute('readonly');
+            dreamCost.removeAttribute('readonly');
+            
+            console.log('✅ Room: Мечта выбрана:', dream.name);
+        }
+    } else {
+        // Очищаем поля если ничего не выбрано
+        dreamDescription.value = '';
+        dreamCost.value = '';
+        
+        // Блокируем поля
+        dreamDescription.setAttribute('readonly', 'readonly');
+        dreamCost.setAttribute('readonly', 'readonly');
+    }
+    
+    // Обновляем данные мечты
+    updateDreamData();
+}
+
+/**
+ * Форматирование валюты
+ */
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('ru-RU', {
+        style: 'currency',
+        currency: 'RUB',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount);
+}
+
+/**
  * Загрузка фишек
  */
 function loadTokens() {
@@ -421,11 +567,20 @@ function selectToken(tokenId) {
  * Обновление данных мечты
  */
 function updateDreamData() {
-    const title = document.getElementById('dream-title').value.trim();
+    const dreamSelect = document.getElementById('dream-select');
     const description = document.getElementById('dream-description').value.trim();
     const cost = parseInt(document.getElementById('dream-cost').value) || 0;
     
-    dreamData = { title, description, cost };
+    const selectedDreamId = dreamSelect ? dreamSelect.value : '';
+    const selectedDream = selectedDreamId ? DREAMS_CONFIG.find(d => d.id === selectedDreamId) : null;
+    
+    dreamData = { 
+        id: selectedDreamId,
+        title: selectedDream ? selectedDream.name : '',
+        description: description,
+        cost: cost,
+        icon: selectedDream ? selectedDream.icon : ''
+    };
     
     console.log('✅ Room: Данные мечты обновлены:', dreamData);
     
@@ -440,7 +595,8 @@ function updateReadyStatus() {
     const readyButton = document.getElementById('ready-button');
     if (!readyButton) return;
     
-    const isDreamComplete = dreamData.title && dreamData.description && dreamData.cost > 0;
+    const isDreamSelected = dreamData.id && dreamData.title;
+    const isDreamComplete = isDreamSelected && dreamData.description && dreamData.cost > 0;
     const isTokenSelected = selectedToken !== null;
     const isReady = isDreamComplete && isTokenSelected;
     
@@ -453,9 +609,9 @@ function updateReadyStatus() {
             hint.style.color = '#10b981';
         } else {
             const missing = [];
-            if (!isDreamComplete) missing.push('мечту');
+            if (!isDreamSelected) missing.push('мечту');
             if (!isTokenSelected) missing.push('фишку');
-            hint.textContent = `Заполните: ${missing.join(' и ')}`;
+            hint.textContent = `Выберите: ${missing.join(' и ')}`;
             hint.style.color = '#a0a0a0';
         }
     }
@@ -468,9 +624,10 @@ async function toggleReadyStatus() {
     try {
         if (!currentRoom || !currentUser || !selectedToken) return;
         
-        const isDreamComplete = dreamData.title && dreamData.description && dreamData.cost > 0;
+        const isDreamSelected = dreamData.id && dreamData.title;
+        const isDreamComplete = isDreamSelected && dreamData.description && dreamData.cost > 0;
         if (!isDreamComplete) {
-            showNotification('Сначала заполните данные о мечте', 'warning');
+            showNotification('Сначала выберите и заполните данные о мечте', 'warning');
             return;
         }
         
