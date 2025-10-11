@@ -360,8 +360,8 @@ class AuthManager {
                 password: 'password123'
             },
             testuser: {
-                username: 'TestUser',
-                email: 'test@railway.com',
+                username: 'NewUser123',
+                email: 'newuser@example.com',
                 password: 'password123'
             },
             admin: {
