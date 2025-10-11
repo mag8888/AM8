@@ -6,12 +6,28 @@
 
 class AuthService {
     constructor() {
-        this.apiBase = '/api/auth';
+        this.apiBase = '/auth/api';
         this.tokenKey = 'aura_money_token';
         this.userKey = 'aura_money_user';
         this.isInitialized = false;
         
         this.init();
+    }
+
+    /**
+     * Безопасный парсинг JSON ответа
+     * @param {Response} response - HTTP ответ
+     * @returns {Object} Распарсенный JSON или объект ошибки
+     */
+    async safeJsonParse(response) {
+        try {
+            return await response.json();
+        } catch (jsonError) {
+            console.error('❌ AuthService: Ошибка парсинга JSON:', jsonError);
+            const text = await response.text();
+            console.error('❌ AuthService: Ответ сервера:', text);
+            throw new Error('Сервер вернул некорректный ответ');
+        }
     }
 
     /**
@@ -60,7 +76,7 @@ class AuthService {
                 body: JSON.stringify(userData)
             });
 
-            const result = await response.json();
+            const result = await this.safeJsonParse(response);
 
             if (response.ok && result.success) {
                 console.log('✅ AuthService: Регистрация успешна');
