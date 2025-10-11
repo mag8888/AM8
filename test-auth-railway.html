@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Auth Railway</title>
+</head>
+<body>
+    <h1>Test Authentication Railway</h1>
+    <button onclick="checkAuth()">Check Auth</button>
+    <button onclick="login()">Login</button>
+    <div id="result"></div>
+
+    <script>
+        function checkAuth() {
+            const user = localStorage.getItem('aura_money_user');
+            const token = localStorage.getItem('aura_money_token');
+            const sessionUser = sessionStorage.getItem('aura_money_user');
+            const sessionToken = sessionStorage.getItem('aura_money_token');
+            
+            document.getElementById('result').innerHTML = `
+                <h3>Auth Status:</h3>
+                <p>localStorage user: ${user ? 'Found' : 'Not found'}</p>
+                <p>localStorage token: ${token ? 'Found' : 'Not found'}</p>
+                <p>sessionStorage user: ${sessionUser ? 'Found' : 'Not found'}</p>
+                <p>sessionStorage token: ${sessionToken ? 'Found' : 'Not found'}</p>
+                <p>User data: ${user || 'No user data'}</p>
+            `;
+        }
+
+        async function login() {
+            try {
+                const response = await fetch('/auth/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'newuser@example.com',
+                        password: 'password123'
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    localStorage.setItem('aura_money_token', result.token);
+                    localStorage.setItem('aura_money_user', JSON.stringify(result.user));
+                    
+                    document.getElementById('result').innerHTML = `
+                        <h3>Login Success:</h3>
+                        <p>User: ${result.user.username}</p>
+                        <p>Email: ${result.user.email}</p>
+                        <p>Token: ${result.token.substring(0, 20)}...</p>
+                    `;
+                } else {
+                    document.getElementById('result').innerHTML = `
+                        <h3>Login Failed:</h3>
+                        <p>${result.message}</p>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <h3>Error:</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+
+        // Check auth on load
+        checkAuth();
+    </script>
+</body>
+</html>
