@@ -619,17 +619,17 @@ class AuthManager {
         if (user) {
             console.log('👤 AuthManager: Пользователь авторизован:', user.username);
             
-            // Если есть роутер, используем его для навигации
-            if (typeof window.Router !== 'undefined' && window.router) {
-                setTimeout(() => {
-                    window.router.navigate('/rooms');
-                }, 1500);
-            } else {
-                // Fallback: перенаправляем на страницу комнат
-                setTimeout(() => {
-                    window.location.href = '../pages/rooms.html';
-                }, 1500);
-            }
+            // Сохраняем данные пользователя в localStorage для других страниц
+            localStorage.setItem('aura_money_user', JSON.stringify(user));
+            localStorage.setItem('aura_money_token', window.authService.getStoredToken());
+            
+            console.log('💾 AuthManager: Данные пользователя сохранены в localStorage');
+            
+            // Перенаправляем на страницу комнат
+            setTimeout(() => {
+                console.log('🔄 AuthManager: Перенаправление на страницу комнат');
+                window.location.href = '../pages/rooms.html';
+            }, 1500);
         }
     }
 
