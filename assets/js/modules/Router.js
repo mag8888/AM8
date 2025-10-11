@@ -63,7 +63,14 @@ class Router {
         // Проверяем существование маршрута
         if (!this.routes.has(path)) {
             console.error(`❌ Router: Маршрут ${path} не найден`);
-            this.navigate(this.defaultRoute);
+            
+            // Предотвращаем бесконечный цикл
+            if (path !== this.defaultRoute && this.routes.has(this.defaultRoute)) {
+                this.navigate(this.defaultRoute);
+            } else {
+                console.error(`❌ Router: Default маршрут ${this.defaultRoute} также не найден`);
+                // Если нет доступных маршрутов, просто останавливаемся
+            }
             return;
         }
 
@@ -135,7 +142,14 @@ class Router {
         // Если маршрут не зарегистрирован, переходим на default
         if (!this.routes.has(currentPath)) {
             console.log(`🗺️ Router: Маршрут ${currentPath} не найден, переход на ${this.defaultRoute}`);
-            this.navigate(this.defaultRoute);
+            
+            // Предотвращаем бесконечный цикл
+            if (this.routes.has(this.defaultRoute)) {
+                this.navigate(this.defaultRoute);
+            } else {
+                console.error(`❌ Router: Default маршрут ${this.defaultRoute} не зарегистрирован`);
+                // Если нет доступных маршрутов, просто останавливаемся
+            }
             return;
         }
 

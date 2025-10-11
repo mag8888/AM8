@@ -577,6 +577,10 @@ class AuthManager {
                 console.log('🗺️ AuthManager: Активна страница авторизации');
             }, 'Авторизация');
             
+            window.router.route('/auth/', () => {
+                console.log('🗺️ AuthManager: Активна страница авторизации (слеш)');
+            }, 'Авторизация');
+            
             window.router.route('/rooms', () => {
                 console.log('🗺️ AuthManager: Переход к комнатам');
                 window.location.href = '../pages/rooms.html';
