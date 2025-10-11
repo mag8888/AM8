@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/rooms', require('./server/routes/rooms'));
 
 // Auth API routes
-app.use('/auth/api', require('./auth/server/routes/mongoAuth'));
+app.use('/auth/api', require('./auth/server/routes/auth'));
 app.use('/auth/api/health', require('./auth/server/routes/health'));
 
 // Serve static files from the current directory
