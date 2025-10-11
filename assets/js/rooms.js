@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     loadRooms();
     loadStats();
+    displayUserInfo();
 });
 
 /**
@@ -744,9 +745,43 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+/**
+ * Отображение информации о пользователе
+ */
+function displayUserInfo() {
+    try {
+        // Пытаемся получить информацию о пользователе из localStorage
+        const storedUser = localStorage.getItem('aura_money_user');
+        const storedToken = localStorage.getItem('aura_money_token');
+        
+        if (storedUser && storedToken) {
+            const user = JSON.parse(storedUser);
+            const userAvatar = document.getElementById('user-avatar');
+            const userName = document.getElementById('user-name');
+            
+            if (userAvatar && userName) {
+                // Устанавливаем первую букву имени пользователя
+                const firstLetter = user.username ? user.username.charAt(0).toUpperCase() : 'U';
+                userAvatar.textContent = firstLetter;
+                
+                // Устанавливаем имя пользователя
+                userName.textContent = user.username || 'Пользователь';
+                
+                console.log('✅ Rooms: Информация о пользователе отображена:', user.username);
+            }
+        } else {
+            console.log('⚠️ Rooms: Пользователь не авторизован');
+            // Можно добавить кнопку входа или перенаправление
+        }
+    } catch (error) {
+        console.error('❌ Rooms: Ошибка отображения информации о пользователе:', error);
+    }
+}
+
 // Экспорт функций для глобального доступа
 window.loadRooms = loadRooms;
 window.showCreateRoomModal = showCreateRoomModal;
 window.showJoinRoomModal = showJoinRoomModal;
 window.startGame = startGame;
 window.viewRoomDetails = viewRoomDetails;
+window.displayUserInfo = displayUserInfo;
