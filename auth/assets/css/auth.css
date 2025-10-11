@@ -123,6 +123,21 @@
     border-color: var(--border-light);
 }
 
+/* Контейнер тестовых кнопок */
+.test-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.test-buttons .auth-button {
+    flex: 1;
+    min-width: 120px;
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
 /* Состояния загрузки */
 .auth-button.loading {
     pointer-events: none;

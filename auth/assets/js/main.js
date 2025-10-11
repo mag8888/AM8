@@ -77,15 +77,36 @@ class AuthManager {
             this.switchForm('login');
         });
 
-        // Кнопка заполнения тестовыми данными
-        document.getElementById('fill-test-data')?.addEventListener('click', (e) => {
+        // Кнопки заполнения тестовыми данными для формы входа
+        document.getElementById('fill-test-data-1')?.addEventListener('click', (e) => {
             e.preventDefault();
-            this.fillTestData();
+            this.fillTestData('roman');
         });
 
-        document.getElementById('fill-test-data-register')?.addEventListener('click', (e) => {
+        document.getElementById('fill-test-data-2')?.addEventListener('click', (e) => {
             e.preventDefault();
-            this.fillTestData();
+            this.fillTestData('testuser');
+        });
+
+        document.getElementById('fill-test-data-3')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.fillTestData('admin');
+        });
+
+        // Кнопки заполнения тестовыми данными для формы регистрации
+        document.getElementById('fill-test-data-register-1')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.fillTestData('roman');
+        });
+
+        document.getElementById('fill-test-data-register-2')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.fillTestData('testuser');
+        });
+
+        document.getElementById('fill-test-data-register-3')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.fillTestData('admin');
         });
 
         // Обработчики форм
@@ -263,17 +284,47 @@ class AuthManager {
     }
 
     /**
-     * Заполнение полей тестовыми данными
+     * Получение тестовых данных пользователя
+     * @param {string} userType - Тип пользователя
+     * @returns {Object} Данные пользователя
      */
-    fillTestData() {
+    getTestUserData(userType) {
+        const testUsers = {
+            roman: {
+                username: 'Roman',
+                email: 'Roman@Roman.com',
+                password: 'password123'
+            },
+            testuser: {
+                username: 'TestUser',
+                email: 'test@example.com',
+                password: 'testpass123'
+            },
+            admin: {
+                username: 'Admin',
+                email: 'admin@example.com',
+                password: 'admin123'
+            }
+        };
+        
+        return testUsers[userType] || testUsers.roman;
+    }
+
+    /**
+     * Заполнение полей тестовыми данными
+     * @param {string} userType - Тип пользователя: 'roman', 'testuser', 'admin'
+     */
+    fillTestData(userType = 'roman') {
+        // Определяем данные пользователя
+        const userData = this.getTestUserData(userType);
         if (this.currentForm === 'login') {
             // Заполняем форму входа
             const emailInput = document.getElementById('login-email');
             const passwordInput = document.getElementById('login-password');
             
             if (emailInput && passwordInput) {
-                emailInput.value = 'Roman@Roman.com';
-                passwordInput.value = 'password123';
+                emailInput.value = userData.email;
+                passwordInput.value = userData.password;
                 
                 // Убираем ошибки валидации
                 emailInput.classList.remove('error');
@@ -292,8 +343,8 @@ class AuthManager {
                     loginButton.focus();
                 }
                 
-                window.notificationService.success('Поля заполнены тестовыми данными');
-                console.log('🧪 AuthManager: Заполнены тестовые данные для входа');
+                window.notificationService.success(`Поля заполнены данными пользователя ${userData.username}`);
+                console.log(`🧪 AuthManager: Заполнены тестовые данные для входа (${userType})`);
             }
         } else if (this.currentForm === 'register') {
             // Заполняем форму регистрации
@@ -304,10 +355,17 @@ class AuthManager {
             const agreeTermsCheckbox = document.getElementById('agree-terms');
             
             if (usernameInput && emailInput && passwordInput && confirmPasswordInput) {
-                usernameInput.value = 'TestUser' + Date.now();
-                emailInput.value = `test${Date.now()}@example.com`;
-                passwordInput.value = 'password123';
-                confirmPasswordInput.value = 'password123';
+                // Для регистрации создаем уникальные данные
+                const timestamp = Date.now();
+                const uniqueUsername = userType === 'admin' ? 'Admin' : 
+                                     userType === 'testuser' ? 'TestUser' : 'Roman';
+                
+                usernameInput.value = `${uniqueUsername}_${timestamp}`;
+                emailInput.value = userType === 'admin' ? `admin_${timestamp}@example.com` :
+                                 userType === 'testuser' ? `testuser_${timestamp}@example.com` :
+                                 `roman_${timestamp}@example.com`;
+                passwordInput.value = userData.password;
+                confirmPasswordInput.value = userData.password;
                 
                 if (agreeTermsCheckbox) {
                     agreeTermsCheckbox.checked = true;
@@ -336,8 +394,8 @@ class AuthManager {
                     window.validationService.checkPasswordStrength(passwordInput.value);
                 }
                 
-                window.notificationService.success('Поля заполнены тестовыми данными');
-                console.log('🧪 AuthManager: Заполнены тестовые данные для регистрации');
+                window.notificationService.success(`Поля заполнены данными пользователя ${uniqueUsername}`);
+                console.log(`🧪 AuthManager: Заполнены тестовые данные для регистрации (${userType})`);
             }
         }
     }
