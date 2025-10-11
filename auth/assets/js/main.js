@@ -115,6 +115,9 @@ class AuthManager {
         // Обработчики полей
         this.setupFieldHandlers();
 
+        // Обработчики кнопок показать/скрыть пароль
+        this.setupPasswordToggleHandlers();
+
         // Обработчики клавиатуры
         this.setupKeyboardHandlers();
     }
@@ -249,6 +252,67 @@ class AuthManager {
                 }
             }
         });
+    }
+
+    /**
+     * Настройка обработчиков кнопок показать/скрыть пароль
+     */
+    setupPasswordToggleHandlers() {
+        // Кнопка для поля входа
+        const toggleLoginPassword = document.getElementById('toggle-login-password');
+        const loginPasswordInput = document.getElementById('login-password');
+        
+        if (toggleLoginPassword && loginPasswordInput) {
+            toggleLoginPassword.addEventListener('click', () => {
+                this.togglePasswordVisibility(loginPasswordInput, toggleLoginPassword);
+            });
+        }
+
+        // Кнопка для поля регистрации
+        const toggleRegisterPassword = document.getElementById('toggle-register-password');
+        const registerPasswordInput = document.getElementById('register-password');
+        
+        if (toggleRegisterPassword && registerPasswordInput) {
+            toggleRegisterPassword.addEventListener('click', () => {
+                this.togglePasswordVisibility(registerPasswordInput, toggleRegisterPassword);
+            });
+        }
+
+        // Кнопка для поля подтверждения пароля
+        const toggleConfirmPassword = document.getElementById('toggle-register-confirm-password');
+        const confirmPasswordInput = document.getElementById('register-confirm-password');
+        
+        if (toggleConfirmPassword && confirmPasswordInput) {
+            toggleConfirmPassword.addEventListener('click', () => {
+                this.togglePasswordVisibility(confirmPasswordInput, toggleConfirmPassword);
+            });
+        }
+    }
+
+    /**
+     * Переключение видимости пароля
+     * @param {HTMLInputElement} input - Поле ввода пароля
+     * @param {HTMLButtonElement} toggleButton - Кнопка переключения
+     */
+    togglePasswordVisibility(input, toggleButton) {
+        const toggleIcon = toggleButton.querySelector('.toggle-icon');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            toggleIcon.textContent = '🙈';
+            toggleButton.setAttribute('aria-label', 'Скрыть пароль');
+            toggleButton.classList.add('active');
+        } else {
+            input.type = 'password';
+            toggleIcon.textContent = '👁️';
+            toggleButton.setAttribute('aria-label', 'Показать пароль');
+            toggleButton.classList.remove('active');
+        }
+        
+        // Фокус обратно на поле ввода
+        input.focus();
+        
+        console.log('👁️ AuthManager: Переключена видимость пароля');
     }
 
     /**

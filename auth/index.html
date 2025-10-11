@@ -33,8 +33,13 @@
 
                         <div class="form-group">
                             <label for="login-password">Пароль</label>
-                            <input type="password" id="login-password" name="password" required 
-                                   placeholder="Введите пароль" autocomplete="current-password">
+                            <div class="password-input-container">
+                                <input type="password" id="login-password" name="password" required 
+                                       placeholder="Введите пароль" autocomplete="current-password">
+                                <button type="button" id="toggle-login-password" class="password-toggle" aria-label="Показать пароль">
+                                    <span class="toggle-icon">👁️</span>
+                                </button>
+                            </div>
                             <div class="error-message" id="login-password-error"></div>
                         </div>
 
@@ -94,8 +99,13 @@
 
                         <div class="form-group">
                             <label for="register-password">Пароль</label>
-                            <input type="password" id="register-password" name="password" required 
-                                   placeholder="Минимум 4 символа" autocomplete="new-password" minlength="4">
+                            <div class="password-input-container">
+                                <input type="password" id="register-password" name="password" required 
+                                       placeholder="Минимум 4 символа" autocomplete="new-password" minlength="4">
+                                <button type="button" id="toggle-register-password" class="password-toggle" aria-label="Показать пароль">
+                                    <span class="toggle-icon">👁️</span>
+                                </button>
+                            </div>
                             <div class="password-strength" id="password-strength">
                                 <div class="strength-bar">
                                     <div class="strength-fill"></div>
@@ -107,8 +117,13 @@
 
                         <div class="form-group">
                             <label for="register-confirm-password">Подтверждение пароля</label>
-                            <input type="password" id="register-confirm-password" name="confirmPassword" required 
-                                   placeholder="Повторите пароль" autocomplete="new-password">
+                            <div class="password-input-container">
+                                <input type="password" id="register-confirm-password" name="confirmPassword" required 
+                                       placeholder="Повторите пароль" autocomplete="new-password">
+                                <button type="button" id="toggle-register-confirm-password" class="password-toggle" aria-label="Показать пароль">
+                                    <span class="toggle-icon">👁️</span>
+                                </button>
+                            </div>
                             <div class="error-message" id="register-confirm-password-error"></div>
                         </div>
 
