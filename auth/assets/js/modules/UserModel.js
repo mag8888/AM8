@@ -4,7 +4,7 @@
  * Дата: 11 октября 2024
  */
 
-export class UserModel {
+class UserModel {
     constructor() {
         this.users = new Map();
         this.currentUser = null;
@@ -451,7 +451,10 @@ export class UserModel {
 }
 
 // Создаем глобальный экземпляр модели
-export const userModel = new UserModel();
+const userModel = new UserModel();
 
 // Экспортируем для использования в других модулях
-export default userModel;
+if (typeof window !== 'undefined') {
+    window.UserModel = UserModel;
+    window.userModel = userModel;
+}

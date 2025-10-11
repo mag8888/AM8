@@ -599,4 +599,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Экспорт для использования в других модулях
-export default AuthManager;
+if (typeof window !== 'undefined') {
+    window.AuthManager = AuthManager;
+}

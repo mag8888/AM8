@@ -4,7 +4,7 @@
  * Дата: 11 октября 2024
  */
 
-export class ValidationService {
+class ValidationService {
     constructor() {
         this.patterns = {
             email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -449,7 +449,10 @@ export class ValidationService {
 }
 
 // Создаем глобальный экземпляр сервиса
-export const validationService = new ValidationService();
+const validationService = new ValidationService();
 
 // Экспортируем для использования в других модулях
-export default validationService;
+if (typeof window !== 'undefined') {
+    window.ValidationService = ValidationService;
+    window.validationService = validationService;
+}

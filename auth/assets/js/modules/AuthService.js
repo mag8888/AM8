@@ -4,7 +4,7 @@
  * Дата: 11 октября 2024
  */
 
-export class AuthService {
+class AuthService {
     constructor() {
         this.apiBase = '/api/auth';
         this.tokenKey = 'aura_money_token';
@@ -496,7 +496,10 @@ export class AuthService {
 }
 
 // Создаем глобальный экземпляр сервиса
-export const authService = new AuthService();
+const authService = new AuthService();
 
 // Экспортируем для использования в других модулях
-export default authService;
+if (typeof window !== 'undefined') {
+    window.AuthService = AuthService;
+    window.authService = authService;
+}

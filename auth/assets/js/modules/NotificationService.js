@@ -4,7 +4,7 @@
  * Дата: 11 октября 2024
  */
 
-export class NotificationService {
+class NotificationService {
     constructor() {
         this.container = null;
         this.notifications = new Map();
@@ -410,7 +410,10 @@ export class NotificationService {
 }
 
 // Создаем глобальный экземпляр сервиса
-export const notificationService = new NotificationService();
+const notificationService = new NotificationService();
 
 // Экспортируем для использования в других модулях
-export default notificationService;
+if (typeof window !== 'undefined') {
+    window.NotificationService = NotificationService;
+    window.notificationService = notificationService;
+}
