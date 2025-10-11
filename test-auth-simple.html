@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Auth Simple</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: white; }
+        button { padding: 10px 20px; margin: 10px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        .result { margin: 20px 0; padding: 15px; background: #2a2a2a; border-radius: 5px; }
+        .success { border-left: 4px solid #10b981; }
+        .error { border-left: 4px solid #ef4444; }
+        input { padding: 8px; margin: 5px; width: 200px; border-radius: 3px; border: 1px solid #555; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Простой тест авторизации</h1>
+    
+    <div>
+        <input type="email" id="email" placeholder="Email" value="newuser@example.com">
+        <input type="password" id="password" placeholder="Пароль" value="password123">
+        <button onclick="login()">Войти</button>
+        <button onclick="checkAuth()">Проверить авторизацию</button>
+        <button onclick="goToRooms()">Перейти к комнатам</button>
+    </div>
+
+    <div id="result" class="result" style="display: none;"></div>
+
+    <script>
+        function showResult(message, isSuccess = true) {
+            const result = document.getElementById('result');
+            result.textContent = message;
+            result.className = `result ${isSuccess ? 'success' : 'error'}`;
+            result.style.display = 'block';
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                showResult('⏳ Выполняется вход...', true);
+                
+                const response = await fetch('/auth/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Сохраняем данные в localStorage
+                    localStorage.setItem('aura_money_token', result.token);
+                    localStorage.setItem('aura_money_user', JSON.stringify(result.user));
+                    
+                    showResult(`✅ Вход успешен!\n👤 Пользователь: ${result.user.username}\n📧 Email: ${result.user.email}`, true);
+                } else {
+                    showResult(`❌ Ошибка входа: ${result.message}`, false);
+                }
+            } catch (error) {
+                showResult(`❌ Ошибка сети: ${error.message}`, false);
+            }
+        }
+
+        function checkAuth() {
+            const user = localStorage.getItem('aura_money_user');
+            const token = localStorage.getItem('aura_money_token');
+            
+            if (user && token) {
+                const userData = JSON.parse(user);
+                showResult(`✅ Авторизация активна!\n👤 Пользователь: ${userData.username}\n📧 Email: ${userData.email}\n🔑 Токен: ${token.substring(0, 20)}...`, true);
+            } else {
+                showResult('❌ Пользователь не авторизован', false);
+            }
+        }
+
+        function goToRooms() {
+            const user = localStorage.getItem('aura_money_user');
+            
+            if (user) {
+                window.location.href = '/pages/rooms.html';
+            } else {
+                showResult('❌ Сначала войдите в систему', false);
+            }
+        }
+
+        // Проверяем авторизацию при загрузке
+        window.onload = function() {
+            checkAuth();
+        };
+    </script>
+</body>
+</html>
