@@ -562,13 +562,6 @@ class AuthManager {
         };
         return texts[level] || 'Введите пароль';
     }
-}
-
-// Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Запуск системы авторизации Aura Money');
-    new AuthManager();
-});
 
     /**
      * Инициализация роутера
@@ -598,6 +591,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 }
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Запуск системы авторизации Aura Money');
+    new AuthManager();
+});
 
 // Экспорт для использования в других модулях
 export default AuthManager;
