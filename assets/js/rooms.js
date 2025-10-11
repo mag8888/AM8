@@ -5,7 +5,6 @@
 
 // Глобальные переменные
 let roomService;
-let notificationService;
 let router;
 let selectedRoom = null;
 
@@ -27,8 +26,7 @@ function initializeServices() {
     try {
         // Инициализируем сервисы
         roomService = new RoomService();
-        notificationService = new NotificationService();
-        // userModel доступен глобально как window.userModel
+        // notificationService и userModel доступны глобально как window.notificationService и window.userModel
         
         // Получаем роутер из глобальной области
         if (window.router) {
@@ -727,8 +725,8 @@ function showButtonLoading(buttonId, loading) {
  * Показать уведомление
  */
 function showNotification(message, type = 'info') {
-    if (notificationService) {
-        notificationService.show(message, type);
+    if (window.notificationService) {
+        window.notificationService.show(message, type);
     } else {
         // Fallback уведомление
         alert(message);
