@@ -30,6 +30,39 @@ router.get('/', async (req, res, next) => {
 });
 
 /**
+ * GET /api/rooms/stats
+ * Получение статистики комнат
+ */
+router.get('/stats', async (req, res, next) => {
+    try {
+        console.log('📡 API: Получение статистики комнат');
+        
+        const rooms = roomService.getAllRooms();
+        
+        const stats = {
+            totalRooms: rooms.length,
+            activeRooms: rooms.filter(r => !r.isFinished).length,
+            startedGames: rooms.filter(r => r.isStarted && !r.isFinished).length,
+            totalPlayers: rooms.reduce((sum, r) => sum + r.playerCount, 0),
+            averagePlayersPerRoom: rooms.length > 0 ? 
+                Math.round(rooms.reduce((sum, r) => sum + r.playerCount, 0) / rooms.length * 100) / 100 : 0,
+            fullRooms: rooms.filter(r => r.isFull).length,
+            readyToStart: rooms.filter(r => r.canStart && !r.isStarted).length
+        };
+        
+        res.status(200).json({
+            success: true,
+            data: stats,
+            message: 'Статистика получена'
+        });
+        
+    } catch (error) {
+        console.error('❌ API: Ошибка получения статистики:', error);
+        next(error);
+    }
+});
+
+/**
  * GET /api/rooms/:roomId
  * Получение комнаты по ID
  */
@@ -400,39 +433,6 @@ router.put('/:roomId/player', async (req, res, next) => {
             });
         }
         
-        next(error);
-    }
-});
-
-/**
- * GET /api/rooms/stats
- * Получение статистики комнат
- */
-router.get('/stats', async (req, res, next) => {
-    try {
-        console.log('📡 API: Получение статистики комнат');
-        
-        const rooms = roomService.getAllRooms();
-        
-        const stats = {
-            totalRooms: rooms.length,
-            activeRooms: rooms.filter(r => !r.isFinished).length,
-            startedGames: rooms.filter(r => r.isStarted && !r.isFinished).length,
-            totalPlayers: rooms.reduce((sum, r) => sum + r.playerCount, 0),
-            averagePlayersPerRoom: rooms.length > 0 ? 
-                Math.round(rooms.reduce((sum, r) => sum + r.playerCount, 0) / rooms.length * 100) / 100 : 0,
-            fullRooms: rooms.filter(r => r.isFull).length,
-            readyToStart: rooms.filter(r => r.canStart && !r.isStarted).length
-        };
-        
-        res.status(200).json({
-            success: true,
-            data: stats,
-            message: 'Статистика получена'
-        });
-        
-    } catch (error) {
-        console.error('❌ API: Ошибка получения статистики:', error);
         next(error);
     }
 });
