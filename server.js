@@ -8,11 +8,15 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// API routes (должны быть ПЕРЕД статическими файлами)
+app.use('/api/rooms', require('./server/routes/rooms'));
+
+// Auth API routes
+app.use('/auth/api', require('./auth/server/routes/auth'));
+app.use('/auth/api/health', require('./auth/server/routes/health'));
+
 // Serve static files from the current directory
 app.use(express.static('.'));
-
-// API routes
-app.use('/api/rooms', require('./server/routes/rooms'));
 
 // Serve auth module on /auth path
 app.use('/auth', express.static(path.join(__dirname, 'auth')));
