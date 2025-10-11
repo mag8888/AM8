@@ -3,67 +3,328 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura Money - Игровая Доска</title>
-    <link rel="stylesheet" href="assets/css/main.css?v=25">
-    <link rel="stylesheet" href="assets/css/board.css?v=25">
+    <title>Aura Money - Настольная игра</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/game.css">
+    <style>
+        /* Стили для контейнера страниц */
+        #page-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        }
+
+        /* Стили для навигации */
+        .app-navigation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #d1d5db;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link.active {
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #d1d5db;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .nav-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-button:hover {
+            background: #2563eb;
+        }
+
+        /* Основной контент */
+        .app-content {
+            padding-top: 80px; /* Отступ для фиксированной навигации */
+            min-height: calc(100vh - 80px);
+        }
+
+        /* Стили для страниц */
+        .page {
+            display: none;
+            min-height: calc(100vh - 80px);
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Стили для игровой страницы */
+        .game-page {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .game-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-subtitle {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .nav-container {
+                padding: 0 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-menu {
+                gap: 1rem;
+            }
+
+            .app-content {
+                padding-top: 120px;
+            }
+
+            .game-page {
+                padding: 1rem;
+            }
+
+            .game-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="game-container">
-        <header class="game-header">
-            <h1>Aura Money</h1>
-            <div class="game-info">
-                <div class="player-info">
-                    <span class="player-name">Игрок 1</span>
-                    <span class="player-position">Позиция: <span id="position-display">0</span></span>
-                </div>
-                <div class="game-controls">
-                    <button id="start-game" class="btn btn-primary">Начать игру</button>
-                    <button id="roll-dice" class="btn btn-secondary" disabled>Бросить кубик</button>
-                </div>
+    <!-- Навигация -->
+    <nav class="app-navigation">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">🎮 Aura Money</a>
+            
+            <div class="nav-menu">
+                <a href="#" class="nav-link" data-route="/">Главная</a>
+                <a href="#" class="nav-link" data-route="/rooms">Комнаты</a>
+                <a href="#" class="nav-link" data-route="/auth">Авторизация</a>
             </div>
-        </header>
+            
+            <div class="nav-user" id="nav-user">
+                <div class="user-info" id="user-info" style="display: none;">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <span id="user-name">Пользователь</span>
+                </div>
+                <button class="nav-button" id="auth-button">Войти</button>
+            </div>
+        </div>
+    </nav>
 
-        <main class="game-board-container">
-            <div class="board-wrapper">
-                <!-- Внешний трек (большой круг) -->
-                <div id="outer-track" class="track outer-track"></div>
-                
-                <!-- Внутренний трек (малый круг) -->
-                <div id="inner-track" class="track inner-track"></div>
-                
-                <!-- Центральная область -->
-                <div class="center-area">
-                    <div class="dice-display">
-                        <div id="dice-result" class="dice">$</div>
+    <!-- Основной контент -->
+    <main class="app-content">
+        <div id="page-container">
+            <!-- Страница игры (BoardLayout) -->
+            <div id="game-page" class="page active">
+                <div class="game-page">
+                    <div class="game-header">
+                        <h1 class="game-title">Aura Money</h1>
+                        <p class="game-subtitle">Настольная игра в стиле Cashflow для обучения финансовой грамотности</p>
+                    </div>
+
+                    <!-- Игровая доска -->
+                    <div class="game-board-container">
+                        <!-- Внешний трек (большой круг) -->
+                        <div id="outer-track" class="track outer-track"></div>
+                        
+                        <!-- Внутренний трек (маленький круг) -->
+                        <div id="inner-track" class="track inner-track"></div>
+                        
+                        <!-- Центральная область -->
+                        <div class="game-center">
+                            <div class="center-content">
+                                <h2>🎯 Добро пожаловать!</h2>
+                                <p>Создайте или присоединитесь к комнате для начала игры</p>
+                                <div class="center-actions">
+                                    <button class="btn btn-primary" onclick="router.navigate('/rooms')">
+                                        🏠 Выбрать комнату
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="router.navigate('/auth')">
+                                        🔐 Авторизация
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </main>
 
-        <aside class="game-sidebar">
-            <div class="card">
-                <h3>Информация о клетке</h3>
-                <div id="cell-info">
-                    <p>Нажмите на клетку, чтобы увидеть информацию</p>
+            <!-- Заглушка для других страниц -->
+            <div id="placeholder-page" class="page">
+                <div style="padding: 4rem 2rem; text-align: center; color: #a0a0a0;">
+                    <h2>🔄 Переход на другую страницу...</h2>
+                    <p>Используйте навигацию для перехода между разделами</p>
                 </div>
             </div>
-            
-            <div class="card">
-                <h3>История событий</h3>
-                <div id="event-log">
-                    <p class="log-entry">Игра готова к старту</p>
-                </div>
-            </div>
-        </aside>
-    </div>
+        </div>
+    </main>
 
-    <!-- Конфигурационные файлы -->
-    <script src="assets/js/config/cellsConfig.js"></script>
-    <script src="assets/js/config/iconHelpers.js"></script>
-    
-    <!-- Модули -->
+    <!-- Загрузка конфигурации игры -->
+    <script>
+        // Конфигурация клеток игры (заглушка)
+        window.BIG_CIRCLE_CELLS = [
+            { name: 'Старт', type: 'start', icon: '🚀' },
+            { name: 'Зарплата', type: 'salary', icon: '💰' },
+            { name: 'Инвестиции', type: 'investment', icon: '📈' },
+            { name: 'Недвижимость', type: 'real_estate', icon: '🏠' },
+            { name: 'Бизнес', type: 'business', icon: '🏢' },
+            { name: 'Акции', type: 'stocks', icon: '📊' },
+            { name: 'Криптовалюта', type: 'crypto', icon: '₿' },
+            { name: 'Образование', type: 'education', icon: '🎓' },
+            { name: 'Страхование', type: 'insurance', icon: '🛡️' },
+            { name: 'Пенсия', type: 'pension', icon: '👴' },
+            { name: 'Благотворительность', type: 'charity', icon: '❤️' },
+            { name: 'Налоги', type: 'taxes', icon: '🏛️' },
+            { name: 'Долги', type: 'debt', icon: '💳' },
+            { name: 'Экстренные расходы', type: 'emergency', icon: '🚨' },
+            { name: 'Развлечения', type: 'entertainment', icon: '🎉' },
+            { name: 'Путешествия', type: 'travel', icon: '✈️' },
+            { name: 'Здоровье', type: 'health', icon: '🏥' },
+            { name: 'Семья', type: 'family', icon: '👨‍👩‍👧‍👦' },
+            { name: 'Карьера', type: 'career', icon: '💼' },
+            { name: 'Сетевой маркетинг', type: 'network_marketing', icon: '🌐' },
+            { name: 'Франшиза', type: 'franchise', icon: '🏪' },
+            { name: 'Лицензии', type: 'licenses', icon: '📋' },
+            { name: 'Патенты', type: 'patents', icon: '📜' },
+            { name: 'Авторские права', type: 'copyright', icon: '©️' },
+            { name: 'Торговые марки', type: 'trademarks', icon: '™️' },
+            { name: 'Доверительное управление', type: 'trust', icon: '🤝' },
+            { name: 'Хеджирование', type: 'hedging', icon: '⚖️' },
+            { name: 'Арбитраж', type: 'arbitrage', icon: '⚡' },
+            { name: 'Лизинг', type: 'leasing', icon: '📋' },
+            { name: 'Факторинг', type: 'factoring', icon: '📄' },
+            { name: 'Форфейтинг', type: 'forfaiting', icon: '📑' },
+            { name: 'Секьюритизация', type: 'securitization', icon: '🔒' },
+            { name: 'Производные инструменты', type: 'derivatives', icon: '📊' },
+            { name: 'Опционы', type: 'options', icon: '⚙️' },
+            { name: 'Фьючерсы', type: 'futures', icon: '🔮' },
+            { name: 'Свопы', type: 'swaps', icon: '🔄' },
+            { name: 'Варранты', type: 'warrants', icon: '🎫' },
+            { name: 'Конвертируемые облигации', type: 'convertible_bonds', icon: '🔄' },
+            { name: 'Привилегированные акции', type: 'preferred_stock', icon: '⭐' },
+            { name: 'Обыкновенные акции', type: 'common_stock', icon: '📈' },
+            { name: 'Государственные облигации', type: 'government_bonds', icon: '🏛️' },
+            { name: 'Корпоративные облигации', type: 'corporate_bonds', icon: '🏢' },
+            { name: 'Муниципальные облигации', type: 'municipal_bonds', icon: '🏘️' },
+            { name: 'Мечта', type: 'dream', icon: '💭' }
+        ];
+
+        window.SMALL_CIRCLE_CELLS = [
+            { name: 'Быстрый трек - Старт', type: 'fast_start', icon: '⚡' },
+            { name: 'Пассивный доход', type: 'passive_income', icon: '💤' },
+            { name: 'Денежный поток', type: 'cashflow', icon: '💸' },
+            { name: 'Активы', type: 'assets', icon: '💎' },
+            { name: 'Пассивы', type: 'liabilities', icon: '📉' },
+            { name: 'Финансовая свобода', type: 'financial_freedom', icon: '🦅' }
+        ];
+
+        // Функции для иконок
+        window.getIconForType = function(type, cellData) {
+            return cellData.icon || '?';
+        };
+
+        window.getIconStyleClass = function(type, cellData) {
+            return `icon-${type}`;
+        };
+    </script>
+
+    <!-- Основные модули -->
+    <script src="assets/js/modules/Router.js"></script>
+    <script src="assets/js/modules/game/BoardLayout.js"></script>
     <script src="assets/js/modules/EventBus.js"></script>
     <script src="assets/js/modules/GameState.js"></script>
-    <script type="module" src="assets/js/main.js"></script>
+
+    <!-- Главный скрипт приложения -->
+    <script src="assets/js/app.js"></script>
 </body>
 </html>

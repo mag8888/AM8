@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор комнаты - Aura Money</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/rooms.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">🏠 Игровые комнаты</h1>
+                <p class="subtitle">Выберите комнату или создайте новую для игры</p>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="main-content">
+            <!-- Панель управления -->
+            <div class="rooms-controls">
+                <div class="controls-left">
+                    <button id="refresh-rooms" class="btn btn-secondary">
+                        🔄 Обновить
+                    </button>
+                    <button id="back-to-auth" class="btn btn-outline">
+                        ← Назад к авторизации
+                    </button>
+                </div>
+                <div class="controls-right">
+                    <button id="create-room-btn" class="btn btn-primary">
+                        ➕ Создать комнату
+                    </button>
+                </div>
+            </div>
+
+            <!-- Список комнат -->
+            <div class="rooms-section">
+                <div class="section-header">
+                    <h2>Доступные комнаты</h2>
+                    <span id="rooms-count" class="rooms-count">0 комнат</span>
+                </div>
+                
+                <div id="rooms-list" class="rooms-list">
+                    <!-- Комнаты будут загружены динамически -->
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Загрузка комнат...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats-section">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-rooms">0</div>
+                        <div class="stat-label">Всего комнат</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="active-rooms">0</div>
+                        <div class="stat-label">Активных</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="started-games">0</div>
+                        <div class="stat-label">Игр начато</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-players">0</div>
+                        <div class="stat-label">Игроков онлайн</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Модальное окно создания комнаты -->
+        <div id="create-room-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Создать новую комнату</h3>
+                    <button id="close-modal" class="modal-close">&times;</button>
+                </div>
+                
+                <form id="create-room-form" class="modal-body">
+                    <div class="form-group">
+                        <label for="room-name">Название комнаты</label>
+                        <input 
+                            type="text" 
+                            id="room-name" 
+                            name="name" 
+                            placeholder="Введите название комнаты"
+                            maxlength="50"
+                            required
+                        >
+                        <div class="field-error" id="room-name-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="max-players">Максимум игроков</label>
+                        <select id="max-players" name="maxPlayers">
+                            <option value="2">2 игрока</option>
+                            <option value="3">3 игрока</option>
+                            <option value="4" selected>4 игрока</option>
+                            <option value="5">5 игроков</option>
+                            <option value="6">6 игроков</option>
+                            <option value="7">7 игроков</option>
+                            <option value="8">8 игроков</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="turn-time">Время хода (секунды)</label>
+                        <select id="turn-time" name="turnTime">
+                            <option value="10">10 секунд</option>
+                            <option value="15">15 секунд</option>
+                            <option value="20">20 секунд</option>
+                            <option value="30" selected>30 секунд</option>
+                            <option value="45">45 секунд</option>
+                            <option value="60">60 секунд</option>
+                            <option value="90">90 секунд</option>
+                            <option value="120">120 секунд</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="assign-professions" name="assignProfessions">
+                            <span class="checkmark"></span>
+                            Назначать профессии автоматически
+                        </label>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-create" class="btn btn-secondary">
+                            Отмена
+                        </button>
+                        <button type="submit" id="create-room-submit" class="btn btn-primary">
+                            Создать комнату
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Модальное окно присоединения к комнате -->
+        <div id="join-room-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Присоединиться к комнате</h3>
+                    <button id="close-join-modal" class="modal-close">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="room-info">
+                        <h4 id="join-room-name"></h4>
+                        <div class="room-details">
+                            <span id="join-room-players"></span>
+                            <span id="join-room-max-players"></span>
+                            <span id="join-room-turn-time"></span>
+                        </div>
+                    </div>
+
+                    <form id="join-room-form">
+                        <div class="form-group">
+                            <label for="player-name">Ваше имя</label>
+                            <input 
+                                type="text" 
+                                id="player-name" 
+                                name="name" 
+                                placeholder="Введите ваше имя"
+                                maxlength="30"
+                                required
+                            >
+                        </div>
+
+                        <div class="modal-actions">
+                            <button type="button" id="cancel-join" class="btn btn-secondary">
+                                Отмена
+                            </button>
+                            <button type="submit" id="join-room-submit" class="btn btn-primary">
+                                Присоединиться
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Уведомления -->
+        <div id="notifications" class="notifications"></div>
+    </div>
+
+    <!-- Скрипты -->
+    <script src="../assets/js/modules/Router.js"></script>
+    <script src="../assets/js/modules/RoomService.js"></script>
+    <script src="../assets/js/modules/NotificationService.js"></script>
+    <script src="../assets/js/modules/UserModel.js"></script>
+    <script src="../assets/js/rooms.js"></script>
+</body>
+</html>

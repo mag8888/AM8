@@ -42,6 +42,11 @@ class AuthManager {
             if (authService.isAuthenticated()) {
                 this.handleAuthenticatedUser();
             }
+            
+            // Инициализируем роутер если доступен
+            if (typeof window.Router !== 'undefined') {
+                this.initRouter();
+            }
 
             console.log('✅ AuthManager: Инициализация завершена');
         } catch (error) {
@@ -404,10 +409,17 @@ class AuthManager {
         if (user) {
             console.log('👤 AuthManager: Пользователь авторизован:', user.username);
             
-            // Перенаправляем на главную страницу игры
-            setTimeout(() => {
-                window.location.href = '../index.html';
-            }, 1500);
+            // Если есть роутер, используем его для навигации
+            if (typeof window.Router !== 'undefined' && window.router) {
+                setTimeout(() => {
+                    window.router.navigate('/rooms');
+                }, 1500);
+            } else {
+                // Fallback: перенаправляем на страницу комнат
+                setTimeout(() => {
+                    window.location.href = '../pages/rooms.html';
+                }, 1500);
+            }
         }
     }
 
@@ -557,6 +569,35 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Запуск системы авторизации Aura Money');
     new AuthManager();
 });
+
+    /**
+     * Инициализация роутера
+     */
+    initRouter() {
+        try {
+            console.log('🗺️ AuthManager: Инициализация роутера');
+            
+            // Создаем роутер если его нет
+            if (!window.router) {
+                window.router = new Router();
+            }
+            
+            // Регистрируем маршруты
+            window.router.route('/auth', () => {
+                console.log('🗺️ AuthManager: Активна страница авторизации');
+            }, 'Авторизация');
+            
+            window.router.route('/rooms', () => {
+                console.log('🗺️ AuthManager: Переход к комнатам');
+                window.location.href = '../pages/rooms.html';
+            }, 'Комнаты');
+            
+            console.log('✅ AuthManager: Роутер инициализирован');
+        } catch (error) {
+            console.error('❌ AuthManager: Ошибка инициализации роутера:', error);
+        }
+    }
+}
 
 // Экспорт для использования в других модулях
 export default AuthManager;
