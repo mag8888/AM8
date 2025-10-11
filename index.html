@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Money - Игровая Доска</title>
+    <link rel="stylesheet" href="assets/css/main.css?v=25">
+    <link rel="stylesheet" href="assets/css/board.css?v=25">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <h1>Aura Money</h1>
+            <div class="game-info">
+                <div class="player-info">
+                    <span class="player-name">Игрок 1</span>
+                    <span class="player-position">Позиция: <span id="position-display">0</span></span>
+                </div>
+                <div class="game-controls">
+                    <button id="start-game" class="btn btn-primary">Начать игру</button>
+                    <button id="roll-dice" class="btn btn-secondary" disabled>Бросить кубик</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="game-board-container">
+            <div class="board-wrapper">
+                <!-- Внешний трек (большой круг) -->
+                <div id="outer-track" class="track outer-track"></div>
+                
+                <!-- Внутренний трек (малый круг) -->
+                <div id="inner-track" class="track inner-track"></div>
+                
+                <!-- Центральная область -->
+                <div class="center-area">
+                    <div class="dice-display">
+                        <div id="dice-result" class="dice">$</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <aside class="game-sidebar">
+            <div class="card">
+                <h3>Информация о клетке</h3>
+                <div id="cell-info">
+                    <p>Нажмите на клетку, чтобы увидеть информацию</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>История событий</h3>
+                <div id="event-log">
+                    <p class="log-entry">Игра готова к старту</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Конфигурационные файлы -->
+    <script src="assets/js/config/cellsConfig.js"></script>
+    <script src="assets/js/config/iconHelpers.js"></script>
+    
+    <!-- Модули -->
+    <script src="assets/js/modules/EventBus.js"></script>
+    <script src="assets/js/modules/GameState.js"></script>
+    <script type="module" src="assets/js/main.js"></script>
+</body>
+</html>

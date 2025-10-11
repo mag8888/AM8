@@ -1,0 +1,454 @@
+/* ===== ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ АВТОРИЗАЦИИ ===== */
+
+/* Переходы между формами */
+.auth-form {
+    transition: all var(--transition-normal);
+}
+
+.auth-form:not(.active) {
+    opacity: 0;
+    transform: translateX(-20px);
+    pointer-events: none;
+}
+
+.auth-form.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: all;
+}
+
+/* Анимация появления форм */
+@keyframes formSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.auth-form.active {
+    animation: formSlideIn 0.4s ease-out;
+}
+
+/* Улучшенные поля ввода */
+.form-group input {
+    background: linear-gradient(145deg, var(--bg-tertiary), var(--bg-secondary));
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.form-group input:focus {
+    background: var(--bg-secondary);
+    border-color: var(--border-focus);
+    box-shadow: 
+        0 0 0 3px rgba(59, 130, 246, 0.1),
+        0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-group input:invalid:not(:focus):not(:placeholder-shown) {
+    border-color: var(--border-error);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.form-group input:valid:not(:focus):not(:placeholder-shown) {
+    border-color: var(--success-color);
+}
+
+/* Иконки в полях ввода */
+.form-group {
+    position: relative;
+}
+
+.form-group.with-icon input {
+    padding-left: 45px;
+}
+
+.form-group .input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 18px;
+    pointer-events: none;
+    transition: color var(--transition-fast);
+}
+
+.form-group input:focus + .input-icon {
+    color: var(--border-focus);
+}
+
+/* Кнопки с градиентами */
+.auth-button {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
+    transition: all var(--transition-fast);
+}
+
+.auth-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left var(--transition-slow);
+}
+
+.auth-button:hover::before {
+    left: 100%;
+}
+
+.auth-button:active {
+    transform: translateY(1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Вторичная кнопка */
+.auth-button.secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.auth-button.secondary:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-light);
+}
+
+/* Состояния загрузки */
+.auth-button.loading {
+    pointer-events: none;
+}
+
+.auth-button.loading .button-text {
+    opacity: 0;
+}
+
+.auth-button.loading .button-loader {
+    display: inline-block;
+}
+
+/* Улучшенные чекбоксы */
+.checkbox-label {
+    position: relative;
+    padding-left: 30px;
+    cursor: pointer;
+    user-select: none;
+    transition: color var(--transition-fast);
+}
+
+.checkbox-label:hover {
+    color: var(--text-primary);
+}
+
+.checkbox-label input[type="checkbox"]:checked ~ .checkmark {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.checkbox-label input[type="checkbox"]:focus ~ .checkmark {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Индикатор силы пароля */
+.password-strength {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.strength-bar {
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: var(--spacing-sm);
+    background: var(--bg-secondary);
+}
+
+.strength-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: all var(--transition-normal);
+    position: relative;
+}
+
+.strength-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.strength-text {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Цвета для силы пароля */
+.strength-fill.weak {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.strength-fill.fair {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.strength-fill.good {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+
+.strength-fill.strong {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* Улучшенные уведомления */
+.notification {
+    backdrop-filter: blur(10px);
+    background: rgba(42, 42, 42, 0.95);
+    border: 1px solid rgba(85, 85, 85, 0.3);
+    animation: notificationSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes notificationSlideIn {
+    from {
+        transform: translateX(100%) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.notification.success {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+    border-left: 4px solid var(--success-color);
+}
+
+.notification.error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    border-left: 4px solid var(--error-color);
+}
+
+.notification.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    border-left: 4px solid var(--warning-color);
+}
+
+.notification.info {
+    background: rgba(6, 182, 212, 0.1);
+    border-color: rgba(6, 182, 212, 0.3);
+    border-left: 4px solid var(--info-color);
+}
+
+/* Анимация закрытия уведомлений */
+.notification.closing {
+    animation: notificationSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes notificationSlideOut {
+    from {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%) scale(0.9);
+        opacity: 0;
+    }
+}
+
+/* Карточки информации */
+.info-card {
+    position: relative;
+    overflow: hidden;
+    transition: all var(--transition-normal);
+}
+
+.info-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981);
+    background-size: 200% 100%;
+    animation: gradient-flow 3s ease-in-out infinite;
+}
+
+@keyframes gradient-flow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.info-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+.info-card h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+/* Загрузочный экран */
+.loading-overlay {
+    backdrop-filter: blur(5px);
+    background: rgba(26, 26, 26, 0.95);
+}
+
+.loading-spinner {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-xl);
+}
+
+.spinner {
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Адаптивные улучшения */
+@media (max-width: 768px) {
+    .auth-form {
+        margin: 0 var(--spacing-sm);
+        padding: var(--spacing-lg);
+    }
+
+    .form-group input {
+        padding: var(--spacing-md);
+        font-size: var(--font-size-base);
+    }
+
+    .auth-button {
+        padding: var(--spacing-md) var(--spacing-lg);
+        font-size: var(--font-size-base);
+    }
+
+    .info-card {
+        padding: var(--spacing-md);
+    }
+
+    .info-card h3 {
+        font-size: var(--font-size-base);
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-form {
+        margin: 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+    }
+
+    .form-header h2 {
+        font-size: var(--font-size-xl);
+    }
+
+    .password-strength {
+        padding: var(--spacing-sm);
+    }
+}
+
+/* Темная тема - дополнительные стили */
+@media (prefers-color-scheme: dark) {
+    .form-group input {
+        background: rgba(58, 58, 58, 0.8);
+    }
+
+    .form-group input:focus {
+        background: rgba(58, 58, 58, 1);
+    }
+
+    .notification {
+        background: rgba(42, 42, 42, 0.98);
+        border-color: rgba(85, 85, 85, 0.4);
+    }
+}
+
+/* Анимации для интерактивности */
+.auth-button:not(:disabled):hover {
+    transform: translateY(-2px);
+}
+
+.auth-button:not(:disabled):active {
+    transform: translateY(0);
+}
+
+.form-group input:focus {
+    transform: translateY(-1px);
+}
+
+/* Улучшения доступности */
+.auth-button:focus,
+.form-group input:focus,
+.checkbox-label:focus-within {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+
+/* Состояния валидации */
+.form-group.error input {
+    border-color: var(--border-error);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.form-group.success input {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.form-group.warning input {
+    border-color: var(--warning-color);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+/* Анимация появления ошибок */
+.error-message.show {
+    animation: errorSlideIn 0.3s ease-out;
+}
+
+@keyframes errorSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
