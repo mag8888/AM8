@@ -567,8 +567,6 @@ function loadTokens() {
         
         tokenCard.innerHTML = `
             <div class="token-icon">${token.icon}</div>
-            <div class="token-name">${token.name}</div>
-            <div class="token-description">${token.description}</div>
         `;
         
         tokenCard.addEventListener('click', () => selectToken(token.id));
