@@ -4,10 +4,7 @@
  * Дата: 11 октября 2024
  */
 
-import { authService } from './modules/AuthService.js';
-import { validationService } from './modules/ValidationService.js';
-import { notificationService } from './modules/NotificationService.js';
-import { userModel } from './modules/UserModel.js';
+// Модули загружаются как глобальные объекты
 
 class AuthManager {
     constructor() {
@@ -31,15 +28,15 @@ class AuthManager {
             
             // Инициализируем сервисы
             await Promise.all([
-                authService.init(),
-                userModel.init()
+                window.window.authService.init(),
+                window.userModel.init()
             ]);
 
             // Настраиваем обработчики событий
             this.setupEventListeners();
             
             // Проверяем авторизацию
-            if (authService.isAuthenticated()) {
+            if (window.window.authService.isAuthenticated()) {
                 this.handleAuthenticatedUser();
             }
             
@@ -51,7 +48,7 @@ class AuthManager {
             console.log('✅ AuthManager: Инициализация завершена');
         } catch (error) {
             console.error('❌ AuthManager: Ошибка инициализации:', error);
-            notificationService.error('Ошибка инициализации системы');
+            window.window.notificationService.error('Ошибка инициализации системы');
         }
     }
 
@@ -180,7 +177,7 @@ class AuthManager {
 
         if (passwordInput && strengthBar && strengthText) {
             passwordInput.addEventListener('input', (e) => {
-                const strength = validationService.calculatePasswordStrength(e.target.value);
+                const strength = window.validationService.calculatePasswordStrength(e.target.value);
                 
                 strengthBar.className = `strength-fill ${strength.level}`;
                 strengthText.textContent = this.getStrengthText(strength.level);
@@ -209,7 +206,7 @@ class AuthManager {
         document.addEventListener('keydown', (e) => {
             // Escape для закрытия уведомлений
             if (e.key === 'Escape') {
-                notificationService.hideAll();
+                window.notificationService.hideAll();
             }
 
             // Enter для отправки форм
@@ -269,7 +266,7 @@ class AuthManager {
         };
 
         // Валидация
-        const validation = validationService.validateLoginForm(data);
+        const validation = window.validationService.validateLoginForm(data);
         if (!validation.valid) {
             this.showFieldErrors(validation.fieldErrors);
             return;
@@ -295,7 +292,7 @@ class AuthManager {
         };
 
         // Валидация
-        const validation = validationService.validateRegistrationForm(data);
+        const validation = window.validationService.validateRegistrationForm(data);
         if (!validation.valid) {
             this.showFieldErrors(validation.fieldErrors);
             return;
@@ -317,7 +314,7 @@ class AuthManager {
         };
 
         // Валидация
-        const validation = validationService.validateForgotPasswordForm(data);
+        const validation = window.validationService.validateForgotPasswordForm(data);
         if (!validation.valid) {
             this.showFieldErrors(validation.fieldErrors);
             return;
@@ -334,18 +331,18 @@ class AuthManager {
         this.setLoading(true);
 
         try {
-            const result = await authService.loginUser(data.email, data.password, data.remember);
+            const result = await window.authService.loginUser(data.email, data.password, data.remember);
             
             if (result.success) {
-                notificationService.success('Вход выполнен успешно!');
+                window.notificationService.success('Вход выполнен успешно!');
                 this.handleAuthenticatedUser();
             } else {
-                notificationService.error(result.message);
+                window.notificationService.error(result.message);
                 this.showFieldErrors(result.errors);
             }
         } catch (error) {
             console.error('❌ AuthManager: Ошибка входа:', error);
-            notificationService.error('Произошла ошибка при входе');
+            window.notificationService.error('Произошла ошибка при входе');
         } finally {
             this.setLoading(false);
         }
@@ -359,18 +356,18 @@ class AuthManager {
         this.setLoading(true);
 
         try {
-            const result = await authService.registerUser(data);
+            const result = await window.authService.registerUser(data);
             
             if (result.success) {
-                notificationService.success('Регистрация выполнена успешно!');
+                window.notificationService.success('Регистрация выполнена успешно!');
                 this.handleAuthenticatedUser();
             } else {
-                notificationService.error(result.message);
+                window.notificationService.error(result.message);
                 this.showFieldErrors(result.errors);
             }
         } catch (error) {
             console.error('❌ AuthManager: Ошибка регистрации:', error);
-            notificationService.error('Произошла ошибка при регистрации');
+            window.notificationService.error('Произошла ошибка при регистрации');
         } finally {
             this.setLoading(false);
         }
@@ -384,18 +381,18 @@ class AuthManager {
         this.setLoading(true);
 
         try {
-            const result = await authService.forgotPassword(data.email);
+            const result = await window.authService.forgotPassword(data.email);
             
             if (result.success) {
-                notificationService.success('Ссылка для восстановления отправлена на ваш email');
+                window.notificationService.success('Ссылка для восстановления отправлена на ваш email');
                 this.switchForm('login');
             } else {
-                notificationService.error(result.message);
+                window.notificationService.error(result.message);
                 this.showFieldErrors(result.errors);
             }
         } catch (error) {
             console.error('❌ AuthManager: Ошибка восстановления пароля:', error);
-            notificationService.error('Произошла ошибка при восстановлении пароля');
+            window.notificationService.error('Произошла ошибка при восстановлении пароля');
         } finally {
             this.setLoading(false);
         }
@@ -405,7 +402,7 @@ class AuthManager {
      * Обработка авторизованного пользователя
      */
     handleAuthenticatedUser() {
-        const user = authService.getCurrentUser();
+        const user = window.authService.getCurrentUser();
         if (user) {
             console.log('👤 AuthManager: Пользователь авторизован:', user.username);
             
@@ -434,13 +431,13 @@ class AuthManager {
 
         switch (type) {
             case 'email':
-                validation = validationService.validateEmail(value);
+                validation = window.validationService.validateEmail(value);
                 break;
             case 'username':
-                validation = validationService.validateUsername(value);
+                validation = window.validationService.validateUsername(value);
                 break;
             case 'password':
-                validation = validationService.validatePassword(value);
+                validation = window.validationService.validatePassword(value);
                 break;
             default:
                 return;
@@ -457,7 +454,7 @@ class AuthManager {
         const confirmPassword = document.getElementById('register-confirm-password')?.value;
         
         if (password && confirmPassword) {
-            const validation = validationService.validateConfirmPassword(password, confirmPassword);
+            const validation = window.validationService.validateConfirmPassword(password, confirmPassword);
             const confirmInput = document.getElementById('register-confirm-password');
             if (confirmInput) {
                 this.showFieldError(confirmInput, validation);
