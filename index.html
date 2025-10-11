@@ -250,73 +250,7 @@
     </main>
 
     <!-- Загрузка конфигурации игры -->
-    <script>
-        // Конфигурация клеток игры (заглушка)
-        window.BIG_CIRCLE_CELLS = [
-            { name: 'Старт', type: 'start', icon: '🚀' },
-            { name: 'Зарплата', type: 'salary', icon: '💰' },
-            { name: 'Инвестиции', type: 'investment', icon: '📈' },
-            { name: 'Недвижимость', type: 'real_estate', icon: '🏠' },
-            { name: 'Бизнес', type: 'business', icon: '🏢' },
-            { name: 'Акции', type: 'stocks', icon: '📊' },
-            { name: 'Криптовалюта', type: 'crypto', icon: '₿' },
-            { name: 'Образование', type: 'education', icon: '🎓' },
-            { name: 'Страхование', type: 'insurance', icon: '🛡️' },
-            { name: 'Пенсия', type: 'pension', icon: '👴' },
-            { name: 'Благотворительность', type: 'charity', icon: '❤️' },
-            { name: 'Налоги', type: 'taxes', icon: '🏛️' },
-            { name: 'Долги', type: 'debt', icon: '💳' },
-            { name: 'Экстренные расходы', type: 'emergency', icon: '🚨' },
-            { name: 'Развлечения', type: 'entertainment', icon: '🎉' },
-            { name: 'Путешествия', type: 'travel', icon: '✈️' },
-            { name: 'Здоровье', type: 'health', icon: '🏥' },
-            { name: 'Семья', type: 'family', icon: '👨‍👩‍👧‍👦' },
-            { name: 'Карьера', type: 'career', icon: '💼' },
-            { name: 'Сетевой маркетинг', type: 'network_marketing', icon: '🌐' },
-            { name: 'Франшиза', type: 'franchise', icon: '🏪' },
-            { name: 'Лицензии', type: 'licenses', icon: '📋' },
-            { name: 'Патенты', type: 'patents', icon: '📜' },
-            { name: 'Авторские права', type: 'copyright', icon: '©️' },
-            { name: 'Торговые марки', type: 'trademarks', icon: '™️' },
-            { name: 'Доверительное управление', type: 'trust', icon: '🤝' },
-            { name: 'Хеджирование', type: 'hedging', icon: '⚖️' },
-            { name: 'Арбитраж', type: 'arbitrage', icon: '⚡' },
-            { name: 'Лизинг', type: 'leasing', icon: '📋' },
-            { name: 'Факторинг', type: 'factoring', icon: '📄' },
-            { name: 'Форфейтинг', type: 'forfaiting', icon: '📑' },
-            { name: 'Секьюритизация', type: 'securitization', icon: '🔒' },
-            { name: 'Производные инструменты', type: 'derivatives', icon: '📊' },
-            { name: 'Опционы', type: 'options', icon: '⚙️' },
-            { name: 'Фьючерсы', type: 'futures', icon: '🔮' },
-            { name: 'Свопы', type: 'swaps', icon: '🔄' },
-            { name: 'Варранты', type: 'warrants', icon: '🎫' },
-            { name: 'Конвертируемые облигации', type: 'convertible_bonds', icon: '🔄' },
-            { name: 'Привилегированные акции', type: 'preferred_stock', icon: '⭐' },
-            { name: 'Обыкновенные акции', type: 'common_stock', icon: '📈' },
-            { name: 'Государственные облигации', type: 'government_bonds', icon: '🏛️' },
-            { name: 'Корпоративные облигации', type: 'corporate_bonds', icon: '🏢' },
-            { name: 'Муниципальные облигации', type: 'municipal_bonds', icon: '🏘️' },
-            { name: 'Мечта', type: 'dream', icon: '💭' }
-        ];
-
-        window.SMALL_CIRCLE_CELLS = [
-            { name: 'Быстрый трек - Старт', type: 'fast_start', icon: '⚡' },
-            { name: 'Пассивный доход', type: 'passive_income', icon: '💤' },
-            { name: 'Денежный поток', type: 'cashflow', icon: '💸' },
-            { name: 'Активы', type: 'assets', icon: '💎' },
-            { name: 'Пассивы', type: 'liabilities', icon: '📉' },
-            { name: 'Финансовая свобода', type: 'financial_freedom', icon: '🦅' }
-        ];
-
-        // Функции для иконок
-        window.getIconForType = function(type, cellData) {
-            return cellData.icon || '?';
-        };
-
-        window.getIconStyleClass = function(type, cellData) {
-            return `icon-${type}`;
-        };
-    </script>
+    <script src="assets/js/modules/game/BoardConfig.js"></script>
 
     <!-- Основные модули -->
     <script src="assets/js/modules/Router.js"></script>
