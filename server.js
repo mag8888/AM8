@@ -4,6 +4,11 @@ const databaseConfig = require('./server/config/database');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Установка переменных окружения для авторизации
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'am8-production-secret-key-2024-railway';
+process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+process.env.BCRYPT_ROUNDS = process.env.BCRYPT_ROUNDS || '12';
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
