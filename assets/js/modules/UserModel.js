@@ -4,7 +4,7 @@
  * Дата: 11 октября 2024
  */
 
-export class UserModel {
+class UserModel {
     constructor() {
         this.users = new Map();
         this.currentUser = null;

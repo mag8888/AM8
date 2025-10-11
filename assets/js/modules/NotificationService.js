@@ -4,7 +4,7 @@
  * Дата: 11 октября 2024
  */
 
-export class NotificationService {
+class NotificationService {
     constructor() {
         this.container = null;
         this.notifications = new Map();
