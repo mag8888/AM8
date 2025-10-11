@@ -24,10 +24,11 @@
   "author": "Aura Money Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.19.2",
-    "mongoose": "^8.4.0",
     "cors": "^2.8.5",
-    "helmet": "^7.1.0"
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "mongoose": "^8.4.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "jest": "^29.7.0",

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 /**
  * Схема игрока в комнате
@@ -38,7 +38,7 @@ const GameStateSchema = new mongoose.Schema({
  * Основная схема комнаты
  */
 const RoomSchema = new mongoose.Schema({
-    _id: { type: String, default: uuidv4 },
+    _id: { type: String, default: () => crypto.randomUUID() },
     name: { type: String, required: true, unique: true, trim: true, maxlength: 100 },
     creatorId: { type: String, required: true },
     creatorName: { type: String, required: true },

@@ -21,10 +21,31 @@ app.use('/pages', express.static(path.join(__dirname, 'pages')));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
+  res.status(200).json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    service: 'Aura Money Game Server'
+    service: 'Aura Money Game Server',
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
+
+// Root health check for Railway
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+// Basic health check
+app.get('/', (req, res) => {
+  res.status(200).sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('❌ Server Error:', err);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
   });
 });
 
@@ -33,10 +54,21 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, () => {
+// Start server
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🎮 Aura Money Game Server running on port ${PORT}`);
   console.log(`📱 Open your browser to: http://localhost:${PORT}`);
   console.log(`🚀 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`💚 Health check available at: /health`);
+});
+
+// Handle server errors
+server.on('error', (err) => {
+  console.error('❌ Server startup error:', err);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use`);
+  }
+  process.exit(1);
 });
 
 // Graceful shutdown
