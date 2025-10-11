@@ -25,13 +25,17 @@ class DatabaseConfig {
             }
 
             console.log('💾 DatabaseConfig: Подключение к MongoDB...');
+            console.log('💾 DatabaseConfig: URI:', this.mongoUri.replace(/\/\/.*@/, '//***:***@')); // Скрываем пароль в логах
             
             await mongoose.connect(this.mongoUri, {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
                 maxPoolSize: 10,
-                serverSelectionTimeoutMS: 5000,
+                serverSelectionTimeoutMS: 10000, // Увеличиваем таймаут
                 socketTimeoutMS: 45000,
+                connectTimeoutMS: 10000,
+                bufferCommands: false, // Отключаем буферизацию команд
+                bufferMaxEntries: 0
             });
 
             this.isConnected = true;

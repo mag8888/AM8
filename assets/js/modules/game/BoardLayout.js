@@ -510,5 +510,3 @@ class BoardLayout {
 if (typeof window !== 'undefined') {
     window.BoardLayout = BoardLayout;
 }
-
-export default BoardLayout;

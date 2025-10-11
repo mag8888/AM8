@@ -39,7 +39,7 @@ const GameStateSchema = new mongoose.Schema({
  */
 const RoomSchema = new mongoose.Schema({
     _id: { type: String, default: () => crypto.randomUUID() },
-    name: { type: String, required: true, unique: true, trim: true, maxlength: 100 },
+    name: { type: String, required: true, trim: true, maxlength: 100 },
     creatorId: { type: String, required: true },
     creatorName: { type: String, required: true },
     creatorAvatar: { type: String, default: '' },

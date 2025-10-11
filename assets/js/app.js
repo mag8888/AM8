@@ -20,11 +20,11 @@ class App {
      */
     async init() {
         try {
-            // Инициализируем роутер
-            this.initRouter();
-            
-            // Инициализируем компоненты игры
-            this.initGameComponents();
+        // Инициализируем компоненты игры
+        this.initGameComponents();
+        
+        // Инициализируем роутер
+        this.initRouter();
             
             // Настраиваем навигацию
             this.setupNavigation();
@@ -44,7 +44,7 @@ class App {
     initRouter() {
         console.log('🗺️ App: Инициализация роутера');
         
-        this.router = new Router();
+        this.router = new window.Router();
         
         // Регистрируем маршруты
         this.router.route('/', () => {
@@ -66,6 +66,9 @@ class App {
             }, 500);
         }, 'Авторизация');
         
+        // Устанавливаем маршрут по умолчанию
+        this.router.defaultRoute = '/';
+        
         this.router.route('/game', (state) => {
             this.showPage('game-page');
             this.updateNavigation('/');
@@ -86,13 +89,13 @@ class App {
         
         try {
             // Создаем EventBus
-            this.eventBus = new EventBus();
+            this.eventBus = new window.EventBus();
             
             // Создаем GameState
-            this.gameState = new GameState();
+            this.gameState = new window.GameState();
             
             // Инициализируем BoardLayout
-            this.boardLayout = new BoardLayout({
+            this.boardLayout = new window.BoardLayout({
                 outerTrackSelector: '#outer-track',
                 innerTrackSelector: '#inner-track',
                 gameState: this.gameState,
@@ -102,6 +105,10 @@ class App {
             console.log('✅ App: Игровые компоненты инициализированы');
         } catch (error) {
             console.error('❌ App: Ошибка инициализации игровых компонентов:', error);
+            // Продолжаем работу без игровых компонентов
+            this.eventBus = null;
+            this.gameState = null;
+            this.boardLayout = null;
         }
     }
 
@@ -127,7 +134,36 @@ class App {
         const authButton = document.getElementById('auth-button');
         if (authButton) {
             authButton.addEventListener('click', () => {
-                this.router.navigate('/auth');
+                if (this.router) {
+                    this.router.navigate('/auth');
+                } else {
+                    window.location.href = 'auth/';
+                }
+            });
+        }
+        
+        // Обработчики для кнопок на главной странице
+        const selectRoomBtn = document.querySelector('button[onclick*="router.navigate(\'/rooms\')"]');
+        if (selectRoomBtn) {
+            selectRoomBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (this.router) {
+                    this.router.navigate('/rooms');
+                } else {
+                    window.location.href = 'pages/rooms.html';
+                }
+            });
+        }
+        
+        const authBtnMain = document.querySelector('button[onclick*="router.navigate(\'/auth\')"]');
+        if (authBtnMain) {
+            authBtnMain.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (this.router) {
+                    this.router.navigate('/auth');
+                } else {
+                    window.location.href = 'auth/';
+                }
             });
         }
         

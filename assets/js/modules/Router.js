@@ -6,7 +6,7 @@ class Router {
     constructor() {
         this.routes = new Map();
         this.currentRoute = null;
-        this.defaultRoute = '/auth';
+        this.defaultRoute = '/';
         this.container = null;
         
         // Привязка методов
@@ -26,8 +26,12 @@ class Router {
         // Настраиваем обработчик истории браузера
         window.addEventListener('popstate', this.boundHandlePopState);
         
-        // Обрабатываем текущий URL
-        this.handleCurrentRoute();
+        // Обрабатываем текущий URL только если есть маршруты
+        setTimeout(() => {
+            if (this.routes.size > 0) {
+                this.handleCurrentRoute();
+            }
+        }, 100);
         
         console.log('✅ Router: Маршрутизация инициализирована');
     }
@@ -216,5 +220,3 @@ class Router {
 if (typeof window !== 'undefined') {
     window.Router = Router;
 }
-
-export default Router;
