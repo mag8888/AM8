@@ -305,6 +305,20 @@
     box-shadow: none !important;
 }
 
+/* Специальные стили для кнопки старт */
+#start-game {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+#start-game:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed;
+}
+
 /* Правая панель - Настройки игрока */
 .room-main {
     display: flex;

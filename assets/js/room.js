@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
     displayUserInfo();
     loadDreams();
     loadTokens();
+    updateStartGameButton();
 });
 
 /**
@@ -318,6 +319,9 @@ async function loadRoomData() {
         // Присоединяемся к комнате если еще не присоединены
         await joinRoomIfNeeded();
         
+        // Обновляем кнопку старт после загрузки данных
+        updateStartGameButton();
+        
     } catch (error) {
         console.error('❌ Room: Ошибка загрузки данных комнаты:', error);
         showNotification('Ошибка загрузки данных комнаты', 'error');
@@ -420,7 +424,14 @@ function updatePlayersList() {
  */
 function updateStartGameButton() {
     const startGameButton = document.getElementById('start-game');
-    if (!startGameButton || !currentRoom || !currentUser) return;
+    if (!startGameButton) return;
+    
+    // Если нет данных о комнате или пользователе, показываем кнопку как неактивную
+    if (!currentRoom || !currentUser) {
+        startGameButton.disabled = true;
+        startGameButton.textContent = '🚀 Начать игру';
+        return;
+    }
     
     const isHost = currentRoom.creatorId === currentUser.id;
     const canStart = currentRoom.players.length >= currentRoom.minPlayers && 
