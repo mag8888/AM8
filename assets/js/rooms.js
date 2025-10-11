@@ -6,7 +6,6 @@
 // Глобальные переменные
 let roomService;
 let notificationService;
-let userModel;
 let router;
 let selectedRoom = null;
 
@@ -29,7 +28,7 @@ function initializeServices() {
         // Инициализируем сервисы
         roomService = new RoomService();
         notificationService = new NotificationService();
-        userModel = new UserModel();
+        // userModel доступен глобально как window.userModel
         
         // Получаем роутер из глобальной области
         if (window.router) {
