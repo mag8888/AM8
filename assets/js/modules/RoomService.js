@@ -417,6 +417,43 @@ class RoomService {
         
         return true;
     }
+
+    /**
+     * Обновление данных игрока в комнате
+     * @param {string} roomId - ID комнаты
+     * @param {Object} playerData - Данные игрока
+     * @returns {Promise<Object>}
+     */
+    async updatePlayerInRoom(roomId, playerData) {
+        try {
+            console.log('🏠 RoomService: Обновление игрока в комнате:', roomId);
+            
+            const response = await fetch(`${this.baseUrl}/${roomId}/player`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(playerData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                console.log('✅ RoomService: Игрок обновлен в комнате');
+                return data.data;
+            } else {
+                throw new Error(data.message || 'Ошибка обновления игрока');
+            }
+            
+        } catch (error) {
+            console.error('❌ RoomService: Ошибка обновления игрока:', error);
+            throw error;
+        }
+    }
 }
 
 // Экспорт для использования

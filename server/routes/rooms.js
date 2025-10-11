@@ -358,6 +358,53 @@ router.post('/cleanup', async (req, res, next) => {
 });
 
 /**
+ * PUT /api/rooms/:roomId/player
+ * Обновление данных игрока в комнате
+ */
+router.put('/:roomId/player', async (req, res, next) => {
+    try {
+        const { roomId } = req.params;
+        const playerData = req.body;
+        console.log('📡 API: Обновление игрока в комнате:', roomId);
+        
+        // Валидация входных данных
+        if (!playerData || !playerData.userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Данные игрока и user ID обязательны'
+            });
+        }
+        
+        const room = await roomService.updatePlayerInRoom(roomId, playerData);
+        
+        res.status(200).json({
+            success: true,
+            data: room,
+            message: 'Данные игрока обновлены'
+        });
+        
+    } catch (error) {
+        console.error('❌ API: Ошибка обновления игрока:', error);
+        
+        if (error.message === 'Room not found') {
+            return res.status(404).json({
+                success: false,
+                message: 'Комната не найдена'
+            });
+        }
+        
+        if (error.message === 'Player not found') {
+            return res.status(404).json({
+                success: false,
+                message: 'Игрок не найден в комнате'
+            });
+        }
+        
+        next(error);
+    }
+});
+
+/**
  * GET /api/rooms/stats
  * Получение статистики комнат
  */

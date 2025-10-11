@@ -601,20 +601,8 @@ async function startGame(roomId) {
         return;
     }
     
-    try {
-        const room = await roomService.startGame(roomId, currentUser.id);
-        
-        showNotification('Игра запущена!', 'success');
-        
-        // Переходим к игре
-        setTimeout(() => {
-            navigateToGame(room);
-        }, 1000);
-        
-    } catch (error) {
-        console.error('❌ Rooms: Ошибка запуска игры:', error);
-        showNotification(error.message || 'Ошибка запуска игры', 'error');
-    }
+    // Переходим на страницу комнаты для настройки перед началом игры
+    window.location.href = `room.html?id=${roomId}`;
 }
 
 /**
@@ -627,17 +615,8 @@ function viewRoomDetails(roomId) {
         return;
     }
     
-    // Показываем информацию о комнате
-    const details = `
-Комната: ${room.name}
-Создатель: ${room.creatorName}
-Игроков: ${room.playerCount}/${room.maxPlayers}
-Время хода: ${room.turnTime} секунд
-Статус: ${getStatusText(getRoomStatus(room))}
-${room.assignProfessions ? 'Профессии назначаются автоматически' : 'Профессии выбираются вручную'}
-    `.trim();
-    
-    alert(details);
+    // Переходим на страницу комнаты
+    window.location.href = `room.html?id=${roomId}`;
 }
 
 /**

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Комната - Aura Money</title>
+    <link rel="stylesheet" href="../assets/css/main.css?v=1">
+    <link rel="stylesheet" href="../assets/css/room.css?v=1">
+    <link rel="stylesheet" href="../assets/css/notifications.css?v=1">
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="app-navigation">
+        <div class="nav-container">
+            <a href="../" class="nav-logo">🎮 Aura Money</a>
+            
+            <div class="nav-menu">
+                <a href="../" class="nav-link" data-route="/">Главная</a>
+                <a href="rooms.html" class="nav-link" data-route="/rooms">Комнаты</a>
+                <a href="../auth/" class="nav-link" data-route="/auth">Авторизация</a>
+            </div>
+            
+            <div class="nav-user" id="nav-user">
+                <div class="user-info" id="user-info" style="display: none;">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <span id="user-name">Пользователь</span>
+                </div>
+                <button class="nav-button" id="auth-button">Войти</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="app-content">
+        <div class="room-container">
+            <!-- Заголовок комнаты -->
+            <header class="room-header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <h1 class="room-title" id="room-title">🏠 Комната</h1>
+                        <p class="room-subtitle" id="room-subtitle">Настройте свою мечту и выберите фишку</p>
+                    </div>
+                    <div class="header-right">
+                        <div class="user-info" id="room-user-info">
+                            <div class="user-avatar" id="room-user-avatar">U</div>
+                            <span class="user-name" id="room-user-name">Пользователь</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Основная область -->
+            <div class="room-content">
+                <!-- Левая панель - Информация о комнате -->
+                <div class="room-sidebar">
+                    <div class="room-info-card">
+                        <h3>📊 Информация о комнате</h3>
+                        <div class="info-item">
+                            <span class="info-label">Название:</span>
+                            <span class="info-value" id="room-name">Загрузка...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Создатель:</span>
+                            <span class="info-value" id="room-creator">Загрузка...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Игроки:</span>
+                            <span class="info-value" id="room-players">0/4</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Статус:</span>
+                            <span class="info-value" id="room-status">Ожидание</span>
+                        </div>
+                    </div>
+
+                    <div class="players-card">
+                        <h3>👥 Игроки в комнате</h3>
+                        <div class="players-list" id="players-list">
+                            <div class="player-item">
+                                <div class="player-avatar">U</div>
+                                <div class="player-info">
+                                    <div class="player-name">Загрузка...</div>
+                                    <div class="player-status">Готовится</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="actions-card">
+                        <h3>🎮 Действия</h3>
+                        <button class="btn btn-secondary" id="back-to-rooms">
+                            ← Назад к комнатам
+                        </button>
+                        <button class="btn btn-primary" id="start-game" disabled>
+                            🚀 Начать игру
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Правая панель - Настройки игрока -->
+                <div class="room-main">
+                    <!-- Выбор мечты -->
+                    <div class="dream-section">
+                        <div class="section-header">
+                            <h2>💭 Моя мечта</h2>
+                            <p>Опишите свою финансовую цель</p>
+                        </div>
+                        
+                        <div class="dream-form">
+                            <div class="form-group">
+                                <label for="dream-title">Название мечты</label>
+                                <input 
+                                    type="text" 
+                                    id="dream-title" 
+                                    placeholder="Например: Купить дом у моря"
+                                    maxlength="100"
+                                >
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="dream-description">Описание мечты</label>
+                                <textarea 
+                                    id="dream-description" 
+                                    placeholder="Подробно опишите свою мечту: где, когда, сколько это стоит..."
+                                    rows="4"
+                                    maxlength="500"
+                                ></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="dream-cost">Стоимость мечты</label>
+                                <input 
+                                    type="number" 
+                                    id="dream-cost" 
+                                    placeholder="1000000"
+                                    min="0"
+                                    step="1000"
+                                >
+                                <span class="currency">₽</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Выбор фишки -->
+                    <div class="token-section">
+                        <div class="section-header">
+                            <h2>🎯 Выберите фишку</h2>
+                            <p>Ваш персонаж в игре</p>
+                        </div>
+                        
+                        <div class="tokens-grid" id="tokens-grid">
+                            <!-- Фишки будут загружены через JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Кнопка готовности -->
+                    <div class="ready-section">
+                        <button class="btn btn-success btn-large" id="ready-button" disabled>
+                            ✅ Я готов к игре!
+                        </button>
+                        <p class="ready-hint">Заполните мечту и выберите фишку</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно подтверждения -->
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🚀 Начать игру?</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите начать игру?</p>
+                <div class="modal-info">
+                    <p><strong>Комната:</strong> <span id="modal-room-name"></span></p>
+                    <p><strong>Игроков готово:</strong> <span id="modal-ready-count">0</span>/<span id="modal-total-players">4</span></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="modal-cancel">Отмена</button>
+                <button class="btn btn-primary" id="modal-confirm">Начать игру</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Уведомления -->
+    <div class="notifications-container" id="notifications-container"></div>
+
+    <!-- Загрузка JavaScript модулей -->
+    <script src="../assets/js/modules/Router.js"></script>
+    <script src="../assets/js/modules/RoomService.js"></script>
+    <script src="../assets/js/modules/NotificationService.js"></script>
+    <script src="../assets/js/modules/UserModel.js"></script>
+    <script src="../assets/js/room.js"></script>
+</body>
+</html>

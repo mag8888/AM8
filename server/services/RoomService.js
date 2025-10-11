@@ -625,6 +625,55 @@ class RoomService {
             console.error('❌ RoomService: Ошибка удаления из баз данных:', error);
         }
     }
+
+    /**
+     * Обновление данных игрока в комнате
+     * @param {string} roomId - ID комнаты
+     * @param {Object} playerData - Данные игрока
+     * @returns {Promise<Object>} Обновленная комната
+     */
+    async updatePlayerInRoom(roomId, playerData) {
+        try {
+            console.log('🏠 RoomService: Обновление игрока в комнате:', roomId);
+            
+            const room = this.rooms.get(roomId);
+            if (!room) {
+                throw new Error('Room not found');
+            }
+            
+            // Находим игрока в комнате
+            const playerIndex = room.players.findIndex(p => p.userId === playerData.userId);
+            if (playerIndex === -1) {
+                throw new Error('Player not found');
+            }
+            
+            // Обновляем данные игрока
+            room.players[playerIndex] = {
+                ...room.players[playerIndex],
+                ...playerData,
+                updatedAt: new Date()
+            };
+            
+            // Обновляем счетчики
+            room.playerCount = room.players.length;
+            room.readyCount = room.players.filter(p => p.isReady).length;
+            room.canStart = room.readyCount >= room.minPlayers && room.readyCount === room.playerCount;
+            
+            // Сохраняем в памяти
+            this.rooms.set(roomId, room);
+            
+            // Сохраняем в базе данных если подключена
+            await this.saveRoomToDatabases(room);
+            
+            console.log('✅ RoomService: Игрок обновлен в комнате');
+            
+            return this.sanitizeRoom(room);
+            
+        } catch (error) {
+            console.error('❌ RoomService: Ошибка обновления игрока:', error);
+            throw error;
+        }
+    }
 }
 
 // Экспорт singleton экземпляра
