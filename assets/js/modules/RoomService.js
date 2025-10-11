@@ -267,6 +267,8 @@ class RoomService {
     async getStats() {
         try {
             console.log('🏠 RoomService: Получение статистики');
+            console.log('🏠 RoomService: baseUrl =', this.baseUrl);
+            console.log('🏠 RoomService: URL =', `${this.baseUrl}/stats`);
             
             const response = await fetch(`${this.baseUrl}/stats`, {
                 method: 'GET',

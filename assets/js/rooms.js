@@ -274,7 +274,7 @@ function createRoomCard(room) {
  * Создание действий для комнаты
  */
 function createRoomActions(room) {
-    const currentUser = userModel.getCurrentUser();
+    const currentUser = getCurrentUser();
     if (!currentUser) {
         return '<button class="room-action view" disabled>Войдите в систему</button>';
     }
@@ -492,7 +492,7 @@ async function handleCreateRoom(event) {
         return;
     }
     
-    const currentUser = userModel.getCurrentUser();
+    const currentUser = getCurrentUser();
     if (!currentUser) {
         showNotification('Ошибка: пользователь не авторизован', 'error');
         return;
@@ -550,7 +550,7 @@ async function handleJoinRoom(event) {
         return;
     }
     
-    const currentUser = userModel.getCurrentUser();
+    const currentUser = getCurrentUser();
     if (!currentUser) {
         showNotification('Ошибка: пользователь не авторизован', 'error');
         return;
@@ -595,7 +595,7 @@ async function handleJoinRoom(event) {
  * Запуск игры
  */
 async function startGame(roomId) {
-    const currentUser = userModel.getCurrentUser();
+    const currentUser = getCurrentUser();
     if (!currentUser) {
         showNotification('Ошибка: пользователь не авторизован', 'error');
         return;
@@ -730,6 +730,22 @@ function showNotification(message, type = 'info') {
     } else {
         // Fallback уведомление
         alert(message);
+    }
+}
+
+/**
+ * Получение текущего пользователя из localStorage
+ */
+function getCurrentUser() {
+    try {
+        const storedUser = localStorage.getItem('aura_money_user');
+        if (!storedUser) {
+            return null;
+        }
+        return JSON.parse(storedUser);
+    } catch (error) {
+        console.error('❌ Rooms: Ошибка получения пользователя:', error);
+        return null;
     }
 }
 
