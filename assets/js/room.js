@@ -786,7 +786,9 @@ async function confirmStartGame() {
         
         // Переходим к игровой доске
         setTimeout(() => {
-            window.location.href = '../';
+            // Переходим на главную страницу с данными о комнате
+            const roomId = currentRoom.id;
+            window.location.href = `../index.html#game?roomId=${roomId}`;
         }, 2000);
         
     } catch (error) {

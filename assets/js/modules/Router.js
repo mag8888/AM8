@@ -98,6 +98,10 @@ class Router {
 
         this.currentRoute = path;
         
+        // Извлекаем параметры из URL
+        const urlParams = this.getParams(path);
+        const routeState = { ...state, ...urlParams };
+        
         // Обновляем заголовок страницы
         if (route.title) {
             document.title = `${route.title} - Aura Money`;
@@ -105,7 +109,7 @@ class Router {
 
         // Выполняем обработчик маршрута
         try {
-            route.handler(state);
+            route.handler(routeState);
             console.log(`✅ Router: Переход на ${path} выполнен`);
         } catch (error) {
             console.error(`❌ Router: Ошибка выполнения маршрута ${path}:`, error);
@@ -129,6 +133,16 @@ class Router {
      * @returns {string}
      */
     getCurrentPath() {
+        // Проверяем хеш для маршрутов типа #game
+        const hash = window.location.hash;
+        if (hash) {
+            // Извлекаем путь из хеша (например, #game?roomId=123 -> /game)
+            const hashPath = hash.split('?')[0].substring(1); // убираем #
+            if (hashPath && this.routes.has('/' + hashPath)) {
+                return '/' + hashPath;
+            }
+        }
+        
         const path = window.location.pathname;
         return path === '/' ? this.defaultRoute : path;
     }
@@ -213,6 +227,16 @@ class Router {
         url.searchParams.forEach((value, key) => {
             params[key] = value;
         });
+        
+        // Параметры из хеша (например, #game?roomId=123)
+        const hash = window.location.hash;
+        if (hash && hash.includes('?')) {
+            const hashParams = hash.split('?')[1];
+            const hashUrlParams = new URLSearchParams(hashParams);
+            for (const [key, value] of hashUrlParams) {
+                params[key] = value;
+            }
+        }
         
         return params;
     }
