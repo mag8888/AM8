@@ -66,14 +66,14 @@ class App {
             }, 500);
         }, 'Авторизация');
         
-        // Устанавливаем маршрут по умолчанию
-        this.router.defaultRoute = '/';
-        
         this.router.route('/game', (state) => {
             this.showPage('game-page');
             this.updateNavigation('/');
             this.handleGameRoute(state);
         }, 'Игра');
+        
+        // Устанавливаем маршрут по умолчанию
+        this.router.defaultRoute = '/';
         
         // Сохраняем роутер в глобальной области
         window.router = this.router;
