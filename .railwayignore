@@ -1,0 +1,42 @@
+# Development files
+.git/
+.gitignore
+README.md
+START_HERE.md
+TESTING.md
+TZ_COMPLIANCE_REPORT.md
+
+# Auth module (separate deployment)
+auth/
+
+# Test files
+tests/
+*.test.js
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp

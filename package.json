@@ -1,8 +1,37 @@
 {
-  "name": "am8",
+  "name": "aura-money-game",
   "version": "1.0.0",
+  "description": "Aura Money - Cashflow-style board game with authentication",
+  "main": "index.html",
   "type": "module",
   "scripts": {
-    "test": "node tests/runTests.js"
-  }
+    "start": "node server.js",
+    "dev": "python3 -m http.server 8000",
+    "test": "node tests/runTests.js",
+    "build": "echo 'Static build - no build step required'",
+    "deploy": "echo 'Deployment ready'"
+  },
+  "keywords": [
+    "game",
+    "board-game",
+    "cashflow",
+    "educational",
+    "money-management",
+    "javascript",
+    "html5"
+  ],
+  "author": "Aura Money Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mag8888/AM8.git"
+  },
+  "homepage": "https://github.com/mag8888/AM8#readme"
 }
