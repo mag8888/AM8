@@ -5,7 +5,6 @@
 
 // Глобальные переменные
 let roomService;
-let notificationService;
 let currentRoom = null;
 let currentUser = null;
 let selectedToken = null;
@@ -172,7 +171,7 @@ function initializeServices() {
     try {
         // Инициализируем сервисы
         roomService = new RoomService();
-        notificationService = window.notificationService;
+        // notificationService доступен глобально как window.notificationService
         
         console.log('✅ Room: Сервисы инициализированы');
     } catch (error) {
@@ -432,14 +431,53 @@ function displayUserInfo() {
             }
         } else {
             console.log('⚠️ Room: Пользователь не авторизован');
-            // Перенаправляем на авторизацию
-            setTimeout(() => {
-                window.location.href = '../auth/';
-            }, 2000);
+            showAuthRequired();
+            return false;
         }
+        
+        return true;
     } catch (error) {
         console.error('❌ Room: Ошибка отображения информации о пользователе:', error);
+        showAuthRequired();
+        return false;
     }
+}
+
+/**
+ * Показать сообщение о необходимости авторизации
+ */
+function showAuthRequired() {
+    // Скрываем основное содержимое
+    const roomContent = document.querySelector('.room-content');
+    if (roomContent) {
+        roomContent.style.display = 'none';
+    }
+    
+    // Показываем сообщение о необходимости авторизации
+    const roomContainer = document.querySelector('.room-container');
+    if (roomContainer) {
+        const authMessage = document.createElement('div');
+        authMessage.className = 'auth-required-message';
+        authMessage.innerHTML = `
+            <div class="auth-message-content">
+                <div class="auth-icon">🔐</div>
+                <h2>Требуется авторизация</h2>
+                <p>Для входа в комнату необходимо авторизоваться</p>
+                <div class="auth-actions">
+                    <button class="btn btn-primary" onclick="window.location.href='../auth/'">
+                        Войти в систему
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.location.href='rooms.html'">
+                        Назад к комнатам
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        roomContainer.appendChild(authMessage);
+    }
+    
+    showNotification('Необходимо авторизоваться для входа в комнату', 'warning');
 }
 
 /**
@@ -729,8 +767,8 @@ async function confirmStartGame() {
  * Показать уведомление
  */
 function showNotification(message, type = 'info') {
-    if (notificationService) {
-        notificationService.show(message, type);
+    if (window.notificationService) {
+        window.notificationService.show(message, type);
     } else {
         // Fallback уведомление
         alert(message);
