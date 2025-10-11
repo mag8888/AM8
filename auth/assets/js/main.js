@@ -77,6 +77,17 @@ class AuthManager {
             this.switchForm('login');
         });
 
+        // Кнопка заполнения тестовыми данными
+        document.getElementById('fill-test-data')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.fillTestData();
+        });
+
+        document.getElementById('fill-test-data-register')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.fillTestData();
+        });
+
         // Обработчики форм
         this.setupFormHandlers();
 
@@ -248,6 +259,86 @@ class AuthManager {
             }
 
             console.log(`📝 AuthManager: Переключение на форму ${formName}`);
+        }
+    }
+
+    /**
+     * Заполнение полей тестовыми данными
+     */
+    fillTestData() {
+        if (this.currentForm === 'login') {
+            // Заполняем форму входа
+            const emailInput = document.getElementById('login-email');
+            const passwordInput = document.getElementById('login-password');
+            
+            if (emailInput && passwordInput) {
+                emailInput.value = 'Roman@Roman.com';
+                passwordInput.value = 'password123';
+                
+                // Убираем ошибки валидации
+                emailInput.classList.remove('error');
+                passwordInput.classList.remove('error');
+                
+                // Очищаем сообщения об ошибках
+                const emailError = document.getElementById('login-email-error');
+                const passwordError = document.getElementById('login-password-error');
+                
+                if (emailError) emailError.textContent = '';
+                if (passwordError) passwordError.textContent = '';
+                
+                // Фокус на кнопку входа
+                const loginButton = document.querySelector('#login-form .auth-button.primary');
+                if (loginButton) {
+                    loginButton.focus();
+                }
+                
+                window.notificationService.success('Поля заполнены тестовыми данными');
+                console.log('🧪 AuthManager: Заполнены тестовые данные для входа');
+            }
+        } else if (this.currentForm === 'register') {
+            // Заполняем форму регистрации
+            const usernameInput = document.getElementById('register-username');
+            const emailInput = document.getElementById('register-email');
+            const passwordInput = document.getElementById('register-password');
+            const confirmPasswordInput = document.getElementById('register-confirm-password');
+            const agreeTermsCheckbox = document.getElementById('agree-terms');
+            
+            if (usernameInput && emailInput && passwordInput && confirmPasswordInput) {
+                usernameInput.value = 'TestUser' + Date.now();
+                emailInput.value = `test${Date.now()}@example.com`;
+                passwordInput.value = 'password123';
+                confirmPasswordInput.value = 'password123';
+                
+                if (agreeTermsCheckbox) {
+                    agreeTermsCheckbox.checked = true;
+                }
+                
+                // Убираем ошибки валидации
+                [usernameInput, emailInput, passwordInput, confirmPasswordInput].forEach(input => {
+                    input.classList.remove('error');
+                });
+                
+                // Очищаем сообщения об ошибках
+                const errorElements = [
+                    'register-username-error',
+                    'register-email-error', 
+                    'register-password-error',
+                    'register-confirm-password-error'
+                ];
+                
+                errorElements.forEach(id => {
+                    const errorElement = document.getElementById(id);
+                    if (errorElement) errorElement.textContent = '';
+                });
+                
+                // Обновляем индикатор силы пароля
+                if (window.validationService) {
+                    window.validationService.checkPasswordStrength(passwordInput.value);
+                }
+                
+                window.notificationService.success('Поля заполнены тестовыми данными');
+                console.log('🧪 AuthManager: Заполнены тестовые данные для регистрации');
+            }
         }
     }
 
