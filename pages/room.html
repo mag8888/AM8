@@ -6,6 +6,7 @@
     <title>Комната - Aura Money</title>
     <link rel="stylesheet" href="../assets/css/main.css?v=1">
     <link rel="stylesheet" href="../assets/css/room.css?v=1">
+    <link rel="stylesheet" href="../assets/css/modals.css">
 </head>
 <body>
     <!-- Навигация -->
@@ -154,10 +155,6 @@
                         </div>
                     </div>
 
-                    <!-- Подсказка о готовности -->
-                    <div class="ready-section">
-                        <p class="ready-hint">Заполните мечту и выберите фишку, затем нажмите "Готов" в левой панели</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -188,6 +185,7 @@
     <div class="notifications-container" id="notifications-container"></div>
 
     <!-- Загрузка JavaScript модулей -->
+    <script src="../assets/js/utils/ModalUtils.js"></script>
     <script src="../assets/js/modules/Router.js"></script>
     <script src="../assets/js/modules/RoomService.js"></script>
     <script src="../assets/js/modules/NotificationService.js"></script>

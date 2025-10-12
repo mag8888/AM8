@@ -376,21 +376,38 @@ class App {
         try {
             console.log('🎮 App: Обновление интерфейса игры');
             
-            // Скрываем приветственное сообщение
             const centerContent = document.querySelector('.center-content');
             if (centerContent) {
-                centerContent.innerHTML = `
-                    <h2>🎮 Комната: ${roomData.name}</h2>
-                    <p>Игроков: ${roomData.playerCount}/${roomData.maxPlayers}</p>
-                    <div class="center-actions">
-                        <button class="btn btn-primary" onclick="window.location.href='pages/rooms.html'">
-                            🏠 Управление комнатой
-                        </button>
-                        <button class="btn btn-secondary" onclick="window.app.startGame()">
-                            🚀 Начать игру
-                        </button>
-                    </div>
-                `;
+                // Проверяем статус игры
+                if (roomData.isStarted) {
+                    // Игра началась - скрываем панель управления
+                    centerContent.innerHTML = `
+                        <h2>🎮 Игра началась!</h2>
+                        <p>Комната: ${roomData.name}</p>
+                        <p>Игроков: ${roomData.playerCount}/${roomData.maxPlayers}</p>
+                        <div class="center-actions">
+                            <button class="btn btn-secondary" onclick="window.location.href='pages/rooms.html'">
+                                🏠 Вернуться в лобби
+                            </button>
+                        </div>
+                    `;
+                    console.log('✅ App: Игра уже началась, панель управления скрыта');
+                } else {
+                    // Игра не началась - показываем панель управления
+                    centerContent.innerHTML = `
+                        <h2>🎮 Комната: ${roomData.name}</h2>
+                        <p>Игроков: ${roomData.playerCount}/${roomData.maxPlayers}</p>
+                        <div class="center-actions">
+                            <button class="btn btn-primary" onclick="window.location.href='pages/rooms.html'">
+                                🏠 Управление комнатой
+                            </button>
+                            <button class="btn btn-secondary" onclick="window.app.startGame()">
+                                🚀 Начать игру
+                            </button>
+                        </div>
+                    `;
+                    console.log('✅ App: Панель управления активна');
+                }
             }
             
             console.log('✅ App: Интерфейс игры обновлен');

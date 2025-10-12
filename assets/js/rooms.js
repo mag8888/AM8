@@ -17,7 +17,60 @@ document.addEventListener('DOMContentLoaded', function() {
     loadRooms();
     loadStats();
     displayUserInfo();
+    
+    // Запускаем периодическое обновление списка комнат
+    startRoomsPolling();
 });
+
+/**
+ * Запуск периодического обновления списка комнат
+ */
+function startRoomsPolling() {
+    // Обновляем список комнат каждые 3 секунды
+    setInterval(async () => {
+        try {
+            await refreshRoomsList();
+        } catch (error) {
+            console.error('❌ Rooms: Ошибка периодического обновления:', error);
+        }
+    }, 3000);
+    
+    console.log('🔄 Rooms: Запущено периодическое обновление списка комнат');
+}
+
+/**
+ * Обновление списка комнат
+ */
+async function refreshRoomsList() {
+    try {
+        const rooms = await roomService.getAllRooms();
+        
+        // Проверяем, изменился ли список комнат
+        const currentRoomsContainer = document.querySelector('.rooms-list');
+        const currentRoomsCount = currentRoomsContainer ? currentRoomsContainer.children.length : 0;
+        
+        if (rooms.length !== currentRoomsCount) {
+            console.log(`🔄 Rooms: Обнаружено изменение количества комнат: ${currentRoomsCount} → ${rooms.length}`);
+            
+            // Обновляем список комнат
+            renderRooms(rooms);
+            
+            // Обновляем счетчик комнат
+            const roomsCount = document.getElementById('rooms-count');
+            if (roomsCount) {
+                roomsCount.textContent = `${rooms.length} комнат`;
+            }
+            
+            // Показываем уведомление о новых комнатах
+            if (rooms.length > currentRoomsCount) {
+                showNotification(`Появилась новая комната! Всего комнат: ${rooms.length}`, 'success');
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ Rooms: Ошибка обновления списка комнат:', error);
+    }
+}
 
 /**
  * Инициализация сервисов
@@ -524,6 +577,9 @@ async function handleCreateRoom(event) {
         
         // Перезагружаем список комнат
         await loadRooms();
+        
+        // Отправляем уведомление другим игрокам о новой комнате (для будущего использования)
+        // await sendRoomNotification('room_created', { roomId: room.id, roomName: room.name });
         
         // Переходим к игре
         setTimeout(() => {
