@@ -4,7 +4,11 @@
  */
 
 class PlayerTokenRenderer {
-    constructor() {
+    constructor(config = {}) {
+        this.gameState = config.gameState || null;
+        this.eventBus = config.eventBus || null;
+        this.movementService = config.movementService || null;
+        
         this.tokens = new Map(); // Хранилище фишек игроков
         this.colors = [
             '#ef4444', // Красный
@@ -18,6 +22,134 @@ class PlayerTokenRenderer {
         ];
         
         console.log('🎯 PlayerTokenRenderer: Инициализирован');
+        this.setupEventListeners();
+    }
+    
+    /**
+     * Настройка слушателей событий
+     */
+    setupEventListeners() {
+        if (this.eventBus) {
+            this.eventBus.on('movement:step', this.handleMovementStep.bind(this));
+            this.eventBus.on('movement:completed', this.handleMovementCompleted.bind(this));
+            this.eventBus.on('game:player_joined', this.handlePlayerJoined.bind(this));
+            this.eventBus.on('game:player_left', this.handlePlayerLeft.bind(this));
+        }
+    }
+    
+    /**
+     * Обработка шага движения
+     */
+    handleMovementStep(event) {
+        const { playerId, step, position, isFinal } = event;
+        this.animateTokenMovement(playerId, position, isFinal);
+    }
+    
+    /**
+     * Обработка завершения движения
+     */
+    handleMovementCompleted(event) {
+        const { playerId, endPosition } = event;
+        this.updateTokenPosition(playerId, endPosition);
+    }
+    
+    /**
+     * Обработка присоединения игрока
+     */
+    handlePlayerJoined(player) {
+        this.createToken(player);
+    }
+    
+    /**
+     * Обработка выхода игрока
+     */
+    handlePlayerLeft(playerId) {
+        this.removeToken(playerId);
+    }
+    
+    /**
+     * Анимация движения фишки
+     */
+    animateTokenMovement(playerId, position, isFinal = false) {
+        const tokenElement = this.tokens.get(playerId);
+        if (!tokenElement) return;
+        
+        // Получаем координаты целевой клетки
+        const targetCell = this.getCellCoordinates(position);
+        if (!targetCell) return;
+        
+        // Анимируем движение
+        tokenElement.style.transition = isFinal ? 'all 0.5s ease-in-out' : 'all 0.3s ease-in-out';
+        tokenElement.style.transform = `translate(${targetCell.x}px, ${targetCell.y}px)`;
+        
+        // Добавляем эффект движения
+        if (!isFinal) {
+            tokenElement.classList.add('moving');
+        } else {
+            setTimeout(() => {
+                tokenElement.classList.remove('moving');
+            }, 500);
+        }
+    }
+    
+    /**
+     * Получение координат клетки
+     */
+    getCellCoordinates(position) {
+        const { track, position: cellIndex } = position;
+        
+        if (track === 'outer') {
+            return this.getOuterCellCoordinates(cellIndex);
+        } else if (track === 'inner') {
+            return this.getInnerCellCoordinates(cellIndex);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Получение координат внешней клетки
+     */
+    getOuterCellCoordinates(cellIndex) {
+        // Упрощенная логика для внешнего круга
+        const angle = (cellIndex / 44) * 2 * Math.PI - Math.PI / 2;
+        const radius = 200; // Радиус внешнего круга
+        const centerX = 350; // Центр поля
+        const centerY = 350;
+        
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        
+        return { x: x - 15, y: y - 15 }; // Смещение для центрирования фишки
+    }
+    
+    /**
+     * Получение координат внутренней клетки
+     */
+    getInnerCellCoordinates(cellIndex) {
+        // Упрощенная логика для внутреннего круга
+        const angle = (cellIndex / 23) * 2 * Math.PI - Math.PI / 2;
+        const radius = 120; // Радиус внутреннего круга
+        const centerX = 350; // Центр поля
+        const centerY = 350;
+        
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        
+        return { x: x - 15, y: y - 15 }; // Смещение для центрирования фишки
+    }
+    
+    /**
+     * Обновление позиции фишки
+     */
+    updateTokenPosition(playerId, position) {
+        const tokenElement = this.tokens.get(playerId);
+        if (!tokenElement) return;
+        
+        const coordinates = this.getCellCoordinates(position);
+        if (coordinates) {
+            tokenElement.style.transform = `translate(${coordinates.x}px, ${coordinates.y}px)`;
+        }
     }
     
     /**

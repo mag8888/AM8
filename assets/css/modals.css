@@ -228,3 +228,311 @@
     border-color: rgba(59, 130, 246, 0.3);
     background: linear-gradient(135deg, #1e1b4b, #312e81);
 }
+
+/* Стили для игровых модальных окон */
+.modal-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    pointer-events: none;
+}
+
+.game-modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(145deg, rgba(24, 35, 58, 0.95), rgba(7, 13, 28, 0.95));
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    min-width: 320px;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-modal.modal-showing {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.game-modal.modal-visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.game-modal.modal-hiding {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+}
+
+.modal-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: auto;
+}
+
+.modal-container:has(.modal-visible)::before {
+    opacity: 1;
+}
+
+.game-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    max-width: none;
+    width: auto;
+    max-height: none;
+    overflow: visible;
+    transform: none;
+}
+
+.game-modal .modal-header {
+    padding: 1.5rem 1.5rem 0 1.5rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    background: transparent;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-modal .modal-title {
+    color: #f8fafc;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+}
+
+.game-modal .modal-body {
+    padding: 1.5rem;
+    flex: 1;
+    overflow-y: auto;
+    color: #ffffff;
+}
+
+.game-modal .modal-text {
+    color: rgba(248, 250, 252, 0.9);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.game-modal .modal-footer {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+    background: transparent;
+}
+
+.modal-button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+}
+
+.modal-button-primary {
+    background: linear-gradient(145deg, #6366f1, #4f46e5);
+    color: white;
+}
+
+.modal-button-primary:hover:not(:disabled) {
+    background: linear-gradient(145deg, #4f46e5, #4338ca);
+    transform: translateY(-1px);
+}
+
+.modal-button-secondary {
+    background: rgba(148, 163, 184, 0.2);
+    color: rgba(248, 250, 252, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.modal-button-secondary:hover:not(:disabled) {
+    background: rgba(148, 163, 184, 0.3);
+}
+
+.modal-button-danger {
+    background: linear-gradient(145deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.modal-button-danger:hover:not(:disabled) {
+    background: linear-gradient(145deg, #dc2626, #b91c1c);
+    transform: translateY(-1px);
+}
+
+.modal-button-warning {
+    background: linear-gradient(145deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.modal-button-warning:hover:not(:disabled) {
+    background: linear-gradient(145deg, #d97706, #b45309);
+    transform: translateY(-1px);
+}
+
+.modal-button-disabled {
+    background: rgba(148, 163, 184, 0.1);
+    color: rgba(148, 163, 184, 0.5);
+    cursor: not-allowed;
+}
+
+/* Специфичные элементы */
+.modal-income {
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.income-amount {
+    color: #22c55e;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.modal-price {
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.price-amount {
+    color: #fbbf24;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.modal-expense {
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.expense-amount {
+    color: #ef4444;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.modal-donation {
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.donation-amount {
+    color: #f59e0b;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.donation-percent {
+    color: rgba(248, 250, 252, 0.7);
+    font-size: 0.9rem;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+/* Типы модальных окон */
+.modal-money {
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.modal-dream {
+    border-color: rgba(250, 204, 21, 0.3);
+}
+
+.modal-business {
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.modal-loss {
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.modal-chance {
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.modal-charity {
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.modal-market {
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.modal-family {
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.modal-expense {
+    border-color: rgba(236, 72, 153, 0.3);
+}
+
+.modal-start {
+    border-color: rgba(148, 163, 184, 0.3);
+}
+
+.modal-error {
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.modal-info {
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+    .game-modal {
+        min-width: 280px;
+        max-width: 90vw;
+        margin: 1rem;
+    }
+    
+    .game-modal .modal-header,
+    .game-modal .modal-body,
+    .game-modal .modal-footer {
+        padding: 1rem;
+    }
+    
+    .game-modal .modal-title {
+        font-size: 1.1rem;
+    }
+    
+    .game-modal .modal-text {
+        font-size: 0.9rem;
+    }
+    
+    .game-modal .modal-footer {
+        flex-direction: column;
+    }
+    
+    .modal-button {
+        width: 100%;
+        min-width: auto;
+    }
+}

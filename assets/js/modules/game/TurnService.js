@@ -5,7 +5,7 @@
  */
 
 class TurnService extends EventTarget {
-    constructor({ state, roomApi }) {
+    constructor({ state, roomApi, diceService, movementService }) {
         super();
         
         // Проверка обязательных зависимостей
@@ -18,6 +18,8 @@ class TurnService extends EventTarget {
         
         this.state = state;
         this.roomApi = roomApi;
+        this.diceService = diceService;
+        this.movementService = movementService;
         this.listeners = new Map();
         
         console.log('🎮 TurnService: Инициализирован');
@@ -42,19 +44,49 @@ class TurnService extends EventTarget {
             // Эмит начала броска
             this.emit('roll:start', { diceChoice, isReroll });
             
-            // Вызов API
-            const response = await this.roomApi.rollDice(roomId, diceChoice, isReroll);
-            
-            // Применение состояния от сервера
-            if (response.state && this.state.applyState) {
-                this.state.applyState(response.state);
+            // Используем DiceService для локального броска
+            if (this.diceService) {
+                const rollOptions = {
+                    forceSingle: diceChoice === 'single',
+                    forceDouble: diceChoice === 'double'
+                };
+                
+                const rollResult = this.diceService.roll(rollOptions);
+                
+                // Вызываем API для синхронизации с сервером
+                const response = await this.roomApi.rollDice(roomId, diceChoice, isReroll);
+                
+                // Применяем состояние от сервера
+                if (response.state && this.state.applyState) {
+                    this.state.applyState(response.state);
+                }
+                
+                // Используем MovementService для движения фишки
+                if (this.movementService && rollResult.total > 0) {
+                    const activePlayer = this.state.getActivePlayer();
+                    if (activePlayer) {
+                        this.movementService.movePlayer(activePlayer.id, rollResult.total);
+                    }
+                }
+                
+                // Эмит успешного результата
+                this.emit('roll:success', { ...response, localRoll: rollResult });
+                
+                console.log('🎮 TurnService: Кубик брошен успешно');
+                return { ...response, localRoll: rollResult };
+            } else {
+                // Fallback к API без DiceService
+                const response = await this.roomApi.rollDice(roomId, diceChoice, isReroll);
+                
+                if (response.state && this.state.applyState) {
+                    this.state.applyState(response.state);
+                }
+                
+                this.emit('roll:success', response);
+                
+                console.log('🎮 TurnService: Кубик брошен успешно');
+                return response;
             }
-            
-            // Эмит успешного результата
-            this.emit('roll:success', response);
-            
-            console.log('🎮 TurnService: Кубик брошен успешно');
-            return response;
             
         } catch (error) {
             // Эмит ошибки

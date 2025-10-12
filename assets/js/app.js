@@ -106,15 +106,35 @@ class App {
             this.roomApi = new window.RoomApi();
             console.log('✅ RoomApi создан');
             
+            // Создаем DiceService
+            this.diceService = new window.DiceService({
+                gameState: this.gameState,
+                eventBus: this.eventBus
+            });
+            console.log('🎲 App: DiceService создан');
+            
+            // Создаем MovementService
+            this.movementService = new window.MovementService({
+                gameState: this.gameState,
+                eventBus: this.eventBus
+            });
+            console.log('🚀 App: MovementService создан');
+            
             // Создаем TurnService
             this.turnService = new window.TurnService({
                 state: this.gameState,
-                roomApi: this.roomApi
+                roomApi: this.roomApi,
+                diceService: this.diceService,
+                movementService: this.movementService
             });
             console.log('✅ TurnService создан');
             
             // Создаем PlayerTokenRenderer
-            this.playerTokenRenderer = new window.PlayerTokenRenderer();
+            this.playerTokenRenderer = new window.PlayerTokenRenderer({
+                gameState: this.gameState,
+                eventBus: this.eventBus,
+                movementService: this.movementService
+            });
             console.log('✅ PlayerTokenRenderer создан');
             
             // Создаем TurnController
@@ -129,14 +149,28 @@ class App {
                 this.turnController = null;
             }
             
-            // Создаем BalanceManager
-            this.balanceManager = new window.BalanceManager({
-                gameState: this.gameState
-            });
-            console.log('💰 App: BalanceManager создан');
-            
-            // Сохраняем BalanceManager в глобальной области
-            window.balanceManager = this.balanceManager;
+        // Создаем ModalService
+        this.modalService = new window.ModalService({
+            eventBus: this.eventBus
+        });
+        console.log('🪟 App: ModalService создан');
+        
+        // Создаем BalanceManager
+        this.balanceManager = new window.BalanceManager({
+            gameState: this.gameState
+        });
+        console.log('💰 App: BalanceManager создан');
+        
+        // Создаем CellInteractionService
+        this.cellInteractionService = new window.CellInteractionService({
+            gameState: this.gameState,
+            eventBus: this.eventBus,
+            balanceManager: this.balanceManager
+        });
+        console.log('🎯 App: CellInteractionService создан');
+        
+        // Сохраняем BalanceManager в глобальной области
+        window.balanceManager = this.balanceManager;
             
             // Инициализируем BoardLayout
             this.boardLayout = new window.BoardLayout({
