@@ -198,7 +198,24 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDreams();
     loadTokens();
     updateStartGameButton();
+    
+    // Запускаем периодическое обновление данных комнаты для получения изменений в реальном времени
+    startRoomDataPolling();
 });
+
+/**
+ * Запуск периодического обновления данных комнаты
+ */
+function startRoomDataPolling() {
+    // Обновляем данные комнаты каждые 3 секунды
+    setInterval(async () => {
+        if (currentRoom && currentUser) {
+            await refreshRoomData();
+        }
+    }, 3000);
+    
+    console.log('🔄 Room: Запущено периодическое обновление данных комнаты');
+}
 
 /**
  * Инициализация сервисов
@@ -647,6 +664,7 @@ async function selectToken(tokenId) {
             selectedToken = tokenId;
             
             console.log('✅ Room: Фишка выбрана:', tokenId);
+            console.log('✅ Room: Класс selected добавлен к элементу:', selectedCard);
             
             // Отправляем уведомление другим игрокам о выборе фишки
             await sendPushNotification('token_selected', {
@@ -700,15 +718,39 @@ function updateReadyStatus() {
     const isDreamSelected = dreamData.id && dreamData.title;
     const isDreamComplete = isDreamSelected && dreamData.description && dreamData.cost > 0;
     const isTokenSelected = selectedToken !== null;
-    const isReady = isDreamComplete && isTokenSelected;
+    const canBeReady = isDreamComplete && isTokenSelected;
     
-    readyButton.disabled = !isReady;
+    // Проверяем текущее состояние игрока
+    const currentPlayer = currentRoom ? currentRoom.players.find(p => p.userId === currentUser?.id) : null;
+    const isCurrentlyReady = currentPlayer ? currentPlayer.isReady : false;
+    
+    // Активируем кнопку только если можно быть готовым
+    readyButton.disabled = !canBeReady;
+    
+    // Обновляем текст кнопки в зависимости от состояния
+    if (canBeReady) {
+        if (isCurrentlyReady) {
+            readyButton.innerHTML = '❌ Не готов';
+            readyButton.className = 'btn btn-secondary btn-large';
+        } else {
+            readyButton.innerHTML = '✅ Готов к игре!';
+            readyButton.className = 'btn btn-success btn-large';
+        }
+    } else {
+        readyButton.innerHTML = '⏳ Выберите мечту и фишку';
+        readyButton.className = 'btn btn-secondary btn-large';
+    }
     
     const hint = document.querySelector('.ready-hint');
     if (hint) {
-        if (isReady) {
-            hint.textContent = 'Вы готовы к игре!';
-            hint.style.color = '#10b981';
+        if (canBeReady) {
+            if (isCurrentlyReady) {
+                hint.textContent = 'Вы готовы к игре!';
+                hint.style.color = '#10b981';
+            } else {
+                hint.textContent = 'Нажмите "Готов" для участия в игре';
+                hint.style.color = '#3b82f6';
+            }
         } else {
             const missing = [];
             if (!isDreamSelected) missing.push('мечту');
@@ -740,12 +782,17 @@ async function toggleReadyStatus() {
             return;
         }
         
+        // Определяем текущее состояние игрока
+        const currentPlayer = currentRoom.players.find(p => p.userId === currentUser.id);
+        const isCurrentlyReady = currentPlayer ? currentPlayer.isReady : false;
+        const newReadyState = !isCurrentlyReady;
+        
         // Отправляем данные игрока
         const playerData = {
             userId: currentUser.id,
             username: currentUser.username,
             avatar: currentUser.avatar || '',
-            isReady: true,
+            isReady: newReadyState,
             dream: dreamData,
             token: selectedToken
         };
@@ -753,15 +800,20 @@ async function toggleReadyStatus() {
         // Обновляем игрока в комнате
         await roomService.updatePlayerInRoom(currentRoom.id, playerData);
         
-        showNotification('Статус готовности обновлен', 'success');
-        
-        // Отправляем push-уведомление хосту о готовности игрока
-        await sendPushNotification('player_ready', {
-            playerName: currentUser.username,
-            roomId: currentRoom.id,
-            readyPlayersCount: currentRoom.players.filter(p => p.isReady).length + 1,
-            totalPlayersCount: currentRoom.players.length
-        });
+        // Показываем соответствующее уведомление
+        if (newReadyState) {
+            showNotification('Вы готовы к игре!', 'success');
+            
+            // Отправляем push-уведомление хосту о готовности игрока
+            await sendPushNotification('player_ready', {
+                playerName: currentUser.username,
+                roomId: currentRoom.id,
+                readyPlayersCount: currentRoom.players.filter(p => p.isReady).length + 1,
+                totalPlayersCount: currentRoom.players.length
+            });
+        } else {
+            showNotification('Вы больше не готовы к игре', 'info');
+        }
         
         // Обновляем информацию о комнате
         await refreshRoomData();
@@ -781,11 +833,37 @@ async function refreshRoomData() {
         
         const room = await roomService.getRoomById(currentRoom.id);
         if (room) {
+            const previousReadyCount = currentRoom.players ? currentRoom.players.filter(p => p.isReady).length : 0;
+            const newReadyCount = room.players ? room.players.filter(p => p.isReady).length : 0;
+            const wasNotStarted = !currentRoom.isStarted;
+            const isNowStarted = room.isStarted;
+            
             currentRoom = room;
             updateRoomInfo();
             updatePlayersList();
             updateStartGameButton();
             updateTokensAvailability(); // Обновляем доступность фишек
+            updateReadyStatus(); // Обновляем состояние кнопки готовности
+            
+            // Проверяем, если игра только что началась
+            if (wasNotStarted && isNowStarted) {
+                console.log('🎮 Room: Игра началась! Переходим к игровому полю...');
+                showNotification('Игра началась! Переходим к игровому полю...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = `../index.html#game?roomId=${room.id}`;
+                }, 2000);
+                return;
+            }
+            
+            // Показываем уведомление если количество готовых игроков изменилось
+            if (newReadyCount > previousReadyCount) {
+                const readyPlayers = room.players.filter(p => p.isReady);
+                const lastReadyPlayer = readyPlayers[readyPlayers.length - 1];
+                if (lastReadyPlayer && lastReadyPlayer.userId !== currentUser?.id) {
+                    showNotification(`${lastReadyPlayer.username} готов к игре!`, 'success');
+                }
+            }
         }
     } catch (error) {
         console.error('❌ Room: Ошибка обновления данных комнаты:', error);
@@ -831,7 +909,14 @@ async function confirmStartGame() {
         
         await roomService.startGame(currentRoom.id, currentUser.id);
         
-        showNotification('Игра начата!', 'success');
+        // Отправляем уведомление всем игрокам о начале игры
+        await sendPushNotification('game_started', {
+            roomId: currentRoom.id,
+            roomName: currentRoom.name,
+            hostName: currentUser.username
+        });
+        
+        showNotification('Игра начата! Переходим к игровому полю...', 'success');
         
         // Переходим к игровой доске
         setTimeout(() => {
@@ -881,16 +966,29 @@ async function sendPushNotification(type, data) {
     try {
         if (!currentRoom || !currentUser) return;
         
-        // Создаем уведомление для хоста
-        const hostId = currentRoom.creatorId;
-        if (hostId === currentUser.id) return; // Не отправляем себе
+        // Определяем получателей уведомления
+        let recipients = [];
+        
+        if (type === 'game_started') {
+            // Для уведомления о начале игры отправляем всем игрокам
+            recipients = currentRoom.players
+                .filter(player => player.userId !== currentUser.id)
+                .map(player => player.userId);
+        } else {
+            // Для других уведомлений отправляем только хосту
+            const hostId = currentRoom.creatorId;
+            if (hostId === currentUser.id) return; // Не отправляем себе
+            recipients = [hostId];
+        }
+        
+        if (recipients.length === 0) return;
         
         const notification = {
             type: type,
             data: data,
             timestamp: new Date().toISOString(),
             from: currentUser.id,
-            to: hostId
+            to: recipients
         };
         
         // Отправляем через API (имитация push-уведомления)
@@ -923,6 +1021,9 @@ function handlePushNotification(notification) {
                 break;
             case 'token_selected':
                 handleTokenSelectedNotification(notification.data);
+                break;
+            case 'game_started':
+                handleGameStartedNotification(notification.data);
                 break;
             default:
                 console.log('📱 Room: Неизвестный тип уведомления:', notification.type);
@@ -966,31 +1067,72 @@ function handleTokenSelectedNotification(data) {
 }
 
 /**
+ * Обработка уведомления о начале игры
+ */
+function handleGameStartedNotification(data) {
+    try {
+        console.log('🎮 Room: Получено уведомление о начале игры:', data);
+        
+        // Проверяем, что это наша комната
+        if (data.roomId !== currentRoom?.id) {
+            console.log('⚠️ Room: Уведомление не для нашей комнаты');
+            return;
+        }
+        
+        // Показываем уведомление
+        showNotification(`Игра начата! ${data.hostName} запустил игру "${data.roomName}"`, 'success');
+        
+        // Переходим к игровому полю через 2 секунды
+        setTimeout(() => {
+            console.log('🎮 Room: Переход к игровому полю...');
+            window.location.href = `../index.html#game?roomId=${data.roomId}`;
+        }, 2000);
+        
+    } catch (error) {
+        console.error('❌ Room: Ошибка обработки уведомления о начале игры:', error);
+    }
+}
+
+/**
  * Обновление доступности фишек
  */
 function updateTokensAvailability() {
     if (!currentRoom || !currentRoom.players) return;
     
+    // Получаем фишки, занятые другими игроками
     const takenTokens = currentRoom.players
         .filter(player => player.userId !== currentUser.id && player.token)
         .map(player => player.token);
+    
+    // Получаем фишку текущего пользователя
+    const currentPlayerToken = currentRoom.players
+        .find(player => player.userId === currentUser.id)?.token;
     
     // Обновляем визуальное состояние фишек
     const tokenCards = document.querySelectorAll('.token-card');
     tokenCards.forEach(card => {
         const tokenId = card.dataset.tokenId;
-        const isTaken = takenTokens.includes(tokenId);
+        const isTakenByOther = takenTokens.includes(tokenId);
+        const isMyToken = tokenId === currentPlayerToken;
         
-        if (isTaken) {
+        // Убираем все предыдущие состояния
+        card.classList.remove('taken', 'selected');
+        card.style.opacity = '1';
+        card.style.pointerEvents = 'auto';
+        
+        if (isTakenByOther) {
+            // Фишка занята другим игроком
             card.classList.add('taken');
             card.style.opacity = '0.5';
             card.style.pointerEvents = 'none';
-        } else {
-            card.classList.remove('taken');
-            card.style.opacity = '1';
-            card.style.pointerEvents = 'auto';
+        } else if (isMyToken) {
+            // Это моя фишка
+            card.classList.add('selected');
+            console.log('✅ Room: Обновлено состояние моей фишки:', tokenId);
         }
     });
+    
+    console.log('🔄 Room: Обновлена доступность фишек. Занятые:', takenTokens, 'Моя:', currentPlayerToken);
 }
 
 function showNotification(message, type = 'info') {

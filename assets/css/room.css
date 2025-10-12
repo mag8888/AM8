@@ -647,6 +647,54 @@
     padding: 2rem;
 }
 
+/* Стили для кнопок в левой панели */
+.actions-card .btn {
+    width: 100%;
+    margin-bottom: 1rem;
+    text-align: center;
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.actions-card .btn-large {
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.actions-card .btn:last-child {
+    margin-bottom: 0;
+}
+
+.actions-card .btn-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #059669;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    color: white;
+}
+
+.actions-card .btn-success:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.actions-card .btn-secondary {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    border-color: #4b5563;
+    box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+    color: white;
+}
+
+.actions-card .btn-secondary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4b5563, #374151);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(107, 114, 128, 0.4);
+}
+
 .auth-message-content {
     text-align: center;
     background: rgba(255, 255, 255, 0.05);
