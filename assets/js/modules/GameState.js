@@ -17,6 +17,9 @@ class GameState {
             lastDiceResult: null
         };
         
+        // Инициализируем модуль профессий
+        this.professionModule = new ProfessionModule();
+        
         console.log('✅ GameState инициализирован');
     }
 
@@ -241,6 +244,130 @@ class GameState {
      */
     getActivePlayer() {
         return this.gameState.activePlayer || this.getCurrentPlayer();
+    }
+
+    /**
+     * Получить игрока по ID
+     * @param {string} playerId 
+     * @returns {Object|null}
+     */
+    getPlayerById(playerId) {
+        return this.players.find(player => player.id === playerId) || null;
+    }
+
+    /**
+     * Применить профессию к игроку
+     * @param {string} playerId 
+     * @param {string} professionId 
+     * @returns {boolean}
+     */
+    applyProfessionToPlayer(playerId, professionId) {
+        const player = this.getPlayerById(playerId);
+        if (!player) {
+            console.error('❌ GameState: Игрок не найден:', playerId);
+            return false;
+        }
+
+        const updatedPlayer = this.professionModule.applyProfessionToPlayer(player, professionId);
+        const playerIndex = this.players.findIndex(p => p.id === playerId);
+        
+        if (playerIndex !== -1) {
+            this.players[playerIndex] = updatedPlayer;
+            console.log('✅ GameState: Профессия применена к игроку:', player.username, professionId);
+            
+            // Уведомляем о изменении игрока
+            if (this.eventBus) {
+                this.eventBus.emit('player:professionChanged', {
+                    player: updatedPlayer,
+                    professionId: professionId
+                });
+            }
+            
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Получить доступные профессии
+     * @returns {Array}
+     */
+    getAvailableProfessions() {
+        return this.professionModule.getActiveProfessions();
+    }
+
+    /**
+     * Погасить долг игрока
+     * @param {string} playerId 
+     * @param {string} debtId 
+     * @param {number} amount 
+     * @returns {boolean}
+     */
+    payOffPlayerDebt(playerId, debtId, amount) {
+        const player = this.getPlayerById(playerId);
+        if (!player) {
+            console.error('❌ GameState: Игрок не найден:', playerId);
+            return false;
+        }
+
+        if (player.money < amount) {
+            console.error('❌ GameState: Недостаточно денег для погашения долга');
+            return false;
+        }
+
+        const updatedPlayer = this.professionModule.payOffDebt(player, debtId, amount);
+        const playerIndex = this.players.findIndex(p => p.id === playerId);
+        
+        if (playerIndex !== -1) {
+            this.players[playerIndex] = updatedPlayer;
+            console.log('✅ GameState: Долг погашен:', player.username, debtId, amount);
+            
+            // Уведомляем о изменении игрока
+            if (this.eventBus) {
+                this.eventBus.emit('player:debtPaid', {
+                    player: updatedPlayer,
+                    debtId: debtId,
+                    amount: amount
+                });
+            }
+            
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Добавить ребенка игроку
+     * @param {string} playerId 
+     * @returns {boolean}
+     */
+    addChildToPlayer(playerId) {
+        const player = this.getPlayerById(playerId);
+        if (!player) {
+            console.error('❌ GameState: Игрок не найден:', playerId);
+            return false;
+        }
+
+        const updatedPlayer = this.professionModule.addChild(player);
+        const playerIndex = this.players.findIndex(p => p.id === playerId);
+        
+        if (playerIndex !== -1) {
+            this.players[playerIndex] = updatedPlayer;
+            console.log('✅ GameState: Добавлен ребенок игроку:', player.username);
+            
+            // Уведомляем о изменении игрока
+            if (this.eventBus) {
+                this.eventBus.emit('player:childAdded', {
+                    player: updatedPlayer
+                });
+            }
+            
+            return true;
+        }
+        
+        return false;
     }
     
     /**

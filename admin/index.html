@@ -26,10 +26,25 @@
             </div>
         </header>
 
+        <!-- Навигация по разделам -->
+        <nav class="admin-nav">
+            <button class="nav-btn active" data-section="cells">
+                📋 Клетки
+            </button>
+            <button class="nav-btn" data-section="professions">
+                🎭 Профессии
+            </button>
+            <button class="nav-btn" data-section="settings">
+                ⚙️ Настройки
+            </button>
+        </nav>
+
         <!-- Основной контент -->
         <div class="admin-content">
-            <!-- Боковая панель с списком клеток -->
-            <aside class="cells-sidebar">
+            <!-- Секция клеток -->
+            <div id="cells-section" class="admin-section active">
+                <!-- Боковая панель с списком клеток -->
+                <aside class="cells-sidebar">
                 <div class="sidebar-header">
                     <h3>📋 Список клеток</h3>
                     <div class="filter-controls">
@@ -187,6 +202,22 @@
                     </section>
                 </div>
             </main>
+            </div>
+
+            <!-- Секция профессий -->
+            <div id="professions-section" class="admin-section">
+                <div id="admin-content">
+                    <!-- Контент редактора профессий будет загружен здесь -->
+                </div>
+            </div>
+
+            <!-- Секция настроек -->
+            <div id="settings-section" class="admin-section">
+                <div class="settings-content">
+                    <h2>⚙️ Настройки системы</h2>
+                    <p>Здесь будут настройки системы...</p>
+                </div>
+            </div>
         </div>
 
         <!-- Модальное окно импорта -->
@@ -210,11 +241,35 @@
 
     <!-- Скрипты -->
     <script src="../assets/js/modules/game/BoardConfig.js"></script>
+    <script src="../assets/js/modules/ProfessionModule.js"></script>
     <script src="assets/js/AdminCellEditor.js"></script>
+    <script src="assets/js/ProfessionEditor.js"></script>
     <script>
         // Инициализация админ-панели
         const adminEditor = new AdminCellEditor();
         window.adminEditor = adminEditor;
+
+        // Навигация по разделам
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const section = btn.dataset.section;
+                
+                // Убираем активный класс со всех кнопок и секций
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+                
+                // Добавляем активный класс к выбранной кнопке и секции
+                btn.classList.add('active');
+                document.getElementById(`${section}-section`).classList.add('active');
+                
+                // Инициализируем редактор профессий если нужно
+                if (section === 'professions') {
+                    if (!window.professionEditor) {
+                        window.professionEditor = new ProfessionEditor();
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>
