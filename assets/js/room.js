@@ -636,6 +636,17 @@ function loadTokens() {
         tokensGrid.appendChild(tokenCard);
     });
     
+    // Восстанавливаем выбранную фишку из localStorage
+    const savedToken = localStorage.getItem('selected_token');
+    if (savedToken) {
+        const savedCard = document.querySelector(`[data-token-id="${savedToken}"]`);
+        if (savedCard) {
+            savedCard.classList.add('selected');
+            selectedToken = savedToken;
+            console.log('✅ Room: Восстановлена выбранная фишка:', savedToken);
+        }
+    }
+    
     console.log('✅ Room: Фишки загружены');
 }
 
@@ -663,8 +674,25 @@ async function selectToken(tokenId) {
             selectedCard.classList.add('selected');
             selectedToken = tokenId;
             
+            // Сохраняем выбор в localStorage
+            localStorage.setItem('selected_token', tokenId);
+            
             console.log('✅ Room: Фишка выбрана:', tokenId);
             console.log('✅ Room: Класс selected добавлен к элементу:', selectedCard);
+            
+            // Обновляем игрока в комнате с выбранной фишкой
+            if (currentRoom && currentUser) {
+                const playerData = {
+                    userId: currentUser.id,
+                    username: currentUser.username,
+                    avatar: currentUser.avatar || '',
+                    isReady: false, // Сбрасываем готовность при смене фишки
+                    dream: dreamData,
+                    token: selectedToken
+                };
+                
+                await roomService.updatePlayerInRoom(currentRoom.id, playerData);
+            }
             
             // Отправляем уведомление другим игрокам о выборе фишки
             await sendPushNotification('token_selected', {
@@ -676,6 +704,8 @@ async function selectToken(tokenId) {
             
             // Обновляем статус готовности
             updateReadyStatus();
+            
+            showNotification(`Фишка ${tokenId} выбрана!`, 'success');
         }
     } catch (error) {
         console.error('❌ Room: Ошибка выбора фишки:', error);
@@ -1123,11 +1153,13 @@ function updateTokensAvailability() {
         if (isTakenByOther) {
             // Фишка занята другим игроком
             card.classList.add('taken');
-            card.style.opacity = '0.5';
+            card.style.opacity = '0.4';
             card.style.pointerEvents = 'none';
+            console.log('🚫 Room: Фишка занята другим игроком:', tokenId);
         } else if (isMyToken) {
             // Это моя фишка
             card.classList.add('selected');
+            selectedToken = tokenId; // Обновляем глобальную переменную
             console.log('✅ Room: Обновлено состояние моей фишки:', tokenId);
         }
     });
