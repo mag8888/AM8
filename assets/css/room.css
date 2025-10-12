@@ -43,14 +43,78 @@
     border-left-color: #f59e0b;
 }
 
-/* Основной контейнер комнаты */
+/* Grid Layout System для комнаты */
 .room-container {
+    display: grid;
+    grid-template-areas: 
+        "header header header"
+        "status players actions"
+        "dreams dreams dreams"
+        "tokens tokens tokens";
+    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 2rem;
     min-height: 100vh;
     background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
     padding: 2rem clamp(1rem, 5vw, 3rem);
     color: #ffffff;
     max-width: 1400px;
     margin: 0 auto;
+}
+
+/* Grid области */
+.room-header {
+    grid-area: header;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+}
+
+.room-status {
+    grid-area: status;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+}
+
+.players-panel {
+    grid-area: players;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+}
+
+.room-actions {
+    grid-area: actions;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+}
+
+.dreams-section {
+    grid-area: dreams;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+}
+
+.tokens-section {
+    grid-area: tokens;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
 }
 
 /* Заголовок комнаты */
@@ -796,14 +860,38 @@
     }
 }
 
+@media (max-width: 1024px) {
+    .room-container {
+        grid-template-areas: 
+            "header"
+            "players"
+            "status"
+            "actions"
+            "dreams"
+            "tokens";
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto auto auto;
+        gap: 1.5rem;
+    }
+}
+
 @media (max-width: 768px) {
     .room-container {
         padding: 1rem clamp(0.5rem, 3vw, 1rem);
+        gap: 1rem;
     }
     
     .room-header {
         padding: 1.5rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .players-panel,
+    .room-status,
+    .room-actions,
+    .dreams-section,
+    .tokens-section {
+        padding: 1rem;
     }
     
     .room-title {

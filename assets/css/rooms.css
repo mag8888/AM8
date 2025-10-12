@@ -1,5 +1,57 @@
 /* Стили для страницы комнат */
 
+/* Grid Layout System */
+.container {
+    display: grid;
+    grid-template-areas: 
+        "header header"
+        "main main"
+        "stats stats";
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+    min-height: 100vh;
+    padding: var(--spacing-lg);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    grid-area: header;
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    border: 1px solid var(--border-primary);
+    backdrop-filter: blur(8px);
+}
+
+.main-content {
+    grid-area: main;
+    display: grid;
+    grid-template-areas: 
+        "controls"
+        "rooms";
+    grid-template-rows: auto 1fr;
+    gap: var(--spacing-xl);
+}
+
+.rooms-controls {
+    grid-area: controls;
+}
+
+.rooms-section {
+    grid-area: rooms;
+}
+
+.stats-section {
+    grid-area: stats;
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    border: 1px solid var(--border-primary);
+    backdrop-filter: blur(8px);
+}
+
 /* Основные переменные для консистентности */
 :root {
     --primary-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -282,21 +334,35 @@
 /* Список комнат */
 .rooms-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-md);
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-primary);
 }
 
 /* Карточка комнаты */
 .room-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
+    display: grid;
+    grid-template-areas: 
+        "header status"
+        "info info"
+        "players players"
+        "actions actions";
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto auto;
+    gap: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     position: relative;
     overflow: hidden;
+    backdrop-filter: blur(8px);
 }
 
 .room-card:hover {
@@ -328,28 +394,29 @@
 
 /* Заголовок карточки */
 .room-header {
+    grid-area: header;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
+    align-items: center;
+    gap: var(--spacing-md);
 }
 
 .room-name {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #ffffff;
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--text-primary);
     margin: 0;
-    flex: 1;
-    margin-right: 1rem;
+    font-family: var(--heading-font);
 }
 
 .room-status {
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    grid-area: status;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    justify-self: end;
 }
 
 .room-status.waiting {
@@ -374,32 +441,45 @@
 
 /* Информация о комнате */
 .room-info {
-    margin-bottom: 1rem;
+    grid-area: info;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-primary);
 }
 
 .room-creator {
-    color: #a0a0a0;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
+    color: var(--text-tertiary);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
 }
 
 .room-creator::before {
-    content: "👤 ";
-    margin-right: 0.25rem;
+    content: "👤";
+    font-size: var(--text-base);
 }
 
 .room-details {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
+    display: contents;
 }
 
 .room-detail {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    color: #d1d5db;
-    font-size: 0.85rem;
+    gap: var(--spacing-sm);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-primary);
 }
 
 .room-detail::before {
@@ -420,24 +500,35 @@
 
 /* Игроки в комнате */
 .room-players {
-    margin-bottom: 1rem;
+    grid-area: players;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
 }
 
 .players-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-sm);
 }
 
 .player-tag {
     background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
+    color: var(--text-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: var(--spacing-sm);
+    border: 1px solid var(--border-primary);
+    transition: all 0.2s ease;
+}
+
+.player-tag:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
 }
 
 .player-tag.host::after {
@@ -447,20 +538,21 @@
 
 /* Действия с комнатой */
 .room-actions {
-    display: flex;
-    gap: 0.75rem;
-    margin-top: 1rem;
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
 }
 
 .room-action {
-    flex: 1;
-    padding: 0.5rem 1rem;
+    padding: var(--spacing-md) var(--spacing-lg);
     border: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: var(--primary-font);
 }
 
 .room-action.join {
@@ -785,6 +877,11 @@
 }
 
 @media (max-width: 768px) {
+    .container {
+        padding: var(--spacing-md);
+        gap: var(--spacing-lg);
+    }
+    
     .header-left h1 {
         font-size: var(--text-3xl);
     }
@@ -812,6 +909,32 @@
     .rooms-list {
         grid-template-columns: 1fr;
         gap: var(--spacing-md);
+        padding: var(--spacing-sm);
+    }
+    
+    .room-card {
+        grid-template-areas: 
+            "header"
+            "status"
+            "info"
+            "players"
+            "actions";
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto auto;
+        gap: var(--spacing-sm);
+    }
+    
+    .room-info {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+    
+    .players-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .room-actions {
+        grid-template-columns: 1fr;
     }
 
     .stats-grid {
