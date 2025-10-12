@@ -25,6 +25,7 @@ class PlayersPanel {
         
         this.setupEventListeners();
         this.render();
+        this.renderCurrentPlayerInfo(); // Добавляем отображение информации о текущем пользователе
         
         console.log('✅ PlayersPanel: Инициализирован');
     }
@@ -63,6 +64,10 @@ class PlayersPanel {
                 <div class="panel-header">
                     <h3>👥 Игроки в комнате</h3>
                     <div class="players-count" id="players-count">0/4</div>
+                </div>
+                
+                <div id="current-user-profile" class="current-user-profile">
+                    <!-- Информация о текущем пользователе будет здесь -->
                 </div>
                 
                 <div class="players-list" id="players-list">
@@ -161,6 +166,51 @@ class PlayersPanel {
                 font-size: 0.9rem;
             }
             
+            .current-user-profile {
+                padding: 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                margin-bottom: 1rem;
+            }
+
+            .current-user-card {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                padding: 0.75rem 1rem;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            }
+
+            .current-user-card .user-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: var(--accent-primary);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                font-weight: bold;
+            }
+
+            .current-user-card .user-details {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .current-user-card .user-name {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: white;
+            }
+
+            .current-user-card .user-status {
+                font-size: 0.85rem;
+                color: rgba(255, 255, 255, 0.7);
+            }
+
             .players-list {
                 margin-bottom: 1.5rem;
             }
@@ -576,6 +626,57 @@ class PlayersPanel {
     showStats() {
         console.log('📊 PlayersPanel: Показ статистики');
         // Здесь можно добавить логику показа статистики
+    }
+
+    /**
+     * Отрисовка информации о текущем пользователе
+     */
+    renderCurrentPlayerInfo() {
+        const currentPlayerInfoContainer = document.getElementById('current-user-profile');
+        if (!currentPlayerInfoContainer) {
+            console.warn('⚠️ PlayersPanel: Контейнер для информации о текущем пользователе не найден.');
+            return;
+        }
+
+        try {
+            // Получаем данные пользователя из localStorage
+            const storedUser = localStorage.getItem('aura_money_user');
+            if (storedUser) {
+                const currentUser = JSON.parse(storedUser);
+                currentPlayerInfoContainer.innerHTML = `
+                    <div class="current-user-card">
+                        <div class="user-avatar">${currentUser.username ? currentUser.username.charAt(0).toUpperCase() : 'U'}</div>
+                        <div class="user-details">
+                            <span class="user-name">${currentUser.username || 'Пользователь'}</span>
+                            <span class="user-status">В игре</span>
+                        </div>
+                    </div>
+                `;
+                console.log('✅ PlayersPanel: Информация о текущем пользователе отрисована:', currentUser.username);
+            } else {
+                currentPlayerInfoContainer.innerHTML = `
+                    <div class="current-user-card">
+                        <div class="user-avatar">G</div>
+                        <div class="user-details">
+                            <span class="user-name">Гость</span>
+                            <span class="user-status">Не авторизован</span>
+                        </div>
+                    </div>
+                `;
+                console.warn('⚠️ PlayersPanel: Текущий пользователь не найден.');
+            }
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка отображения информации о пользователе:', error);
+            currentPlayerInfoContainer.innerHTML = `
+                <div class="current-user-card">
+                    <div class="user-avatar">?</div>
+                    <div class="user-details">
+                        <span class="user-name">Ошибка</span>
+                        <span class="user-status">Не удалось загрузить</span>
+                    </div>
+                </div>
+            `;
+        }
     }
 }
 

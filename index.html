@@ -130,7 +130,9 @@
             padding: 0.5rem;
             max-width: 1600px;
             margin: 0 auto;
-            min-height: calc(100vh - 80px); /* Учитываем высоту навигации */
+            min-height: calc(100vh - 10px); /* Учитываем отсутствие навигации */
+            display: flex; /* Добавляем flex для лучшего распределения пространства */
+            flex-direction: column;
         }
 
         /* Специальная навигация для игровой комнаты */

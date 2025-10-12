@@ -802,8 +802,8 @@ class App {
     applyGameRoomNavigation() {
         const navigation = document.querySelector('.app-navigation');
         if (navigation) {
-            navigation.classList.add('game-room-nav');
-            console.log('🎮 App: Применена навигация для игровой комнаты');
+            navigation.style.display = 'none'; // Полностью скрываем навигацию
+            console.log('🎮 App: Навигация полностью скрыта для игровой комнаты');
         }
     }
 
@@ -813,8 +813,8 @@ class App {
     removeGameRoomNavigation() {
         const navigation = document.querySelector('.app-navigation');
         if (navigation) {
-            navigation.classList.remove('game-room-nav');
-            console.log('🎮 App: Убрана навигация для игровой комнаты');
+            navigation.style.display = ''; // Возвращаем стандартное отображение
+            console.log('🎮 App: Навигация восстановлена');
         }
     }
 }
