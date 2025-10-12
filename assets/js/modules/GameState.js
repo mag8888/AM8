@@ -594,6 +594,77 @@ class GameState {
 
         this.movePlayer(playerId, newPosition, newIsInner);
     }
+
+    /**
+     * Получить текущего активного игрока
+     * @returns {Object|null}
+     */
+    getCurrentActivePlayer() {
+        if (this.gameState && this.gameState.activePlayer) {
+            return this.gameState.activePlayer;
+        }
+        
+        // Если нет активного игрока, берем первого
+        if (this.players.length > 0) {
+            return this.players[0];
+        }
+        
+        return null;
+    }
+
+    /**
+     * Сменить активного игрока
+     * @param {string} playerId - ID игрока
+     */
+    setActivePlayer(playerId) {
+        const player = this.getPlayerById(playerId);
+        if (!player) {
+            console.warn('⚠️ GameState: Игрок не найден для установки активного:', playerId);
+            return;
+        }
+
+        const oldActivePlayer = this.getCurrentActivePlayer();
+        
+        // Обновляем активного игрока
+        if (!this.gameState) {
+            this.gameState = {};
+        }
+        this.gameState.activePlayer = player;
+
+        console.log(`🎯 GameState: Активный игрок изменен: ${oldActivePlayer?.username || 'Неизвестный'} → ${player.username}`);
+
+        // Эмитируем событие
+        if (this.eventBus) {
+            this.eventBus.emit('game:activePlayerChanged', {
+                activePlayer: player,
+                oldActivePlayer: oldActivePlayer
+            });
+            
+            this.eventBus.emit('game:turnChanged', {
+                activePlayer: player,
+                turnNumber: this.gameState.turnNumber || 1
+            });
+        }
+    }
+
+    /**
+     * Передать ход следующему игроку
+     */
+    passTurnToNextPlayer() {
+        const currentPlayer = this.getCurrentActivePlayer();
+        if (!currentPlayer || this.players.length === 0) {
+            console.warn('⚠️ GameState: Нет игроков для передачи хода');
+            return;
+        }
+
+        const currentIndex = this.players.findIndex(p => p.id === currentPlayer.id);
+        const nextIndex = (currentIndex + 1) % this.players.length;
+        const nextPlayer = this.players[nextIndex];
+
+        this.setActivePlayer(nextPlayer.id);
+        
+        console.log(`🔄 GameState: Ход передан от ${currentPlayer.username} к ${nextPlayer.username}`);
+    }
 }
 
 window.GameState = GameState;

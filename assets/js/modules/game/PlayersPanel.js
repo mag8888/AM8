@@ -41,6 +41,14 @@ class PlayersPanel {
             this.eventBus.on('game:activePlayerChanged', (data) => {
                 this.updateActivePlayer(data.activePlayer);
             });
+            
+            this.eventBus.on('game:turnChanged', (data) => {
+                this.updateAllPlayerStatuses();
+            });
+            
+            this.eventBus.on('game:stateUpdated', (data) => {
+                this.updateAllPlayerStatuses();
+            });
         }
     }
     
@@ -189,14 +197,14 @@ class PlayersPanel {
             }
             
             .player-avatar {
-                width: 32px;
-                height: 32px;
+                width: 38px;
+                height: 38px;
                 border-radius: 50%;
                 background: rgba(255, 255, 255, 0.1);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 1.2rem;
+                font-size: 1.4rem;
                 border: 2px solid rgba(255, 255, 255, 0.2);
                 transition: all 0.3s ease;
             }
@@ -373,6 +381,9 @@ class PlayersPanel {
         // Обновляем счетчик
         playersCount.textContent = `${players.length}/4`;
         
+        // Получаем текущего активного игрока
+        const activePlayer = this.getCurrentActivePlayer(players);
+        
         if (players.length === 0) {
             playersList.innerHTML = `
                 <div class="no-players-message">
@@ -381,16 +392,21 @@ class PlayersPanel {
                 </div>
             `;
         } else {
-            playersList.innerHTML = players.map((player, index) => `
-                <div class="player-item ${index === 0 ? 'active' : ''}" data-player-id="${player.id}">
-                    <div class="player-avatar">${this.getTokenIcon(player.token)}</div>
-                    <div class="player-info">
-                        <p class="player-name">${player.username || `Игрок ${index + 1}`}</p>
-                        <p class="player-status">${player.isReady ? 'Готов' : 'Готовится'}</p>
+            playersList.innerHTML = players.map((player, index) => {
+                const isActive = activePlayer && activePlayer.id === player.id;
+                const statusText = this.getPlayerStatusText(player, isActive, index);
+                
+                return `
+                    <div class="player-item ${isActive ? 'active' : ''}" data-player-id="${player.id}">
+                        <div class="player-avatar">${this.getTokenIcon(player.token)}</div>
+                        <div class="player-info">
+                            <p class="player-name">${player.username || `Игрок ${index + 1}`}</p>
+                            <p class="player-status">${statusText}</p>
+                        </div>
+                        <div class="player-money">$${player.money || 0}</div>
                     </div>
-                    <div class="player-money">$${player.money || 0}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
         
         console.log('👥 PlayersPanel: Игроки обновлены:', players.length);
@@ -419,7 +435,73 @@ class PlayersPanel {
             currentTurn.textContent = 'Активен';
         }
         
+        // Обновляем статусы всех игроков
+        this.updateAllPlayerStatuses();
+        
         console.log('🎯 PlayersPanel: Активный игрок обновлен:', activePlayer.username);
+    }
+
+    /**
+     * Получить текущего активного игрока
+     */
+    getCurrentActivePlayer(players) {
+        // Сначала проверяем gameState
+        if (this.gameState && this.gameState.gameState && this.gameState.gameState.activePlayer) {
+            return this.gameState.gameState.activePlayer;
+        }
+        
+        // Если нет активного игрока в gameState, используем первый игрок
+        if (players.length > 0) {
+            return players[0];
+        }
+        
+        return null;
+    }
+
+    /**
+     * Получить текст статуса игрока
+     */
+    getPlayerStatusText(player, isActive, index) {
+        if (isActive) {
+            return '🎯 Ваш ход';
+        }
+        
+        // Проверяем, готов ли игрок
+        if (!player.isReady) {
+            return '⏳ Готовится';
+        }
+        
+        // Если игрок готов, показываем порядок очереди
+        const players = this.gameState ? this.gameState.players : [];
+        const playerIndex = players.findIndex(p => p.id === player.id);
+        
+        if (playerIndex >= 0) {
+            return `⏭️ Ход ${playerIndex + 1}`;
+        }
+        
+        return '✅ Готов';
+    }
+
+    /**
+     * Обновить статусы всех игроков
+     */
+    updateAllPlayerStatuses() {
+        if (!this.gameState || !this.gameState.players) return;
+        
+        const players = this.gameState.players;
+        const activePlayer = this.getCurrentActivePlayer(players);
+        
+        const playerItems = document.querySelectorAll('.player-item');
+        playerItems.forEach(item => {
+            const playerId = item.dataset.playerId;
+            const player = players.find(p => p.id === playerId);
+            const statusElement = item.querySelector('.player-status');
+            
+            if (player && statusElement) {
+                const isActive = activePlayer && activePlayer.id === playerId;
+                statusElement.textContent = this.getPlayerStatusText(player, isActive, players.indexOf(player));
+            }
+        });
     }
     
     /**

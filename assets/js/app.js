@@ -726,9 +726,16 @@ class App {
         `;
         movePlayer1Btn.addEventListener('click', () => {
             if (this.gameState.players.length > 0) {
+                const player = this.gameState.players[0];
                 const steps = Math.floor(Math.random() * 6) + 1; // 1-6
-                this.gameState.movePlayerForward(this.gameState.players[0].id, steps);
-                console.log(`🎲 Тестовый ход: игрок ${this.gameState.players[0].username} прошел ${steps} шагов`);
+                
+                // Устанавливаем игрока как активного
+                this.gameState.setActivePlayer(player.id);
+                
+                // Перемещаем игрока
+                this.gameState.movePlayerForward(player.id, steps);
+                
+                console.log(`🎲 Тестовый ход: игрок ${player.username} прошел ${steps} шагов`);
             }
         });
 
@@ -746,9 +753,16 @@ class App {
         `;
         movePlayer2Btn.addEventListener('click', () => {
             if (this.gameState.players.length > 1) {
+                const player = this.gameState.players[1];
                 const steps = Math.floor(Math.random() * 6) + 1; // 1-6
-                this.gameState.movePlayerForward(this.gameState.players[1].id, steps);
-                console.log(`🎲 Тестовый ход: игрок ${this.gameState.players[1].username} прошел ${steps} шагов`);
+                
+                // Устанавливаем игрока как активного
+                this.gameState.setActivePlayer(player.id);
+                
+                // Перемещаем игрока
+                this.gameState.movePlayerForward(player.id, steps);
+                
+                console.log(`🎲 Тестовый ход: игрок ${player.username} прошел ${steps} шагов`);
             }
         });
 
@@ -771,8 +785,26 @@ class App {
             console.log('🔄 Тестовый сброс: все игроки возвращены на старт');
         });
 
+        // Кнопка для передачи хода
+        const passTurnBtn = document.createElement('button');
+        passTurnBtn.textContent = '➡️ Передать ход';
+        passTurnBtn.style.cssText = `
+            padding: 8px 12px;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        `;
+        passTurnBtn.addEventListener('click', () => {
+            this.gameState.passTurnToNextPlayer();
+            console.log('➡️ Ход передан следующему игроку');
+        });
+
         testControls.appendChild(movePlayer1Btn);
         testControls.appendChild(movePlayer2Btn);
+        testControls.appendChild(passTurnBtn);
         testControls.appendChild(resetBtn);
 
         document.body.appendChild(testControls);
