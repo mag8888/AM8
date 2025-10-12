@@ -1018,3 +1018,77 @@
         font-size: var(--text-sm);
     }
 }
+
+/* Анимация обновления списка комнат */
+.rooms-list.refreshing {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.rooms-list.refreshing::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+    animation: refreshProgress 1s ease-in-out;
+}
+
+@keyframes refreshProgress {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Анимация появления новых комнат */
+.room-card.new-room {
+    animation: newRoomAppear 0.5s ease-out;
+}
+
+@keyframes newRoomAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Анимация изменения статуса комнаты */
+.room-card.status-changed {
+    animation: statusChange 0.3s ease-out;
+}
+
+@keyframes statusChange {
+    0% {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    }
+    100% {
+        border-color: var(--border-primary);
+        box-shadow: var(--shadow-card);
+    }
+}
+
+/* Анимация изменения количества игроков */
+.room-card.player-count-changed .players-list {
+    animation: playerCountChange 0.4s ease-out;
+}
+
+@keyframes playerCountChange {
+    0% {
+        transform: scale(1.05);
+        background: rgba(16, 185, 129, 0.1);
+    }
+    100% {
+        transform: scale(1);
+        background: transparent;
+    }
+}

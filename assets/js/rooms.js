@@ -35,6 +35,28 @@ function startRoomsPolling() {
         }
     }, 3000);
     
+    // Также обновляем при фокусе на окне (когда пользователь возвращается)
+    window.addEventListener('focus', async () => {
+        try {
+            console.log('🔄 Rooms: Обновление при фокусе окна');
+            await refreshRoomsList();
+        } catch (error) {
+            console.error('❌ Rooms: Ошибка обновления при фокусе:', error);
+        }
+    });
+    
+    // Обновляем при видимости страницы (когда пользователь переключается между вкладками)
+    document.addEventListener('visibilitychange', async () => {
+        if (!document.hidden) {
+            try {
+                console.log('🔄 Rooms: Обновление при возвращении на вкладку');
+                await refreshRoomsList();
+            } catch (error) {
+                console.error('❌ Rooms: Ошибка обновления при видимости:', error);
+            }
+        }
+    });
+    
     console.log('🔄 Rooms: Запущено периодическое обновление списка комнат');
 }
 
@@ -45,15 +67,23 @@ async function refreshRoomsList() {
     try {
         const rooms = await roomService.getAllRooms();
         
-        // Проверяем, изменился ли список комнат
+        // Получаем текущее состояние комнат
         const currentRoomsContainer = document.querySelector('.rooms-list');
-        const currentRoomsCount = currentRoomsContainer ? currentRoomsContainer.children.length : 0;
+        const currentRooms = Array.from(currentRoomsContainer?.querySelectorAll('.room-card') || []);
+        const currentRoomsData = currentRooms.map(card => ({
+            id: card.dataset.roomId,
+            players: card.querySelector('.players-list')?.children.length || 0,
+            status: card.querySelector('.room-status')?.textContent || 'Неизвестно'
+        }));
         
-        if (rooms.length !== currentRoomsCount) {
-            console.log(`🔄 Rooms: Обнаружено изменение количества комнат: ${currentRoomsCount} → ${rooms.length}`);
+        // Проверяем изменения
+        const hasChanges = checkRoomsChanges(currentRoomsData, rooms);
+        
+        if (hasChanges.hasNewRooms || hasChanges.hasRemovedRooms || hasChanges.hasStatusChanges || hasChanges.hasPlayerChanges) {
+            console.log('🔄 Rooms: Обнаружены изменения в списке комнат:', hasChanges);
             
-            // Обновляем список комнат
-            renderRooms(rooms);
+            // Обновляем список комнат с анимацией для новых комнат
+            renderRooms(rooms, hasChanges.hasNewRooms);
             
             // Обновляем счетчик комнат
             const roomsCount = document.getElementById('rooms-count');
@@ -61,15 +91,72 @@ async function refreshRoomsList() {
                 roomsCount.textContent = `${rooms.length} комнат`;
             }
             
-            // Показываем уведомление о новых комнатах
-            if (rooms.length > currentRoomsCount) {
-                showNotification(`Появилась новая комната! Всего комнат: ${rooms.length}`, 'success');
+            // Обновляем статистику
+            await loadStats();
+            
+            // Показываем уведомления
+            if (hasChanges.hasNewRooms) {
+                const newRoomsCount = rooms.length - currentRoomsData.length;
+                showNotification(`Появилась${newRoomsCount > 1 ? 'сь новые комнаты' : ' новая комната'}! Всего комнат: ${rooms.length}`, 'success');
+            }
+            
+            if (hasChanges.hasRemovedRooms) {
+                showNotification('Некоторые комнаты были удалены', 'info');
+            }
+            
+            if (hasChanges.hasStatusChanges) {
+                console.log('🔄 Rooms: Изменился статус комнат');
+            }
+            
+            if (hasChanges.hasPlayerChanges) {
+                console.log('🔄 Rooms: Изменилось количество игроков в комнатах');
             }
         }
         
     } catch (error) {
         console.error('❌ Rooms: Ошибка обновления списка комнат:', error);
     }
+}
+
+/**
+ * Проверка изменений в списке комнат
+ */
+function checkRoomsChanges(currentRooms, newRooms) {
+    const changes = {
+        hasNewRooms: false,
+        hasRemovedRooms: false,
+        hasStatusChanges: false,
+        hasPlayerChanges: false
+    };
+    
+    // Проверяем количество комнат
+    if (newRooms.length > currentRooms.length) {
+        changes.hasNewRooms = true;
+    } else if (newRooms.length < currentRooms.length) {
+        changes.hasRemovedRooms = true;
+    }
+    
+    // Проверяем изменения в существующих комнатах
+    currentRooms.forEach(currentRoom => {
+        const newRoom = newRooms.find(room => room.id === currentRoom.id);
+        if (newRoom) {
+            // Проверяем изменения статуса
+            const currentStatus = currentRoom.status;
+            const newStatus = getRoomStatus(newRoom);
+            if (currentStatus !== newStatus) {
+                changes.hasStatusChanges = true;
+            }
+            
+            // Проверяем изменения количества игроков
+            const currentPlayerCount = currentRoom.players;
+            const newPlayerCount = newRoom.playerCount || 0;
+            if (currentPlayerCount !== newPlayerCount) {
+                changes.hasPlayerChanges = true;
+            }
+        }
+    });
+    
+    return changes;
 }
 
 /**
@@ -106,7 +193,7 @@ function setupEventListeners() {
     const createRoomBtn = document.getElementById('create-room-btn');
     
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', loadRooms);
+        refreshBtn.addEventListener('click', refreshRoomsWithAnimation);
     }
     
     if (backBtn) {
@@ -270,7 +357,7 @@ function showEmptyState() {
 /**
  * Отрисовка списка комнат
  */
-function renderRooms(rooms) {
+function renderRooms(rooms, animateNewRooms = false) {
     const roomsList = document.getElementById('rooms-list');
     if (!roomsList) {
         return;
@@ -281,8 +368,26 @@ function renderRooms(rooms) {
         return;
     }
     
-    const roomsHTML = rooms.map(room => createRoomCard(room)).join('');
+    // Получаем текущие ID комнат для определения новых
+    const currentRoomIds = Array.from(roomsList.querySelectorAll('.room-card'))
+        .map(card => card.dataset.roomId);
+    
+    const roomsHTML = rooms.map(room => {
+        const isNewRoom = animateNewRooms && !currentRoomIds.includes(room.id);
+        return createRoomCard(room, isNewRoom);
+    }).join('');
+    
     roomsList.innerHTML = roomsHTML;
+    
+    // Добавляем анимации для новых комнат
+    if (animateNewRooms) {
+        const newRoomCards = roomsList.querySelectorAll('.room-card.new-room');
+        newRoomCards.forEach((card, index) => {
+            setTimeout(() => {
+                card.classList.remove('new-room');
+            }, 500 + (index * 100)); // Задержка для последовательной анимации
+        });
+    }
     
     console.log(`✅ Rooms: Отрисовано ${rooms.length} комнат`);
 }
@@ -290,12 +395,13 @@ function renderRooms(rooms) {
 /**
  * Создание карточки комнаты
  */
-function createRoomCard(room) {
+function createRoomCard(room, isNewRoom = false) {
     const status = getRoomStatus(room);
     const statusClass = getRoomStatusClass(room);
+    const animationClass = isNewRoom ? 'new-room' : '';
     
     return `
-        <div class="room-card ${statusClass}" data-room-id="${room.id}">
+        <div class="room-card ${statusClass} ${animationClass}" data-room-id="${room.id}">
             <div class="room-header">
                 <h3 class="room-name">${escapeHtml(room.name)}</h3>
                 <span class="room-status ${status}">${getStatusText(status)}</span>
@@ -584,6 +690,9 @@ async function handleCreateRoom(event) {
         // Перезагружаем список комнат
         await loadRooms();
         
+        // Принудительно обновляем список комнат для других пользователей
+        await forceRefreshRooms();
+        
         // Отправляем уведомление другим игрокам о новой комнате (для будущего использования)
         // await sendRoomNotification('room_created', { roomId: room.id, roomName: room.name });
         
@@ -644,6 +753,9 @@ async function handleJoinRoom(event) {
         
         // Перезагружаем список комнат
         await loadRooms();
+        
+        // Принудительно обновляем список комнат для других пользователей
+        await forceRefreshRooms();
         
         // Если игра может начаться и мы хост, предлагаем начать
         if (roomService.canStartGame(currentUser.id, room)) {
@@ -841,6 +953,47 @@ function displayUserInfo() {
     }
 }
 
+/**
+ * Принудительное обновление списка комнат
+ */
+async function forceRefreshRooms() {
+    try {
+        console.log('🔄 Rooms: Принудительное обновление списка комнат');
+        
+        // Очищаем кеш комнат в RoomService
+        if (roomService && typeof roomService.clearCache === 'function') {
+            roomService.clearCache();
+        }
+        
+        // Загружаем свежие данные
+        await refreshRoomsList();
+        
+        console.log('✅ Rooms: Принудительное обновление завершено');
+    } catch (error) {
+        console.error('❌ Rooms: Ошибка принудительного обновления:', error);
+    }
+}
+
+/**
+ * Обновить список комнат с анимацией
+ */
+async function refreshRoomsWithAnimation() {
+    const roomsList = document.getElementById('rooms-list');
+    if (!roomsList) return;
+    
+    // Добавляем класс анимации
+    roomsList.classList.add('refreshing');
+    
+    try {
+        await refreshRoomsList();
+    } finally {
+        // Убираем класс анимации через короткое время
+        setTimeout(() => {
+            roomsList.classList.remove('refreshing');
+        }, 500);
+    }
+}
+
 // Экспорт функций для глобального доступа
 window.loadRooms = loadRooms;
 window.showCreateRoomModal = showCreateRoomModal;
@@ -848,3 +1001,5 @@ window.showJoinRoomModal = showJoinRoomModal;
 window.startGame = startGame;
 window.viewRoomDetails = viewRoomDetails;
 window.displayUserInfo = displayUserInfo;
+window.forceRefreshRooms = forceRefreshRooms;
+window.refreshRoomsWithAnimation = refreshRoomsWithAnimation;
