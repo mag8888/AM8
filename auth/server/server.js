@@ -288,10 +288,13 @@ module.exports = AuthServer;
 if (require.main === module) {
     const server = new AuthServer();
     
-    server.start().catch((error) => {
-        console.error('❌ AuthServer: Критическая ошибка:', error);
-        process.exit(1);
-    });
+    // Сначала инициализируем, потом запускаем
+    server.init()
+        .then(() => server.start())
+        .catch((error) => {
+            console.error('❌ AuthServer: Критическая ошибка:', error);
+            process.exit(1);
+        });
 
     // Graceful shutdown
     process.on('SIGTERM', async () => {

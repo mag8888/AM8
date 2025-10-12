@@ -115,9 +115,7 @@ const userSchema = new mongoose.Schema({
     collection: 'users'
 });
 
-// Индексы для оптимизации запросов
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// Индексы для оптимизации запросов (email и username уже уникальны в схеме)
 userSchema.index({ createdAt: -1 });
 userSchema.index({ lastLogin: -1 });
 userSchema.index({ 'stats.gamesPlayed': -1 });
