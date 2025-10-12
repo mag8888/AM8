@@ -176,6 +176,15 @@ class App {
         });
         console.log('👥 App: PlayersPanel создан');
         
+        // Создаем PlayerTokens
+        this.playerTokens = new window.PlayerTokens({
+            gameState: this.gameState,
+            eventBus: this.eventBus,
+            outerTrackSelector: '#outer-track',
+            innerTrackSelector: '#inner-track'
+        });
+        console.log('🎯 App: PlayerTokens создан');
+        
         // Создаем CellInteractionService
         this.cellInteractionService = new window.CellInteractionService({
             gameState: this.gameState,

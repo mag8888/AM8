@@ -192,14 +192,18 @@ class PlayersPanel {
                 width: 32px;
                 height: 32px;
                 border-radius: 50%;
-                background: linear-gradient(135deg, #10b981, #059669);
+                background: rgba(255, 255, 255, 0.1);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                color: white;
-                font-weight: 600;
-                font-size: 0.8rem;
-                text-transform: uppercase;
+                font-size: 1.2rem;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+                transition: all 0.3s ease;
+            }
+            
+            .player-item:hover .player-avatar {
+                border-color: rgba(255, 255, 255, 0.4);
+                background: rgba(255, 255, 255, 0.15);
             }
             
             .player-info {
@@ -379,7 +383,7 @@ class PlayersPanel {
         } else {
             playersList.innerHTML = players.map((player, index) => `
                 <div class="player-item ${index === 0 ? 'active' : ''}" data-player-id="${player.id}">
-                    <div class="player-avatar">${player.username ? player.username.charAt(0).toUpperCase() : 'U'}</div>
+                    <div class="player-avatar">${player.token || '🎯'}</div>
                     <div class="player-info">
                         <p class="player-name">${player.username || `Игрок ${index + 1}`}</p>
                         <p class="player-status">${player.isReady ? 'Готов' : 'Готовится'}</p>

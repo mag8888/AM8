@@ -352,7 +352,7 @@ class GameState {
                 this.players = roomData.players.map((player, index) => ({
                     id: player.userId || `player${index + 1}`,
                     username: player.username || `Игрок ${index + 1}`,
-                    position: 0,
+                    position: 0, // Все игроки начинают с клетки 1 (позиция 0)
                     isInner: false,
                     money: 5000,
                     salary: 5000,
