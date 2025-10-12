@@ -88,81 +88,8 @@ class ProfessionModule {
             isActive: true
         });
 
-        // Владелец бизнеса
-        this.professions.set('business_owner', {
-            id: 'business_owner',
-            name: 'Владелец бизнеса',
-            type: 'business_owner',
-            description: 'Крупный владелец бизнеса',
-            
-            // Доходы
-            income: {
-                salary: 15000,
-                passiveIncome: 3000,
-                totalIncome: 18000
-            },
-            
-            // Расходы (обязательные)
-            expenses: {
-                taxes: {
-                    amount: 1950,
-                    percentage: 13,
-                    description: 'Налоги',
-                    canPayOff: false,
-                    payOffAmount: 0
-                },
-                otherExpenses: {
-                    amount: 2500,
-                    description: 'Прочие расходы',
-                    canPayOff: false,
-                    payOffAmount: 0
-                },
-                carLoan: {
-                    amount: 1200,
-                    description: 'Кредит на авто',
-                    canPayOff: true,
-                    payOffAmount: 25000
-                },
-                educationLoan: {
-                    amount: 800,
-                    description: 'Образовательный кредит',
-                    canPayOff: true,
-                    payOffAmount: 15000
-                },
-                creditCards: {
-                    amount: 1500,
-                    description: 'Кредитные карты',
-                    canPayOff: true,
-                    payOffAmount: 30000
-                },
-                mortgage: {
-                    amount: 2000,
-                    description: 'Ипотека дом',
-                    canPayOff: true,
-                    payOffAmount: 80000
-                },
-                childrenExpenses: {
-                    amount: 0,
-                    description: 'Расходы на ребенка',
-                    perChild: 800,
-                    maxChildren: 3,
-                    canPayOff: false,
-                    payOffAmount: 0
-                }
-            },
-            
-            // Расчетные поля
-            totalExpenses: 9950,
-            netIncome: 8050,
-            
-            // Метаданные
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            isActive: true
-        });
-
         this.isInitialized = true;
-        console.log('✅ ProfessionModule: Профессии загружены');
+        console.log('✅ ProfessionModule: Профессия "Предприниматель" загружена');
     }
 
     /**
