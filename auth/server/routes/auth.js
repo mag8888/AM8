@@ -397,7 +397,7 @@ router.put('/profile',
  * GET /api/auth/validate
  * Валидация токена
  */
-router.get('/validate', authenticateToken, async (req, res) => {
+router.get('/validate', authenticateToken, ensureModelInitialized, async (req, res) => {
     try {
         const user = await userModel.findById(req.user.id);
         
