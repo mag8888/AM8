@@ -19,8 +19,9 @@
     align-items: center;
     justify-content: center;
     padding: min(2vmin, 20px);
-    margin-top: 80px; /* Отступ от фиксированной навигации */
-    min-height: calc(100vh - 160px); /* Центрирование по вертикали */
+    margin-top: 10px; /* Уменьшенный отступ от верхней навигации */
+    min-height: calc(100vh - 120px); /* Обеспечиваем центрирование по вертикали */
+    position: relative;
 }
 
 .board-wrapper {
@@ -299,8 +300,7 @@
 @media (max-width: 768px) {
     .game-board-container {
         padding: min(2vmin, 15px);
-        margin-top: 80px; /* Отступ от фиксированной навигации */
-        min-height: calc(100vh - 200px); /* Центрирование по вертикали */
+        margin-top: 20px; /* Уменьшенный отступ для мобильного меню */
     }
     .board-wrapper {
         width: min(93.5vmin, 495px);
@@ -310,9 +310,8 @@
 
 @media (max-width: 480px) {
     .game-board-container {
-        margin-top: 80px; /* Отступ от фиксированной навигации */
+        margin-top: 15px;
         padding: min(1vmin, 10px);
-        min-height: calc(100vh - 220px); /* Центрирование по вертикали */
     }
     .board-wrapper {
         width: min(88vmin, 385px);

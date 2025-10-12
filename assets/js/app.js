@@ -168,6 +168,14 @@ class App {
         });
         console.log('💰 App: BalanceManager создан');
         
+        // Создаем PlayersPanel
+        this.playersPanel = new window.PlayersPanel({
+            gameState: this.gameState,
+            eventBus: this.eventBus,
+            containerId: 'game-control-panel'
+        });
+        console.log('👥 App: PlayersPanel создан');
+        
         // Создаем CellInteractionService
         this.cellInteractionService = new window.CellInteractionService({
             gameState: this.gameState,
@@ -453,106 +461,16 @@ class App {
                     } else {
                         console.log('⚠️ App: Нет доступных комнат');
                         this.showNotification('Нет доступных комнат', 'warning');
-                        this.showDefaultInterface();
                     }
                 } else {
                     console.log('⚠️ App: Комнаты не найдены');
                     this.showNotification('Комнаты не найдены', 'warning');
-                    this.showDefaultInterface();
                 }
             } else {
-                console.error('❌ App: Ошибка получения списка комнат:', response.status);
-                this.showDefaultInterface();
+                console.error('❌ App: Ошибка получения списка комнат');
             }
         } catch (error) {
             console.error('❌ App: Ошибка автоматического выбора комнаты:', error);
-            this.showDefaultInterface();
-        }
-    }
-    
-    /**
-     * Показать интерфейс по умолчанию
-     */
-    showDefaultInterface() {
-        try {
-            console.log('🏠 App: Показать интерфейс по умолчанию');
-            
-            const centerContent = document.querySelector('.center-content');
-            if (centerContent) {
-                centerContent.innerHTML = `
-                    <h2>🎯 Добро пожаловать!</h2>
-                    <p>Создайте или присоединитесь к комнате для начала игры</p>
-                    <div class="center-actions">
-                        <button class="btn btn-primary" id="select-room-btn">
-                            🏠 Выбрать комнату
-                        </button>
-                        <button class="btn btn-secondary" id="auth-btn">
-                            🔐 Авторизация
-                        </button>
-                    </div>
-                `;
-            }
-            
-            // Обновляем панель управления
-            const gameControlPanel = document.getElementById('game-control-panel');
-            if (gameControlPanel) {
-                gameControlPanel.innerHTML = `
-                    <div class="turn-menu">
-                        <div class="cards-container">
-                            <div class="game-operations-card">
-                                <div class="card-header">
-                                    <h3>👥 Игроки в комнате</h3>
-                                </div>
-                                
-                                <div class="game-overview">
-                                    <div class="overview-row">
-                                        <span>Комната:</span>
-                                        <span>Не выбрана</span>
-                                    </div>
-                                    <div class="overview-row">
-                                        <span>Игроки:</span>
-                                        <span>0/4</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="player-section">
-                                    <div class="player-display">
-                                        <div class="player-avatar">U</div>
-                                        <div class="player-details">
-                                            <div class="player-name">Нет игроков</div>
-                                            <div class="player-status">Ожидание подключения</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="game-status-card">
-                                <div class="card-header">
-                                    <h3>📊 Статус игры</h3>
-                                </div>
-                                
-                                <div class="status-display">
-                                    <div class="status-main">
-                                        <div class="status-value">Ход 1</div>
-                                        <div class="status-subtitle">Игрок: Загрузка...</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="status-actions">
-                                    <div class="status-item" onclick="window.app.viewStatistics()">
-                                        <span class="status-icon">📈</span>
-                                        <span class="status-text">Просмотр статистики</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            console.log('✅ App: Интерфейс по умолчанию показан');
-        } catch (error) {
-            console.error('❌ App: Ошибка показа интерфейса по умолчанию:', error);
         }
     }
 
@@ -561,7 +479,12 @@ class App {
      */
     updateGameInterface(roomData) {
         try {
-            console.log('🎮 App: Обновление интерфейса игры', roomData);
+            console.log('🎮 App: Обновление интерфейса игры');
+            
+            // Загружаем игроков в GameState
+            if (this.gameState) {
+                this.gameState.loadPlayersFromRoom(roomData);
+            }
             
             const centerContent = document.querySelector('.center-content');
             if (centerContent) {
@@ -571,7 +494,7 @@ class App {
                     centerContent.innerHTML = `
                         <h2>🎮 Игра началась!</h2>
                         <p>Комната: ${roomData.name}</p>
-                        <p>Игроков: ${roomData.playerCount || 0}/${roomData.maxPlayers || 4}</p>
+                        <p>Игроков: ${roomData.playerCount}/${roomData.maxPlayers}</p>
                         <div class="center-actions">
                             <button class="btn btn-secondary" onclick="window.location.href='pages/rooms.html'">
                                 🏠 Вернуться в лобби
@@ -583,7 +506,7 @@ class App {
                     // Игра не началась - показываем панель управления
                     centerContent.innerHTML = `
                         <h2>🎮 Комната: ${roomData.name}</h2>
-                        <p>Игроков: ${roomData.playerCount || 0}/${roomData.maxPlayers || 4}</p>
+                        <p>Игроков: ${roomData.playerCount}/${roomData.maxPlayers}</p>
                         <div class="center-actions">
                             <button class="btn btn-primary" onclick="window.location.href='pages/rooms.html'">
                                 🏠 Управление комнатой
@@ -597,9 +520,6 @@ class App {
                 }
             }
             
-            // Обновляем панель управления игрой
-            this.updateGameControlPanel(roomData);
-            
             // Обновляем балансы игроков через BalanceManager
             if (this.balanceManager && roomData.players) {
                 this.balanceManager.refreshFromGameState(roomData.players);
@@ -608,138 +528,6 @@ class App {
             console.log('✅ App: Интерфейс игры обновлен');
         } catch (error) {
             console.error('❌ App: Ошибка обновления интерфейса:', error);
-        }
-    }
-    
-    /**
-     * Обновление панели управления игрой
-     */
-    updateGameControlPanel(roomData) {
-        try {
-            const gameControlPanel = document.getElementById('game-control-panel');
-            if (!gameControlPanel) return;
-            
-            console.log('🎮 App: Обновление панели управления игрой');
-            
-            // Если есть TurnController, используем его для создания панели
-            if (this.turnController) {
-                gameControlPanel.innerHTML = this.turnController.renderTurnMenu(roomData);
-                console.log('✅ App: Панель управления создана через TurnController');
-            } else {
-                // Создаем базовую панель управления
-                const players = roomData.players || [];
-                const currentPlayer = this.currentUser ? 
-                    players.find(p => p.userId === this.currentUser.id) : null;
-                
-                gameControlPanel.innerHTML = `
-                    <div class="turn-menu">
-                        <div class="dice-roll-section">
-                            <button class="action-btn btn-dice" onclick="window.app.rollDice()">
-                                <span class="btn-icon">🎲</span>
-                                Бросить кубик
-                            </button>
-                        </div>
-                        
-                        <div class="cards-container">
-                            <div class="game-operations-card">
-                                <div class="card-header">
-                                    <h3>🎮 Игровые операции</h3>
-                                </div>
-                                
-                                <div class="game-overview">
-                                    <div class="overview-row">
-                                        <span>Ход:</span>
-                                        <span>Ожидание</span>
-                                    </div>
-                                    <div class="overview-row">
-                                        <span>Кубик:</span>
-                                        <span id="dice-result">-</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="player-section">
-                                    <div class="player-display">
-                                        <div class="player-avatar">${currentPlayer ? currentPlayer.username.charAt(0).toUpperCase() : 'U'}</div>
-                                        <div class="player-details">
-                                            <div class="player-name">${currentPlayer ? currentPlayer.username : 'Игрок'}</div>
-                                            <div class="player-status">Ожидание хода</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="game-status-card">
-                                <div class="card-header">
-                                    <h3>📊 Статус игры</h3>
-                                </div>
-                                
-                                <div class="status-display">
-                                    <div class="status-main">
-                                        <div class="status-value">Ход 1</div>
-                                        <div class="status-subtitle">Игрок: ${currentPlayer ? currentPlayer.username : 'Загрузка...'}</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="status-actions">
-                                    <div class="status-item" onclick="window.app.viewStatistics()">
-                                        <span class="status-icon">📈</span>
-                                        <span class="status-text">Просмотр статистики</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                console.log('✅ App: Базовая панель управления создана');
-            }
-        } catch (error) {
-            console.error('❌ App: Ошибка обновления панели управления:', error);
-        }
-    }
-    
-    /**
-     * Бросок кубика
-     */
-    rollDice() {
-        try {
-            console.log('🎲 App: Бросок кубика');
-            
-            if (this.diceService) {
-                this.diceService.rollDice();
-            } else {
-                // Простой бросок кубика без сервиса
-                const diceResult = Math.floor(Math.random() * 6) + 1;
-                const diceResultElement = document.getElementById('dice-result');
-                if (diceResultElement) {
-                    diceResultElement.textContent = diceResult;
-                }
-                
-                // Обновляем кубик в центре доски
-                const diceElement = document.querySelector('.dice');
-                if (diceElement) {
-                    diceElement.textContent = diceResult;
-                    diceElement.classList.add('rolling');
-                    setTimeout(() => {
-                        diceElement.classList.remove('rolling');
-                    }, 600);
-                }
-                
-                this.showNotification(`Выпало: ${diceResult}`, 'success');
-            }
-        } catch (error) {
-            console.error('❌ App: Ошибка броска кубика:', error);
-        }
-    }
-    
-    /**
-     * Просмотр статистики
-     */
-    viewStatistics() {
-        try {
-            console.log('📈 App: Просмотр статистики');
-            this.showNotification('Статистика пока недоступна', 'info');
-        } catch (error) {
-            console.error('❌ App: Ошибка просмотра статистики:', error);
         }
     }
 

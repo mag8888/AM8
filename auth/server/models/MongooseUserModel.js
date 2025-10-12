@@ -187,10 +187,10 @@ class MongooseUserModel {
             
             this.isInitialized = true;
             console.log('✅ MongooseUserModel: Инициализация завершена');
-        } catch (error) {
+    } catch (error) {
             console.error('❌ MongooseUserModel: Ошибка инициализации:', error);
             this.isInitialized = false;
-            throw error;
+        throw error;
         }
     }
 
@@ -210,9 +210,9 @@ class MongooseUserModel {
             const savedUser = await user.save();
             console.log('✅ MongooseUserModel: Пользователь создан:', savedUser.email);
             return savedUser;
-        } catch (error) {
+    } catch (error) {
             console.error('❌ MongooseUserModel: Ошибка создания пользователя:', error);
-            throw error;
+        throw error;
         }
     }
 
@@ -224,8 +224,8 @@ class MongooseUserModel {
     async findByEmail(email) {
         try {
             return await this.User.findOne({ email: email.toLowerCase() });
-        } catch (error) {
-            console.error('❌ MongooseUserModel: Ошибка поиска по email:', error);
+    } catch (error) {
+        console.error('❌ MongooseUserModel: Ошибка поиска по email:', error);
             return null;
         }
     }
@@ -238,8 +238,8 @@ class MongooseUserModel {
     async findByUsername(username) {
         try {
             return await this.User.findOne({ username });
-        } catch (error) {
-            console.error('❌ MongooseUserModel: Ошибка поиска по username:', error);
+    } catch (error) {
+        console.error('❌ MongooseUserModel: Ошибка поиска по username:', error);
             return null;
         }
     }
@@ -278,7 +278,7 @@ class MongooseUserModel {
             return updatedUser;
         } catch (error) {
             console.error('❌ MongooseUserModel: Ошибка обновления пользователя:', error);
-            throw error;
+        throw error;
         }
     }
 
@@ -442,7 +442,7 @@ class MongooseUserModel {
                 verifiedUsers,
                 totalGames
             };
-        } catch (error) {
+    } catch (error) {
             console.error('❌ MongooseUserModel: Ошибка получения статистики:', error);
             return {
                 totalUsers: 0,

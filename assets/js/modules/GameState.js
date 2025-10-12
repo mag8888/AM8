@@ -297,6 +297,12 @@ class GameState {
      * Добавить тестовых игроков для демонстрации
      */
     addTestPlayers() {
+        // Проверяем, есть ли уже игроки
+        if (this.players.length > 0) {
+            console.log('👥 GameState: Игроки уже добавлены, пропускаем');
+            return;
+        }
+        
         this.players = [
             {
                 id: 'player1',
@@ -332,6 +338,48 @@ class GameState {
             this.eventBus.emit('game:playersUpdated', {
                 players: this.players
             });
+        }
+    }
+    
+    /**
+     * Загрузка игроков из комнаты
+     */
+    async loadPlayersFromRoom(roomData) {
+        try {
+            console.log('🏠 GameState: Загрузка игроков из комнаты:', roomData);
+            
+            if (roomData && roomData.players && roomData.players.length > 0) {
+                this.players = roomData.players.map((player, index) => ({
+                    id: player.userId || `player${index + 1}`,
+                    username: player.username || `Игрок ${index + 1}`,
+                    position: 0,
+                    isInner: false,
+                    money: 5000,
+                    salary: 5000,
+                    totalIncome: 0,
+                    token: player.token || '🎯',
+                    isReady: player.isReady || false,
+                    dream: player.dream || null,
+                    monthlyExpenses: 2000,
+                    assets: [],
+                    dreams: player.dream ? [player.dream] : []
+                }));
+                
+                console.log('✅ GameState: Игроки загружены из комнаты:', this.players.length);
+                
+                // Уведомляем о загрузке игроков
+                if (this.eventBus) {
+                    this.eventBus.emit('game:playersUpdated', {
+                        players: this.players
+                    });
+                }
+            } else {
+                console.log('⚠️ GameState: Данные комнаты не найдены, добавляем тестовых игроков');
+                this.addTestPlayers();
+            }
+        } catch (error) {
+            console.error('❌ GameState: Ошибка загрузки игроков из комнаты:', error);
+            this.addTestPlayers();
         }
     }
 }
