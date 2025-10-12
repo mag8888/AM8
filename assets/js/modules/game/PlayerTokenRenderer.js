@@ -113,9 +113,9 @@ class PlayerTokenRenderer {
     getOuterCellCoordinates(cellIndex) {
         // Упрощенная логика для внешнего круга
         const angle = (cellIndex / 44) * 2 * Math.PI - Math.PI / 2;
-        const radius = 200; // Радиус внешнего круга
-        const centerX = 350; // Центр поля
-        const centerY = 350;
+        const radius = 220; // Радиус внешнего круга (увеличен на 10%)
+        const centerX = 385; // Центр поля (увеличен на 10%)
+        const centerY = 385;
         
         const x = centerX + Math.cos(angle) * radius;
         const y = centerY + Math.sin(angle) * radius;
@@ -129,9 +129,9 @@ class PlayerTokenRenderer {
     getInnerCellCoordinates(cellIndex) {
         // Упрощенная логика для внутреннего круга
         const angle = (cellIndex / 23) * 2 * Math.PI - Math.PI / 2;
-        const radius = 120; // Радиус внутреннего круга
-        const centerX = 350; // Центр поля
-        const centerY = 350;
+        const radius = 132; // Радиус внутреннего круга (увеличен на 10%)
+        const centerX = 385; // Центр поля (увеличен на 10%)
+        const centerY = 385;
         
         const x = centerX + Math.cos(angle) * radius;
         const y = centerY + Math.sin(angle) * radius;
