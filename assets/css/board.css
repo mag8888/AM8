@@ -55,7 +55,7 @@
     --cell-size: var(--outer-cell-size);
     width: var(--cell-size);
     height: var(--cell-size);
-    border-radius: 20px;
+    border-radius: 6px;
     background: linear-gradient(140deg, rgba(24, 35, 58, 0.9), rgba(7, 13, 28, 0.9));
     border: 2px solid var(--surface-border);
     box-shadow: var(--cell-shadow);
@@ -223,43 +223,57 @@
 }
 
 /* Типы клеток: внешний круг */
+/* Зеленые клетки - возможности */
+.cell-chance,
+.cell-green_opportunity {
+    border: 3px solid #10b981;
+    border-color: #10b981;
+}
+
+/* Желтые клетки - PayDay */
+.cell-money,
+.cell-payday {
+    border: 3px solid #fbbf24;
+    border-color: #fbbf24;
+}
+
+/* Розовые клетки - траты */
+.cell-expense {
+    border: 3px solid #ec4899;
+    border-color: #ec4899;
+}
+
+/* Оранжевые клетки - благотворительность */
+.cell-charity {
+    border: 3px solid #f59e0b;
+    border-color: #f59e0b;
+}
+
+/* Голубые клетки - рынок */
+.cell-market {
+    border: 3px solid #3b82f6;
+    border-color: #3b82f6;
+}
+
+/* Фиолетовые клетки - ребенок */
+.cell-family {
+    border: 3px solid #8b5cf6;
+    border-color: #8b5cf6;
+}
+
+/* Черные клетки - потери */
+.cell-loss {
+    border: 3px solid #000000;
+    border-color: #000000;
+}
+
+/* Обычные клетки */
 .cell-business {
     border-color: rgba(148, 163, 184, 0.45);
 }
 
 .cell-dream {
     border-color: rgba(250, 204, 21, 0.8);
-}
-
-.cell-money,
-.cell-payday,
-.cell-green_opportunity {
-    border-color: rgba(34, 197, 94, 0.75);
-}
-
-.cell-loss,
-.cell-expense,
-.cell-black_loss {
-    border-color: rgba(248, 113, 113, 0.85);
-}
-
-.cell-charity,
-.cell-orange_charity {
-    border-color: rgba(236, 72, 153, 0.75);
-}
-
-.cell-market,
-.cell-blue_market {
-    border-color: rgba(245, 158, 11, 0.8);
-}
-
-.cell-deal {
-    border-color: rgba(99, 102, 241, 0.75);
-}
-
-.cell-baby,
-.cell-purple_baby {
-    border-color: rgba(129, 140, 248, 0.85);
 }
 
 .cell-start,
