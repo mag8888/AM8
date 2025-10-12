@@ -16,18 +16,59 @@ const { validateEmail, validatePassword, validateUsername } = require('../middle
 // Импорт сервисов
 const AuthService = require('../services/AuthService');
 const UserModel = require('../models/UserModel');
+const MongooseUserModel = require('../models/MongooseUserModel');
 
 const router = express.Router();
 
 // Инициализация сервисов
 const authService = new AuthService();
-const userModel = new UserModel();
+
+// Выбираем модель в зависимости от окружения
+const useMongoDB = process.env.NODE_ENV === 'production' || process.env.USE_MONGODB === 'true';
+let userModel;
+
+if (useMongoDB) {
+    console.log(`📊 Auth: Используется MongoDB Atlas для хранения пользователей`);
+    // Модель будет инициализирована после подключения к БД
+    userModel = null;
+} else {
+    console.log(`📊 Auth: Используется JSON файл для хранения пользователей`);
+    userModel = new UserModel();
+}
+
+// Функция для инициализации модели MongoDB после подключения к БД
+async function initializeMongoModel() {
+    if (useMongoDB && !userModel) {
+        userModel = new MongooseUserModel();
+        await userModel.init();
+        console.log('✅ Auth: MongoDB модель инициализирована');
+    }
+}
+
+// Middleware для проверки инициализации модели
+async function ensureModelInitialized(req, res, next) {
+    if (useMongoDB && !userModel) {
+        try {
+            await initializeMongoModel();
+            next();
+        } catch (error) {
+            console.error('❌ Auth: Ошибка инициализации модели:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Ошибка инициализации базы данных'
+            });
+        }
+    } else {
+        next();
+    }
+}
 
 /**
  * POST /api/auth/register
  * Регистрация нового пользователя
  */
 router.post('/register', 
+    ensureModelInitialized,
     validateInput(['username', 'email', 'password']),
     async (req, res) => {
         try {
@@ -89,13 +130,14 @@ router.post('/register',
             });
 
             // Генерация токена
+            const jwtSecret = process.env.JWT_SECRET || 'em1-production-secret-key-2024-railway';
             const token = jwt.sign(
                 { 
                     id: user.id, 
                     email: user.email, 
                     username: user.username 
                 },
-                process.env.JWT_SECRET,
+                jwtSecret,
                 { expiresIn: '7d' }
             );
 
@@ -131,6 +173,7 @@ router.post('/register',
  * Авторизация пользователя
  */
 router.post('/login', 
+    ensureModelInitialized,
     validateInput(['email', 'password']),
     async (req, res) => {
         try {
@@ -176,13 +219,14 @@ router.post('/login',
             }
 
             // Генерация токена
+            const jwtSecret = process.env.JWT_SECRET || 'em1-production-secret-key-2024-railway';
             const token = jwt.sign(
                 { 
                     id: user.id, 
                     email: user.email, 
                     username: user.username 
                 },
-                process.env.JWT_SECRET,
+                jwtSecret,
                 { expiresIn: '7d' }
             );
 
@@ -467,5 +511,68 @@ router.post('/reset-password',
         }
     }
 );
+
+/**
+ * POST /api/auth/migrate
+ * Миграция данных из JSON в MongoDB (только для MongoDB модели)
+ */
+router.post('/migrate', async (req, res) => {
+    try {
+        if (!useMongoDB) {
+            return res.status(400).json({
+                success: false,
+                message: 'Миграция доступна только для MongoDB'
+            });
+        }
+
+        // Читаем данные из JSON файла
+        const fs = require('fs').promises;
+        const path = require('path');
+        
+        const dataFile = path.join(__dirname, '../../data/users.json');
+        const data = await fs.readFile(dataFile, 'utf8');
+        const usersData = JSON.parse(data);
+
+        // Мигрируем данные
+        const result = await userModel.migrateFromJson(usersData);
+
+        console.log('✅ Auth: Миграция завершена:', result);
+
+        res.json({
+            success: true,
+            message: 'Миграция данных завершена',
+            result
+        });
+
+    } catch (error) {
+        console.error('❌ Auth: Ошибка миграции:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка миграции данных'
+        });
+    }
+});
+
+/**
+ * GET /api/auth/stats
+ * Получение статистики пользователей
+ */
+router.get('/stats', async (req, res) => {
+    try {
+        const stats = await userModel.getStats();
+        
+        res.json({
+            success: true,
+            stats
+        });
+
+    } catch (error) {
+        console.error('❌ Auth: Ошибка получения статистики:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка получения статистики'
+        });
+    }
+});
 
 module.exports = router;

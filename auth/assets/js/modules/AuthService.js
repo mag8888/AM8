@@ -6,10 +6,25 @@
 
 class AuthService {
     constructor() {
-        this.apiBase = '/auth/api';
+        // Автоматическое определение API URL
+        // Если запущено на Railway, используем production URL
+        // Иначе используем localhost
+        const isProduction = window.location.hostname !== 'localhost' && 
+                           window.location.hostname !== '127.0.0.1';
+        
+        if (isProduction) {
+            // Production: Railway или другой хостинг
+            this.apiBase = 'https://am8-auth.up.railway.app/api/auth';
+        } else {
+            // Development: localhost
+            this.apiBase = 'http://localhost:3001/api/auth';
+        }
+        
         this.tokenKey = 'aura_money_token';
         this.userKey = 'aura_money_user';
         this.isInitialized = false;
+        
+        console.log(`🔐 AuthService: API Base: ${this.apiBase}`);
         
         this.init();
     }

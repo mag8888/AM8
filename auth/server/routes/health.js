@@ -11,8 +11,13 @@ const router = express.Router();
  * GET /api/health
  * Проверка здоровья сервиса
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
     try {
+        // Проверяем состояние базы данных
+        const databaseConfig = require('../config/database');
+        const dbStatus = databaseConfig.getStatus();
+        const dbHealth = await databaseConfig.healthCheck();
+
         const health = {
             status: 'ok',
             service: 'auth',
@@ -29,9 +34,14 @@ router.get('/', (req, res) => {
                 platform: process.platform,
                 arch: process.arch
             },
+            database: {
+                type: process.env.NODE_ENV === 'production' || process.env.USE_MONGODB === 'true' ? 'MongoDB Atlas' : 'JSON File',
+                status: dbStatus,
+                health: dbHealth
+            },
             features: {
                 jwt: !!process.env.JWT_SECRET,
-                database: 'localStorage',
+                database: process.env.NODE_ENV === 'production' || process.env.USE_MONGODB === 'true' ? 'MongoDB' : 'localStorage',
                 rateLimit: true,
                 validation: true
             }

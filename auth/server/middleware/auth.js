@@ -26,7 +26,8 @@ const authenticateToken = (req, res, next) => {
         }
 
         // Проверка токена
-        jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        const jwtSecret = process.env.JWT_SECRET || 'em1-production-secret-key-2024-railway';
+        jwt.verify(token, jwtSecret, (err, user) => {
             if (err) {
                 console.log('❌ Auth: Недействительный токен:', err.message);
                 return res.status(403).json({

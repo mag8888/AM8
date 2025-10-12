@@ -10,6 +10,9 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const path = require('path');
 
+// Импорт конфигурации базы данных
+const databaseConfig = require('./config/database');
+
 // Импорт маршрутов
 const authRoutes = require('./routes/auth');
 const healthRoutes = require('./routes/health');
@@ -33,6 +36,12 @@ class AuthServer {
         try {
             console.log('🚀 AuthServer: Инициализация...');
             
+            // Подключение к базе данных (только для MongoDB)
+            const useMongoDB = process.env.NODE_ENV === 'production' || process.env.USE_MONGODB === 'true';
+            if (useMongoDB) {
+                await this.connectDatabase();
+            }
+            
             // Настройка middleware
             this.setupMiddleware();
             
@@ -46,6 +55,19 @@ class AuthServer {
             console.log('✅ AuthServer: Инициализация завершена');
         } catch (error) {
             console.error('❌ AuthServer: Ошибка инициализации:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Подключение к базе данных
+     */
+    async connectDatabase() {
+        try {
+            await databaseConfig.connect();
+            console.log('✅ AuthServer: База данных подключена');
+        } catch (error) {
+            console.error('❌ AuthServer: Ошибка подключения к базе данных:', error);
             throw error;
         }
     }
@@ -215,13 +237,23 @@ class AuthServer {
      * Остановка сервера
      */
     async stop() {
-        return new Promise((resolve) => {
-            if (this.server) {
-                this.server.close(() => {
-                    console.log('🛑 AuthServer: Сервер остановлен');
+        return new Promise(async (resolve) => {
+            try {
+                // Останавливаем сервер
+                if (this.server) {
+                    this.server.close(async () => {
+                        // Отключаемся от базы данных
+                        await databaseConfig.disconnect();
+                        console.log('🛑 AuthServer: Сервер остановлен');
+                        resolve();
+                    });
+                } else {
+                    // Отключаемся от базы данных
+                    await databaseConfig.disconnect();
                     resolve();
-                });
-            } else {
+                }
+            } catch (error) {
+                console.error('❌ AuthServer: Ошибка при остановке:', error);
                 resolve();
             }
         });
