@@ -308,3 +308,83 @@ a {
         text-align: center;
     }
 }
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .game-container {
+        max-width: 100%;
+        padding: 0.5rem;
+        gap: 0.5rem;
+        grid-template-columns: 1fr;
+        min-height: calc(100vh - 120px); /* Учитываем мобильное меню */
+    }
+    
+    /* Адаптация навигации для мобильных */
+    .app-navigation {
+        padding: 0.5rem 0;
+    }
+    
+    .nav-container {
+        padding: 0 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .nav-menu {
+        gap: 1rem;
+    }
+    
+    .nav-logo {
+        font-size: 1.2rem;
+    }
+    
+    .player-info {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+    
+    .game-controls {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .btn {
+        padding: 10px 16px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-container {
+        padding: 0.25rem;
+        gap: 0.25rem;
+        min-height: calc(100vh - 100px);
+    }
+    
+    .app-navigation {
+        padding: 0.25rem 0;
+    }
+    
+    .nav-container {
+        padding: 0 0.5rem;
+    }
+    
+    .nav-logo {
+        font-size: 1rem;
+    }
+    
+    .nav-menu {
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .player-info {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+}

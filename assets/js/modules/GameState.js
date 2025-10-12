@@ -8,6 +8,14 @@ class GameState {
         this.currentPlayerIndex = 0;
         this.gameStarted = false;
         this.lastDiceRoll = null;
+        this.roomId = null;
+        this.gameState = {
+            canRoll: false,
+            canMove: false,
+            canEndTurn: false,
+            activePlayer: null,
+            lastDiceResult: null
+        };
         
         console.log('✅ GameState инициализирован');
     }
@@ -155,8 +163,126 @@ class GameState {
             currentPlayerIndex: this.currentPlayerIndex,
             currentPlayer: this.getCurrentPlayer(),
             gameStarted: this.gameStarted,
-            lastDiceRoll: this.lastDiceRoll
+            lastDiceRoll: this.lastDiceRoll,
+            ...this.gameState
         };
+    }
+    
+    /**
+     * Установить ID комнаты
+     * @param {string} roomId - ID комнаты
+     */
+    setRoomId(roomId) {
+        this.roomId = roomId;
+        console.log('🏠 GameState: Установлен ID комнаты:', roomId);
+    }
+    
+    /**
+     * Получить ID комнаты
+     * @returns {string} ID комнаты
+     */
+    getRoomId() {
+        return this.roomId;
+    }
+    
+    /**
+     * Применить состояние от сервера
+     * @param {Object} serverState - Состояние от сервера
+     */
+    applyState(serverState) {
+        if (serverState.players) {
+            this.players = serverState.players;
+        }
+        
+        if (serverState.currentPlayerIndex !== undefined) {
+            this.currentPlayerIndex = serverState.currentPlayerIndex;
+        }
+        
+        if (serverState.gameStarted !== undefined) {
+            this.gameStarted = serverState.gameStarted;
+        }
+        
+        if (serverState.lastDiceRoll !== undefined) {
+            this.lastDiceRoll = serverState.lastDiceRoll;
+        }
+        
+        // Обновляем игровое состояние
+        if (serverState.canRoll !== undefined) {
+            this.gameState.canRoll = serverState.canRoll;
+        }
+        
+        if (serverState.canMove !== undefined) {
+            this.gameState.canMove = serverState.canMove;
+        }
+        
+        if (serverState.canEndTurn !== undefined) {
+            this.gameState.canEndTurn = serverState.canEndTurn;
+        }
+        
+        if (serverState.activePlayer) {
+            this.gameState.activePlayer = serverState.activePlayer;
+        }
+        
+        if (serverState.lastDiceResult) {
+            this.gameState.lastDiceResult = serverState.lastDiceResult;
+        }
+        
+        console.log('🔄 GameState: Состояние обновлено от сервера');
+        
+        // Эмитим событие обновления
+        if (this.eventBus) {
+            this.eventBus.emit('game:stateUpdated', this.getState());
+        }
+    }
+    
+    /**
+     * Получить активного игрока
+     * @returns {Object} Активный игрок
+     */
+    getActivePlayer() {
+        return this.gameState.activePlayer || this.getCurrentPlayer();
+    }
+    
+    /**
+     * Обновить позицию игрока
+     * @param {string} playerId - ID игрока
+     * @param {number} position - Новая позиция
+     */
+    updatePlayerPosition(playerId, position) {
+        const player = this.players.find(p => p.id === playerId);
+        if (player) {
+            player.position = position;
+            console.log(`📍 GameState: Позиция игрока ${playerId} обновлена на ${position}`);
+            
+            if (this.eventBus) {
+                this.eventBus.emit('player:positionUpdated', {
+                    playerId,
+                    position,
+                    player
+                });
+            }
+        }
+    }
+    
+    /**
+     * Установить активного игрока
+     * @param {string} playerId - ID игрока
+     */
+    setActivePlayer(playerId) {
+        const player = this.players.find(p => p.id === playerId);
+        if (player) {
+            this.gameState.activePlayer = player;
+            this.currentPlayerIndex = this.players.findIndex(p => p.id === playerId);
+            
+            console.log(`🎯 GameState: Активный игрок установлен: ${playerId}`);
+            
+            if (this.eventBus) {
+                this.eventBus.emit('game:activePlayerChanged', {
+                    activePlayer: player,
+                    playerIndex: this.currentPlayerIndex
+                });
+            }
+        }
     }
 }
 

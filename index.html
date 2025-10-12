@@ -197,27 +197,36 @@
             margin-top: 1.5rem;
         }
 
-        .game-header {
-            text-align: center;
-            margin-bottom: 2rem;
+        /* Контейнер для панели управления игрой */
+        .game-control-panel {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
-        .game-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin: 0 0 0.5rem 0;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        /* На больших экранах - меню справа */
+        @media (min-width: 1200px) {
+            .game-page {
+                display: grid;
+                grid-template-columns: 1fr 350px;
+                gap: 2rem;
+                align-items: start;
+            }
+            
+            .game-board-container {
+                grid-column: 1;
+            }
+            
+            .game-control-panel {
+                grid-column: 2;
+                margin-top: 0;
+                position: sticky;
+                top: 100px;
+            }
         }
 
-        .game-subtitle {
-            color: #a0a0a0;
-            font-size: 1.1rem;
-            margin: 0;
-        }
 
         /* Адаптивность */
         @media (max-width: 768px) {
@@ -237,10 +246,6 @@
 
             .game-page {
                 padding: 1rem;
-            }
-
-            .game-title {
-                font-size: 2rem;
             }
         }
     </style>
@@ -273,11 +278,6 @@
             <!-- Страница игры (BoardLayout) -->
             <div id="game-page" class="page active">
                 <div class="game-page">
-                    <div class="game-header">
-                        <h1 class="game-title">Aura Money</h1>
-                        <p class="game-subtitle">Настольная игра в стиле Cashflow для обучения финансовой грамотности</p>
-                    </div>
-
                     <!-- Игровая доска -->
                     <div class="game-board-container">
                         <div class="board-wrapper">
@@ -304,6 +304,11 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Контейнер для панели управления игрой -->
+                    <div id="game-control-panel" class="game-control-panel">
+                        <!-- Здесь будет размещено меню управления ходами -->
+                    </div>
                 </div>
             </div>
 
@@ -328,6 +333,12 @@
     <script src="assets/js/modules/game/BoardLayout.js"></script>
     <script src="assets/js/modules/EventBus.js"></script>
     <script src="assets/js/modules/GameState.js"></script>
+    
+    <!-- Модули управления ходами -->
+    <script src="assets/js/modules/game/RoomApi.js"></script>
+    <script src="assets/js/modules/game/TurnService.js"></script>
+    <script src="assets/js/modules/game/PlayerTokenRenderer.js"></script>
+    <script src="assets/js/modules/game/TurnController.js"></script>
 
     <!-- Главный скрипт приложения -->
     <script src="assets/js/app.js"></script>

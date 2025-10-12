@@ -10,6 +10,10 @@ class App {
         this.eventBus = null;
         this.gameState = null;
         this.currentUser = null;
+        this.turnService = null;
+        this.turnController = null;
+        this.playerTokenRenderer = null;
+        this.roomApi = null;
         
         console.log('🚀 App: Инициализация приложения');
         this.init();
@@ -92,9 +96,38 @@ class App {
         try {
             // Создаем EventBus
             this.eventBus = new window.EventBus();
+            console.log('✅ EventBus создан');
             
             // Создаем GameState
-            this.gameState = new window.GameState();
+            this.gameState = new window.GameState(this.eventBus);
+            console.log('✅ GameState создан');
+            
+            // Создаем RoomApi
+            this.roomApi = new window.RoomApi();
+            console.log('✅ RoomApi создан');
+            
+            // Создаем TurnService
+            this.turnService = new window.TurnService({
+                state: this.gameState,
+                roomApi: this.roomApi
+            });
+            console.log('✅ TurnService создан');
+            
+            // Создаем PlayerTokenRenderer
+            this.playerTokenRenderer = new window.PlayerTokenRenderer();
+            console.log('✅ PlayerTokenRenderer создан');
+            
+            // Создаем TurnController
+            try {
+                this.turnController = new window.TurnController(
+                    this.turnService,
+                    this.playerTokenRenderer
+                );
+                console.log('🎮 App: TurnController создан:', this.turnController);
+            } catch (error) {
+                console.error('❌ App: Ошибка создания TurnController:', error);
+                this.turnController = null;
+            }
             
             // Инициализируем BoardLayout
             this.boardLayout = new window.BoardLayout({
@@ -111,6 +144,10 @@ class App {
             this.eventBus = null;
             this.gameState = null;
             this.boardLayout = null;
+            this.turnService = null;
+            this.turnController = null;
+            this.playerTokenRenderer = null;
+            this.roomApi = null;
         }
     }
 

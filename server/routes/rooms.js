@@ -480,4 +480,259 @@ router.post('/:roomId/notifications', async (req, res, next) => {
     }
 });
 
+/**
+ * POST /api/rooms/:roomId/roll
+ * Бросок кубика
+ */
+router.post('/:roomId/roll', async (req, res, next) => {
+    try {
+        const { roomId } = req.params;
+        const { diceChoice = 'single', isReroll = false } = req.body;
+        
+        console.log(`🎲 API: Бросок кубика в комнате ${roomId}`);
+        
+        // Получаем комнату
+        const room = roomService.getRoomById(roomId);
+        if (!room) {
+            return res.status(404).json({
+                success: false,
+                message: 'Комната не найдена'
+            });
+        }
+        
+        // Генерируем результат броска
+        const diceResult = {
+            value: Math.floor(Math.random() * 6) + 1,
+            diceChoice,
+            isReroll,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Обновляем состояние игры
+        const gameState = {
+            canRoll: false,
+            canMove: true,
+            canEndTurn: false,
+            lastDiceResult: diceResult,
+            activePlayer: room.players[room.currentPlayerIndex]
+        };
+        
+        // Обновляем комнату
+        room.gameState = gameState;
+        room.lastDiceRoll = diceResult;
+        
+        console.log(`🎲 API: Результат броска: ${diceResult.value}`);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                diceResult,
+                state: gameState
+            },
+            message: `Выпало: ${diceResult.value}`
+        });
+        
+    } catch (error) {
+        console.error('❌ API: Ошибка броска кубика:', error);
+        next(error);
+    }
+});
+
+/**
+ * POST /api/rooms/:roomId/move
+ * Перемещение игрока
+ */
+router.post('/:roomId/move', async (req, res, next) => {
+    try {
+        const { roomId } = req.params;
+        const { steps } = req.body;
+        
+        console.log(`🚶 API: Перемещение на ${steps} шагов в комнате ${roomId}`);
+        
+        // Получаем комнату
+        const room = roomService.getRoomById(roomId);
+        if (!room) {
+            return res.status(404).json({
+                success: false,
+                message: 'Комната не найдена'
+            });
+        }
+        
+        // Получаем активного игрока
+        const activePlayer = room.players[room.currentPlayerIndex];
+        if (!activePlayer) {
+            return res.status(400).json({
+                success: false,
+                message: 'Активный игрок не найден'
+            });
+        }
+        
+        // Обновляем позицию игрока
+        const newPosition = (activePlayer.position + steps) % 68; // 44 + 24 = 68 общих клеток
+        activePlayer.position = newPosition;
+        
+        // Результат перемещения
+        const moveResult = {
+            playerId: activePlayer.id,
+            oldPosition: activePlayer.position - steps,
+            newPosition,
+            steps,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Обновляем состояние игры
+        const gameState = {
+            canRoll: false,
+            canMove: false,
+            canEndTurn: true,
+            activePlayer,
+            lastDiceResult: room.lastDiceRoll
+        };
+        
+        room.gameState = gameState;
+        
+        console.log(`🚶 API: Игрок ${activePlayer.username} перемещен на позицию ${newPosition}`);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                moveResult,
+                state: gameState
+            },
+            message: `Игрок перемещен на ${steps} шагов`
+        });
+        
+    } catch (error) {
+        console.error('❌ API: Ошибка перемещения:', error);
+        next(error);
+    }
+});
+
+/**
+ * POST /api/rooms/:roomId/end-turn
+ * Завершение хода
+ */
+router.post('/:roomId/end-turn', async (req, res, next) => {
+    try {
+        const { roomId } = req.params;
+        
+        console.log(`🏁 API: Завершение хода в комнате ${roomId}`);
+        
+        // Получаем комнату
+        const room = roomService.getRoomById(roomId);
+        if (!room) {
+            return res.status(404).json({
+                success: false,
+                message: 'Комната не найдена'
+            });
+        }
+        
+        // Переходим к следующему игроку
+        room.currentPlayerIndex = (room.currentPlayerIndex + 1) % room.players.length;
+        const nextPlayer = room.players[room.currentPlayerIndex];
+        
+        // Обновляем состояние игры
+        const gameState = {
+            canRoll: true,
+            canMove: false,
+            canEndTurn: false,
+            activePlayer: nextPlayer,
+            lastDiceResult: null
+        };
+        
+        room.gameState = gameState;
+        room.lastDiceRoll = null;
+        
+        console.log(`🏁 API: Ход передан игроку ${nextPlayer.username}`);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                activePlayerIndex: room.currentPlayerIndex,
+                nextPlayer,
+                state: gameState
+            },
+            message: `Ход передан игроку ${nextPlayer.username}`
+        });
+        
+    } catch (error) {
+        console.error('❌ API: Ошибка завершения хода:', error);
+        next(error);
+    }
+});
+
+/**
+ * GET /api/rooms/:roomId/game-state
+ * Получение состояния игры
+ */
+router.get('/:roomId/game-state', async (req, res, next) => {
+    try {
+        const { roomId } = req.params;
+        
+        console.log(`📊 API: Получение состояния игры в комнате ${roomId}`);
+        
+        // Получаем комнату
+        const room = roomService.getRoomById(roomId);
+        if (!room) {
+            return res.status(404).json({
+                success: false,
+                message: 'Комната не найдена'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                players: room.players,
+                currentPlayerIndex: room.currentPlayerIndex,
+                gameState: room.gameState || {
+                    canRoll: true,
+                    canMove: false,
+                    canEndTurn: false,
+                    activePlayer: room.players[room.currentPlayerIndex],
+                    lastDiceResult: null
+                },
+                isStarted: room.isStarted,
+                createdAt: room.createdAt
+            },
+            message: 'Состояние игры получено'
+        });
+        
+    } catch (error) {
+        console.error('❌ API: Ошибка получения состояния игры:', error);
+        next(error);
+    }
+});
+
+/**
+ * GET /api/rooms/:roomId/players
+ * Получение списка игроков
+ */
+router.get('/:roomId/players', async (req, res, next) => {
+    try {
+        const { roomId } = req.params;
+        
+        console.log(`👥 API: Получение списка игроков в комнате ${roomId}`);
+        
+        // Получаем комнату
+        const room = roomService.getRoomById(roomId);
+        if (!room) {
+            return res.status(404).json({
+                success: false,
+                message: 'Комната не найдена'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            data: room.players,
+            message: `Найдено ${room.players.length} игроков`
+        });
+        
+    } catch (error) {
+        console.error('❌ API: Ошибка получения игроков:', error);
+        next(error);
+    }
+});
+
 module.exports = router;
