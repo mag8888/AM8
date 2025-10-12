@@ -746,7 +746,8 @@ class TurnController {
         if (!state) return;
         
         // Получаем всех игроков из GameState
-        const allPlayers = window.gameState ? window.gameState.getPlayers() : [];
+        const gameState = window.app ? window.app.gameState : window.gameState;
+        const allPlayers = gameState ? gameState.getPlayers() : [];
         const activePlayer = this.turnService.getActivePlayer();
         
         // Обновляем список игроков
