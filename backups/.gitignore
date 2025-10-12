@@ -1,0 +1,6 @@
+# Игнорируем все файлы в backups, кроме структуры папок
+*
+!.gitignore
+!cells/
+cells/*
+!cells/.gitkeep

@@ -15,6 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // API routes (должны быть ПЕРЕД статическими файлами)
 app.use('/api/rooms', require('./server/routes/rooms'));
+app.use('/api/cells', require('./server/routes/cells'));
 
 // Auth API routes
 app.use('/auth/api', require('./auth/server/routes/auth'));
