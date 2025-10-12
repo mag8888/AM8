@@ -237,9 +237,12 @@ function showErrorState(message) {
     if (roomsList) {
         roomsList.innerHTML = `
             <div class="empty-state">
-                <h3>❌ Ошибка</h3>
+                <div class="empty-state-icon">⚠️</div>
+                <h3>Произошла ошибка</h3>
                 <p>${message}</p>
-                <button class="btn btn-primary" onclick="loadRooms()">Попробовать снова</button>
+                <button class="btn btn-secondary btn-lg" onclick="loadRooms()">
+                    🔄 Попробовать снова
+                </button>
             </div>
         `;
     }
@@ -253,9 +256,12 @@ function showEmptyState() {
     if (roomsList) {
         roomsList.innerHTML = `
             <div class="empty-state">
-                <h3>🏠 Нет доступных комнат</h3>
+                <div class="empty-state-icon">🏠</div>
+                <h3>Нет доступных комнат</h3>
                 <p>Создайте новую комнату или подождите, пока кто-то создаст комнату для игры.</p>
-                <button class="btn btn-primary" onclick="showCreateRoomModal()">Создать комнату</button>
+                <button class="btn btn-primary btn-lg" onclick="showCreateRoomModal()">
+                    ➕ Создать комнату
+                </button>
             </div>
         `;
     }
