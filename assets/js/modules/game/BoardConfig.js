@@ -6,7 +6,7 @@
 const BoardConfig = {
     // Количество клеток
     BIG_CIRCLE_CELLS: 44,
-    SMALL_CIRCLE_CELLS: 24,
+    SMALL_CIRCLE_CELLS: 23,
     
     // Внешний трек (44 клетки)
     BIG_CIRCLE: [
@@ -719,7 +719,6 @@ const BoardConfig = {
     
     // Внутренний трек (24 клетки)
     SMALL_CIRCLE: [
-        { "name": "Старт", "description": "Начало внутреннего круга", "icon": "🎯", "color": "#94a3b8", "type": "start", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "none", "actionText": "", "purchasable": false, "special": true, "mandatoryStop": false, "customData": {} },
         { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
         { "name": "Розовые траты", "description": "Обязательные траты от $100 до $4000", "icon": "🛒", "color": "#ec4899", "type": "expense", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Заплатите за бытовые нужды (чайник, кофе, ТВ, прочее)", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "expenseRange": [100, 4000], "expenseType": "household" } },
         { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
