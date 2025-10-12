@@ -18,6 +18,12 @@ class DatabaseConfig {
      * @returns {string} Строка подключения
      */
     buildConnectionString() {
+        // Сначала проверяем, есть ли полная строка подключения
+        if (process.env.MONGODB_URI) {
+            console.log('📊 Database: Используется MONGODB_URI');
+            return process.env.MONGODB_URI;
+        }
+
         const username = process.env.MONGODB_USERNAME || 'aura_money_user';
         const password = process.env.MONGODB_PASSWORD || 'password123';
         const cluster = process.env.MONGODB_CLUSTER || 'cluster0.xyz123.mongodb.net';
