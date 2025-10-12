@@ -25,6 +25,8 @@ class DatabaseConfig {
         console.log('📊 Database: MONGODB_URI:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
         if (process.env.MONGODB_URI) {
             console.log('📊 Database: Используется MONGODB_URI');
+            console.log('📊 Database: URI length:', process.env.MONGODB_URI.length);
+            console.log('📊 Database: URI starts with:', process.env.MONGODB_URI.substring(0, 20));
             return process.env.MONGODB_URI;
         }
 
