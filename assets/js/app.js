@@ -190,6 +190,9 @@ class App {
             
             console.log('✅ App: Игровые компоненты инициализированы');
             
+            // Добавляем тестовых игроков для демонстрации
+            this.gameState.addTestPlayers();
+            
             // Настраиваем обработчики кликов для главной страницы
             this.setupMainPageHandlers();
         } catch (error) {

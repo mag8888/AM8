@@ -67,13 +67,21 @@ class TurnController {
                         </div>
                     </div>
                     
-                    <div class="player-section">
-                        <div class="player-display">
-                            <div class="player-avatar">🎯</div>
-                            <div class="player-details">
-                                <div class="player-name">Загрузка...</div>
-                                <div class="player-status">Ожидание</div>
-                                <div class="player-balance">$0</div>
+                    <div class="players-section">
+                        <div class="players-header">
+                            <h3>👥 Игроки в комнате</h3>
+                            <div class="players-count">2/4</div>
+                        </div>
+                        <div class="players-list">
+                            <!-- Список игроков будет генерироваться динамически -->
+                            <div class="player-item active">
+                                <div class="player-avatar">🎯</div>
+                                <div class="player-details">
+                                    <div class="player-name">Загрузка...</div>
+                                    <div class="player-status">Активен</div>
+                                    <div class="player-balance">$0</div>
+                                </div>
+                                <div class="player-turn-indicator">🎲</div>
                             </div>
                         </div>
                     </div>
@@ -180,13 +188,64 @@ class TurnController {
                 color: #d1d5db;
             }
             
-            /* Секция игрока */
-            .player-section {
+            /* Секция игроков */
+            .players-section {
                 margin-bottom: 1rem;
-                padding: 1rem;
                 background: rgba(255, 255, 255, 0.05);
                 border-radius: 8px;
                 border: 1px solid rgba(34, 197, 94, 0.3);
+                overflow: hidden;
+            }
+            
+            .players-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem 1rem;
+                background: rgba(34, 197, 94, 0.1);
+                border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+            }
+            
+            .players-header h3 {
+                margin: 0;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: #22c55e;
+            }
+            
+            .players-count {
+                font-size: 0.8rem;
+                color: #d1d5db;
+                background: rgba(255, 255, 255, 0.1);
+                padding: 0.25rem 0.5rem;
+                border-radius: 12px;
+            }
+            
+            .players-list {
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            
+            .player-item {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                transition: all 0.2s ease;
+            }
+            
+            .player-item:last-child {
+                border-bottom: none;
+            }
+            
+            .player-item.active {
+                background: rgba(34, 197, 94, 0.1);
+                border-left: 3px solid #22c55e;
+            }
+            
+            .player-item.waiting {
+                opacity: 0.7;
             }
             
             .player-display {
@@ -228,6 +287,22 @@ class TurnController {
                 font-size: 0.9rem;
                 font-weight: 700;
                 margin-top: 0.25rem;
+            }
+            
+            .player-turn-indicator {
+                font-size: 1.2rem;
+                opacity: 0.6;
+                transition: all 0.2s ease;
+            }
+            
+            .player-item.active .player-turn-indicator {
+                opacity: 1;
+                animation: pulse 2s infinite;
+            }
+            
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
             }
             
             /* Кнопки действий */
@@ -670,28 +745,23 @@ class TurnController {
         const state = this.turnService.getState();
         if (!state) return;
         
-        // Обновляем активного игрока
+        // Получаем всех игроков из GameState
+        const allPlayers = window.gameState ? window.gameState.getPlayers() : [];
         const activePlayer = this.turnService.getActivePlayer();
-        if (activePlayer) {
-            const playerName = this.ui.querySelector('.player-name');
-            const playerAvatar = this.ui.querySelector('.player-avatar');
-            const currentPlayer = this.ui.querySelector('.current-player');
-            
-            if (playerName) playerName.textContent = activePlayer.username;
-            if (playerAvatar) playerAvatar.textContent = activePlayer.token || '🎯';
-            if (currentPlayer) currentPlayer.textContent = activePlayer.username;
+        
+        // Обновляем список игроков
+        this.updatePlayersList(allPlayers, activePlayer);
+        
+        // Обновляем счетчик игроков
+        const playersCount = this.ui.querySelector('.players-count');
+        if (playersCount) {
+            playersCount.textContent = `${allPlayers.length}/4`;
         }
         
         // Обновляем информацию о ходе
         const turnInfo = this.ui.querySelector('.turn-info');
-        const playerStatus = this.ui.querySelector('.player-status');
-        
         if (turnInfo) {
             turnInfo.textContent = this.turnService.canRoll() ? 'Ваш ход' : 'Ожидание';
-        }
-        
-        if (playerStatus) {
-            playerStatus.textContent = this.turnService.canRoll() ? 'Активен' : 'Ожидание';
         }
         
         // Обновляем результат кубика
@@ -701,15 +771,6 @@ class TurnController {
             if (diceInfo) {
                 diceInfo.textContent = this.getDiceEmoji(diceResult.value);
                 diceInfo.style.color = '#10b981';
-            }
-        }
-        
-        // Обновляем баланс игрока через BalanceManager
-        if (window.balanceManager && activePlayer) {
-            const playerBalance = window.balanceManager.getFormattedBalance(activePlayer.id);
-            const balanceElement = this.ui.querySelector('.player-balance');
-            if (balanceElement) {
-                balanceElement.textContent = playerBalance;
             }
         }
         
@@ -729,6 +790,57 @@ class TurnController {
         const moveBtns = this.ui.querySelectorAll('.move-btn');
         moveBtns.forEach(btn => {
             btn.disabled = !this.turnService.canMove() || this.isMoving;
+        });
+    }
+    
+    /**
+     * Обновление списка игроков
+     */
+    updatePlayersList(allPlayers, activePlayer) {
+        const playersList = this.ui.querySelector('.players-list');
+        if (!playersList) return;
+        
+        // Очищаем список
+        playersList.innerHTML = '';
+        
+        if (allPlayers.length === 0) {
+            // Показываем заглушку, если нет игроков
+            playersList.innerHTML = `
+                <div class="player-item">
+                    <div class="player-avatar">👤</div>
+                    <div class="player-details">
+                        <div class="player-name">Нет игроков</div>
+                        <div class="player-status">Ожидание подключения</div>
+                        <div class="player-balance">-</div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Создаем элементы для каждого игрока
+        allPlayers.forEach((player, index) => {
+            const isActive = activePlayer && player.id === activePlayer.id;
+            const playerItem = document.createElement('div');
+            playerItem.className = `player-item ${isActive ? 'active' : 'waiting'}`;
+            
+            // Получаем баланс игрока
+            let playerBalance = '$0';
+            if (window.balanceManager) {
+                playerBalance = window.balanceManager.getFormattedBalance(player.id);
+            }
+            
+            playerItem.innerHTML = `
+                <div class="player-avatar">${player.token || '🎯'}</div>
+                <div class="player-details">
+                    <div class="player-name">${player.username || 'Игрок'}</div>
+                    <div class="player-status">${isActive ? 'Активен' : 'Ожидание'}</div>
+                    <div class="player-balance">${playerBalance}</div>
+                </div>
+                <div class="player-turn-indicator">${isActive ? '🎲' : '⏳'}</div>
+            `;
+            
+            playersList.appendChild(playerItem);
         });
     }
     

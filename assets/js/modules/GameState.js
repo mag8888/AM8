@@ -284,6 +284,56 @@ class GameState {
             }
         }
     }
+    
+    /**
+     * Получить список всех игроков
+     * @returns {Array} Массив игроков
+     */
+    getPlayers() {
+        return this.players;
+    }
+    
+    /**
+     * Добавить тестовых игроков для демонстрации
+     */
+    addTestPlayers() {
+        this.players = [
+            {
+                id: 'player1',
+                username: 'TestUser',
+                token: '🎯',
+                position: 0,
+                isInner: false,
+                money: 5000,
+                salary: 5000,
+                totalIncome: 0,
+                monthlyExpenses: 2000,
+                assets: [],
+                dreams: []
+            },
+            {
+                id: 'player2',
+                username: 'Roman',
+                token: '🏠',
+                position: 0,
+                isInner: false,
+                money: 3000,
+                salary: 4000,
+                totalIncome: 0,
+                monthlyExpenses: 1500,
+                assets: [],
+                dreams: []
+            }
+        ];
+        
+        console.log('🎮 GameState: Добавлены тестовые игроки', this.players);
+        
+        if (this.eventBus) {
+            this.eventBus.emit('game:playersUpdated', {
+                players: this.players
+            });
+        }
+    }
 }
 
 window.GameState = GameState;
