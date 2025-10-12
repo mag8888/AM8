@@ -508,11 +508,13 @@
 @media (min-width: 1200px) {
     .turn-menu {
         flex-direction: column;
-        max-width: 350px;
+        max-width: 380px;
+        width: 100%;
     }
     
     .cards-container {
         flex-direction: column;
+        gap: 1.5rem;
     }
     
     .game-operations-card, .game-status-card {
