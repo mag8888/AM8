@@ -181,12 +181,18 @@ class App {
             });
             
             console.log('✅ App: Игровые компоненты инициализированы');
+            
+            // Настраиваем обработчики кликов для главной страницы
+            this.setupMainPageHandlers();
         } catch (error) {
             console.error('❌ App: Ошибка инициализации игровых компонентов:', error);
             // Продолжаем работу без игровых компонентов
             this.eventBus = null;
             this.gameState = null;
             this.boardLayout = null;
+            
+            // Настраиваем обработчики кликов для главной страницы даже без игровых компонентов
+            this.setupMainPageHandlers();
             this.turnService = null;
             this.turnController = null;
             this.playerTokenRenderer = null;
@@ -588,6 +594,60 @@ class App {
     setCurrentUser(user) {
         this.currentUser = user;
         this.updateUserInterface();
+    }
+    
+    /**
+     * Настройка обработчиков для главной страницы
+     */
+    setupMainPageHandlers() {
+        console.log('🖱️ App: Настройка обработчиков главной страницы');
+        
+        // Обработчик кнопки "Выбрать комнату"
+        const selectRoomBtn = document.getElementById('select-room-btn');
+        if (selectRoomBtn) {
+            selectRoomBtn.addEventListener('click', () => {
+                console.log('🏠 App: Переход к выбору комнаты');
+                window.location.href = 'pages/rooms.html';
+            });
+            console.log('✅ App: Обработчик кнопки "Выбрать комнату" настроен');
+        } else {
+            console.warn('⚠️ App: Кнопка "Выбрать комнату" не найдена');
+        }
+        
+        // Обработчик кнопки "Авторизация"
+        const authBtn = document.getElementById('auth-btn');
+        if (authBtn) {
+            authBtn.addEventListener('click', () => {
+                console.log('🔐 App: Переход к авторизации');
+                window.location.href = 'auth/';
+            });
+            console.log('✅ App: Обработчик кнопки "Авторизация" настроен');
+        } else {
+            console.warn('⚠️ App: Кнопка "Авторизация" не найдена');
+        }
+        
+        // Обработчик кнопки "Админ" в навигации
+        const adminBtn = document.querySelector('.nav-button[href="/admin/"]');
+        if (adminBtn) {
+            adminBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('⚙️ App: Переход к админ панели');
+                window.location.href = 'admin/';
+            });
+            console.log('✅ App: Обработчик кнопки "Админ" настроен');
+        }
+        
+        // Обработчик кнопки "Войти" в навигации
+        const navAuthBtn = document.getElementById('auth-button');
+        if (navAuthBtn) {
+            navAuthBtn.addEventListener('click', () => {
+                console.log('🔐 App: Переход к авторизации через навигацию');
+                window.location.href = 'auth/';
+            });
+            console.log('✅ App: Обработчик кнопки "Войти" в навигации настроен');
+        }
+        
+        console.log('✅ App: Обработчики главной страницы настроены');
     }
 }
 
