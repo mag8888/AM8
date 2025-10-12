@@ -162,7 +162,8 @@ class BoardLayout {
         cell.appendChild(numberElement);
         cell.appendChild(iconElement);
 
-        const shouldDisplayDreamHeart = !isInner && type === 'dream';
+        // Показываем сердечко только если эта мечта выбрана кем-то из игроков
+        const shouldDisplayDreamHeart = !isInner && type === 'dream' && this.isDreamSelectedByPlayer(position);
         if (shouldDisplayDreamHeart) {
             const heart = document.createElement('div');
             heart.className = 'dream-heart';
@@ -171,6 +172,59 @@ class BoardLayout {
         }
 
         return cell;
+    }
+
+    /**
+     * Проверяет, выбрана ли мечта на данной позиции кем-то из игроков
+     * @param {number} position - Позиция клетки
+     * @returns {boolean}
+     */
+    isDreamSelectedByPlayer(position) {
+        if (!this.gameState || !this.gameState.players) {
+            return false;
+        }
+        
+        // Получаем данные клетки мечты
+        const dreamCellData = this.outerCellsConfig[position];
+        if (!dreamCellData || dreamCellData.type !== 'dream') {
+            return false;
+        }
+        
+        // Проверяем, есть ли у игроков выбранная мечта
+        return this.gameState.players.some(player => {
+            if (player.dream && player.dream.id) {
+                console.log(`❤️ BoardLayout: Игрок ${player.username} выбрал мечту: ${player.dream.id}`);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /**
+     * Обновляет отображение сердечек на мечтах в зависимости от выбранных игроками мечт
+     */
+    updateDreamHearts() {
+        if (!this.outerTrackElement) return;
+        
+        const dreamCells = this.outerTrackElement.querySelectorAll('.track-cell.cell-dream');
+        dreamCells.forEach(cell => {
+            const position = parseInt(cell.dataset.position);
+            const heart = cell.querySelector('.dream-heart');
+            const shouldShowHeart = this.isDreamSelectedByPlayer(position);
+            
+            if (shouldShowHeart && !heart) {
+                // Добавляем сердечко
+                const heartElement = document.createElement('div');
+                heartElement.className = 'dream-heart';
+                heartElement.textContent = '❤️';
+                cell.appendChild(heartElement);
+                console.log(`❤️ BoardLayout: Добавлено сердечко на позицию ${position}`);
+            } else if (!shouldShowHeart && heart) {
+                // Убираем сердечко
+                heart.remove();
+                console.log(`❤️ BoardLayout: Убрано сердечко с позиции ${position}`);
+            }
+        });
     }
 
     /**
@@ -421,6 +475,14 @@ class BoardLayout {
     }
 
     /**
+     * Handle players updated event
+     */
+    handlePlayersUpdated(data) {
+        console.log('👥 BoardLayout: Игроки обновлены, обновляем сердечки мечт');
+        this.updateDreamHearts();
+    }
+
+    /**
      * Ensure track elements exist and cache them.
      */
     ensureTrackElements() {
@@ -473,6 +535,7 @@ class BoardLayout {
 
         this.eventBus.on('player:moved', this.boundHandlePlayerMoved);
         this.eventBus.on('game:started', this.boundHandleGameStarted);
+        this.eventBus.on('game:playersUpdated', this.handlePlayersUpdated.bind(this));
     }
 
     /**

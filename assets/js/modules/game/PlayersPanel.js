@@ -383,7 +383,7 @@ class PlayersPanel {
         } else {
             playersList.innerHTML = players.map((player, index) => `
                 <div class="player-item ${index === 0 ? 'active' : ''}" data-player-id="${player.id}">
-                    <div class="player-avatar">${player.token || '🎯'}</div>
+                    <div class="player-avatar">${this.getTokenIcon(player.token)}</div>
                     <div class="player-info">
                         <p class="player-name">${player.username || `Игрок ${index + 1}`}</p>
                         <p class="player-status">${player.isReady ? 'Готов' : 'Готовится'}</p>
@@ -433,6 +433,26 @@ class PlayersPanel {
                 diceResult.textContent = roll;
             }
         }
+    }
+    
+    /**
+     * Получить иконку токена
+     */
+    getTokenIcon(tokenId) {
+        const tokenIcons = {
+            'lion': '🦁',
+            'eagle': '🦅', 
+            'fox': '🦊',
+            'bear': '🐻',
+            'tiger': '🐅',
+            'wolf': '🐺',
+            'elephant': '🐘',
+            'shark': '🦈',
+            'owl': '🦉',
+            'dolphin': '🐬'
+        };
+        
+        return tokenIcons[tokenId] || '🎯';
     }
     
     /**

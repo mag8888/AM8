@@ -223,13 +223,34 @@ class PlayerTokens {
         token.dataset.playerId = player.id;
         token.dataset.playerName = player.username;
         
-        // Используем иконку фишки вместо буквы
-        token.textContent = player.token || '🎯';
+        // Используем иконку фишки вместо текста
+        const tokenIcon = this.getTokenIcon(player.token);
+        token.textContent = tokenIcon;
         
         // Добавляем информацию о игроке в title
         token.title = `${player.username} - $${player.money || 0}`;
         
         return token;
+    }
+    
+    /**
+     * Получить иконку токена
+     */
+    getTokenIcon(tokenId) {
+        const tokenIcons = {
+            'lion': '🦁',
+            'eagle': '🦅', 
+            'fox': '🦊',
+            'bear': '🐻',
+            'tiger': '🐅',
+            'wolf': '🐺',
+            'elephant': '🐘',
+            'shark': '🦈',
+            'owl': '🦉',
+            'dolphin': '🐬'
+        };
+        
+        return tokenIcons[tokenId] || '🎯';
     }
     
     /**

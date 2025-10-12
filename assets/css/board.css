@@ -20,8 +20,10 @@
     justify-content: center;
     padding: min(2vmin, 20px);
     margin-top: 10px; /* Уменьшенный отступ от верхней навигации */
-    min-height: calc(100vh - 120px); /* Обеспечиваем центрирование по вертикали */
+    min-height: calc(100vh - 140px); /* Обеспечиваем центрирование по вертикали */
     position: relative;
+    flex: 1;
+    order: 1; /* Игровое поле должно быть первым */
 }
 
 .board-wrapper {

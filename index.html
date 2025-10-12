@@ -210,21 +210,27 @@
         /* На больших экранах - меню справа */
         @media (min-width: 1200px) {
             .game-page {
-                display: grid;
-                grid-template-columns: 1fr 350px;
+                display: flex;
+                flex-direction: row;
                 gap: 2rem;
-                align-items: start;
+                align-items: flex-start;
+                min-height: calc(100vh - 80px);
             }
             
             .game-board-container {
-                grid-column: 1;
+                flex: 1;
+                order: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .game-control-panel {
-                grid-column: 2;
-                margin-top: 0;
+                width: 350px;
+                order: 2;
                 position: sticky;
                 top: 100px;
+                align-self: flex-start;
             }
         }
 
