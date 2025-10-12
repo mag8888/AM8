@@ -73,9 +73,14 @@ class PlayersPanel {
                 </div>
                 
                 <div class="game-controls">
-                    <button class="btn btn-primary" id="roll-dice" disabled>
-                        🎲 Бросить кубик
-                    </button>
+                    <div class="dice-controls">
+                        <button class="btn btn-primary" id="roll-dice" disabled>
+                            🎲 Бросить кубик
+                        </button>
+                        <button class="btn btn-secondary" id="pass-turn" disabled>
+                            ➡️ Передать ход
+                        </button>
+                    </div>
                     
                     <div class="turn-info">
                         <div class="turn-item">
@@ -242,6 +247,17 @@ class PlayersPanel {
                 flex-direction: column;
                 gap: 1rem;
             }
+
+            .dice-controls {
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+            }
+
+            .dice-controls .btn {
+                flex: 1;
+                min-width: 120px;
+            }
             
             .turn-info {
                 background: rgba(255, 255, 255, 0.05);
@@ -358,6 +374,13 @@ class PlayersPanel {
         if (rollDiceBtn) {
             rollDiceBtn.addEventListener('click', () => {
                 this.rollDice();
+            });
+        }
+
+        const passTurnBtn = document.getElementById('pass-turn');
+        if (passTurnBtn) {
+            passTurnBtn.addEventListener('click', () => {
+                this.passTurn();
             });
         }
         
@@ -514,6 +537,16 @@ class PlayersPanel {
             if (diceResult) {
                 diceResult.textContent = roll;
             }
+        }
+    }
+
+    /**
+     * Передача хода
+     */
+    passTurn() {
+        if (this.gameState) {
+            this.gameState.passTurnToNextPlayer();
+            console.log('➡️ PlayersPanel: Ход передан следующему игроку');
         }
     }
     

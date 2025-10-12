@@ -132,6 +132,28 @@
             margin: 0 auto;
             min-height: calc(100vh - 80px); /* Учитываем высоту навигации */
         }
+
+        /* Специальная навигация для игровой комнаты */
+        .app-navigation.game-room-nav {
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0.75rem 0;
+        }
+
+        .game-room-nav .nav-container {
+            justify-content: flex-end;
+        }
+
+        .game-room-nav .nav-logo,
+        .game-room-nav .nav-menu,
+        .game-room-nav .nav-button[href="/admin/"] {
+            display: none;
+        }
+
+        .game-room-nav .nav-user {
+            margin-left: auto;
+        }
         
         /* Оптимизированное игровое поле для главной страницы */
         .game-page .board-wrapper {

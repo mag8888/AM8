@@ -490,6 +490,9 @@ class App {
         try {
             console.log('🎮 App: Обновление интерфейса игры');
             
+            // Применяем специальную навигацию для игровой комнаты
+            this.applyGameRoomNavigation();
+            
             // Загружаем игроков в GameState
             if (this.gameState) {
                 this.gameState.loadPlayersFromRoom(roomData);
@@ -785,30 +788,34 @@ class App {
             console.log('🔄 Тестовый сброс: все игроки возвращены на старт');
         });
 
-        // Кнопка для передачи хода
-        const passTurnBtn = document.createElement('button');
-        passTurnBtn.textContent = '➡️ Передать ход';
-        passTurnBtn.style.cssText = `
-            padding: 8px 12px;
-            background: #f59e0b;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        `;
-        passTurnBtn.addEventListener('click', () => {
-            this.gameState.passTurnToNextPlayer();
-            console.log('➡️ Ход передан следующему игроку');
-        });
-
         testControls.appendChild(movePlayer1Btn);
         testControls.appendChild(movePlayer2Btn);
-        testControls.appendChild(passTurnBtn);
         testControls.appendChild(resetBtn);
 
         document.body.appendChild(testControls);
         console.log('🧪 App: Тестовые кнопки для движения фишек добавлены');
+    }
+
+    /**
+     * Применить специальную навигацию для игровой комнаты
+     */
+    applyGameRoomNavigation() {
+        const navigation = document.querySelector('.app-navigation');
+        if (navigation) {
+            navigation.classList.add('game-room-nav');
+            console.log('🎮 App: Применена навигация для игровой комнаты');
+        }
+    }
+
+    /**
+     * Убрать специальную навигацию для игровой комнаты
+     */
+    removeGameRoomNavigation() {
+        const navigation = document.querySelector('.app-navigation');
+        if (navigation) {
+            navigation.classList.remove('game-room-nav');
+            console.log('🎮 App: Убрана навигация для игровой комнаты');
+        }
     }
 }
 

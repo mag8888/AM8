@@ -57,19 +57,20 @@ class PlayerTokens {
         styles.textContent = `
             .player-token {
                 position: absolute;
-                width: 24px;
-                height: 24px;
+                width: 32px;
+                height: 32px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 0.8rem;
-                font-weight: 600;
-                border: 2px solid rgba(255, 255, 255, 0.8);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                font-size: 1.4rem;
+                font-weight: bold;
+                border: 3px solid rgba(255, 255, 255, 0.9);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.2);
                 transition: all 0.3s ease;
-                z-index: 100;
+                z-index: 200;
                 pointer-events: none;
+                backdrop-filter: blur(5px);
             }
             
             .player-token:hover {
@@ -201,8 +202,8 @@ class PlayerTokens {
             // Рассчитываем смещение для множественных фишек
             const offset = this.calculateOffset(index, players.length);
             
-            token.style.left = `${baseX + offset.x - 12}px`; // -12 для центрирования (24px/2)
-            token.style.top = `${baseY + offset.y - 12}px`;
+            token.style.left = `${baseX + offset.x - 16}px`; // -16 для центрирования (32px/2)
+            token.style.top = `${baseY + offset.y - 16}px`;
             
             trackElement.appendChild(token);
             this.tokens.set(player.id, token);
@@ -263,7 +264,7 @@ class PlayerTokens {
         
         // Располагаем фишки по кругу
         const angle = (index * 2 * Math.PI) / totalPlayers;
-        const radius = 8; // Радиус смещения в пикселях
+        const radius = 12; // Радиус смещения в пикселях (увеличен для больших токенов)
         
         return {
             x: Math.cos(angle) * radius,
