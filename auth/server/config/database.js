@@ -22,6 +22,7 @@ class DatabaseConfig {
      */
     buildConnectionString() {
         // Сначала проверяем, есть ли полная строка подключения
+        console.log('📊 Database: MONGODB_URI:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
         if (process.env.MONGODB_URI) {
             console.log('📊 Database: Используется MONGODB_URI');
             return process.env.MONGODB_URI;
