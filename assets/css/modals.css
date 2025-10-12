@@ -18,12 +18,14 @@
     justify-content: center;
     opacity: 0;
     transition: opacity 0.3s ease;
+    pointer-events: none; /* Отключаем pointer events по умолчанию */
 }
 
 .modal.show {
     display: flex;
     opacity: 1;
     animation: modalFadeIn 0.3s ease;
+    pointer-events: auto; /* Включаем pointer events только когда модальное окно активно */
 }
 
 /* Анимация появления */
@@ -238,6 +240,12 @@
     height: 100%;
     z-index: 10000;
     pointer-events: none;
+    display: none; /* Скрываем по умолчанию */
+}
+
+.modal-container:has(.game-modal) {
+    display: block; /* Показываем только когда есть модальное окно */
+    pointer-events: auto;
 }
 
 .game-modal {
