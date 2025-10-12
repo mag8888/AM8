@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест BalanceManager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #2563eb;
+        }
+        .balance-display {
+            background: #374151;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .log {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 5px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Тест BalanceManager</h1>
+        
+        <div class="test-section">
+            <h3>💰 Управление балансами</h3>
+            <button class="test-button" onclick="testUpdateBalance()">Обновить баланс</button>
+            <button class="test-button" onclick="testGetBalance()">Получить баланс</button>
+            <button class="test-button" onclick="testRefreshFromGameState()">Обновить из GameState</button>
+            <button class="test-button" onclick="testGetAllBalances()">Получить все балансы</button>
+            <button class="test-button" onclick="testClearBalances()">Очистить балансы</button>
+            
+            <div class="balance-display" id="balance-display">
+                Балансы: {}
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Статистика</h3>
+            <button class="test-button" onclick="testGetStats()">Получить статистику</button>
+            <button class="test-button" onclick="testHasEnoughMoney()">Проверить достаточность средств</button>
+            <button class="test-button" onclick="testGetFormattedBalance()">Форматированный баланс</button>
+            
+            <div class="balance-display" id="stats-display">
+                Статистика: {}
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔄 Тестирование оптимизаций</h3>
+            <button class="test-button" onclick="testDebounce()">Тест Debounce</button>
+            <button class="test-button" onclick="testDataFreshness()">Тест свежести данных</button>
+            <button class="test-button" onclick="testPerformance()">Тест производительности</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📝 Логи</h3>
+            <div class="log" id="log"></div>
+            <button class="test-button" onclick="clearLog()">Очистить логи</button>
+        </div>
+    </div>
+
+    <!-- Подключаем BalanceManager -->
+    <script src="assets/js/modules/game/BalanceManager.js"></script>
+    
+    <script>
+        // Создаем экземпляр BalanceManager
+        const balanceManager = new BalanceManager();
+        
+        // Перехватываем console.log для отображения в интерфейсе
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const logElement = document.getElementById('log');
+            if (logElement) {
+                logElement.innerHTML += args.join(' ') + '<br>';
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+        };
+        
+        // Тестовые данные
+        const testPlayers = [
+            { id: 'player1', username: 'Игрок 1', cash: 1000 },
+            { id: 'player2', username: 'Игрок 2', cash: 2500 },
+            { id: 'player3', username: 'Игрок 3', cash: 750 },
+            { id: 'player4', username: 'Игрок 4', cash: 3200 }
+        ];
+        
+        function testUpdateBalance() {
+            const userId = 'player1';
+            const newBalance = Math.floor(Math.random() * 5000);
+            balanceManager.updateBalance(userId, newBalance, 'manual');
+            updateBalanceDisplay();
+        }
+        
+        function testGetBalance() {
+            const userId = 'player1';
+            const balance = balanceManager.getBalance(userId);
+            console.log(`💰 Баланс игрока ${userId}: $${balance}`);
+        }
+        
+        function testRefreshFromGameState() {
+            // Обновляем случайные балансы
+            testPlayers.forEach(player => {
+                player.cash = Math.floor(Math.random() * 5000);
+            });
+            balanceManager.refreshFromGameState(testPlayers);
+            updateBalanceDisplay();
+        }
+        
+        function testGetAllBalances() {
+            const allBalances = balanceManager.getAllBalances();
+            console.log('📊 Все балансы:', allBalances);
+            updateBalanceDisplay();
+        }
+        
+        function testClearBalances() {
+            balanceManager.clearBalances();
+            console.log('🧹 Все балансы очищены');
+            updateBalanceDisplay();
+        }
+        
+        function testGetStats() {
+            const stats = balanceManager.getStats();
+            document.getElementById('stats-display').textContent = `Статистика: ${JSON.stringify(stats, null, 2)}`;
+            console.log('📈 Статистика:', stats);
+        }
+        
+        function testHasEnoughMoney() {
+            const userId = 'player1';
+            const requiredAmount = 1500;
+            const hasEnough = balanceManager.hasEnoughMoney(userId, requiredAmount);
+            console.log(`💳 У игрока ${userId} ${hasEnough ? 'достаточно' : 'недостаточно'} средств для суммы $${requiredAmount}`);
+        }
+        
+        function testGetFormattedBalance() {
+            const userId = 'player1';
+            const formattedBalance = balanceManager.getFormattedBalance(userId);
+            console.log(`💵 Форматированный баланс игрока ${userId}: ${formattedBalance}`);
+        }
+        
+        function testDebounce() {
+            console.log('🔄 Тестирование debounce (5 обновлений подряд)...');
+            for (let i = 0; i < 5; i++) {
+                balanceManager.refreshFromGameState(testPlayers);
+            }
+            console.log('✅ Debounce тест завершен - должны быть пропущены повторные обновления');
+        }
+        
+        function testDataFreshness() {
+            const userId = 'player1';
+            balanceManager.updateBalance(userId, 1000, 'test');
+            
+            console.log('⏰ Данные свежие:', balanceManager.isDataFresh(userId));
+            
+            // Ждем 4 секунды и проверяем снова
+            setTimeout(() => {
+                console.log('⏰ Данные устарели:', !balanceManager.isDataFresh(userId));
+            }, 4000);
+        }
+        
+        function testPerformance() {
+            console.log('⚡ Тестирование производительности...');
+            const startTime = performance.now();
+            
+            // Создаем 100 игроков и обновляем их балансы
+            const players = [];
+            for (let i = 0; i < 100; i++) {
+                players.push({
+                    id: `perf_player_${i}`,
+                    username: `Игрок ${i}`,
+                    cash: Math.floor(Math.random() * 10000)
+                });
+            }
+            
+            balanceManager.refreshFromGameState(players);
+            
+            const endTime = performance.now();
+            console.log(`⚡ Обновление 100 балансов заняло: ${(endTime - startTime).toFixed(2)}ms`);
+        }
+        
+        function updateBalanceDisplay() {
+            const allBalances = balanceManager.getAllBalances();
+            document.getElementById('balance-display').textContent = 
+                `Балансы: ${JSON.stringify(allBalances, null, 2)}`;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // Инициализация
+        console.log('🚀 BalanceManager тест инициализирован');
+        console.log('💡 Используйте кнопки для тестирования различных функций');
+        
+        // Загружаем тестовые данные
+        balanceManager.refreshFromGameState(testPlayers);
+        updateBalanceDisplay();
+    </script>
+</body>
+</html>

@@ -129,6 +129,15 @@ class App {
                 this.turnController = null;
             }
             
+            // Создаем BalanceManager
+            this.balanceManager = new window.BalanceManager({
+                gameState: this.gameState
+            });
+            console.log('💰 App: BalanceManager создан');
+            
+            // Сохраняем BalanceManager в глобальной области
+            window.balanceManager = this.balanceManager;
+            
             // Инициализируем BoardLayout
             this.boardLayout = new window.BoardLayout({
                 outerTrackSelector: '#outer-track',
@@ -445,6 +454,11 @@ class App {
                     `;
                     console.log('✅ App: Панель управления активна');
                 }
+            }
+            
+            // Обновляем балансы игроков через BalanceManager
+            if (this.balanceManager && roomData.players) {
+                this.balanceManager.refreshFromGameState(roomData.players);
             }
             
             console.log('✅ App: Интерфейс игры обновлен');

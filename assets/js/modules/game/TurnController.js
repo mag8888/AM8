@@ -73,6 +73,7 @@ class TurnController {
                             <div class="player-details">
                                 <div class="player-name">Загрузка...</div>
                                 <div class="player-status">Ожидание</div>
+                                <div class="player-balance">$0</div>
                             </div>
                         </div>
                     </div>
@@ -219,6 +220,13 @@ class TurnController {
             .player-status {
                 color: #10b981;
                 font-size: 0.8rem;
+                margin-top: 0.25rem;
+            }
+            
+            .player-balance {
+                color: #fbbf24;
+                font-size: 0.9rem;
+                font-weight: 700;
                 margin-top: 0.25rem;
             }
             
@@ -693,6 +701,15 @@ class TurnController {
             if (diceInfo) {
                 diceInfo.textContent = this.getDiceEmoji(diceResult.value);
                 diceInfo.style.color = '#10b981';
+            }
+        }
+        
+        // Обновляем баланс игрока через BalanceManager
+        if (window.balanceManager && activePlayer) {
+            const playerBalance = window.balanceManager.getFormattedBalance(activePlayer.id);
+            const balanceElement = this.ui.querySelector('.player-balance');
+            if (balanceElement) {
+                balanceElement.textContent = playerBalance;
             }
         }
         
