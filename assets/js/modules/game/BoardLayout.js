@@ -47,6 +47,9 @@ class BoardLayout {
         this.boundHandleGameStarted = this.handleGameStarted.bind(this);
         this.boundHandleResize = this.positionCells.bind(this);
 
+        // Инициализируем попап для клеток
+        this.cellPopup = null;
+
         this.ensureTrackElements();
         this.attachTrackListeners();
         this.setupEventBusListeners();
@@ -384,6 +387,16 @@ class BoardLayout {
         if (!cellData) {
             return;
         }
+
+        // Инициализируем попап если еще не создан
+        if (!this.cellPopup) {
+            this.cellPopup = new CellPopup({
+                eventBus: this.eventBus
+            });
+        }
+
+        // Показываем попап с информацией о клетке
+        this.cellPopup.show(cellData, position, isInner);
 
         if (this.eventBus && typeof this.eventBus.emit === 'function') {
             this.eventBus.emit('cell:clicked', {

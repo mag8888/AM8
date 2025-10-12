@@ -509,6 +509,91 @@ class GameState {
             this.addTestPlayers();
         }
     }
+
+    /**
+     * Переместить игрока на новую позицию
+     * @param {string} playerId - ID игрока
+     * @param {number} newPosition - Новая позиция
+     * @param {boolean} isInner - На внутреннем круге
+     */
+    movePlayer(playerId, newPosition, isInner = false) {
+        const player = this.getPlayerById(playerId);
+        if (!player) {
+            console.warn('⚠️ GameState: Игрок не найден для перемещения:', playerId);
+            return;
+        }
+
+        const oldPosition = player.position;
+        const oldIsInner = player.isInner;
+
+        // Обновляем позицию игрока
+        player.position = newPosition;
+        player.isInner = isInner;
+
+        console.log(`🎯 GameState: Игрок ${player.username} перемещен с позиции ${oldPosition} на позицию ${newPosition} (${isInner ? 'внутренний' : 'внешний'} круг)`);
+
+        // Эмитируем событие о перемещении
+        if (this.eventBus) {
+            this.eventBus.emit('player:moved', {
+                playerId,
+                player,
+                oldPosition,
+                newPosition,
+                oldIsInner,
+                isInner
+            });
+
+            // Также эмитируем событие обновления позиции для PlayerTokens
+            this.eventBus.emit('player:positionUpdated', {
+                playerId,
+                position: newPosition,
+                player
+            });
+        }
+    }
+
+    /**
+     * Получить игроков на определенной позиции
+     * @param {number} position - Позиция
+     * @param {boolean} isInner - На внутреннем круге
+     * @returns {Array} Массив игроков на позиции
+     */
+    getPlayersAtPosition(position, isInner = false) {
+        return this.players.filter(player => 
+            player.position === position && player.isInner === isInner
+        );
+    }
+
+    /**
+     * Переместить игрока на несколько позиций вперед
+     * @param {string} playerId - ID игрока
+     * @param {number} steps - Количество шагов
+     */
+    movePlayerForward(playerId, steps) {
+        const player = this.getPlayerById(playerId);
+        if (!player) {
+            console.warn('⚠️ GameState: Игрок не найден для перемещения:', playerId);
+            return;
+        }
+
+        let newPosition = player.position + steps;
+        let newIsInner = player.isInner;
+
+        // Логика перехода с малого круга на большой
+        if (player.isInner && newPosition >= 12) {
+            // Переходим на большой круг
+            newIsInner = false;
+            newPosition = newPosition - 12; // Корректируем позицию для большого круга
+        } else if (!player.isInner && newPosition >= 44) {
+            // Обходим большой круг
+            newPosition = newPosition % 44;
+        } else if (player.isInner && newPosition >= 12) {
+            // Обходим малый круг
+            newPosition = newPosition % 12;
+        }
+
+        this.movePlayer(playerId, newPosition, newIsInner);
+    }
 }
 
 window.GameState = GameState;

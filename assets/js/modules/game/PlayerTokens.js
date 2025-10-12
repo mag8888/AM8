@@ -204,11 +204,11 @@ class PlayerTokens {
             token.style.left = `${baseX + offset.x - 12}px`; // -12 для центрирования (24px/2)
             token.style.top = `${baseY + offset.y - 12}px`;
             
-            // Добавляем класс для анимации
-            token.classList.add('appearing');
-            
             trackElement.appendChild(token);
             this.tokens.set(player.id, token);
+            
+            // Запускаем анимацию появления
+            this.animateTokenAppearance(token);
             
             console.log(`🎯 PlayerTokens: Фишка ${player.username} создана на позиции ${position}`);
         });
@@ -272,7 +272,7 @@ class PlayerTokens {
     }
     
     /**
-     * Обновление позиции фишки
+     * Обновление позиции фишки с анимацией
      */
     updateTokenPosition(playerId, newPosition, isInner) {
         const token = this.tokens.get(playerId);
@@ -302,19 +302,81 @@ class PlayerTokens {
         const newX = cellRect.left - trackRect.left + cellRect.width / 2;
         const newY = cellRect.top - trackRect.top + cellRect.height / 2;
         
-        // Добавляем класс для анимации перемещения
-        token.classList.add('moving');
+        // Получаем текущую позицию фишки
+        const currentX = parseFloat(token.style.left) || 0;
+        const currentY = parseFloat(token.style.top) || 0;
         
-        // Обновляем позицию
-        token.style.left = `${newX - 12}px`;
-        token.style.top = `${newY - 12}px`;
-        
-        // Убираем класс анимации через некоторое время
-        setTimeout(() => {
-            token.classList.remove('moving');
-        }, 500);
+        // Анимируем движение
+        this.animateTokenMovement(token, currentX, currentY, newX - 12, newY - 12);
         
         console.log(`🎯 PlayerTokens: Фишка ${playerId} перемещена на позицию ${newPosition}`);
+    }
+    
+    /**
+     * Анимация движения фишки
+     */
+    animateTokenMovement(token, fromX, fromY, toX, toY) {
+        // Добавляем класс для анимации
+        token.classList.add('moving');
+        
+        // Создаем keyframes для анимации
+        const keyframes = [
+            { 
+                left: `${fromX}px`, 
+                top: `${fromY}px`,
+                transform: 'scale(1)'
+            },
+            { 
+                left: `${(fromX + toX) / 2}px`, 
+                top: `${(fromY + toY) / 2}px`,
+                transform: 'scale(1.2)'
+            },
+            { 
+                left: `${toX}px`, 
+                top: `${toY}px`,
+                transform: 'scale(1)'
+            }
+        ];
+        
+        // Выполняем анимацию
+        token.animate(keyframes, {
+            duration: 800,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            fill: 'forwards'
+        }).onfinish = () => {
+            // Устанавливаем финальную позицию
+            token.style.left = `${toX}px`;
+            token.style.top = `${toY}px`;
+            
+            // Убираем класс анимации
+            token.classList.remove('moving');
+        };
+    }
+    
+    /**
+     * Анимация появления фишки
+     */
+    animateTokenAppearance(token) {
+        const keyframes = [
+            { 
+                opacity: '0',
+                transform: 'scale(0) rotate(0deg)'
+            },
+            { 
+                opacity: '1',
+                transform: 'scale(1.2) rotate(180deg)'
+            },
+            { 
+                opacity: '1',
+                transform: 'scale(1) rotate(360deg)'
+            }
+        ];
+        
+        token.animate(keyframes, {
+            duration: 600,
+            easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+            fill: 'forwards'
+        });
     }
     
     /**

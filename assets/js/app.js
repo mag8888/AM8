@@ -658,6 +658,9 @@ class App {
         } else {
             console.warn('⚠️ App: Кнопка "Авторизация" не найдена');
         }
+
+        // Добавляем тестовые кнопки для движения фишек (только для разработки)
+        this.addTestMovementButtons();
         
         // Обработчик кнопки "Админ" в навигации
         const adminBtn = document.querySelector('.nav-button[href="/admin/"]');
@@ -681,6 +684,99 @@ class App {
         }
         
         console.log('✅ App: Обработчики главной страницы настроены');
+    }
+
+    /**
+     * Добавление тестовых кнопок для движения фишек (только для разработки)
+     */
+    addTestMovementButtons() {
+        // Проверяем, что мы на главной странице и есть игровые компоненты
+        if (!this.gameState || !document.querySelector('.game-board-container')) {
+            return;
+        }
+
+        // Создаем контейнер для тестовых кнопок
+        const testControls = document.createElement('div');
+        testControls.id = 'test-movement-controls';
+        testControls.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        `;
+
+        // Кнопка для перемещения первого игрока
+        const movePlayer1Btn = document.createElement('button');
+        movePlayer1Btn.textContent = '🎲 Ход игрока 1';
+        movePlayer1Btn.style.cssText = `
+            padding: 8px 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        `;
+        movePlayer1Btn.addEventListener('click', () => {
+            if (this.gameState.players.length > 0) {
+                const steps = Math.floor(Math.random() * 6) + 1; // 1-6
+                this.gameState.movePlayerForward(this.gameState.players[0].id, steps);
+                console.log(`🎲 Тестовый ход: игрок ${this.gameState.players[0].username} прошел ${steps} шагов`);
+            }
+        });
+
+        // Кнопка для перемещения второго игрока
+        const movePlayer2Btn = document.createElement('button');
+        movePlayer2Btn.textContent = '🎲 Ход игрока 2';
+        movePlayer2Btn.style.cssText = `
+            padding: 8px 12px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        `;
+        movePlayer2Btn.addEventListener('click', () => {
+            if (this.gameState.players.length > 1) {
+                const steps = Math.floor(Math.random() * 6) + 1; // 1-6
+                this.gameState.movePlayerForward(this.gameState.players[1].id, steps);
+                console.log(`🎲 Тестовый ход: игрок ${this.gameState.players[1].username} прошел ${steps} шагов`);
+            }
+        });
+
+        // Кнопка для сброса позиций
+        const resetBtn = document.createElement('button');
+        resetBtn.textContent = '🔄 Сброс';
+        resetBtn.style.cssText = `
+            padding: 8px 12px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        `;
+        resetBtn.addEventListener('click', () => {
+            this.gameState.players.forEach(player => {
+                this.gameState.movePlayer(player.id, 0, true); // Возвращаем на старт
+            });
+            console.log('🔄 Тестовый сброс: все игроки возвращены на старт');
+        });
+
+        testControls.appendChild(movePlayer1Btn);
+        testControls.appendChild(movePlayer2Btn);
+        testControls.appendChild(resetBtn);
+
+        document.body.appendChild(testControls);
+        console.log('🧪 App: Тестовые кнопки для движения фишек добавлены');
     }
 }
 
