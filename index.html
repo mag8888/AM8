@@ -127,34 +127,35 @@
 
         /* Стили для игровой страницы */
         .game-page {
-            padding: 2rem;
+            padding: 1rem;
             max-width: 1600px;
             margin: 0 auto;
+            min-height: calc(100vh - 80px); /* Учитываем высоту навигации */
         }
         
-        /* Увеличенное игровое поле для главной страницы */
+        /* Оптимизированное игровое поле для главной страницы */
         .game-page .board-wrapper {
-            width: min(98vmin, 1000px) !important;
-            height: min(98vmin, 1000px) !important;
-            border: 4px solid #666 !important;
-            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5) !important;
+            width: min(75vmin, 700px) !important;
+            height: min(75vmin, 700px) !important;
+            border: 3px solid #666 !important;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
         }
         
         .game-page .track-cell {
-            border-radius: 24px !important;
+            border-radius: 6px !important;
             border: 2.5px solid var(--surface-border) !important;
             font-weight: 700 !important;
         }
         
         .game-page .cell-icon {
-            font-size: clamp(2rem, 4.5vmin, 3rem) !important;
+            font-size: clamp(1.2rem, 2.5vmin, 1.8rem) !important;
         }
         
         .game-page .cell-number {
-            width: 20px !important;
-            height: 20px !important;
-            font-size: 0.6rem !important;
-            line-height: 20px !important;
+            width: 16px !important;
+            height: 16px !important;
+            font-size: 0.5rem !important;
+            line-height: 16px !important;
         }
         
         /* Стили для кнопок */
@@ -245,7 +246,23 @@
             }
 
             .game-page {
-                padding: 1rem;
+                padding: 0.5rem;
+            }
+            
+            .game-page .board-wrapper {
+                width: min(85vmin, 450px) !important;
+                height: min(85vmin, 450px) !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-page {
+                padding: 0.25rem;
+            }
+            
+            .game-page .board-wrapper {
+                width: min(80vmin, 350px) !important;
+                height: min(80vmin, 350px) !important;
             }
         }
     </style>

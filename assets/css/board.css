@@ -10,21 +10,22 @@
     --text-muted: rgba(148, 163, 184, 0.75);
     --highlight-color: #fbbf24;
     --primary-color: #6366f1;
-    --outer-cell-size: clamp(64px, 8vmin, 80px);
-    --inner-cell-size: clamp(56px, 7vmin, 72px);
+    --outer-cell-size: clamp(48px, 5vmin, 60px);
+    --inner-cell-size: clamp(40px, 4vmin, 50px);
 }
 
 .game-board-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: min(5vmin, 48px);
+    padding: min(2vmin, 20px);
+    margin-top: 60px; /* Отступ от верхней навигации */
 }
 
 .board-wrapper {
     position: relative;
-    width: min(95vmin, 900px);
-    height: min(95vmin, 900px);
+    width: min(80vmin, 700px);
+    height: min(80vmin, 700px);
     overflow: visible;
     isolation: isolate;
 }
@@ -114,16 +115,16 @@
     position: absolute;
     top: 4px;
     left: 4px;
-    min-width: 20px;
-    height: 20px;
+    min-width: 16px;
+    height: 16px;
     padding: 0;
     border-radius: 50%;
     background: rgba(75, 85, 99, 0.9);
     color: #ffffff;
-    font-size: 0.6rem;
+    font-size: 0.5rem;
     font-weight: 700;
     text-align: center;
-    line-height: 20px;
+    line-height: 16px;
     letter-spacing: 0;
     z-index: 1000;
     display: flex;
@@ -135,7 +136,7 @@
 
 .cell-icon {
     position: relative;
-    font-size: clamp(1.8rem, 4vmin, 2.5rem);
+    font-size: clamp(1.2rem, 2.5vmin, 1.8rem);
     line-height: 1;
     z-index: 2;
 }
@@ -296,12 +297,23 @@
 
 @media (max-width: 768px) {
     .game-board-container {
-        padding: min(4vmin, 20px);
-        padding-top: 80px; /* Отступ для мобильного меню */
+        padding: min(2vmin, 15px);
+        margin-top: 80px; /* Отступ для мобильного меню */
     }
     .board-wrapper {
-        width: min(90vmin, 500px);
-        height: min(90vmin, 500px);
+        width: min(85vmin, 450px);
+        height: min(85vmin, 450px);
+    }
+}
+
+@media (max-width: 480px) {
+    .game-board-container {
+        margin-top: 70px;
+        padding: min(1vmin, 10px);
+    }
+    .board-wrapper {
+        width: min(80vmin, 350px);
+        height: min(80vmin, 350px);
     }
     
     /* Уменьшаем размеры клеток на мобильных */
