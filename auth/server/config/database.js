@@ -48,11 +48,14 @@ class DatabaseConfig {
      */
     getConnectionOptions() {
         return {
-            maxPoolSize: 10,
-            serverSelectionTimeoutMS: 10000,
+            maxPoolSize: 5,
+            serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
             connectTimeoutMS: 10000,
-            retryWrites: true
+            retryWrites: true,
+            retryReads: true,
+            maxIdleTimeMS: 30000,
+            heartbeatFrequencyMS: 10000
         };
     }
 
@@ -69,6 +72,11 @@ class DatabaseConfig {
 
             console.log('📊 Database: Подключение к MongoDB Atlas...');
             console.log(`📊 Database: Cluster: ${process.env.MONGODB_CLUSTER || 'cluster0.xyz123.mongodb.net'}`);
+
+            // Закрываем существующие подключения
+            if (mongoose.connection.readyState !== 0) {
+                await mongoose.disconnect();
+            }
 
             await mongoose.connect(this.connectionString, this.options);
 
