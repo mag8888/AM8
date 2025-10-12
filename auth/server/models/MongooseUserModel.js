@@ -165,16 +165,32 @@ class MongooseUserModel {
         try {
             console.log('👤 MongooseUserModel: Инициализация...');
             
-            // Проверяем подключение к базе данных
-            if (mongoose.connection.readyState !== 1) {
-                throw new Error('База данных не подключена');
+            // Ждем подключения к базе данных
+            if (mongoose.connection.readyState === 0) {
+                console.log('📊 MongooseUserModel: Ожидание подключения к MongoDB...');
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Timeout waiting for MongoDB connection'));
+                    }, 10000);
+                    
+                    mongoose.connection.once('connected', () => {
+                        clearTimeout(timeout);
+                        resolve();
+                    });
+                    
+                    mongoose.connection.once('error', (error) => {
+                        clearTimeout(timeout);
+                        reject(error);
+                    });
+                });
             }
-
+            
             this.isInitialized = true;
             console.log('✅ MongooseUserModel: Инициализация завершена');
         } catch (error) {
             console.error('❌ MongooseUserModel: Ошибка инициализации:', error);
             this.isInitialized = false;
+            throw error;
         }
     }
 

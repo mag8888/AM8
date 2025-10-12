@@ -49,13 +49,16 @@ async function initializeMongoModel() {
 async function ensureModelInitialized(req, res, next) {
     if (useMongoDB && !userModel) {
         try {
+            console.log('📊 Auth: Инициализация MongoDB модели...');
             await initializeMongoModel();
+            console.log('✅ Auth: MongoDB модель инициализирована успешно');
             next();
         } catch (error) {
             console.error('❌ Auth: Ошибка инициализации модели:', error);
             res.status(500).json({
                 success: false,
-                message: 'Ошибка инициализации базы данных'
+                message: 'Ошибка инициализации базы данных',
+                error: error.message
             });
         }
     } else {

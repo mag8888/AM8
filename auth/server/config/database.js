@@ -24,7 +24,16 @@ class DatabaseConfig {
         const database = process.env.MONGODB_DATABASE || 'aura_money';
         const options = process.env.MONGODB_OPTIONS || 'retryWrites=true&w=majority';
 
-        return `mongodb+srv://${username}:${password}@${cluster}/${database}?${options}`;
+        // Экранируем специальные символы в пароле
+        const encodedPassword = encodeURIComponent(password);
+        const connectionString = `mongodb+srv://${username}:${encodedPassword}@${cluster}/${database}?${options}`;
+        
+        console.log('📊 Database: Connection string built');
+        console.log('📊 Database: Username:', username);
+        console.log('📊 Database: Cluster:', cluster);
+        console.log('📊 Database: Database:', database);
+        
+        return connectionString;
     }
 
     /**
@@ -34,8 +43,10 @@ class DatabaseConfig {
     getConnectionOptions() {
         return {
             maxPoolSize: 10,
-            serverSelectionTimeoutMS: 5000,
-            socketTimeoutMS: 45000
+            serverSelectionTimeoutMS: 10000,
+            socketTimeoutMS: 45000,
+            connectTimeoutMS: 10000,
+            retryWrites: true
         };
     }
 
