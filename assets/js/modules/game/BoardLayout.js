@@ -19,7 +19,8 @@ class BoardLayout {
             eventBus
         } = config;
 
-        if (!window.SMALL_CIRCLE_CELLS || !window.BIG_CIRCLE_CELLS) {
+        if ((!window.SMALL_CIRCLE_CELLS && !window.BoardConfig?.SMALL_CIRCLE) || 
+            (!window.BIG_CIRCLE_CELLS && !window.BoardConfig?.BIG_CIRCLE)) {
             console.error('❌ BoardLayout: Конфигурации клеток не загружены');
             throw new Error('Board config not loaded');
         }
@@ -33,8 +34,8 @@ class BoardLayout {
         this.gameState = gameState || null;
         this.eventBus = eventBus || null;
 
-        this.outerCellsConfig = window.BIG_CIRCLE_CELLS;
-        this.innerCellsConfig = window.SMALL_CIRCLE_CELLS;
+        this.outerCellsConfig = window.BIG_CIRCLE_CELLS || window.BoardConfig?.BIG_CIRCLE;
+        this.innerCellsConfig = window.SMALL_CIRCLE_CELLS || window.BoardConfig?.SMALL_CIRCLE;
 
         this.outerTrackElement = null;
         this.innerTrackElement = null;
