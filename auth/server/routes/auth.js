@@ -24,7 +24,7 @@ const router = express.Router();
 const authService = new AuthService();
 
 // Выбираем модель в зависимости от окружения
-const useMongoDB = process.env.NODE_ENV === 'production' || process.env.USE_MONGODB === 'true';
+const useMongoDB = process.env.USE_MONGODB !== 'false';
 let userModel;
 
 if (useMongoDB) {

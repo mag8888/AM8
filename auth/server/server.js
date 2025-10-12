@@ -37,7 +37,7 @@ class AuthServer {
             console.log('🚀 AuthServer: Инициализация...');
             
             // Подключение к базе данных (только для MongoDB)
-            const useMongoDB = process.env.NODE_ENV === 'production' || process.env.USE_MONGODB === 'true';
+            const useMongoDB = process.env.USE_MONGODB !== 'false';
             if (useMongoDB) {
                 await this.connectDatabase();
             }

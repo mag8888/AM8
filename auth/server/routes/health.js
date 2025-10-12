@@ -35,13 +35,13 @@ router.get('/', async (req, res) => {
                 arch: process.arch
             },
             database: {
-                type: process.env.NODE_ENV === 'production' || process.env.USE_MONGODB === 'true' ? 'MongoDB Atlas' : 'JSON File',
+                type: process.env.USE_MONGODB !== 'false' ? 'MongoDB Atlas' : 'JSON File',
                 status: dbStatus,
                 health: dbHealth
             },
             features: {
                 jwt: !!process.env.JWT_SECRET,
-                database: process.env.NODE_ENV === 'production' || process.env.USE_MONGODB === 'true' ? 'MongoDB' : 'localStorage',
+                database: process.env.USE_MONGODB !== 'false' ? 'MongoDB' : 'localStorage',
                 rateLimit: true,
                 validation: true
             }
