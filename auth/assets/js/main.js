@@ -356,17 +356,17 @@ class AuthManager {
         const testUsers = {
             roman: {
                 username: 'Roman',
-                email: 'Roman@Roman.com',
-                password: 'password123'
+                email: 'roman@roman.com',
+                password: 'roman123'
             },
             testuser: {
-                username: 'NewUser123',
-                email: 'newuser@example.com',
-                password: 'password123'
+                username: 'TestUser',
+                email: 'test@test.com',
+                password: 'test123'
             },
             admin: {
                 username: 'Admin',
-                email: 'admin@example.com',
+                email: 'admin@admin.com',
                 password: 'admin123'
             }
         };
