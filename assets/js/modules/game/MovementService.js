@@ -10,7 +10,7 @@ class MovementService {
         
         // Конфигурация поля
         this.outerTrackSize = 44; // Количество клеток внешнего трека
-        this.innerTrackSize = 23; // Количество клеток внутреннего трека
+        this.innerTrackSize = 24; // Количество клеток внутреннего трека
         
         // Позиции игроков
         this.playerPositions = new Map();

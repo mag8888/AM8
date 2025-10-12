@@ -128,7 +128,7 @@ class PlayerTokenRenderer {
      */
     getInnerCellCoordinates(cellIndex) {
         // Упрощенная логика для внутреннего круга
-        const angle = (cellIndex / 23) * 2 * Math.PI - Math.PI / 2;
+        const angle = (cellIndex / 24) * 2 * Math.PI - Math.PI / 2;
         const radius = 132; // Радиус внутреннего круга (увеличен на 10%)
         const centerX = 385; // Центр поля (увеличен на 10%)
         const centerY = 385;

@@ -6,7 +6,7 @@
 const BoardConfig = {
     // Количество клеток
     BIG_CIRCLE_CELLS: 44,
-    SMALL_CIRCLE_CELLS: 23,
+    SMALL_CIRCLE_CELLS: 24,
     
     // Внешний трек (44 клетки)
     BIG_CIRCLE: [
