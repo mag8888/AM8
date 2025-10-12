@@ -625,23 +625,43 @@ function loadTokens() {
 /**
  * Выбор фишки
  */
-function selectToken(tokenId) {
-    // Убираем выделение с предыдущей фишки
-    const previousSelected = document.querySelector('.token-card.selected');
-    if (previousSelected) {
-        previousSelected.classList.remove('selected');
-    }
-    
-    // Выделяем новую фишку
-    const selectedCard = document.querySelector(`[data-token-id="${tokenId}"]`);
-    if (selectedCard) {
-        selectedCard.classList.add('selected');
-        selectedToken = tokenId;
+async function selectToken(tokenId) {
+    try {
+        // Проверяем уникальность фишки
+        const isTokenUnique = await checkTokenUniqueness(tokenId);
+        if (!isTokenUnique) {
+            showNotification('Эта фишка уже выбрана другим игроком', 'error');
+            return;
+        }
         
-        console.log('✅ Room: Фишка выбрана:', tokenId);
+        // Убираем выделение с предыдущей фишки
+        const previousSelected = document.querySelector('.token-card.selected');
+        if (previousSelected) {
+            previousSelected.classList.remove('selected');
+        }
         
-        // Обновляем статус готовности
-        updateReadyStatus();
+        // Выделяем новую фишку
+        const selectedCard = document.querySelector(`[data-token-id="${tokenId}"]`);
+        if (selectedCard) {
+            selectedCard.classList.add('selected');
+            selectedToken = tokenId;
+            
+            console.log('✅ Room: Фишка выбрана:', tokenId);
+            
+            // Отправляем уведомление другим игрокам о выборе фишки
+            await sendPushNotification('token_selected', {
+                playerName: currentUser.username,
+                tokenId: tokenId,
+                tokenName: selectedCard.textContent.trim(),
+                roomId: currentRoom.id
+            });
+            
+            // Обновляем статус готовности
+            updateReadyStatus();
+        }
+    } catch (error) {
+        console.error('❌ Room: Ошибка выбора фишки:', error);
+        showNotification('Ошибка выбора фишки', 'error');
     }
 }
 
@@ -713,6 +733,13 @@ async function toggleReadyStatus() {
             return;
         }
         
+        // Проверяем уникальность фишки
+        const isTokenUnique = await checkTokenUniqueness(selectedToken);
+        if (!isTokenUnique) {
+            showNotification('Эта фишка уже выбрана другим игроком', 'error');
+            return;
+        }
+        
         // Отправляем данные игрока
         const playerData = {
             userId: currentUser.id,
@@ -727,6 +754,14 @@ async function toggleReadyStatus() {
         await roomService.updatePlayerInRoom(currentRoom.id, playerData);
         
         showNotification('Статус готовности обновлен', 'success');
+        
+        // Отправляем push-уведомление хосту о готовности игрока
+        await sendPushNotification('player_ready', {
+            playerName: currentUser.username,
+            roomId: currentRoom.id,
+            readyPlayersCount: currentRoom.players.filter(p => p.isReady).length + 1,
+            totalPlayersCount: currentRoom.players.length
+        });
         
         // Обновляем информацию о комнате
         await refreshRoomData();
@@ -748,6 +783,9 @@ async function refreshRoomData() {
         if (room) {
             currentRoom = room;
             updateRoomInfo();
+            updatePlayersList();
+            updateStartGameButton();
+            updateTokensAvailability(); // Обновляем доступность фишек
         }
     } catch (error) {
         console.error('❌ Room: Ошибка обновления данных комнаты:', error);
@@ -812,6 +850,149 @@ async function confirmStartGame() {
 /**
  * Показать уведомление
  */
+/**
+ * Проверка уникальности фишки
+ */
+async function checkTokenUniqueness(tokenId) {
+    try {
+        if (!currentRoom || !currentUser) return true;
+        
+        // Проверяем, не выбрана ли эта фишка другими игроками
+        const isTokenTaken = currentRoom.players.some(player => 
+            player.userId !== currentUser.id && player.token === tokenId
+        );
+        
+        if (isTokenTaken) {
+            console.log(`⚠️ Room: Фишка ${tokenId} уже выбрана другим игроком`);
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('❌ Room: Ошибка проверки уникальности фишки:', error);
+        return false;
+    }
+}
+
+/**
+ * Отправка push-уведомления
+ */
+async function sendPushNotification(type, data) {
+    try {
+        if (!currentRoom || !currentUser) return;
+        
+        // Создаем уведомление для хоста
+        const hostId = currentRoom.creatorId;
+        if (hostId === currentUser.id) return; // Не отправляем себе
+        
+        const notification = {
+            type: type,
+            data: data,
+            timestamp: new Date().toISOString(),
+            from: currentUser.id,
+            to: hostId
+        };
+        
+        // Отправляем через API (имитация push-уведомления)
+        await fetch(`/api/rooms/${currentRoom.id}/notifications`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('aura_money_token')}`
+            },
+            body: JSON.stringify(notification)
+        });
+        
+        console.log('📱 Room: Push-уведомление отправлено:', type);
+        
+    } catch (error) {
+        console.error('❌ Room: Ошибка отправки push-уведомления:', error);
+    }
+}
+
+/**
+ * Обработка входящих push-уведомлений
+ */
+function handlePushNotification(notification) {
+    try {
+        console.log('📱 Room: Получено push-уведомление:', notification);
+        
+        switch (notification.type) {
+            case 'player_ready':
+                handlePlayerReadyNotification(notification.data);
+                break;
+            case 'token_selected':
+                handleTokenSelectedNotification(notification.data);
+                break;
+            default:
+                console.log('📱 Room: Неизвестный тип уведомления:', notification.type);
+        }
+    } catch (error) {
+        console.error('❌ Room: Ошибка обработки push-уведомления:', error);
+    }
+}
+
+/**
+ * Обработка уведомления о готовности игрока
+ */
+function handlePlayerReadyNotification(data) {
+    const isHost = currentRoom && currentRoom.creatorId === currentUser.id;
+    if (!isHost) return;
+    
+    // Обновляем кнопку "Начать игру"
+    updateStartGameButton();
+    
+    // Показываем уведомление хосту
+    showNotification(
+        `${data.playerName} готов к игре! (${data.readyPlayersCount}/${data.totalPlayersCount})`, 
+        'success'
+    );
+    
+    // Если все игроки готовы, активируем кнопку "Старт"
+    if (data.readyPlayersCount === data.totalPlayersCount) {
+        showNotification('Все игроки готовы! Можно начинать игру!', 'success');
+    }
+}
+
+/**
+ * Обработка уведомления о выборе фишки
+ */
+function handleTokenSelectedNotification(data) {
+    // Обновляем список доступных фишек
+    updateTokensAvailability();
+    
+    // Показываем уведомление
+    showNotification(`Фишка ${data.tokenName} выбрана игроком ${data.playerName}`, 'info');
+}
+
+/**
+ * Обновление доступности фишек
+ */
+function updateTokensAvailability() {
+    if (!currentRoom || !currentRoom.players) return;
+    
+    const takenTokens = currentRoom.players
+        .filter(player => player.userId !== currentUser.id && player.token)
+        .map(player => player.token);
+    
+    // Обновляем визуальное состояние фишек
+    const tokenCards = document.querySelectorAll('.token-card');
+    tokenCards.forEach(card => {
+        const tokenId = card.dataset.tokenId;
+        const isTaken = takenTokens.includes(tokenId);
+        
+        if (isTaken) {
+            card.classList.add('taken');
+            card.style.opacity = '0.5';
+            card.style.pointerEvents = 'none';
+        } else {
+            card.classList.remove('taken');
+            card.style.opacity = '1';
+            card.style.pointerEvents = 'auto';
+        }
+    });
+}
+
 function showNotification(message, type = 'info') {
     if (window.notificationService) {
         window.notificationService.show(message, type);

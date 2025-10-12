@@ -492,6 +492,37 @@
     font-size: 0.9rem;
 }
 
+/* Заблокированные фишки */
+.token-card.taken {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+}
+
+.token-card.taken::after {
+    content: '🚫';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    background: rgba(239, 68, 68, 0.9);
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.token-card.taken:hover {
+    transform: none;
+    box-shadow: none;
+}
+
 .token-icon {
     font-size: 2.5rem;
     display: block;

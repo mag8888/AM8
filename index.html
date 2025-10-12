@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aura Money - Настольная игра</title>
     <link rel="stylesheet" href="assets/css/main.css">
-    <link rel="stylesheet" href="assets/css/game.css">
+    <link rel="stylesheet" href="assets/css/board.css">
     <style>
         /* Стили для контейнера страниц */
         #page-container {
@@ -127,8 +127,73 @@
         /* Стили для игровой страницы */
         .game-page {
             padding: 2rem;
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
+        }
+        
+        /* Увеличенное игровое поле для главной страницы */
+        .game-page .board-wrapper {
+            width: min(98vmin, 1000px) !important;
+            height: min(98vmin, 1000px) !important;
+            border: 4px solid #666 !important;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5) !important;
+        }
+        
+        .game-page .track-cell {
+            border-radius: 24px !important;
+            border: 2.5px solid var(--surface-border) !important;
+            font-weight: 700 !important;
+        }
+        
+        .game-page .cell-icon {
+            font-size: clamp(2rem, 4.5vmin, 3rem) !important;
+        }
+        
+        .game-page .cell-number {
+            width: 20px !important;
+            height: 20px !important;
+            font-size: 0.6rem !important;
+            line-height: 20px !important;
+        }
+        
+        /* Стили для кнопок */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }
+        
+        .center-actions {
+            margin-top: 1.5rem;
         }
 
         .game-header {
@@ -214,24 +279,26 @@
 
                     <!-- Игровая доска -->
                     <div class="game-board-container">
-                        <!-- Внешний трек (большой круг) -->
-                        <div id="outer-track" class="track outer-track"></div>
-                        
-                        <!-- Внутренний трек (маленький круг) -->
-                        <div id="inner-track" class="track inner-track"></div>
-                        
-                        <!-- Центральная область -->
-                        <div class="game-center">
-                            <div class="center-content">
-                                <h2>🎯 Добро пожаловать!</h2>
-                                <p>Создайте или присоединитесь к комнате для начала игры</p>
-                                <div class="center-actions">
-                                    <button class="btn btn-primary" onclick="window.location.href='pages/rooms.html'">
-                                        🏠 Выбрать комнату
-                                    </button>
-                                    <button class="btn btn-secondary" onclick="window.location.href='auth/'">
-                                        🔐 Авторизация
-                                    </button>
+                        <div class="board-wrapper">
+                            <!-- Внешний трек (большой круг) -->
+                            <div id="outer-track" class="track outer-track"></div>
+                            
+                            <!-- Внутренний трек (маленький круг) -->
+                            <div id="inner-track" class="track inner-track"></div>
+                            
+                            <!-- Центральная область -->
+                            <div class="center-area">
+                                <div class="center-content">
+                                    <h2>🎯 Добро пожаловать!</h2>
+                                    <p>Создайте или присоединитесь к комнате для начала игры</p>
+                                    <div class="center-actions">
+                                        <button class="btn btn-primary" onclick="window.location.href='pages/rooms.html'">
+                                            🏠 Выбрать комнату
+                                        </button>
+                                        <button class="btn btn-secondary" onclick="window.location.href='auth/'">
+                                            🔐 Авторизация
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -50,6 +50,8 @@ class App {
         this.router.route('/', () => {
             this.showPage('game-page');
             this.updateNavigation('/');
+            // Автоматически выбираем комнату при загрузке главной страницы
+            this.autoSelectRoom();
         }, 'Главная');
         
         this.router.route('/rooms', () => {
@@ -309,11 +311,109 @@ class App {
         try {
             console.log('🏠 App: Загрузка данных комнаты:', roomId);
             
-            // Здесь можно загрузить данные комнаты через API
-            // Пока что просто логируем
-            console.log('✅ App: Данные комнаты загружены');
+            // Загружаем данные комнаты через API
+            const response = await fetch(`/api/rooms/${roomId}`);
+            if (response.ok) {
+                const roomData = await response.json();
+                console.log('✅ App: Данные комнаты загружены:', roomData);
+                
+                // Сохраняем данные комнаты в глобальной области
+                window.currentRoom = roomData.data;
+                
+                // Обновляем интерфейс
+                this.updateGameInterface(roomData.data);
+            } else {
+                console.error('❌ App: Ошибка загрузки комнаты:', response.status);
+                this.showNotification('Комната не найдена', 'error');
+            }
         } catch (error) {
             console.error('❌ App: Ошибка загрузки данных комнаты:', error);
+            this.showNotification('Ошибка загрузки комнаты', 'error');
+        }
+    }
+
+    /**
+     * Автоматический выбор комнаты
+     */
+    async autoSelectRoom() {
+        try {
+            console.log('🏠 App: Автоматический выбор комнаты');
+            
+            // Получаем список комнат
+            const response = await fetch('/api/rooms');
+            if (response.ok) {
+                const roomsData = await response.json();
+                const rooms = roomsData.data || [];
+                
+                if (rooms.length > 0) {
+                    // Выбираем первую доступную комнату
+                    const availableRoom = rooms.find(room => !room.isStarted && !room.isFull);
+                    
+                    if (availableRoom) {
+                        console.log('✅ App: Автоматически выбрана комната:', availableRoom.id);
+                        await this.loadRoomData(availableRoom.id);
+                        this.showNotification(`Автоматически выбрана комната: ${availableRoom.name}`, 'success');
+                    } else {
+                        console.log('⚠️ App: Нет доступных комнат');
+                        this.showNotification('Нет доступных комнат', 'warning');
+                    }
+                } else {
+                    console.log('⚠️ App: Комнаты не найдены');
+                    this.showNotification('Комнаты не найдены', 'warning');
+                }
+            } else {
+                console.error('❌ App: Ошибка получения списка комнат');
+            }
+        } catch (error) {
+            console.error('❌ App: Ошибка автоматического выбора комнаты:', error);
+        }
+    }
+
+    /**
+     * Обновление интерфейса игры
+     */
+    updateGameInterface(roomData) {
+        try {
+            console.log('🎮 App: Обновление интерфейса игры');
+            
+            // Скрываем приветственное сообщение
+            const centerContent = document.querySelector('.center-content');
+            if (centerContent) {
+                centerContent.innerHTML = `
+                    <h2>🎮 Комната: ${roomData.name}</h2>
+                    <p>Игроков: ${roomData.playerCount}/${roomData.maxPlayers}</p>
+                    <div class="center-actions">
+                        <button class="btn btn-primary" onclick="window.location.href='pages/rooms.html'">
+                            🏠 Управление комнатой
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.app.startGame()">
+                            🚀 Начать игру
+                        </button>
+                    </div>
+                `;
+            }
+            
+            console.log('✅ App: Интерфейс игры обновлен');
+        } catch (error) {
+            console.error('❌ App: Ошибка обновления интерфейса:', error);
+        }
+    }
+
+    /**
+     * Запуск игры
+     */
+    startGame() {
+        try {
+            console.log('🚀 App: Запуск игры');
+            
+            if (window.currentRoom) {
+                // Здесь можно добавить логику запуска игры
+                this.showNotification('Игра запущена!', 'success');
+            } else {
+                this.showNotification('Сначала выберите комнату', 'error');
+            }
+        } catch (error) {
+            console.error('❌ App: Ошибка запуска игры:', error);
         }
     }
 

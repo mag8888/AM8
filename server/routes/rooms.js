@@ -437,4 +437,47 @@ router.put('/:roomId/player', async (req, res, next) => {
     }
 });
 
+/**
+ * POST /api/rooms/:roomId/notifications
+ * Отправка push-уведомления в комнату
+ */
+router.post('/:roomId/notifications', async (req, res, next) => {
+    try {
+        const { roomId } = req.params;
+        const notification = req.body;
+        
+        console.log('📡 API: Отправка уведомления в комнату:', roomId);
+        
+        // Проверяем существование комнаты
+        const room = roomService.getRoomById(roomId);
+        if (!room) {
+            return res.status(404).json({
+                success: false,
+                message: 'Комната не найдена'
+            });
+        }
+        
+        // Валидация уведомления
+        if (!notification.type || !notification.data) {
+            return res.status(400).json({
+                success: false,
+                message: 'Некорректные данные уведомления'
+            });
+        }
+        
+        // Сохраняем уведомление (в реальном приложении здесь был бы WebSocket)
+        console.log('📱 API: Уведомление отправлено:', notification.type);
+        
+        res.status(200).json({
+            success: true,
+            message: 'Уведомление отправлено',
+            data: notification
+        });
+        
+    } catch (error) {
+        console.error('❌ API: Ошибка отправки уведомления:', error);
+        next(error);
+    }
+});
+
 module.exports = router;

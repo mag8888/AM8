@@ -70,8 +70,12 @@ class BoardLayout {
 
         if (!this.outerTrackElement || !this.innerTrackElement) {
             console.error('❌ BoardLayout: Track elements not found - render aborted');
+            console.error('❌ BoardLayout: outerTrackElement:', !!this.outerTrackElement);
+            console.error('❌ BoardLayout: innerTrackElement:', !!this.innerTrackElement);
             return;
         }
+        
+        console.log('✅ BoardLayout: Track elements found, starting render');
 
         this.attachTrackListeners();
 
@@ -421,9 +425,11 @@ class BoardLayout {
     ensureTrackElements() {
         if (!this.outerTrackElement) {
             this.outerTrackElement = document.querySelector(this.outerTrackSelector);
+            console.log('🔍 BoardLayout: outerTrackElement found:', !!this.outerTrackElement, this.outerTrackSelector);
         }
         if (!this.innerTrackElement) {
             this.innerTrackElement = document.querySelector(this.innerTrackSelector);
+            console.log('🔍 BoardLayout: innerTrackElement found:', !!this.innerTrackElement, this.innerTrackSelector);
         }
     }
 

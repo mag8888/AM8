@@ -444,9 +444,18 @@ function showJoinRoomModal(roomId) {
         modal.classList.add('show');
         document.body.style.overflow = 'hidden';
         
-        // Фокус на поле имени
+        // Заполняем поле имени данными пользователя и фокус
         const nameInput = document.getElementById('player-name');
         if (nameInput) {
+            // Получаем данные пользователя из localStorage
+            const currentUser = getCurrentUser();
+            if (currentUser && currentUser.username) {
+                nameInput.value = currentUser.username;
+                console.log('👤 Rooms: Заполнено имя пользователя:', currentUser.username);
+            } else {
+                console.log('⚠️ Rooms: Данные пользователя не найдены');
+            }
+            
             setTimeout(() => nameInput.focus(), 100);
         }
     }

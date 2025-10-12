@@ -55,24 +55,42 @@ window.BIG_CIRCLE_CELLS = [
     { type: 'dream', name: 'Лидер мнений', icon: '🌍', cost: 1000000, income: 0 },
     { type: 'business', name: 'Автомойки', icon: '🚗', cost: 120000, income: 3500 },
     { type: 'dream', name: 'Белоснежная яхта', icon: '🛥️', cost: 300000, income: 0 },
-    { type: 'business', name: 'Франшиза "Поток денег"', icon: '💸', cost: 100000, income: 10000 },
-    { type: 'dream', name: 'Полёт в космос', icon: '🚀', cost: 250000, income: 0 }
+    { type: 'business', name: 'Франшиза "Поток денег"', icon: '💸', cost: 100000, income: 10000 }
 ];
 
-// Конфигурация внутренних клеток (малый круг - 12 клеток)
+// Конфигурация внутренних клеток (малый круг - 24 клетки)
 window.SMALL_CIRCLE_CELLS = [
-    { type: 'inner_start', name: 'Быстрый трек', icon: '⚡', cost: 0, income: 0 },
+    // Секция 1: Старт и быстрые возможности
+    { type: 'inner_start', name: 'Быстрый трек - Старт', icon: '⚡', cost: 0, income: 0 },
+    { type: 'inner_money', name: 'Быстрый доход', icon: '💰', cost: 0, income: 2000 },
+    { type: 'inner_business', name: 'Мини-бизнес', icon: '🏪', cost: 500000, income: 15000 },
+    { type: 'inner_dream', name: 'Быстрая мечта', icon: '💭', cost: 2000000, income: 0 },
     { type: 'inner_money', name: 'Пассивный доход', icon: '💰', cost: 0, income: 5000 },
+    { type: 'inner_business', name: 'Стартап', icon: '🚀', cost: 800000, income: 20000 },
+    
+    // Секция 2: Развитие и рост
+    { type: 'inner_dream', name: 'Средняя мечта', icon: '⭐', cost: 5000000, income: 0 },
     { type: 'inner_business', name: 'Корпорация', icon: '🏢', cost: 1000000, income: 50000 },
-    { type: 'inner_dream', name: 'Финансовая свобода', icon: '👑', cost: 5000000, income: 0 },
     { type: 'inner_loss', name: 'Кризис', icon: '📉', cost: -500000, income: 0 },
     { type: 'inner_business', name: 'Холдинг', icon: '🏭', cost: 2000000, income: 100000 },
-    { type: 'inner_dream', name: 'Империя', icon: '🏰', cost: 10000000, income: 0 },
     { type: 'inner_money', name: 'Дивиденды', icon: '💎', cost: 0, income: 25000 },
     { type: 'inner_business', name: 'Конгломерат', icon: '🌐', cost: 5000000, income: 250000 },
-    { type: 'inner_dream', name: 'Легенда', icon: '⭐', cost: 50000000, income: 0 },
+    
+    // Секция 3: Высший уровень
+    { type: 'inner_dream', name: 'Большая мечта', icon: '👑', cost: 10000000, income: 0 },
+    { type: 'inner_business', name: 'Международная корпорация', icon: '🌍', cost: 10000000, income: 500000 },
+    { type: 'inner_money', name: 'Миллиардный доход', icon: '💸', cost: 0, income: 100000 },
+    { type: 'inner_dream', name: 'Империя', icon: '🏰', cost: 50000000, income: 0 },
+    { type: 'inner_business', name: 'Глобальный холдинг', icon: '🌐', cost: 20000000, income: 1000000 },
+    { type: 'inner_money', name: 'Супердивиденды', icon: '💎', cost: 0, income: 500000 },
+    
+    // Секция 4: Финал и бонусы
+    { type: 'inner_dream', name: 'Легенда', icon: '⭐', cost: 100000000, income: 0 },
+    { type: 'inner_business', name: 'Финансовая империя', icon: '👑', cost: 50000000, income: 2500000 },
+    { type: 'inner_bonus', name: 'Мегабонус', icon: '🎁', cost: 0, income: 5000000 },
     { type: 'inner_finish', name: 'Финиш', icon: '🏆', cost: 0, income: 0 },
-    { type: 'inner_bonus', name: 'Бонус', icon: '🎁', cost: 0, income: 100000 }
+    { type: 'inner_bonus', name: 'Финальный бонус', icon: '🎁', cost: 0, income: 10000000 },
+    { type: 'inner_finish', name: 'Победа!', icon: '🏆', cost: 0, income: 0 }
 ];
 
 // Функции для получения иконок и стилей
@@ -111,7 +129,7 @@ window.getIconStyleClass = function(type, cellData) {
         'inner_finish': 'cell-inner-finish',
         'inner_bonus': 'cell-inner-bonus'
     };
-    return styleMap[type];
+    return styleMap[type] || 'cell-default';
 };
 
 console.log('✅ BoardConfig: Конфигурация игрового поля загружена');
