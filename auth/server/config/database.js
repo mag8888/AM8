@@ -9,8 +9,11 @@ const mongoose = require('mongoose');
 class DatabaseConfig {
     constructor() {
         this.isConnected = false;
-        this.connectionString = this.buildConnectionString();
-        this.options = this.getConnectionOptions();
+        // Инициализируем только если MongoDB используется
+        if (process.env.USE_MONGODB !== 'false') {
+            this.connectionString = this.buildConnectionString();
+            this.options = this.getConnectionOptions();
+        }
     }
 
     /**

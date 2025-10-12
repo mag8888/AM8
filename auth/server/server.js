@@ -76,6 +76,9 @@ class AuthServer {
      * Настройка middleware
      */
     setupMiddleware() {
+        // Настройка trust proxy для Railway
+        this.app.set('trust proxy', 1);
+        
         // Безопасность
         this.app.use(helmet({
             contentSecurityPolicy: {
