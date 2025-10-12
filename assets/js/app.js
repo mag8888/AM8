@@ -106,6 +106,13 @@ class App {
             this.roomApi = new window.RoomApi();
             console.log('✅ RoomApi создан');
             
+            // Создаем PushClient
+            this.pushClient = new window.PushClient({
+                gameState: this.gameState,
+                eventBus: this.eventBus
+            });
+            console.log('📱 App: PushClient создан');
+            
             // Создаем DiceService
             this.diceService = new window.DiceService({
                 gameState: this.gameState,
@@ -169,8 +176,9 @@ class App {
         });
         console.log('🎯 App: CellInteractionService создан');
         
-        // Сохраняем BalanceManager в глобальной области
+        // Сохраняем компоненты в глобальной области
         window.balanceManager = this.balanceManager;
+        window.pushClient = this.pushClient;
             
             // Инициализируем BoardLayout
             this.boardLayout = new window.BoardLayout({

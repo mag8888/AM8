@@ -107,6 +107,27 @@ class RoomService {
             if (data.success) {
                 console.log('✅ RoomService: Комната создана');
                 this.currentRoom = data.data;
+                
+                // Отправляем push-уведомление о создании комнаты
+                try {
+                    if (window.pushClient && typeof window.pushClient.sendBroadcastPush === 'function') {
+                        await window.pushClient.sendBroadcastPush('room_created', {
+                            roomId: data.data.id,
+                            roomName: data.data.name,
+                            creator: creator.username,
+                            playerCount: data.data.playerCount,
+                            maxPlayers: data.data.maxPlayers,
+                            status: data.data.status,
+                            timestamp: new Date().toISOString()
+                        }, true); // excludeSelf = true, чтобы не отправлять себе
+                        
+                        console.log('📡 RoomService: Push-уведомление о создании комнаты отправлено');
+                    }
+                } catch (pushError) {
+                    console.error('⚠️ RoomService: Ошибка отправки push-уведомления:', pushError);
+                    // Не прерываем создание комнаты из-за ошибки push
+                }
+                
                 return data.data;
             } else {
                 throw new Error(data.message || 'Ошибка создания комнаты');

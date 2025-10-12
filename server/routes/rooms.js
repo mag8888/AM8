@@ -157,6 +157,27 @@ router.post('/', async (req, res, next) => {
         
         const room = await roomService.createRoom(roomData, creator);
         
+        // Отправляем push-уведомление о создании комнаты
+        try {
+            const PushService = require('../services/PushService');
+            const pushService = new PushService();
+            
+            await pushService.broadcastPush('room_created', {
+                roomId: room.id,
+                roomName: room.name,
+                creator: creator.username,
+                playerCount: room.playerCount,
+                maxPlayers: room.maxPlayers,
+                status: room.status,
+                timestamp: new Date().toISOString()
+            });
+            
+            console.log(`📡 Push: Уведомление о создании комнаты "${room.name}" отправлено`);
+        } catch (pushError) {
+            console.error('⚠️ Push: Ошибка отправки уведомления о создании комнаты:', pushError);
+            // Не прерываем создание комнаты из-за ошибки push
+        }
+        
         res.status(201).json({
             success: true,
             data: room,
