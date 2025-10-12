@@ -27,7 +27,15 @@ class DatabaseConfig {
             console.log('📊 Database: Используется MONGODB_URI');
             console.log('📊 Database: URI length:', process.env.MONGODB_URI.length);
             console.log('📊 Database: URI starts with:', process.env.MONGODB_URI.substring(0, 20));
-            return process.env.MONGODB_URI;
+            
+            // Убираем MONGODB_URI= если оно есть в начале
+            let uri = process.env.MONGODB_URI;
+            if (uri.startsWith('MONGODB_URI=')) {
+                uri = uri.substring(12); // Убираем 'MONGODB_URI='
+                console.log('📊 Database: Убрали MONGODB_URI= из начала');
+            }
+            
+            return uri;
         }
 
         const username = process.env.MONGODB_USERNAME || 'aura_money_user';
