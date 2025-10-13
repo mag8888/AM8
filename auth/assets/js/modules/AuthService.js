@@ -14,7 +14,7 @@ class AuthService {
         
         if (isProduction) {
             // Production: Railway бэкенд сервис
-            this.apiBase = 'https://am8-backend-production.up.railway.app/api/auth';
+            this.apiBase = 'https://web-production-fc48b.up.railway.app/api/auth';
         } else {
             // Development: localhost
             this.apiBase = 'http://localhost:3001/api/auth';
