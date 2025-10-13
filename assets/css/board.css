@@ -28,8 +28,8 @@
 
 .board-wrapper {
     position: relative;
-    width: min(95vmin, 850px); /* Увеличиваем размер игрового поля */
-    height: min(95vmin, 850px);
+    width: min(98vmin, 950px); /* Делаем поле еще крупнее */
+    height: min(98vmin, 950px);
     overflow: visible;
     isolation: isolate;
 }
@@ -158,27 +158,62 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: min(32vmin, 240px);
-    height: min(32vmin, 240px);
     transform: translate(-50%, -50%);
-    border-radius: 50%;
+    z-index: 10;
+}
+
+.dice-center {
+    width: 120px;
+    height: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #333;
-    border: 2px solid #666;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    z-index: 5;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.2) 0%, rgba(251, 191, 36, 0.1) 50%, transparent 100%);
+    border: 3px solid rgba(251, 191, 36, 0.6);
+    border-radius: 50%;
+    backdrop-filter: blur(10px);
+    box-shadow: 
+        0 0 30px rgba(251, 191, 36, 0.4),
+        inset 0 0 20px rgba(251, 191, 36, 0.1);
+    transition: all 0.3s ease;
 }
 
-.center-area::before {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.1);
-    z-index: -1;
+.dice-center:hover {
+    border-color: rgba(251, 191, 36, 0.8);
+    box-shadow: 
+        0 0 40px rgba(251, 191, 36, 0.6),
+        inset 0 0 30px rgba(251, 191, 36, 0.2);
 }
+
+.dice-icon {
+    font-size: 3rem;
+    color: #fbbf24;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+.dice-icon.rolling {
+    animation: diceRoll 1s ease-in-out;
+}
+
+.dice-icon.showing-number {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #f59e0b;
+    text-shadow: 0 0 30px rgba(245, 158, 11, 1);
+}
+
+@keyframes diceRoll {
+    0% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(90deg) scale(1.1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    75% { transform: rotate(270deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+/* Удалены старые стили center-area::before */
 
 .dice-display {
     position: relative;
@@ -294,30 +329,30 @@
 /* Responsive adjustments */
 @media (max-width: 1024px) {
     .board-wrapper {
-        width: min(105.6vmin, 770px);
-        height: min(105.6vmin, 770px);
+        width: min(98vmin, 900px);
+        height: min(98vmin, 900px);
     }
 }
 
 @media (max-width: 768px) {
     .game-board-container {
         padding: min(2vmin, 15px);
-        margin-top: 20px; /* Уменьшенный отступ для мобильного меню */
+        margin-top: 0; /* Убираем отступ */
     }
     .board-wrapper {
-        width: min(93.5vmin, 495px);
-        height: min(93.5vmin, 495px);
+        width: min(96vmin, 550px);
+        height: min(96vmin, 550px);
     }
 }
 
 @media (max-width: 480px) {
     .game-board-container {
-        margin-top: 15px;
+        margin-top: 0;
         padding: min(1vmin, 10px);
     }
     .board-wrapper {
-        width: min(88vmin, 385px);
-        height: min(88vmin, 385px);
+        width: min(94vmin, 420px);
+        height: min(94vmin, 420px);
     }
     
     /* Уменьшаем размеры клеток на мобильных */
@@ -344,12 +379,12 @@
 
 @media (max-width: 540px) {
     .game-board-container {
-        padding: min(3vmin, 15px);
-        padding-top: 15px;
+        padding: min(2vmin, 10px);
+        padding-top: 10px;
     }
     .board-wrapper {
-        width: min(85vmin, 400px);
-        height: min(85vmin, 400px);
+        width: min(92vmin, 450px);
+        height: min(92vmin, 450px);
     }
     
     .track-cell {
@@ -499,31 +534,7 @@
     }
 }
 
-/* Turn Menu Styles - Dark Banking Theme */
-.turn-menu {
-    display: flex;
-    flex-direction: row;
-    gap: 1rem;
-    width: 100%;
-    max-width: 600px;
-}
-
-/* На больших экранах - вертикальное расположение */
-@media (min-width: 1200px) {
-    .turn-menu {
-        flex-direction: column;
-        max-width: 350px;
-    }
-    
-    .cards-container {
-        flex-direction: column;
-    }
-    
-    .game-operations-card, .game-status-card {
-        min-width: auto;
-        width: 100%;
-    }
-}
+/* Удалены дублирующие стили turn-menu - функциональность перенесена в PlayersPanel */
 
 /* Секция броска кубика */
 .dice-roll-section {
@@ -805,13 +816,9 @@
     animation: pulse 1s infinite;
 }
 
-/* Mobile adjustments for turn menu and tokens */
+/* Mobile adjustments for tokens */
 @media (max-width: 768px) {
-    .turn-menu {
-        flex-direction: column;
-        max-width: 100%;
-        gap: 0.75rem;
-    }
+    /* Удалены дублирующие стили turn-menu */
     
     .cards-container {
         flex-direction: column;
@@ -943,9 +950,7 @@
 
 /* Дополнительная адаптация для очень маленьких экранов */
 @media (max-width: 480px) {
-    .turn-menu {
-        gap: 0.5rem;
-    }
+    /* Удалены дублирующие стили turn-menu */
     
     .game-operations-card, .game-status-card {
         margin: 0;

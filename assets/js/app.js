@@ -172,7 +172,7 @@ class App {
         this.playersPanel = new window.PlayersPanel({
             gameState: this.gameState,
             eventBus: this.eventBus,
-            containerId: 'game-control-panel'
+            containerId: 'players-panel'
         });
         console.log('👥 App: PlayersPanel создан');
         
@@ -212,6 +212,9 @@ class App {
             
             // Настраиваем обработчики кликов для главной страницы
             this.setupMainPageHandlers();
+            
+            // Инициализируем центральный кубик
+            this.initCenterDice();
         } catch (error) {
             console.error('❌ App: Ошибка инициализации игровых компонентов:', error);
             // Продолжаем работу без игровых компонентов
@@ -221,6 +224,9 @@ class App {
             
             // Настраиваем обработчики кликов для главной страницы даже без игровых компонентов
             this.setupMainPageHandlers();
+            
+            // Инициализируем центральный кубик даже при ошибке
+            this.initCenterDice();
             this.turnService = null;
             this.turnController = null;
             this.playerTokenRenderer = null;
@@ -498,39 +504,8 @@ class App {
                 this.gameState.loadPlayersFromRoom(roomData);
             }
             
-            const centerContent = document.querySelector('.center-content');
-            if (centerContent) {
-                // Проверяем статус игры
-                if (roomData.isStarted) {
-                    // Игра началась - скрываем панель управления
-                    centerContent.innerHTML = `
-                        <h2>🎮 Игра началась!</h2>
-                        <p>Комната: ${roomData.name}</p>
-                        <p>Игроков: ${roomData.playerCount}/${roomData.maxPlayers}</p>
-                        <div class="center-actions">
-                            <button class="btn btn-secondary" onclick="window.location.href='pages/rooms.html'">
-                                🏠 Вернуться в лобби
-                            </button>
-                        </div>
-                    `;
-                    console.log('✅ App: Игра уже началась, панель управления скрыта');
-                } else {
-                    // Игра не началась - показываем панель управления
-                    centerContent.innerHTML = `
-                        <h2>🎮 Комната: ${roomData.name}</h2>
-                        <p>Игроков: ${roomData.playerCount}/${roomData.maxPlayers}</p>
-                        <div class="center-actions">
-                            <button class="btn btn-primary" onclick="window.location.href='pages/rooms.html'">
-                                🏠 Управление комнатой
-                            </button>
-                            <button class="btn btn-secondary" onclick="window.app.startGame()">
-                                🚀 Начать игру
-                            </button>
-                        </div>
-                    `;
-                    console.log('✅ App: Панель управления активна');
-                }
-            }
+            // Инициализируем центральный кубик
+            this.initCenterDice();
             
             // Обновляем балансы игроков через BalanceManager
             if (this.balanceManager && roomData.players) {
@@ -816,6 +791,50 @@ class App {
             navigation.style.display = ''; // Возвращаем стандартное отображение
             console.log('🎮 App: Навигация восстановлена');
         }
+    }
+
+    // Инициализация центрального кубика
+    initCenterDice() {
+        const diceIcon = document.getElementById('dice-center-icon');
+        if (diceIcon) {
+            // Добавляем обработчик клика для броска кубика
+            diceIcon.addEventListener('click', () => {
+                this.rollCenterDice();
+            });
+            
+            // Устанавливаем начальную иконку доллара
+            diceIcon.innerHTML = '💰';
+            diceIcon.className = 'dice-icon';
+            
+            console.log('🎲 App: Центральный кубик инициализирован');
+        }
+    }
+
+    // Бросок центрального кубика
+    rollCenterDice() {
+        const diceIcon = document.getElementById('dice-center-icon');
+        if (!diceIcon) return;
+
+        // Добавляем анимацию вращения
+        diceIcon.classList.add('rolling');
+        
+        // Генерируем случайное число от 1 до 6
+        const diceNumber = Math.floor(Math.random() * 6) + 1;
+        
+        // Через 1 секунду показываем результат
+        setTimeout(() => {
+            diceIcon.classList.remove('rolling');
+            diceIcon.classList.add('showing-number');
+            diceIcon.innerHTML = diceNumber;
+            
+            // Через 3 секунды возвращаем иконку доллара
+            setTimeout(() => {
+                diceIcon.classList.remove('showing-number');
+                diceIcon.innerHTML = '💰';
+            }, 3000);
+            
+            console.log(`🎲 App: Выпало число ${diceNumber}`);
+        }, 1000);
     }
 }
 

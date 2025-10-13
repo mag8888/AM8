@@ -159,8 +159,8 @@
         
         /* Оптимизированное игровое поле для главной страницы */
         .game-page .board-wrapper {
-            width: min(82.5vmin, 770px) !important;
-            height: min(82.5vmin, 770px) !important;
+            width: min(98vmin, 950px) !important;
+            height: min(98vmin, 950px) !important;
             border: 3px solid #666 !important;
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
         }
@@ -222,14 +222,7 @@
             margin-top: 1.5rem;
         }
 
-        /* Контейнер для панели управления игрой */
-        .game-control-panel {
-            margin-top: 2rem;
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
+        /* Удалены стили game-control-panel - функциональность интегрирована в PlayersPanel */
 
         /* На больших экранах - меню справа */
         @media (min-width: 1200px) {
@@ -249,13 +242,7 @@
                 justify-content: center;
             }
             
-            .game-control-panel {
-                width: 350px;
-                order: 2;
-                position: sticky;
-                top: 100px;
-                align-self: flex-start;
-            }
+            /* Удалены стили game-control-panel */
         }
 
 
@@ -280,8 +267,8 @@
             }
             
             .game-page .board-wrapper {
-                width: min(93.5vmin, 495px) !important;
-                height: min(93.5vmin, 495px) !important;
+                width: min(96vmin, 550px) !important;
+                height: min(96vmin, 550px) !important;
             }
         }
         
@@ -291,8 +278,8 @@
             }
             
             .game-page .board-wrapper {
-                width: min(88vmin, 385px) !important;
-                height: min(88vmin, 385px) !important;
+                width: min(94vmin, 420px) !important;
+                height: min(94vmin, 420px) !important;
             }
         }
     </style>
@@ -335,28 +322,16 @@
                             <!-- Внутренний трек (маленький круг) -->
                             <div id="inner-track" class="track inner-track"></div>
                             
-                            <!-- Центральная область -->
+                            <!-- Центральная область с кубиком -->
                             <div class="center-area">
-                                <div class="center-content">
-                                    <h2>🎯 Добро пожаловать!</h2>
-                                    <p>Создайте или присоединитесь к комнате для начала игры</p>
-                                    <div class="center-actions">
-                                        <button class="btn btn-primary" id="select-room-btn">
-                                            🏠 Выбрать комнату
-                                        </button>
-                                        <button class="btn btn-secondary" id="auth-btn">
-                                            🔐 Авторизация
-                                        </button>
-                                    </div>
+                                <div class="dice-center">
+                                    <div class="dice-icon" id="dice-center-icon">💰</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Контейнер для панели управления игрой -->
-                    <div id="game-control-panel" class="game-control-panel">
-                        <!-- Здесь будет размещено меню управления ходами -->
-                    </div>
+                    <!-- Панель управления игрой интегрирована в PlayersPanel -->
                 </div>
             </div>
 
