@@ -132,7 +132,22 @@
             margin: 0 auto;
             min-height: calc(100vh - 10px); /* Учитываем отсутствие навигации */
             display: flex; /* Добавляем flex для лучшего распределения пространства */
-            flex-direction: column;
+            flex-direction: row; /* Изменяем на row для размещения панели справа */
+            gap: 1rem;
+        }
+
+        /* Контейнер для игровой доски */
+        .game-board-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Контейнер для панели игроков */
+        .players-panel-container {
+            width: 350px;
+            flex-shrink: 0;
         }
 
         /* Специальная навигация для игровой комнаты */
@@ -246,6 +261,22 @@
         }
 
 
+        /* Адаптивность для средних экранов */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .game-page {
+                flex-direction: column; /* На планшетах панель снизу */
+            }
+            
+            .players-panel-container {
+                width: 100%;
+                order: 2; /* Панель внизу */
+            }
+            
+            .game-board-container {
+                order: 1; /* Доска сверху */
+            }
+        }
+
         /* Адаптивность */
         @media (max-width: 768px) {
             .nav-container {
@@ -264,6 +295,16 @@
 
             .game-page {
                 padding: 0.5rem;
+                flex-direction: column; /* На мобильных панель снизу */
+            }
+            
+            .players-panel-container {
+                width: 100%;
+                order: 2; /* Панель внизу */
+            }
+            
+            .game-board-container {
+                order: 1; /* Доска сверху */
             }
             
             .game-page .board-wrapper {
@@ -331,7 +372,8 @@
                         </div>
                     </div>
 
-                    <!-- Панель управления игрой интегрирована в PlayersPanel -->
+                    <!-- Панель игроков -->
+                    <div id="players-panel" class="players-panel-container"></div>
                 </div>
             </div>
 
