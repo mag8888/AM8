@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Тест API RoomService</h1>
+    
+    <div>
+        <button onclick="testGetRooms()">Получить все комнаты</button>
+        <button onclick="testGetRoom()">Получить комнату 89898989</button>
+        <button onclick="testJoinRoom()">Присоединиться к комнате</button>
+        <button onclick="clearResults()">Очистить результаты</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'https://am8-production.up.railway.app/api/rooms';
+        
+        function addResult(title, data, isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.innerHTML = `<h3>${title}</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            results.appendChild(div);
+        }
+        
+        async function testGetRooms() {
+            try {
+                const response = await fetch(`${API_BASE}`);
+                const data = await response.json();
+                addResult('✅ Получение всех комнат', data);
+            } catch (error) {
+                addResult('❌ Ошибка получения комнат', error.message, true);
+            }
+        }
+        
+        async function testGetRoom() {
+            try {
+                const response = await fetch(`${API_BASE}/4519a778-ac43-4acd-9e0b-6d57af731176`);
+                const data = await response.json();
+                addResult('✅ Получение комнаты 89898989', data);
+            } catch (error) {
+                addResult('❌ Ошибка получения комнаты', error.message, true);
+            }
+        }
+        
+        async function testJoinRoom() {
+            try {
+                const response = await fetch(`${API_BASE}/4519a778-ac43-4acd-9e0b-6d57af731176/join`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        player: {
+                            username: 'admin',
+                            userId: 'admin-user-id'
+                        }
+                    })
+                });
+                const data = await response.json();
+                addResult('✅ Присоединение к комнате', data);
+            } catch (error) {
+                addResult('❌ Ошибка присоединения', error.message, true);
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
