@@ -1,5 +1,5 @@
 /**
- * RoomService v1.0.3
+ * RoomService v1.0.4
  * Клиентский сервис для работы с игровыми комнатами
  */
 class RoomService {
@@ -24,6 +24,8 @@ class RoomService {
         // Инициализируем мок-данные для продакшна
         if (this.useMockData) {
             this.initializeMockData();
+            // Загружаем динамически созданные комнаты из localStorage
+            this.loadDynamicRooms();
         }
     }
 
