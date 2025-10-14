@@ -558,8 +558,27 @@ function updateStartGameButton() {
     }
     
     const isHost = currentRoom.creatorId === currentUser.id;
-    const canStart = currentRoom.players.length >= currentRoom.minPlayers && 
-                     currentRoom.players.every(player => player.isReady);
+    const playersCount = currentRoom.players.length;
+    const minPlayers = currentRoom.minPlayers || 2; // По умолчанию минимум 2 игрока
+    const allPlayersReady = currentRoom.players.every(player => player.isReady);
+    const canStart = playersCount >= minPlayers && allPlayersReady;
+    
+    // Отладочные логи
+    console.log('🔍 Room: Отладка кнопки "Начать игру":', {
+        currentUser: currentUser,
+        roomCreatorId: currentRoom.creatorId,
+        isHost: isHost,
+        playersCount: playersCount,
+        minPlayers: minPlayers,
+        allPlayersReady: allPlayersReady,
+        canStart: canStart,
+        isStarted: currentRoom.isStarted,
+        players: currentRoom.players.map(p => ({ 
+            username: p.username, 
+            isReady: p.isReady, 
+            isHost: p.isHost 
+        }))
+    });
     
     startGameButton.disabled = !isHost || !canStart || currentRoom.isStarted;
     
