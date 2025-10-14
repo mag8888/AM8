@@ -286,6 +286,15 @@ router.post('/', async (req, res, next) => {
             });
         }
 
+        const db = getDatabase();
+        if (!db) {
+            console.log('⚠️ База данных недоступна, возвращаем fallback ответ');
+            return res.status(503).json({
+                success: false,
+                message: 'База данных временно недоступна. Попробуйте позже.'
+            });
+        }
+
         // Проверяем, существует ли пользователь
         db.get('SELECT id FROM users WHERE username = ?', [creator], (err, user) => {
             if (err) {
