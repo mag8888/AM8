@@ -41,11 +41,13 @@ class RoomService {
                 isStarted: false,
                 isFull: false,
                 creator: 'demo_user',
+                turnTime: 30,
+                assignProfessions: true,
                 players: [
-                    { id: 'p1', username: 'demo_user', isHost: true },
-                    { id: 'p2', username: 'player1', isHost: false }
+                    { id: 'p1', username: 'demo_user', name: 'demo_user', isHost: true },
+                    { id: 'p2', username: 'player1', name: 'player1', isHost: false }
                 ],
-                createdAt: new Date().toISOString()
+                createdAt: new Date(Date.now() - 60000).toISOString() // 1 минута назад
             },
             {
                 id: 'room-demo-2',
@@ -56,12 +58,14 @@ class RoomService {
                 isStarted: false,
                 isFull: false,
                 creator: 'tournament_master',
+                turnTime: 60,
+                assignProfessions: false,
                 players: [
-                    { id: 'p3', username: 'tournament_master', isHost: true },
-                    { id: 'p4', username: 'player2', isHost: false },
-                    { id: 'p5', username: 'player3', isHost: false }
+                    { id: 'p3', username: 'tournament_master', name: 'tournament_master', isHost: true },
+                    { id: 'p4', username: 'player2', name: 'player2', isHost: false },
+                    { id: 'p5', username: 'player3', name: 'player3', isHost: false }
                 ],
-                createdAt: new Date().toISOString()
+                createdAt: new Date(Date.now() - 30000).toISOString() // 30 секунд назад
             }
         ];
         
@@ -79,8 +83,12 @@ class RoomService {
             // Если включены мок-данные, используем их
             if (this.useMockData) {
                 console.log('🏠 RoomService: Использование мок-данных');
-                this.rooms = this.mockRooms;
-                return this.mockRooms;
+                // Сортируем комнаты по дате создания (новые вверху)
+                const sortedRooms = [...this.mockRooms].sort((a, b) => {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                });
+                this.rooms = sortedRooms;
+                return sortedRooms;
             }
             
             const response = await fetch(this.baseUrl, {
@@ -237,18 +245,21 @@ class RoomService {
                 isStarted: false,
                 isFull: false,
                 creator: creator.username || 'unknown',
+                turnTime: roomData.turnTime || 30,
+                assignProfessions: roomData.assignProfessions || false,
                 players: [
                     {
                         id: creator.id || 'creator-id',
                         username: creator.username || 'creator',
+                        name: creator.username || 'creator',
                         isHost: true
                     }
                 ],
                 createdAt: new Date().toISOString()
             };
 
-            // Добавляем комнату в мок-данные
-            this.mockRooms.push(newRoom);
+            // Добавляем комнату в начало списка мок-данных (новые комнаты вверху)
+            this.mockRooms.unshift(newRoom);
             
             console.log('✅ RoomService: Мок-комната создана:', newRoom.name);
             
@@ -628,4 +639,4 @@ class RoomService {
 if (typeof window !== 'undefined') {
     window.RoomService = RoomService;
 }
-// Version: 1760432918
+// Version: 1760433464

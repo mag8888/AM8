@@ -405,7 +405,7 @@ function createRoomCard(room, isNewRoom = false) {
             </div>
             
             <div class="room-info">
-                <div class="room-creator">${escapeHtml(room.creatorName)}</div>
+                <div class="room-creator">👑 ${escapeHtml(room.creator || room.creatorName || 'Неизвестный хост')}</div>
                 <div class="room-details">
                     <span class="room-detail players">${room.playerCount}/${room.maxPlayers}</span>
                     <span class="room-detail time">${room.turnTime}с</span>
