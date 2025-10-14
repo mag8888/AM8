@@ -1,1 +1,1 @@
-web: node static-server.js
+web: cd server && npm install && npm start

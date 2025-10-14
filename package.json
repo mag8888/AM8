@@ -4,8 +4,8 @@
   "description": "Aura Money - Cashflow-style board game with authentication",
   "main": "server.js",
   "scripts": {
-    "start": "node static-server.js",
-    "dev": "python3 -m http.server 8000",
+    "start": "cd server && npm install && npm start",
+    "dev": "cd server && npm run dev",
     "test": "jest",
     "test:rooms": "jest RoomService.test.js",
     "test:watch": "jest --watch",
