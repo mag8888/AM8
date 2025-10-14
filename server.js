@@ -19,6 +19,11 @@ const { initializeDatabase } = require('./database/init');
 const app = express();
 const PORT = process.env.PORT || 3002;
 
+// Настройка доверия к прокси (для Railway)
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+
 // Middleware безопасности
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
