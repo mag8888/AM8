@@ -56,11 +56,6 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Статические файлы (для продакшена)
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../')));
-}
-
 // Health check
 app.get('/health', (req, res) => {
     res.json({
@@ -77,8 +72,11 @@ app.use('/api/users', usersRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
 
-// Обслуживание статических файлов для продакшена
+// Статические файлы (для продакшена)
 if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, './')));
+    
+    // Обслуживание статических файлов для продакшена
     app.get('*', (req, res) => {
         // Если это API запрос или health check, пропускаем
         if (req.path.startsWith('/api/') || req.path === '/health') {
@@ -86,7 +84,12 @@ if (process.env.NODE_ENV === 'production') {
         }
         
         // Для всех остальных запросов отдаем index.html (SPA)
-        res.sendFile(path.join(__dirname, '../index.html'));
+        res.sendFile(path.join(__dirname, 'index.html'));
+    });
+} else {
+    // В development режиме просто отдаем index.html
+    app.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, 'index.html'));
     });
 }
 

@@ -107,8 +107,10 @@ function createTables() {
                 total_turns INTEGER DEFAULT 0,
                 FOREIGN KEY (room_id) REFERENCES rooms (id),
                 FOREIGN KEY (winner_id) REFERENCES users (id)
-            )`,
-            
+            )`
+        ];
+
+        const indexes = [
             // Индексы для оптимизации
             `CREATE INDEX IF NOT EXISTS idx_rooms_status ON rooms(status)`,
             `CREATE INDEX IF NOT EXISTS idx_rooms_creator ON rooms(creator_id)`,
@@ -118,7 +120,8 @@ function createTables() {
             `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`
         ];
 
-        let completed = 0;
+        // Сначала создаем таблицы
+        let tablesCompleted = 0;
         tables.forEach((sql, index) => {
             db.run(sql, (err) => {
                 if (err) {
@@ -127,9 +130,26 @@ function createTables() {
                     return;
                 }
                 
-                completed++;
-                if (completed === tables.length) {
-                    resolve();
+                tablesCompleted++;
+                if (tablesCompleted === tables.length) {
+                    console.log('✅ Таблицы созданы, создаем индексы...');
+                    
+                    // Затем создаем индексы
+                    let indexesCompleted = 0;
+                    indexes.forEach((sql, index) => {
+                        db.run(sql, (err) => {
+                            if (err) {
+                                console.warn(`⚠️ Предупреждение при создании индекса ${index + 1}:`, err.message);
+                                // Не прерываем выполнение, так как индексы не критичны
+                            }
+                            
+                            indexesCompleted++;
+                            if (indexesCompleted === indexes.length) {
+                                console.log('✅ Индексы созданы');
+                                resolve();
+                            }
+                        });
+                    });
                 }
             });
         });
