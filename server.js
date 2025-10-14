@@ -1,95 +1,146 @@
 const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
-const databaseConfig = require('./server/config/database');
+
+// Импортируем маршруты
+const roomsRoutes = require('./routes/rooms');
+const usersRoutes = require('./routes/users');
+const authRoutes = require('./routes/auth');
+const statsRoutes = require('./routes/stats');
+
+// Импортируем middleware
+const errorHandler = require('./middleware/errorHandler');
+const { initializeDatabase } = require('./database/init');
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 
-// Установка переменных окружения для авторизации
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'am8-production-secret-key-2024-railway';
-process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-process.env.BCRYPT_ROUNDS = process.env.BCRYPT_ROUNDS || '12';
+// Middleware безопасности
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// CORS настройки
+app.use(cors({
+    origin: process.env.NODE_ENV === 'production' 
+        ? ['https://am8-production.up.railway.app', 'https://*.up.railway.app']
+        : ['http://localhost:8080', 'http://localhost:3000', 'http://127.0.0.1:8080'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
-// API routes (должны быть ПЕРЕД статическими файлами)
-app.use('/api/rooms', require('./server/routes/rooms'));
-app.use('/api/cells', require('./server/routes/cells'));
-app.use('/api/push', require('./server/routes/push'));
-
-// Auth API routes
-app.use('/auth/api', require('./auth/server/routes/auth'));
-app.use('/auth/api/health', require('./auth/server/routes/health'));
-
-// Serve static files from the current directory
-app.use(express.static('.'));
-
-// Serve auth module on /auth path
-app.use('/auth', express.static(path.join(__dirname, 'auth')));
-
-// Serve rooms page on /pages path
-app.use('/pages', express.static(path.join(__dirname, 'pages')));
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    service: 'Aura Money Game Server',
-    uptime: process.uptime(),
-    memory: process.memoryUsage()
-  });
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 минут
+    max: 100, // максимум 100 запросов на IP за 15 минут
+    message: {
+        error: 'Слишком много запросов с этого IP, попробуйте позже'
+    },
+    standardHeaders: true,
+    legacyHeaders: false
 });
+app.use('/api/', limiter);
 
-// Root health check for Railway
+// Логирование
+app.use(morgan('combined'));
+
+// Сжатие ответов
+app.use(compression());
+
+// Парсинг JSON
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Статические файлы (для продакшена)
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../')));
+}
+
+// Health check
 app.get('/health', (req, res) => {
-  res.status(200).send('OK');
+    res.json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development'
+    });
 });
 
-// Basic health check
-app.get('/', (req, res) => {
-  res.status(200).sendFile(path.join(__dirname, 'index.html'));
+// API маршруты
+app.use('/api/rooms', roomsRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/stats', statsRoutes);
+
+// Обслуживание статических файлов для продакшена
+if (process.env.NODE_ENV === 'production') {
+    app.get('*', (req, res) => {
+        // Если это API запрос, возвращаем 404
+        if (req.path.startsWith('/api/')) {
+            return res.status(404).json({ error: 'API endpoint not found' });
+        }
+        
+        // Для всех остальных запросов отдаем index.html (SPA)
+        res.sendFile(path.join(__dirname, '../index.html'));
+    });
+}
+
+// Обработка ошибок
+app.use(errorHandler);
+
+// Обработка несуществующих маршрутов
+app.use('*', (req, res) => {
+    res.status(404).json({
+        error: 'Endpoint not found',
+        path: req.originalUrl,
+        method: req.method
+    });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err);
-  res.status(500).json({ 
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-  });
-});
+// Инициализация сервера
+async function startServer() {
+    try {
+        // Инициализируем базу данных
+        await initializeDatabase();
+        console.log('✅ База данных инициализирована');
 
-// Handle client-side routing - serve index.html for all routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+        // Запускаем сервер
+        const server = app.listen(PORT, () => {
+            console.log(`🚀 Сервер запущен на порту ${PORT}`);
+            console.log(`🌍 Режим: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`📡 API доступно по адресу: http://localhost:${PORT}/api`);
+            console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+        });
 
-// Start server
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🎮 Aura Money Game Server running on port ${PORT}`);
-  console.log(`📱 Open your browser to: http://localhost:${PORT}`);
-  console.log(`🚀 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`💚 Health check available at: /health`);
-});
+        // Graceful shutdown
+        process.on('SIGTERM', () => {
+            console.log('🛑 Получен SIGTERM, завершаем сервер...');
+            server.close(() => {
+                console.log('✅ Сервер завершен');
+                process.exit(0);
+            });
+        });
 
-// Handle server errors
-server.on('error', (err) => {
-  console.error('❌ Server startup error:', err);
-  if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use`);
-  }
-  process.exit(1);
-});
+        process.on('SIGINT', () => {
+            console.log('🛑 Получен SIGINT, завершаем сервер...');
+            server.close(() => {
+                console.log('✅ Сервер завершен');
+                process.exit(0);
+            });
+        });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 Server shutting down gracefully...');
-  process.exit(0);
-});
+    } catch (error) {
+        console.error('❌ Ошибка запуска сервера:', error);
+        process.exit(1);
+    }
+}
 
-process.on('SIGINT', () => {
-  console.log('🛑 Server shutting down gracefully...');
-  process.exit(0);
-});
+// Запускаем сервер
+startServer();
+
+module.exports = app;
