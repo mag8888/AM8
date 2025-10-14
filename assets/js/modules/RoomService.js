@@ -24,11 +24,12 @@ class RoomService {
         
         this.config = {
             isLocal,
-            baseUrl: isLocal ? 'http://localhost:3002/api/rooms' : '/api/rooms',
-            useMockData: !isLocal, // В продакшне используем мок-данные
+            baseUrl: isLocal ? 'http://localhost:3002/api/rooms' : 'https://am8-production.up.railway.app/api/rooms',
+            useMockData: false, // Используем серверную базу данных
             localStorageKey: 'aura_money_dynamic_rooms',
             cacheTimeout: 30000, // 30 секунд
-            maxRetries: 3
+            maxRetries: 3,
+            useDynamicRooms: false // Отключаем динамические комнаты для единообразия
         };
 
         console.log(`🏠 RoomService v2.0.0: Инициализация ${isLocal ? 'локального' : 'продакшн'} режима`);
@@ -76,6 +77,7 @@ class RoomService {
     _initializeMockData() {
         const now = Date.now();
         
+        // Базовые комнаты - одинаковые для всех браузеров
         this.mockRooms = [
             this._createMockRoomObject({
                 id: 'room-demo-1',
@@ -92,7 +94,7 @@ class RoomService {
                 createdAt: new Date(now - 60000).toISOString()
             }),
             this._createMockRoomObject({
-                id: 'room-demo-2',
+                id: 'room-tournament-1',
                 name: 'Турнирная комната',
                 maxPlayers: 6,
                 playerCount: 3,
@@ -105,10 +107,38 @@ class RoomService {
                     { id: 'p5', username: 'player3', name: 'player3', isHost: false }
                 ],
                 createdAt: new Date(now - 30000).toISOString()
+            }),
+            this._createMockRoomObject({
+                id: 'room-public-1',
+                name: 'Публичная комната',
+                maxPlayers: 4,
+                playerCount: 1,
+                creator: 'public_host',
+                turnTime: 45,
+                assignProfessions: true,
+                players: [
+                    { id: 'p6', username: 'public_host', name: 'public_host', isHost: true }
+                ],
+                createdAt: new Date(now - 120000).toISOString()
+            }),
+            this._createMockRoomObject({
+                id: 'room-fast-1',
+                name: 'Быстрая игра',
+                maxPlayers: 4,
+                playerCount: 3,
+                creator: 'speed_player',
+                turnTime: 15,
+                assignProfessions: false,
+                players: [
+                    { id: 'p7', username: 'speed_player', name: 'speed_player', isHost: true },
+                    { id: 'p8', username: 'fast_user1', name: 'fast_user1', isHost: false },
+                    { id: 'p9', username: 'fast_user2', name: 'fast_user2', isHost: false }
+                ],
+                createdAt: new Date(now - 90000).toISOString()
             })
         ];
 
-        console.log('🏠 RoomService: Базовые мок-данные инициализированы');
+        console.log('🏠 RoomService: Базовые мок-данные инициализированы (4 комнаты)');
     }
 
     /**
@@ -137,6 +167,12 @@ class RoomService {
      * @private
      */
     _loadPersistedRooms() {
+        // Если динамические комнаты отключены, пропускаем загрузку
+        if (!this.config.useDynamicRooms) {
+            console.log('📂 RoomService: Динамические комнаты отключены');
+            return;
+        }
+
         try {
             const saved = localStorage.getItem(this.config.localStorageKey);
             if (!saved) {
@@ -253,7 +289,23 @@ class RoomService {
             throw new Error(data.message || 'Ошибка получения комнат');
         }
 
-        return data.data;
+        // Преобразуем формат данных с сервера в формат клиента
+        return data.data.map(room => ({
+            id: room.id,
+            name: room.name,
+            description: room.description || '',
+            maxPlayers: room.maxPlayers,
+            playerCount: room.playerCount,
+            status: room.status,
+            isStarted: room.isStarted,
+            isFull: room.isFull,
+            creator: room.creator,
+            turnTime: room.turnTime,
+            assignProfessions: room.assignProfessions,
+            players: room.players || [],
+            createdAt: room.createdAt,
+            updatedAt: room.updatedAt
+        }));
     }
 
     /**
@@ -321,7 +373,24 @@ class RoomService {
             throw new Error(data.message || 'Комната не найдена');
         }
 
-        return data.data;
+        // Преобразуем формат данных с сервера в формат клиента
+        const room = data.data;
+        return {
+            id: room.id,
+            name: room.name,
+            description: room.description || '',
+            maxPlayers: room.maxPlayers,
+            playerCount: room.playerCount,
+            status: room.status,
+            isStarted: room.isStarted,
+            isFull: room.isFull,
+            creator: room.creator,
+            turnTime: room.turnTime,
+            assignProfessions: room.assignProfessions,
+            players: room.players || [],
+            createdAt: room.createdAt,
+            updatedAt: room.updatedAt
+        };
     }
 
     /**
@@ -431,10 +500,19 @@ class RoomService {
      * @private
      */
     async _createRoomViaAPI(roomData, creator) {
+        const requestData = {
+            name: roomData.name,
+            description: roomData.description || '',
+            maxPlayers: roomData.maxPlayers || 4,
+            turnTime: roomData.turnTime || 30,
+            assignProfessions: roomData.assignProfessions || false,
+            creator: creator.username || creator.name || 'unknown'
+        };
+
         const response = await fetch(this.config.baseUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ roomData, creator })
+            body: JSON.stringify(requestData)
         });
 
         if (!response.ok) {
@@ -447,7 +525,24 @@ class RoomService {
             throw new Error(data.message || 'Ошибка создания комнаты');
         }
 
-        return data.data;
+        // Преобразуем формат данных с сервера в формат клиента
+        const room = data.data;
+        return {
+            id: room.id,
+            name: room.name,
+            description: room.description || '',
+            maxPlayers: room.maxPlayers,
+            playerCount: room.playerCount,
+            status: room.status,
+            isStarted: room.isStarted,
+            isFull: room.isFull,
+            creator: room.creator,
+            turnTime: room.turnTime,
+            assignProfessions: room.assignProfessions,
+            players: room.players || [],
+            createdAt: room.createdAt,
+            updatedAt: room.updatedAt
+        };
     }
 
     /**
@@ -554,10 +649,19 @@ class RoomService {
      * @private
      */
     async _joinRoomViaAPI(roomId, player) {
+        const requestData = {
+            player: {
+                username: player.username || player.name || 'unknown',
+                token: player.token || '',
+                dream: player.dream || '',
+                dreamCost: player.dreamCost || 0
+            }
+        };
+
         const response = await fetch(`${this.config.baseUrl}/${roomId}/join`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ player })
+            body: JSON.stringify(requestData)
         });
 
         if (!response.ok) {
@@ -570,7 +674,8 @@ class RoomService {
             throw new Error(data.message || 'Ошибка присоединения к комнате');
         }
 
-        return data.data;
+        // После успешного присоединения получаем обновленную комнату
+        return await this.getRoomById(roomId);
     }
 
     /**
@@ -623,7 +728,10 @@ class RoomService {
      * @private
      */
     async _fetchStatsFromAPI() {
-        const response = await fetch(`${this.config.baseUrl}/stats`, {
+        // Используем новый endpoint для статистики
+        const baseUrl = this.config.baseUrl.replace('/api/rooms', '/api/stats');
+        
+        const response = await fetch(baseUrl, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -638,7 +746,15 @@ class RoomService {
             throw new Error(data.message || 'Ошибка получения статистики');
         }
 
-        return data.data;
+        // Преобразуем формат данных с сервера в формат клиента
+        const serverStats = data.data;
+        return {
+            totalRooms: serverStats.totalRooms || 0,
+            activeRooms: serverStats.activeRooms || 0,
+            gamesInProgress: serverStats.gamesInProgress || 0,
+            playersOnline: serverStats.playersOnline || 0,
+            totalUsers: serverStats.totalUsers || 0
+        };
     }
 
     /**
@@ -751,10 +867,19 @@ class RoomService {
                 return this._updatePlayerInMockRoom(roomId, playerData);
             }
             
+            const requestData = {
+                username: playerData.username || playerData.name || 'unknown',
+                token: playerData.token || '',
+                dream: playerData.dream || '',
+                dreamCost: playerData.dreamCost || 0,
+                dreamDescription: playerData.dreamDescription || '',
+                isReady: playerData.isReady || false
+            };
+
             const response = await fetch(`${this.config.baseUrl}/${roomId}/player`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(playerData)
+                body: JSON.stringify(requestData)
             });
 
             if (!response.ok) {
@@ -767,7 +892,7 @@ class RoomService {
                 throw new Error(data.message || 'Ошибка обновления игрока');
             }
 
-            return data.data;
+            return data;
             
         } catch (error) {
             console.error('❌ RoomService: Ошибка обновления игрока:', error);
