@@ -827,13 +827,19 @@ async function handleJoinRoom(event) {
         const room = await roomService.joinRoom(selectedRoom.id, player);
         
         hideJoinRoomModal();
-        showNotification('Вы присоединились к комнате!', 'success');
+        showNotification('Вы присоединились к комнате! Переходим в комнату...', 'success');
         
         // Перезагружаем список комнат
         await loadRooms();
         
         // Принудительно обновляем список комнат для других пользователей
         await forceRefreshRooms();
+        
+        // Автоматически переходим в комнату
+        setTimeout(() => {
+            console.log('🎮 Rooms: Переход в комнату после присоединения:', selectedRoom.id);
+            window.location.href = `room.html?id=${selectedRoom.id}`;
+        }, 1500);
         
         // Если игра может начаться и мы хост, предлагаем начать
         if (roomService.canStartGame(currentUser.id, room)) {

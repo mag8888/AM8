@@ -488,6 +488,9 @@ async function joinRoomIfNeeded() {
             
             await roomService.joinRoom(currentRoom.id, playerData);
             showNotification('Вы присоединились к комнате', 'success');
+        } else {
+            console.log('ℹ️ Room: Пользователь уже в комнате, обновляем данные');
+            showNotification('Добро пожаловать обратно в комнату!', 'info');
         }
     } catch (error) {
         console.error('❌ Room: Ошибка присоединения к комнате:', error);
