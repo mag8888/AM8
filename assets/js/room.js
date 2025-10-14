@@ -1063,8 +1063,24 @@ async function confirmStartGame() {
             creatorId: currentRoom.creatorId
         });
         
-        // Используем creatorId из комнаты, если currentUser.id undefined
-        const userId = currentUser.id || currentRoom.creatorId;
+        // Принудительно обновляем данные комнаты перед запуском игры
+        console.log('🔄 Room: Принудительное обновление данных комнаты перед запуском игры');
+        await refreshRoomData();
+        
+        // Ищем текущего игрока в комнате для получения правильного ID
+        const currentPlayer = currentRoom.players.find(player => 
+            player.username === currentUser.username || 
+            player.name === currentUser.username
+        );
+        
+        // Используем ID игрока из комнаты, если currentUser.id undefined
+        const userId = currentUser.id || currentRoom.creatorId || currentPlayer?.id;
+        
+        console.log('🔍 Room: Финальные данные для запуска игры:', {
+            userId: userId,
+            currentUser: currentUser,
+            currentRoom: currentRoom
+        });
         
         if (!userId) {
             throw new Error('Не удалось определить ID пользователя для запуска игры');
