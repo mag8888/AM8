@@ -29,7 +29,7 @@ class RoomService {
             localStorageKey: 'aura_money_dynamic_rooms',
             cacheTimeout: 30000, // 30 секунд
             maxRetries: 3,
-            useDynamicRooms: false // Отключаем динамические комнаты для единообразия
+            useDynamicRooms: true // Включаем динамические комнаты для сохранения созданных комнат
         };
         
         // Дублируем для совместимости
