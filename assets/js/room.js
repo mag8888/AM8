@@ -1244,8 +1244,17 @@ function updateTokensAvailability() {
     
     // Получаем фишку текущего пользователя
     // Используем username для поиска, так как userId может быть undefined
-    const currentPlayerToken = currentRoom.players
-        .find(player => player.userId === currentUser.id || player.username === currentUser.username)?.token;
+    const currentPlayer = currentRoom.players.find(player => {
+        // Проверяем по username (основной способ)
+        if (player.username === currentUser.username) return true;
+        // Проверяем по userId (если есть)
+        if (currentUser.id && player.userId === currentUser.id) return true;
+        // Проверяем по name (альтернативный способ)
+        if (player.name === currentUser.username) return true;
+        return false;
+    });
+    
+    const currentPlayerToken = currentPlayer?.token;
     
     // Обновляем визуальное состояние фишек
     const tokenCards = document.querySelectorAll('.token-card');
@@ -1274,6 +1283,11 @@ function updateTokensAvailability() {
     });
     
     console.log('🔄 Room: Обновлена доступность фишек. Занятые:', takenTokens, 'Моя:', currentPlayerToken);
+    console.log('🔍 Room: Отладка поиска игрока:', {
+        currentUser: currentUser,
+        roomPlayers: currentRoom.players.map(p => ({ username: p.username, name: p.name, userId: p.userId, token: p.token })),
+        foundPlayer: currentPlayer
+    });
 }
 
 function showNotification(message, type = 'info') {
