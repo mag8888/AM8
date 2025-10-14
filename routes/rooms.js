@@ -416,14 +416,17 @@ router.post('/', async (req, res, next) => {
                     }
 
                     // Добавляем создателя как игрока в комнату
+                    console.log('🔍 Создание игрока в room_players:', { playerId, roomId, userId: user.id });
                     db.run(
                         `INSERT INTO room_players (id, room_id, user_id, is_host, is_ready) 
                          VALUES (?, ?, ?, 1, 0)`,
                         [playerId, roomId, user.id],
                         (err) => {
                             if (err) {
+                                console.error('❌ Ошибка создания игрока в room_players:', err);
                                 return next(err);
                             }
+                            console.log('✅ Игрок успешно добавлен в room_players');
 
                             // Получаем созданную комнату
                             const query = `
