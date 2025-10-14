@@ -4,11 +4,21 @@
  */
 class RoomService {
     constructor() {
-        this.baseUrl = '/api/rooms';
+        // Определяем базовый URL в зависимости от окружения
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isLocal) {
+            // Локальная разработка - используем мок-API
+            this.baseUrl = 'http://localhost:3002/api/rooms';
+            console.log('🏠 RoomService: Инициализация клиентского сервиса с мок-API');
+        } else {
+            // Продакшн - используем основной API
+            this.baseUrl = '/api/rooms';
+            console.log('🏠 RoomService: Инициализация клиентского сервиса с основным API');
+        }
+        
         this.currentRoom = null;
         this.rooms = [];
-        
-        console.log('🏠 RoomService: Инициализация клиентского сервиса');
     }
 
     /**
