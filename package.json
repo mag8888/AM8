@@ -4,7 +4,7 @@
   "description": "Aura Money - Cashflow-style board game with authentication",
   "main": "server.js",
   "scripts": {
-    "start": "python3 server.py",
+    "start": "python3 simple_server.py",
     "dev": "python3 -m http.server 8000",
     "test": "jest",
     "test:rooms": "jest RoomService.test.js",
