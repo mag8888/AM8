@@ -183,6 +183,16 @@ router.get('/:id', async (req, res, next) => {
     try {
         const { id } = req.params;
 
+        const db = getDatabase();
+        if (!db) {
+            console.log('⚠️ База данных недоступна, возвращаем fallback данные');
+            const fallbackRoom = fallbackRooms.find(r => r.id === id);
+            if (fallbackRoom) {
+                return res.json({ success: true, data: fallbackRoom, fallback: true });
+            }
+            return res.status(404).json({ success: false, message: 'Комната не найдена (fallback)' });
+        }
+
         const query = `
             SELECT 
                 r.*,
@@ -437,6 +447,14 @@ router.post('/:id/join', async (req, res, next) => {
             });
         }
 
+        const db = getDatabase();
+        if (!db) {
+            return res.status(503).json({
+                success: false,
+                message: 'База данных временно недоступна'
+            });
+        }
+
         // Проверяем существование комнаты
         db.get('SELECT * FROM rooms WHERE id = ? AND status != "deleted"', [id], (err, room) => {
             if (err) {
@@ -540,6 +558,14 @@ router.put('/:id/player', async (req, res, next) => {
             return res.status(400).json({
                 success: false,
                 message: 'Username игрока обязателен'
+            });
+        }
+
+        const db = getDatabase();
+        if (!db) {
+            return res.status(503).json({
+                success: false,
+                message: 'База данных временно недоступна'
             });
         }
 
