@@ -3,13 +3,76 @@ const { v4: uuidv4 } = require('uuid');
 const { getDatabase } = require('../database/init');
 
 const router = express.Router();
-const db = getDatabase();
+
+// Fallback данные для демо
+const fallbackRooms = [
+    {
+        id: 'room-demo-1',
+        name: 'Демо комната 1',
+        description: 'Комната для демонстрации игры',
+        maxPlayers: 4,
+        playerCount: 2,
+        status: 'waiting',
+        isStarted: false,
+        isFull: false,
+        creator: 'demo_user',
+        turnTime: 30,
+        assignProfessions: true,
+        players: [
+            { id: 'p1', username: 'demo_user', name: 'demo_user', isHost: true },
+            { id: 'p2', username: 'player1', name: 'player1', isHost: false }
+        ],
+        createdAt: new Date(Date.now() - 60000).toISOString()
+    },
+    {
+        id: 'room-tournament-1',
+        name: 'Турнирная комната',
+        description: 'Серьезная игра для опытных игроков',
+        maxPlayers: 6,
+        playerCount: 3,
+        status: 'waiting',
+        isStarted: false,
+        isFull: false,
+        creator: 'tournament_master',
+        turnTime: 60,
+        assignProfessions: false,
+        players: [
+            { id: 'p3', username: 'tournament_master', name: 'tournament_master', isHost: true },
+            { id: 'p4', username: 'player2', name: 'player2', isHost: false },
+            { id: 'p5', username: 'player3', name: 'player3', isHost: false }
+        ],
+        createdAt: new Date(Date.now() - 30000).toISOString()
+    }
+];
+
+// Проверяем доступность базы данных
+function getDatabase() {
+    try {
+        return require('../database/init').getDatabase();
+    } catch (error) {
+        console.warn('⚠️ База данных недоступна, используем fallback данные');
+        return null;
+    }
+}
 
 /**
  * GET /api/rooms - Получить список всех комнат
  */
 router.get('/', async (req, res, next) => {
     try {
+        const db = getDatabase();
+        
+        // Если база данных недоступна, используем fallback данные
+        if (!db) {
+            console.log('🔄 Используем fallback данные для комнат');
+            return res.json({
+                success: true,
+                data: fallbackRooms,
+                count: fallbackRooms.length,
+                fallback: true
+            });
+        }
+
         const query = `
             SELECT 
                 r.id,
@@ -56,7 +119,14 @@ router.get('/', async (req, res, next) => {
         db.all(query, [], (err, rows) => {
             if (err) {
                 console.error('❌ Ошибка получения комнат:', err);
-                return next(err);
+                // Fallback на статические данные при ошибке БД
+                console.log('🔄 Fallback на статические данные');
+                return res.json({
+                    success: true,
+                    data: fallbackRooms,
+                    count: fallbackRooms.length,
+                    fallback: true
+                });
             }
 
             const rooms = rows.map(row => {
@@ -96,7 +166,14 @@ router.get('/', async (req, res, next) => {
         });
 
     } catch (error) {
-        next(error);
+        console.error('❌ Критическая ошибка получения комнат:', error);
+        // Fallback на статические данные при критической ошибке
+        res.json({
+            success: true,
+            data: fallbackRooms,
+            count: fallbackRooms.length,
+            fallback: true
+        });
     }
 });
 

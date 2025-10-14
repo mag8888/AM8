@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-const DB_PATH = process.env.DATABASE_URL || path.join(__dirname, 'aura_money.db');
+const DB_PATH = process.env.DATABASE_URL || path.join(process.env.NODE_ENV === 'production' ? '/tmp' : __dirname, 'aura_money.db');
 
 let db;
 

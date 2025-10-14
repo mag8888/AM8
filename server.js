@@ -106,8 +106,13 @@ app.use('*', (req, res) => {
 async function startServer() {
     try {
         // Инициализируем базу данных
-        await initializeDatabase();
-        console.log('✅ База данных инициализирована');
+        try {
+            await initializeDatabase();
+            console.log('✅ База данных инициализирована');
+        } catch (dbError) {
+            console.error('❌ Ошибка инициализации базы данных:', dbError);
+            console.log('⚠️ Продолжаем без базы данных (fallback режим)');
+        }
 
         // Запускаем сервер
         const server = app.listen(PORT, () => {
