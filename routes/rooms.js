@@ -1,6 +1,5 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const { getDatabase } = require('../database/init');
 
 const router = express.Router();
 
