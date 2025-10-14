@@ -71,9 +71,6 @@ class RoomService {
             }
         ];
         
-        // Загружаем динамически созданные комнаты из localStorage
-        this.loadDynamicRooms();
-        
         console.log('🏠 RoomService: Мок-данные инициализированы для продакшна');
     }
 
@@ -768,4 +765,4 @@ class RoomService {
 if (typeof window !== 'undefined') {
     window.RoomService = RoomService;
 }
-// Version: 1760436000
+// Version: 1760436500
