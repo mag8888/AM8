@@ -785,4 +785,112 @@ router.post('/:id/notifications', (req, res, next) => {
     }
 });
 
+/**
+ * POST /api/rooms/:id/start - Запуск игры
+ */
+router.post('/:id/start', async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.body;
+
+        const db = getDatabase();
+        if (!db) {
+            console.log('⚠️ База данных недоступна');
+            return res.status(503).json({
+                success: false,
+                message: 'База данных недоступна'
+            });
+        }
+
+        // Проверяем, что комната существует и не запущена
+        const roomQuery = `
+            SELECT r.*, u.username as creator_name
+            FROM rooms r
+            LEFT JOIN users u ON r.creator_id = u.id
+            WHERE r.id = ? AND r.status != 'deleted'
+        `;
+
+        db.get(roomQuery, [id], (err, room) => {
+            if (err) {
+                console.error('❌ Ошибка получения комнаты:', err);
+                return next(err);
+            }
+
+            if (!room) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Комната не найдена'
+                });
+            }
+
+            if (room.is_started) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Игра уже запущена'
+                });
+            }
+
+            // Проверяем, что пользователь является создателем комнаты
+            if (room.creator_id !== userId) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Только создатель комнаты может запустить игру'
+                });
+            }
+
+            // Проверяем количество готовых игроков
+            const playersQuery = `
+                SELECT COUNT(*) as ready_count, 
+                       (SELECT COUNT(*) FROM room_players WHERE room_id = ?) as total_count
+                FROM room_players 
+                WHERE room_id = ? AND is_ready = 1
+            `;
+
+            db.get(playersQuery, [id, id], (err, counts) => {
+                if (err) {
+                    console.error('❌ Ошибка подсчета игроков:', err);
+                    return next(err);
+                }
+
+                if (counts.ready_count < 2) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Для запуска игры нужно минимум 2 готовых игрока'
+                    });
+                }
+
+                // Запускаем игру
+                const updateQuery = `
+                    UPDATE rooms 
+                    SET is_started = 1, status = 'playing', updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                `;
+
+                db.run(updateQuery, [id], function(err) {
+                    if (err) {
+                        console.error('❌ Ошибка запуска игры:', err);
+                        return next(err);
+                    }
+
+                    console.log('🎮 Игра запущена в комнате:', id);
+
+                    res.json({
+                        success: true,
+                        message: 'Игра успешно запущена',
+                        data: {
+                            roomId: id,
+                            isStarted: true,
+                            status: 'playing'
+                        }
+                    });
+                });
+            });
+        });
+
+    } catch (error) {
+        console.error('❌ Ошибка запуска игры:', error);
+        next(error);
+    }
+});
+
 module.exports = router;
