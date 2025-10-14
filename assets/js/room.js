@@ -421,7 +421,15 @@ async function joinRoomIfNeeded() {
         }
     } catch (error) {
         console.error('❌ Room: Ошибка присоединения к комнате:', error);
-        showNotification('Ошибка присоединения к комнате', 'error');
+        
+        // Если пользователь уже в комнате (409), не показываем ошибку
+        if (error.message && (error.message.includes('409') || error.message.includes('ALREADY_JOINED'))) {
+            console.log('ℹ️ Room: Пользователь уже в комнате, обновляем данные');
+            // Обновляем данные комнаты
+            await loadRoomData();
+        } else {
+            showNotification('Ошибка присоединения к комнате', 'error');
+        }
     }
 }
 

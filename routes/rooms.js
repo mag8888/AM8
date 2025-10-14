@@ -553,7 +553,8 @@ router.post('/:id/join', async (req, res, next) => {
                     if (existingPlayer) {
                         return res.status(409).json({
                             success: false,
-                            message: 'Вы уже в этой комнате'
+                            message: 'Вы уже в этой комнате',
+                            code: 'ALREADY_JOINED'
                         });
                     }
 
