@@ -260,7 +260,48 @@ function setupEventListeners() {
         });
     }
     
+    // Обработчики для динамически создаваемых кнопок
+    setupDynamicEventListeners();
+    
     console.log('✅ Rooms: Обработчики событий настроены');
+}
+
+/**
+ * Настройка обработчиков для динамически создаваемых элементов
+ */
+function setupDynamicEventListeners() {
+    // Используем делегирование событий для динамических кнопок
+    const roomsList = document.getElementById('rooms-list');
+    if (roomsList) {
+        roomsList.addEventListener('click', (e) => {
+            const button = e.target.closest('[data-action]');
+            if (!button) return;
+            
+            const action = button.dataset.action;
+            const roomId = button.dataset.roomId;
+            
+            switch (action) {
+                case 'start-game':
+                    startGame(roomId);
+                    break;
+                case 'join-room':
+                    showJoinRoomModal(roomId);
+                    break;
+                case 'view-details':
+                    viewRoomDetails(roomId);
+                    break;
+            }
+        });
+    }
+    
+    // Обработчики для кнопок в empty state
+    document.addEventListener('click', (e) => {
+        if (e.target.id === 'retry-load-rooms') {
+            loadRooms();
+        } else if (e.target.id === 'create-room-from-empty') {
+            showCreateRoomModal();
+        }
+    });
 }
 
 /**
@@ -324,7 +365,7 @@ function showErrorState(message) {
                 <div class="empty-state-icon">⚠️</div>
                 <h3>Произошла ошибка</h3>
                 <p>${message}</p>
-                <button class="btn btn-secondary btn-lg" onclick="loadRooms()">
+                <button class="btn btn-secondary btn-lg" id="retry-load-rooms">
                     🔄 Попробовать снова
                 </button>
             </div>
@@ -343,7 +384,7 @@ function showEmptyState() {
                 <div class="empty-state-icon">🏠</div>
                 <h3>Нет доступных комнат</h3>
                 <p>Создайте новую комнату или подождите, пока кто-то создаст комнату для игры.</p>
-                <button class="btn btn-primary btn-lg" onclick="showCreateRoomModal()">
+                <button class="btn btn-primary btn-lg" id="create-room-from-empty">
                     ➕ Создать комнату
                 </button>
             </div>
@@ -449,17 +490,17 @@ function createRoomActions(room) {
     
     if (isInRoom) {
         if (canStart) {
-            actions += `<button class="room-action join" onclick="startGame('${room.id}')">Начать игру</button>`;
+            actions += `<button class="room-action join" data-action="start-game" data-room-id="${room.id}">Начать игру</button>`;
         } else {
             actions += `<button class="room-action view" disabled>Вы в комнате</button>`;
         }
     } else if (canJoin) {
-        actions += `<button class="room-action join" onclick="showJoinRoomModal('${room.id}')">Присоединиться</button>`;
+        actions += `<button class="room-action join" data-action="join-room" data-room-id="${room.id}">Присоединиться</button>`;
     } else {
         actions += `<button class="room-action view" disabled>${getJoinDisabledReason(room)}</button>`;
     }
     
-    actions += `<button class="room-action view" onclick="viewRoomDetails('${room.id}')">Подробнее</button>`;
+    actions += `<button class="room-action view" data-action="view-details" data-room-id="${room.id}">Подробнее</button>`;
     
     return actions;
 }
