@@ -26,14 +26,14 @@ document.addEventListener('DOMContentLoaded', function() {
  * Запуск периодического обновления списка комнат
  */
 function startRoomsPolling() {
-    // Обновляем список комнат каждые 3 секунды
+    // Обновляем список комнат каждые 10 секунд (увеличено для уменьшения нагрузки)
     setInterval(async () => {
         try {
             await refreshRoomsList();
         } catch (error) {
             console.error('❌ Rooms: Ошибка периодического обновления:', error);
         }
-    }, 3000);
+    }, 10000);
     
     // Также обновляем при фокусе на окне (когда пользователь возвращается)
     window.addEventListener('focus', async () => {

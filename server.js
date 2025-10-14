@@ -42,12 +42,16 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 минут
-    max: 100, // максимум 100 запросов на IP за 15 минут
+    max: 1000, // максимум 1000 запросов на IP за 15 минут (увеличено для игрового приложения)
     message: {
         error: 'Слишком много запросов с этого IP, попробуйте позже'
     },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    skip: (req) => {
+        // Пропускаем rate limiting для health check
+        return req.path === '/health';
+    }
 });
 app.use('/api/', limiter);
 
