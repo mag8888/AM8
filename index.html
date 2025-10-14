@@ -146,7 +146,7 @@
 
         /* Контейнер для панели игроков */
         .players-panel-container {
-            width: 350px;
+            width: 100%; /* На больших экранах займет всю доступную ширину справа */
             flex-shrink: 0;
         }
 
@@ -174,10 +174,11 @@
         
         /* Оптимизированное игровое поле для главной страницы */
         .game-page .board-wrapper {
-            width: min(98vmin, 950px) !important;
-            height: min(98vmin, 950px) !important;
-            border: 3px solid #666 !important;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
+            width: min(100vmin, 1000px) !important;
+            height: min(100vmin, 1000px) !important;
+            border: 3px solid rgba(99, 102, 241, 0.4) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+            border-radius: 12px !important;
         }
         
         .game-page .track-cell {
@@ -257,7 +258,10 @@
                 justify-content: center;
             }
             
-            /* Удалены стили game-control-panel */
+            .players-panel-container {
+                width: 400px; /* Фиксированная ширина на больших экранах */
+                max-width: 400px;
+            }
         }
 
 
@@ -268,7 +272,7 @@
             }
             
             .players-panel-container {
-                width: 100%;
+                width: 100%; /* На всю ширину на планшетах */
                 order: 2; /* Панель внизу */
             }
             
@@ -299,7 +303,7 @@
             }
             
             .players-panel-container {
-                width: 100%;
+                width: 100%; /* На всю ширину на мобильных */
                 order: 2; /* Панель внизу */
             }
             

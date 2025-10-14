@@ -11,7 +11,7 @@
     --highlight-color: #fbbf24;
     --primary-color: #6366f1;
     --outer-cell-size: clamp(53px, 5.5vmin, 66px);
-    --inner-cell-size: clamp(44px, 4.4vmin, 55px);
+    --inner-cell-size: clamp(66px, 6.6vmin, 82px); /* Увеличено на 50% */
 }
 
 .game-board-container {
@@ -46,10 +46,10 @@
 }
 
 .inner-track {
-    width: 75%;
-    height: 75%;
-    top: 12.5%;
-    left: 12.5%;
+    width: 85%; /* Увеличено для больших клеток */
+    height: 85%;
+    top: 7.5%;
+    left: 7.5%;
     z-index: 3;
 }
 
@@ -60,21 +60,21 @@
     --cell-size: var(--outer-cell-size);
     width: var(--cell-size);
     height: var(--cell-size);
-    border-radius: 6px;
-    background: linear-gradient(140deg, rgba(24, 35, 58, 0.9), rgba(7, 13, 28, 0.9));
-    border: 2px solid var(--surface-border);
-    box-shadow: var(--cell-shadow);
+    border-radius: 8px; /* Увеличено для более современного вида */
+    background: linear-gradient(145deg, rgba(24, 35, 58, 0.95), rgba(7, 13, 28, 0.95));
+    border: 2.5px solid var(--surface-border); /* Увеличена толщина границы */
+    box-shadow: var(--cell-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.1); /* Добавлен внутренний свет */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px; /* Увеличен отступ между элементами */
     color: var(--text-primary);
     cursor: pointer;
     pointer-events: auto;
-    transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
-    backdrop-filter: blur(6px);
-    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Улучшена анимация */
+    backdrop-filter: blur(8px); /* Увеличен blur */
+    font-weight: 700; /* Увеличена жирность шрифта */
 }
 
 .outer-track .track-cell {
@@ -96,11 +96,13 @@
 }
 
 .track-cell:hover {
-    border-color: rgba(248, 250, 252, 0.35);
+    border-color: rgba(248, 250, 252, 0.5);
     box-shadow:
-        0 24px 40px rgba(8, 13, 31, 0.65),
-        0 0 25px rgba(99, 102, 241, 0.35);
-    background: linear-gradient(145deg, rgba(30, 41, 59, 0.92), rgba(17, 24, 39, 0.92));
+        0 28px 50px rgba(8, 13, 31, 0.75),
+        0 0 35px rgba(99, 102, 241, 0.5),
+        inset 0 2px 0 rgba(255, 255, 255, 0.15);
+    background: linear-gradient(150deg, rgba(35, 48, 68, 0.95), rgba(20, 30, 45, 0.95));
+    transform: translateY(-2px); /* Добавлен подъем при наведении */
 }
 
 .track-cell:active,
@@ -117,32 +119,34 @@
 
 .cell-number {
     position: absolute;
-    top: 4px;
-    left: 4px;
-    min-width: 16px;
-    height: 16px;
+    top: 6px; /* Увеличен отступ */
+    left: 6px;
+    min-width: 20px; /* Увеличен размер */
+    height: 20px;
     padding: 0;
     border-radius: 50%;
-    background: rgba(75, 85, 99, 0.9);
+    background: linear-gradient(135deg, rgba(75, 85, 99, 0.95), rgba(55, 65, 81, 0.95));
     color: #ffffff;
-    font-size: 0.5rem;
-    font-weight: 700;
+    font-size: 0.6rem; /* Увеличен размер шрифта */
+    font-weight: 800;
     text-align: center;
-    line-height: 16px;
+    line-height: 20px;
     letter-spacing: 0;
     z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .cell-icon {
     position: relative;
-    font-size: clamp(1.2rem, 2.5vmin, 1.8rem);
+    font-size: clamp(1.4rem, 3vmin, 2.2rem); /* Увеличен размер иконок */
     line-height: 1;
     z-index: 2;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)); /* Добавлена тень */
+    transition: all 0.3s ease;
 }
 
 .dream-heart {

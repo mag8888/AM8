@@ -132,38 +132,71 @@ class PlayersPanel {
         styles.id = 'players-panel-styles';
         styles.textContent = `
             .players-panel {
-                background: rgba(255, 255, 255, 0.05);
-                border-radius: 1rem;
-                padding: 1.5rem;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                backdrop-filter: blur(10px);
+                background: linear-gradient(145deg, rgba(20, 25, 40, 0.95), rgba(15, 20, 35, 0.95));
+                border-radius: 1.5rem;
+                padding: 2rem;
+                border: 2px solid rgba(99, 102, 241, 0.3);
+                backdrop-filter: blur(20px);
                 color: #ffffff;
-                max-width: 350px;
+                max-width: 400px;
                 width: 100%;
+                box-shadow: 
+                    0 20px 40px rgba(0, 0, 0, 0.4),
+                    0 0 0 1px rgba(255, 255, 255, 0.05),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .players-panel::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
             }
             
             .panel-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 1rem;
-                padding-bottom: 0.5rem;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                margin-bottom: 1.5rem;
+                padding-bottom: 1rem;
+                border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+                position: relative;
+            }
+            
+            .panel-header::after {
+                content: '';
+                position: absolute;
+                bottom: -2px;
+                left: 0;
+                width: 50px;
+                height: 2px;
+                background: linear-gradient(90deg, #6366f1, #8b5cf6);
+                border-radius: 1px;
             }
             
             .panel-header h3 {
                 margin: 0;
-                font-size: 1.2rem;
+                font-size: 1.3rem;
                 color: #ffffff;
+                font-weight: 700;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
             }
             
             .players-count {
-                background: rgba(59, 130, 246, 0.2);
-                color: #3b82f6;
-                padding: 0.25rem 0.75rem;
-                border-radius: 0.5rem;
-                font-weight: 600;
+                background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
+                color: #ffffff;
+                padding: 0.4rem 1rem;
+                border-radius: 1rem;
+                font-weight: 700;
                 font-size: 0.9rem;
+                border: 1px solid rgba(99, 102, 241, 0.4);
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+                backdrop-filter: blur(10px);
             }
             
             .current-user-profile {
@@ -175,11 +208,25 @@ class PlayersPanel {
             .current-user-card {
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
-                background: rgba(255, 255, 255, 0.05);
-                border-radius: 8px;
-                padding: 0.75rem 1rem;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                gap: 1rem;
+                background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+                border-radius: 1rem;
+                padding: 1rem 1.25rem;
+                border: 2px solid rgba(99, 102, 241, 0.3);
+                box-shadow: 0 8px 25px rgba(99, 102, 241, 0.2);
+                backdrop-filter: blur(10px);
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .current-user-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
             }
 
             .current-user-card .user-avatar {
@@ -232,41 +279,67 @@ class PlayersPanel {
             .player-item {
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
-                padding: 0.75rem;
-                background: rgba(255, 255, 255, 0.05);
-                border-radius: 0.75rem;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                margin-bottom: 0.5rem;
-                transition: all 0.3s ease;
+                gap: 1rem;
+                padding: 1rem;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.05));
+                border-radius: 1rem;
+                border: 2px solid rgba(255, 255, 255, 0.1);
+                margin-bottom: 0.75rem;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
+                overflow: hidden;
+                backdrop-filter: blur(10px);
+            }
+            
+            .player-item::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+                transition: left 0.5s ease;
+            }
+            
+            .player-item:hover::before {
+                left: 100%;
             }
             
             .player-item:hover {
-                background: rgba(255, 255, 255, 0.08);
-                border-color: rgba(255, 255, 255, 0.2);
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.08));
+                border-color: rgba(99, 102, 241, 0.4);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
             }
             
             .player-item.active {
-                background: rgba(59, 130, 246, 0.1);
-                border-color: #3b82f6;
+                background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.15));
+                border-color: #6366f1;
+                box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
             }
             
             .player-avatar {
-                width: 38px;
-                height: 38px;
+                width: 45px;
+                height: 45px;
                 border-radius: 50%;
-                background: rgba(255, 255, 255, 0.1);
+                background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 1.4rem;
-                border: 2px solid rgba(255, 255, 255, 0.2);
-                transition: all 0.3s ease;
+                font-size: 1.6rem;
+                border: 3px solid rgba(99, 102, 241, 0.4);
+                transition: all 0.4s ease;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+                position: relative;
+                z-index: 2;
             }
             
             .player-item:hover .player-avatar {
-                border-color: rgba(255, 255, 255, 0.4);
-                background: rgba(255, 255, 255, 0.15);
+                border-color: rgba(255, 255, 255, 0.6);
+                background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5));
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
             }
             
             .player-info {
@@ -310,10 +383,12 @@ class PlayersPanel {
             }
             
             .turn-info {
-                background: rgba(255, 255, 255, 0.05);
-                border-radius: 0.75rem;
-                padding: 1rem;
-                border: 1px solid rgba(255, 255, 255, 0.1);
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.05));
+                border-radius: 1rem;
+                padding: 1.5rem;
+                border: 2px solid rgba(99, 102, 241, 0.2);
+                backdrop-filter: blur(10px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
             }
             
             .turn-item {
@@ -339,10 +414,12 @@ class PlayersPanel {
             }
             
             .turn-history {
-                background: rgba(255, 255, 255, 0.05);
-                border-radius: 0.75rem;
-                padding: 1rem;
-                border: 1px solid rgba(255, 255, 255, 0.1);
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.05));
+                border-radius: 1rem;
+                padding: 1.5rem;
+                border: 2px solid rgba(99, 102, 241, 0.2);
+                backdrop-filter: blur(10px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
             }
             
             .turn-history h4 {
@@ -369,40 +446,64 @@ class PlayersPanel {
             }
             
             .btn {
-                padding: 0.75rem 1rem;
+                padding: 1rem 1.5rem;
                 border: none;
-                border-radius: 0.75rem;
-                font-weight: 600;
-                font-size: 0.9rem;
+                border-radius: 1rem;
+                font-weight: 700;
+                font-size: 0.95rem;
                 cursor: pointer;
-                transition: all 0.3s ease;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
                 text-decoration: none;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                gap: 0.5rem;
+                gap: 0.75rem;
+                position: relative;
+                overflow: hidden;
+                backdrop-filter: blur(10px);
+            }
+            
+            .btn::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+                transition: left 0.6s ease;
+            }
+            
+            .btn:hover::before {
+                left: 100%;
             }
             
             .btn-primary {
-                background: linear-gradient(135deg, #3b82f6, #2563eb);
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
                 color: white;
+                border: 2px solid rgba(99, 102, 241, 0.3);
+                box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
             }
             
             .btn-primary:hover:not(:disabled) {
-                background: linear-gradient(135deg, #2563eb, #1d4ed8);
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+                background: linear-gradient(135deg, #8b5cf6, #a855f7);
+                transform: translateY(-3px);
+                box-shadow: 0 12px 35px rgba(99, 102, 241, 0.5);
+                border-color: rgba(99, 102, 241, 0.6);
             }
             
             .btn-secondary {
-                background: rgba(255, 255, 255, 0.1);
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.1));
                 color: #ffffff;
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                border: 2px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
             }
             
             .btn-secondary:hover:not(:disabled) {
-                background: rgba(255, 255, 255, 0.15);
-                border-color: rgba(255, 255, 255, 0.3);
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15));
+                border-color: rgba(255, 255, 255, 0.4);
+                transform: translateY(-3px);
+                box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
             }
             
             .btn:disabled {
@@ -410,6 +511,62 @@ class PlayersPanel {
                 cursor: not-allowed;
                 transform: none !important;
                 box-shadow: none !important;
+            }
+            
+            /* Мобильная адаптация */
+            @media (max-width: 768px) {
+                .players-panel {
+                    padding: 1.5rem;
+                    max-width: 100%;
+                    margin: 0 0.5rem;
+                }
+                
+                .panel-header h3 {
+                    font-size: 1.1rem;
+                }
+                
+                .player-avatar {
+                    width: 40px;
+                    height: 40px;
+                    font-size: 1.4rem;
+                }
+                
+                .btn {
+                    padding: 0.8rem 1.2rem;
+                    font-size: 0.9rem;
+                }
+                
+                .dice-controls {
+                    flex-direction: column;
+                }
+                
+                .dice-controls .btn {
+                    width: 100%;
+                    min-width: auto;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                .players-panel {
+                    padding: 1rem;
+                    margin: 0 0.25rem;
+                }
+                
+                .player-item {
+                    padding: 0.75rem;
+                    gap: 0.75rem;
+                }
+                
+                .player-avatar {
+                    width: 35px;
+                    height: 35px;
+                    font-size: 1.2rem;
+                }
+                
+                .btn {
+                    padding: 0.7rem 1rem;
+                    font-size: 0.85rem;
+                }
             }
         `;
         
