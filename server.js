@@ -74,7 +74,7 @@ app.use('/api/stats', statsRoutes);
 
 // Статические файлы (для продакшена)
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, './')));
+    app.use(express.static(process.cwd()));
     
     // Обслуживание статических файлов для продакшена
     app.get('*', (req, res) => {
@@ -84,8 +84,10 @@ if (process.env.NODE_ENV === 'production') {
         }
         
         // Для всех остальных запросов отдаем index.html (SPA)
-        const indexPath = path.join(__dirname, 'index.html');
+        const indexPath = path.join(process.cwd(), 'index.html');
         console.log('🔍 Ищем index.html по пути:', indexPath);
+        console.log('🔍 __dirname:', __dirname);
+        console.log('🔍 process.cwd():', process.cwd());
         res.sendFile(indexPath, (err) => {
             if (err) {
                 console.error('❌ Ошибка отправки index.html:', err);
