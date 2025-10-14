@@ -745,6 +745,12 @@ class RoomService {
         try {
             console.log('🏠 RoomService: Обновление игрока в комнате:', roomId);
             
+            // Если используем мок-данные, обновляем локально
+            if (this.config.useMockData || this.useMockData) {
+                console.log('🏠 RoomService: Использование мок-обновления игрока');
+                return this._updatePlayerInMockRoom(roomId, playerData);
+            }
+            
             const response = await fetch(`${this.config.baseUrl}/${roomId}/player`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -767,6 +773,41 @@ class RoomService {
             console.error('❌ RoomService: Ошибка обновления игрока:', error);
             throw error;
         }
+    }
+
+    /**
+     * Обновление игрока в мок-комнате
+     * @param {string} roomId
+     * @param {Object} playerData
+     * @returns {Promise<Object>}
+     * @private
+     */
+    _updatePlayerInMockRoom(roomId, playerData) {
+        console.log('🏠 RoomService: Обновление игрока в мок-комнате:', roomId, playerData);
+        
+        const room = this.mockRooms.find(r => r.id === roomId);
+        if (!room) {
+            throw new Error('Комната не найдена');
+        }
+
+        // Находим игрока в комнате
+        const playerIndex = room.players.findIndex(p => p.id === playerData.id || p.username === playerData.username);
+        if (playerIndex === -1) {
+            throw new Error('Игрок не найден в комнате');
+        }
+
+        // Обновляем данные игрока
+        room.players[playerIndex] = { ...room.players[playerIndex], ...playerData };
+        
+        // Сохраняем обновленную комнату
+        this._saveDynamicRooms();
+        
+        console.log('✅ RoomService: Игрок успешно обновлен в мок-комнате');
+        return {
+            success: true,
+            player: room.players[playerIndex],
+            room: room
+        };
     }
 
     // Геттеры для состояния
