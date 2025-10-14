@@ -246,7 +246,7 @@ router.get('/:id', async (req, res, next) => {
             SELECT 
                 r.*,
                 u.username as creator_name,
-                GROUP_CONCAT(
+                COALESCE(GROUP_CONCAT(
                     CASE 
                         WHEN rp.user_id IS NOT NULL 
                         THEN json_object(
@@ -264,7 +264,7 @@ router.get('/:id', async (req, res, next) => {
                         )
                         ELSE NULL
                     END
-                ) as players
+                ), '') as players
             FROM rooms r
             LEFT JOIN users u ON r.creator_id = u.id
             LEFT JOIN room_players rp ON r.id = rp.room_id
@@ -286,7 +286,7 @@ router.get('/:id', async (req, res, next) => {
                 });
             }
 
-            const players = row.players 
+            const players = row.players && row.players.trim() !== ''
                 ? row.players.split(',').map(p => {
                     try {
                         return JSON.parse(p);
