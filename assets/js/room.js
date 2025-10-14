@@ -1101,6 +1101,7 @@ async function confirmStartGame() {
         setTimeout(() => {
             // Переходим на главную страницу с данными о комнате
             const roomId = currentRoom.id;
+            console.log('🎮 Room: Переход к игровой доске:', roomId);
             window.location.href = `../index.html#game?roomId=${roomId}`;
         }, 2000);
         

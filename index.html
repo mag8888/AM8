@@ -642,6 +642,22 @@
     
     <!-- Скрипты для страницы авторизации -->
     <script>
+        // Проверяем, не находимся ли мы на игровой доске
+        if (window.location.hash && window.location.hash.includes('game')) {
+            console.log('🎮 Находимся на игровой доске, пропускаем перенаправление');
+        } else {
+            // Проверяем авторизацию только если не на игровой доске
+            document.addEventListener('DOMContentLoaded', function() {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                if (currentUser && currentUser.isLoggedIn) {
+                    console.log('👤 Пользователь авторизован, перенаправляем в лобби');
+                    setTimeout(() => {
+                        window.location.href = 'pages/rooms.html';
+                    }, 1000);
+                }
+            });
+        }
+        
         // Функция переключения вкладок
         function switchTab(tabName) {
             // Скрываем все формы
