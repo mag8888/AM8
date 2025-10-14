@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 // Импортируем маршруты
-const roomsRoutes = require('./routes/rooms');
+const roomsRoutes = require('./routes/rooms'); // v1.1.0 - добавлен endpoint /start
 const usersRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
 const statsRoutes = require('./routes/stats');
