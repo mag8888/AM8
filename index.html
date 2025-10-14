@@ -48,18 +48,25 @@
         }
 
         /* Стили для страницы авторизации */
+        #auth-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
         .auth-container {
             max-width: 500px;
-            margin: 0 auto;
+            width: 100%;
             padding: 2rem;
-            min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(30, 30, 60, 0.8));
             backdrop-filter: blur(10px);
             border-radius: 1rem;
-            margin: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         .auth-header {
@@ -739,7 +746,27 @@
                     const password = document.getElementById('login-password').value;
                     
                     console.log('Попытка входа:', { username, password });
+                    
+                    // Сохраняем данные пользователя в localStorage
+                    const userData = {
+                        username: username,
+                        email: username + '@example.com', // Временный email
+                        isLoggedIn: true,
+                        loginTime: new Date().toISOString()
+                    };
+                    localStorage.setItem('currentUser', JSON.stringify(userData));
+                    
                     showNotification('Вход выполнен успешно!');
+                    
+                    // Перенаправляем в лобби через 1.5 секунды
+                    setTimeout(() => {
+                        if (window.router && window.router.navigate) {
+                            window.router.navigate('/lobby');
+                        } else {
+                            // Fallback - прямой переход
+                            window.location.href = window.location.origin + '/lobby';
+                        }
+                    }, 1500);
                 });
             }
             
@@ -759,7 +786,27 @@
                     }
                     
                     console.log('Попытка регистрации:', { username, email, password });
+                    
+                    // Сохраняем данные пользователя в localStorage
+                    const userData = {
+                        username: username,
+                        email: email,
+                        isLoggedIn: true,
+                        loginTime: new Date().toISOString()
+                    };
+                    localStorage.setItem('currentUser', JSON.stringify(userData));
+                    
                     showNotification('Регистрация выполнена успешно!');
+                    
+                    // Перенаправляем в лобби через 1.5 секунды
+                    setTimeout(() => {
+                        if (window.router && window.router.navigate) {
+                            window.router.navigate('/lobby');
+                        } else {
+                            // Fallback - прямой переход
+                            window.location.href = window.location.origin + '/lobby';
+                        }
+                    }, 1500);
                 });
             }
         });
