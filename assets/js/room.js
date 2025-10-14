@@ -259,6 +259,21 @@ function setupEventListeners() {
         readyButton.addEventListener('click', toggleReadyStatus);
     }
     
+    // Кнопки авторизации
+    const authLoginBtn = document.getElementById('auth-login-btn');
+    if (authLoginBtn) {
+        authLoginBtn.addEventListener('click', () => {
+            window.location.href = '../index.html';
+        });
+    }
+    
+    const authBackToRoomsBtn = document.getElementById('auth-back-to-rooms-btn');
+    if (authBackToRoomsBtn) {
+        authBackToRoomsBtn.addEventListener('click', () => {
+            window.location.href = 'rooms.html';
+        });
+    }
+    
     // Поля формы мечты
     const dreamSelect = document.getElementById('dream-select');
     const dreamDescription = document.getElementById('dream-description');
@@ -620,10 +635,10 @@ function showAuthRequired() {
                 <h2>Требуется авторизация</h2>
                 <p>Для входа в комнату необходимо авторизоваться</p>
                 <div class="auth-actions">
-                    <button class="btn btn-primary" onclick="window.location.href='../auth/'">
+                    <button class="btn btn-primary" id="auth-login-btn">
                         Войти в систему
                     </button>
-                    <button class="btn btn-secondary" onclick="window.location.href='rooms.html'">
+                    <button class="btn btn-secondary" id="auth-back-to-rooms-btn">
                         Назад к комнатам
                     </button>
                 </div>
