@@ -92,7 +92,7 @@ class Config {
 
             // Настройки безопасности
             security: {
-                enableCSP: true,
+                enableCSP: false,
                 enableHSTS: true,
                 tokenExpiry: 3600000, // 1 час
                 maxLoginAttempts: 5,
@@ -168,7 +168,7 @@ class Config {
                 },
                 analytics: { enableTracking: true },
                 security: { 
-                    enableCSP: true,
+                    enableCSP: false,
                     enableHSTS: true
                 }
             }
