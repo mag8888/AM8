@@ -563,22 +563,15 @@ function updateStartGameButton() {
     const allPlayersReady = currentRoom.players.every(player => player.isReady);
     const canStart = playersCount >= minPlayers && allPlayersReady;
     
-    // Отладочные логи
-    console.log('🔍 Room: Отладка кнопки "Начать игру":', {
-        currentUser: currentUser,
-        roomCreatorId: currentRoom.creatorId,
-        isHost: isHost,
-        playersCount: playersCount,
-        minPlayers: minPlayers,
-        allPlayersReady: allPlayersReady,
-        canStart: canStart,
-        isStarted: currentRoom.isStarted,
-        players: currentRoom.players.map(p => ({ 
-            username: p.username, 
-            isReady: p.isReady, 
-            isHost: p.isHost 
-        }))
-    });
+    // Логи для отладки (можно убрать в продакшене)
+    if (playersCount >= minPlayers && !allPlayersReady) {
+        console.log('🔍 Room: Ожидание готовности игроков:', {
+            playersCount,
+            minPlayers,
+            allPlayersReady,
+            readyPlayers: currentRoom.players.filter(p => p.isReady).length
+        });
+    }
     
     startGameButton.disabled = !isHost || !canStart || currentRoom.isStarted;
     
