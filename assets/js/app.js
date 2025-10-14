@@ -322,14 +322,25 @@ class App {
             // Проверяем наличие данных пользователя в localStorage
             const userData = localStorage.getItem('currentUser') || localStorage.getItem('aura_money_user');
             if (userData) {
-                this.currentUser = JSON.parse(userData);
-                this.updateUserInterface();
-                console.log('👤 App: Пользователь авторизован:', this.currentUser.username);
-                
-                // Если пользователь авторизован и находится на главной странице - редиректим в лобби
-                if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
-                    console.log('🔄 App: Перенаправление авторизованного пользователя в лобби');
-                    this.router.navigate('/lobby');
+                try {
+                    this.currentUser = JSON.parse(userData);
+                    this.updateUserInterface();
+                    console.log('👤 App: Пользователь авторизован:', this.currentUser.username);
+                    
+                    // Если пользователь авторизован и находится на главной странице - редиректим в лобби
+                    if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+                        console.log('🔄 App: Перенаправление авторизованного пользователя в лобби');
+                        this.router.navigate('/lobby');
+                    }
+                } catch (parseError) {
+                    console.error('❌ App: Ошибка парсинга данных пользователя:', parseError);
+                    console.log('👤 App: Пользователь не авторизован (ошибка парсинга)');
+                    
+                    // Если пользователь не авторизован и находится на главной странице - редиректим на авторизацию
+                    if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+                        console.log('🔄 App: Перенаправление неавторизованного пользователя на авторизацию');
+                        this.router.navigate('/auth');
+                    }
                 }
             } else {
                 console.log('👤 App: Пользователь не авторизован');
