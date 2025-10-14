@@ -227,7 +227,7 @@ class RoomService {
     async getAllRooms() {
         try {
             console.log('🏠 RoomService: Получение списка комнат');
-
+            
             // Используем мок-данные если настроено
             if (this.config.useMockData) {
                 return this._getMockRooms();
@@ -275,20 +275,20 @@ class RoomService {
      */
     async _fetchRoomsFromAPI() {
         const response = await fetch(this.config.baseUrl, {
-            method: 'GET',
+                method: 'GET',
             headers: { 'Content-Type': 'application/json' }
-        });
+            });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-        const data = await response.json();
-        
+            const data = await response.json();
+            
         if (!data.success) {
-            throw new Error(data.message || 'Ошибка получения комнат');
-        }
-
+                throw new Error(data.message || 'Ошибка получения комнат');
+            }
+            
         // Преобразуем формат данных с сервера в формат клиента
         return data.data.map(room => ({
             id: room.id,
@@ -316,7 +316,7 @@ class RoomService {
     async getRoomById(roomId) {
         try {
             console.log('🏠 RoomService: Получение комнаты по ID:', roomId);
-
+            
             // Используем мок-данные если настроено
             if (this.config.useMockData) {
                 return this._findMockRoomById(roomId);
@@ -359,20 +359,20 @@ class RoomService {
      */
     async _fetchRoomFromAPI(roomId) {
         const response = await fetch(`${this.config.baseUrl}/${roomId}`, {
-            method: 'GET',
+                method: 'GET',
             headers: { 'Content-Type': 'application/json' }
-        });
+            });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-        const data = await response.json();
-        
+            const data = await response.json();
+            
         if (!data.success) {
-            throw new Error(data.message || 'Комната не найдена');
-        }
-
+                throw new Error(data.message || 'Комната не найдена');
+            }
+            
         // Преобразуем формат данных с сервера в формат клиента
         const room = data.data;
         return {
@@ -402,7 +402,7 @@ class RoomService {
     async createRoom(roomData, creator) {
         try {
             console.log('🏠 RoomService: Создание комнаты:', roomData.name);
-
+            
             // Используем мок-данные если настроено
             if (this.config.useMockData) {
                 return this._createMockRoom(roomData, creator);
@@ -510,7 +510,7 @@ class RoomService {
         };
 
         const response = await fetch(this.config.baseUrl, {
-            method: 'POST',
+                method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestData)
         });
@@ -519,8 +519,8 @@ class RoomService {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
-        
+            const data = await response.json();
+            
         if (!data.success) {
             throw new Error(data.message || 'Ошибка создания комнаты');
         }
@@ -550,16 +550,16 @@ class RoomService {
      * @private
      */
     async _sendRoomCreatedNotification(room, creator) {
-        try {
-            if (window.pushClient && typeof window.pushClient.sendBroadcastPush === 'function') {
-                await window.pushClient.sendBroadcastPush('room_created', {
+                try {
+                    if (window.pushClient && typeof window.pushClient.sendBroadcastPush === 'function') {
+                        await window.pushClient.sendBroadcastPush('room_created', {
                     roomId: room.id,
                     roomName: room.name,
-                    creator: creator.username,
+                            creator: creator.username,
                     playerCount: room.playerCount,
                     maxPlayers: room.maxPlayers,
                     status: room.status,
-                    timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString()
                 }, true);
                 
                 console.log('📡 RoomService: Push-уведомление отправлено');
@@ -578,7 +578,7 @@ class RoomService {
     async joinRoom(roomId, player) {
         try {
             console.log('🏠 RoomService: Присоединение к комнате:', roomId);
-
+            
             // Используем мок-данные если настроено
             if (this.config.useMockData) {
                 return this._joinMockRoom(roomId, player);

@@ -198,42 +198,53 @@
     <script src="../assets/js/room.js"></script>
     
     <script>
-        // Обновляем отображение юзернейма
-        function updateUsernameDisplay() {
+        // Проверяем авторизацию пользователя
+        function checkAuth() {
             const currentUser = localStorage.getItem('currentUser');
-            if (currentUser) {
-                try {
-                    const userData = JSON.parse(currentUser);
-                    const username = userData.username || userData.name || 'Пользователь';
-                    
-                    // Обновляем в заголовке
-                    const usernameSpan = document.getElementById('room-current-username');
-                    if (usernameSpan) {
-                        usernameSpan.textContent = username;
-                    }
-                    
-                    // Обновляем в правом верхнем углу
-                    const userNameElement = document.getElementById('room-user-name');
-                    if (userNameElement) {
-                        userNameElement.textContent = username;
-                    }
-                    
-                    // Обновляем аватар
-                    const userAvatar = document.getElementById('room-user-avatar');
-                    if (userAvatar) {
-                        userAvatar.textContent = username.charAt(0).toUpperCase();
-                    }
-                } catch (error) {
-                    console.error('Ошибка парсинга данных пользователя:', error);
+            
+            if (!currentUser) {
+                console.log('❌ Пользователь не авторизован, перенаправляем на авторизацию');
+                window.location.href = '../index.html';
+                return false;
+            }
+            
+            try {
+                const userData = JSON.parse(currentUser);
+                const username = userData.username || userData.name || 'Пользователь';
+                
+                // Обновляем в заголовке
+                const usernameSpan = document.getElementById('room-current-username');
+                if (usernameSpan) {
+                    usernameSpan.textContent = username;
                 }
+                
+                // Обновляем в правом верхнем углу
+                const userNameElement = document.getElementById('room-user-name');
+                if (userNameElement) {
+                    userNameElement.textContent = username;
+                }
+                
+                // Обновляем аватар
+                const userAvatar = document.getElementById('room-user-avatar');
+                if (userAvatar) {
+                    userAvatar.textContent = username.charAt(0).toUpperCase();
+                }
+                
+                console.log('✅ Пользователь авторизован:', username);
+                return true;
+            } catch (error) {
+                console.error('Ошибка парсинга данных пользователя:', error);
+                localStorage.removeItem('currentUser');
+                window.location.href = '../index.html';
+                return false;
             }
         }
         
-        // Обновляем юзернейм при загрузке страницы
-        document.addEventListener('DOMContentLoaded', updateUsernameDisplay);
+        // Проверяем авторизацию при загрузке страницы
+        document.addEventListener('DOMContentLoaded', checkAuth);
         
-        // Обновляем при изменении localStorage
-        window.addEventListener('storage', updateUsernameDisplay);
+        // Проверяем авторизацию при изменении localStorage
+        window.addEventListener('storage', checkAuth);
     </script>
 </body>
 </html>
