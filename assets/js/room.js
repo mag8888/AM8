@@ -1081,9 +1081,16 @@ async function checkTokenUniqueness(tokenId) {
         if (!currentRoom || !currentUser) return true;
         
         // Проверяем, не выбрана ли эта фишка другими игроками
-        const isTokenTaken = currentRoom.players.some(player => 
-            player.userId !== currentUser.id && player.token === tokenId
-        );
+        // Используем username для поиска, как в updateTokensAvailability
+        const isTokenTaken = currentRoom.players.some(player => {
+            // Проверяем, что это не текущий пользователь
+            const isNotCurrentUser = player.username !== currentUser.username && 
+                                   player.name !== currentUser.username &&
+                                   (currentUser.id ? player.userId !== currentUser.id : true);
+            
+            // И что фишка выбрана
+            return isNotCurrentUser && player.token === tokenId;
+        });
         
         if (isTokenTaken) {
             console.log(`⚠️ Room: Фишка ${tokenId} уже выбрана другим игроком`);
