@@ -1,0 +1,2 @@
+# No Python packages required for static site
+# This file ensures Python environment is available

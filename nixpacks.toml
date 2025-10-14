@@ -1,5 +1,5 @@
 [phases.install]
-cmds = ["echo 'Static site - no build required'"]
+cmds = ["npm install"]
 
 [start]
-cmd = "python3 simple_server.py"
+cmd = "node static-server.js"

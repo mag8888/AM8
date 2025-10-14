@@ -1,1 +1,1 @@
-web: python3 simple_server.py
+web: node static-server.js
