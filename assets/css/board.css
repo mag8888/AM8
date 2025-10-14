@@ -28,10 +28,13 @@
 
 .board-wrapper {
     position: relative;
-    width: min(98vmin, 950px); /* Делаем поле еще крупнее */
-    height: min(98vmin, 950px);
+    width: min(100vmin, 1000px);
+    height: min(100vmin, 1000px);
     overflow: visible;
     isolation: isolate;
+    display: grid;
+    place-items: center;
+    grid-template-areas: "board";
 }
 
 
@@ -42,10 +45,12 @@
 }
 
 .outer-track {
+    grid-area: board;
     z-index: 2;
 }
 
 .inner-track {
+    grid-area: board;
     width: 85%; /* Увеличено для больших клеток */
     height: 85%;
     top: 7.5%;
@@ -163,11 +168,14 @@
 }
 
 .center-area {
+    grid-area: board;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 10;
+    display: grid;
+    place-items: center;
 }
 
 .dice-center {

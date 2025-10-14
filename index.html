@@ -125,31 +125,34 @@
             display: block;
         }
 
-        /* Стили для игровой страницы */
+        /* Стили для игровой страницы - CSS Grid система */
         .game-page {
-            padding: 0.5rem;
+            padding: 1rem;
             max-width: 1600px;
             margin: 0 auto;
-            min-height: calc(100vh - 10px); /* Учитываем отсутствие навигации */
-            display: flex; /* Добавляем flex для лучшего распределения пространства */
-            flex-direction: row; /* Изменяем на row для размещения панели справа */
-            gap: 1rem;
+            min-height: calc(100vh - 10px);
+            display: grid;
+            grid-template-columns: 1fr 400px; /* Игровое поле + панель игроков */
+            grid-template-rows: 1fr;
+            grid-template-areas: "game-board players-panel";
+            gap: 2rem;
+            align-items: start;
         }
 
         /* Контейнер для игровой доски */
         .game-board-container {
-            flex: 1;
+            grid-area: game-board;
             display: flex;
             justify-content: center;
             align-items: center;
-            order: 1; /* Игровая доска слева */
+            min-height: calc(100vh - 120px);
         }
 
         /* Контейнер для панели игроков */
         .players-panel-container {
-            width: 400px; /* Фиксированная ширина для больших экранов */
-            flex-shrink: 0;
-            order: 2; /* Панель игроков справа */
+            grid-area: players-panel;
+            width: 100%;
+            max-width: 400px;
         }
 
         /* Специальная навигация для игровой комнаты */
@@ -242,48 +245,23 @@
 
         /* Удалены стили game-control-panel - функциональность интегрирована в PlayersPanel */
 
-        /* На больших экранах - меню справа */
-        @media (min-width: 1200px) {
-            .game-page {
-                display: flex;
-                flex-direction: row;
-                gap: 2rem;
-                align-items: flex-start;
-                min-height: calc(100vh - 80px);
-            }
-            
-            .game-board-container {
-                flex: 1;
-                order: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .players-panel-container {
-                width: 400px; /* Фиксированная ширина на больших экранах */
-                max-width: 400px;
-            }
-        }
-
-
-        /* Адаптивность для средних экранов */
+        /* Адаптивность для средних экранов - Grid система */
         @media (max-width: 1024px) and (min-width: 769px) {
             .game-page {
-                flex-direction: column; /* На планшетах панель снизу */
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+                grid-template-areas: 
+                    "game-board"
+                    "players-panel";
+                gap: 1.5rem;
             }
             
             .players-panel-container {
-                width: 100%; /* На всю ширину на планшетах */
-                order: 2; /* Панель внизу */
-            }
-            
-            .game-board-container {
-                order: 1; /* Доска сверху */
+                max-width: 100%;
             }
         }
 
-        /* Адаптивность */
+        /* Адаптивность для мобильных - Grid система */
         @media (max-width: 768px) {
             .nav-container {
                 padding: 0 1rem;
@@ -301,16 +279,16 @@
 
             .game-page {
                 padding: 0.5rem;
-                flex-direction: column; /* На мобильных панель снизу */
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+                grid-template-areas: 
+                    "game-board"
+                    "players-panel";
+                gap: 1rem;
             }
             
             .players-panel-container {
-                width: 100%; /* На всю ширину на мобильных */
-                order: 2; /* Панель внизу */
-            }
-            
-            .game-board-container {
-                order: 1; /* Доска сверху */
+                max-width: 100%;
             }
             
             .game-page .board-wrapper {

@@ -61,46 +61,48 @@ class PlayersPanel {
         
         this.container.innerHTML = `
             <div class="players-panel">
-                <div class="panel-header">
-                    <h3>👥 Игроки в комнате</h3>
-                    <div class="players-count" id="players-count">0/4</div>
-                </div>
-                
-                <div id="current-user-profile" class="current-user-profile">
-                    <!-- Информация о текущем пользователе будет здесь -->
-                </div>
-                
-                <div class="players-list" id="players-list">
-                    <div class="no-players-message">
-                        <p>Нет игроков</p>
-                        <p>Ожидание подключения</p>
-                    </div>
-                </div>
-                
-                <div class="game-controls">
-                    <div class="dice-controls">
-                        <button class="btn btn-primary" id="roll-dice" disabled>
-                            <span class="btn-icon">🎲</span>
-                            <span class="btn-text">Бросить кубик</span>
-                        </button>
-                        <button class="btn btn-secondary" id="pass-turn" disabled>
-                            <span class="btn-icon">➡️</span>
-                            <span class="btn-text">Передать ход</span>
-                        </button>
-                    </div>
+                <div class="panel-grid">
+                    <header class="panel-header">
+                        <h3>👥 Игроки в комнате</h3>
+                        <div class="players-count" id="players-count">0/4</div>
+                    </header>
                     
-                    <div class="turn-history">
-                        <h4>📊 Игровая статистика</h4>
-                        <div class="player-info">
-                            <span class="label">Активный игрок:</span>
-                            <span class="value" id="current-player">Загрузка...</span>
+                    <section id="current-user-profile" class="current-user-profile">
+                        <!-- Информация о текущем пользователе будет здесь -->
+                    </section>
+                    
+                    <main class="players-list" id="players-list">
+                        <div class="no-players-message">
+                            <p>Нет игроков</p>
+                            <p>Ожидание подключения</p>
                         </div>
-                    </div>
+                    </main>
                     
-                    <button class="btn btn-secondary" id="view-stats">
-                        <span class="btn-icon">📈</span>
-                        <span class="btn-text">Подробная статистика</span>
-                    </button>
+                    <section class="game-controls">
+                        <div class="dice-controls">
+                            <button class="btn btn-primary" id="roll-dice" disabled>
+                                <span class="btn-icon">🎲</span>
+                                <span class="btn-text">Бросить кубик</span>
+                            </button>
+                            <button class="btn btn-secondary" id="pass-turn" disabled>
+                                <span class="btn-icon">➡️</span>
+                                <span class="btn-text">Передать ход</span>
+                            </button>
+                        </div>
+                        
+                        <div class="turn-history">
+                            <h4>📊 Игровая статистика</h4>
+                            <div class="player-info">
+                                <span class="label">Активный игрок:</span>
+                                <span class="value" id="current-player">Загрузка...</span>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-secondary" id="view-stats">
+                            <span class="btn-icon">📈</span>
+                            <span class="btn-text">Подробная статистика</span>
+                        </button>
+                    </section>
                 </div>
             </div>
         `;
@@ -138,6 +140,21 @@ class PlayersPanel {
                     inset 0 1px 0 rgba(255, 255, 255, 0.1);
                 position: relative;
                 overflow: hidden;
+                height: fit-content;
+                max-height: calc(100vh - 120px);
+            }
+            
+            .panel-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr auto;
+                grid-template-areas: 
+                    "header"
+                    "current-user"
+                    "players"
+                    "controls";
+                gap: 1.5rem;
+                height: 100%;
             }
             
             .players-panel::before {
@@ -151,10 +168,10 @@ class PlayersPanel {
             }
             
             .panel-header {
+                grid-area: header;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 1.5rem;
                 padding-bottom: 1rem;
                 border-bottom: 2px solid rgba(99, 102, 241, 0.2);
                 position: relative;
@@ -192,9 +209,8 @@ class PlayersPanel {
             }
             
             .current-user-profile {
-                padding: 1rem;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                margin-bottom: 1rem;
+                grid-area: current-user;
+                padding: 0;
             }
 
             .current-user-card {
@@ -251,7 +267,28 @@ class PlayersPanel {
             }
 
             .players-list {
-                margin-bottom: 1.5rem;
+                grid-area: players;
+                overflow-y: auto;
+                max-height: 300px;
+                padding-right: 0.5rem;
+            }
+            
+            .players-list::-webkit-scrollbar {
+                width: 6px;
+            }
+            
+            .players-list::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 3px;
+            }
+            
+            .players-list::-webkit-scrollbar-thumb {
+                background: rgba(99, 102, 241, 0.5);
+                border-radius: 3px;
+            }
+            
+            .players-list::-webkit-scrollbar-thumb:hover {
+                background: rgba(99, 102, 241, 0.7);
             }
             
             .no-players-message {
@@ -269,7 +306,9 @@ class PlayersPanel {
             }
             
             .player-item {
-                display: flex;
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                grid-template-areas: "avatar info money";
                 align-items: center;
                 gap: 1rem;
                 padding: 1rem;
@@ -281,6 +320,7 @@ class PlayersPanel {
                 position: relative;
                 overflow: hidden;
                 backdrop-filter: blur(10px);
+                min-height: 80px;
             }
             
             .player-item::before {
@@ -342,6 +382,7 @@ class PlayersPanel {
             }
             
             .player-avatar {
+                grid-area: avatar;
                 width: 45px;
                 height: 45px;
                 border-radius: 50%;
@@ -365,7 +406,10 @@ class PlayersPanel {
             }
             
             .player-info {
-                flex: 1;
+                grid-area: info;
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
             }
             
             .player-name {
@@ -382,6 +426,7 @@ class PlayersPanel {
             }
             
             .player-money {
+                grid-area: money;
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
@@ -390,6 +435,7 @@ class PlayersPanel {
                 border-radius: 0.75rem;
                 border: 1px solid rgba(16, 185, 129, 0.3);
                 box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+                white-space: nowrap;
             }
             
             .money-icon {
@@ -405,6 +451,7 @@ class PlayersPanel {
             }
             
             .game-controls {
+                grid-area: controls;
                 display: flex;
                 flex-direction: column;
                 gap: 1rem;
