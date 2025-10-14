@@ -1056,8 +1056,21 @@ async function confirmStartGame() {
         if (!currentRoom || !currentUser) return;
         
         console.log('🏠 Room: Начало игры');
+        console.log('🔍 Room: Отладка данных для запуска игры:', {
+            currentUser: currentUser,
+            currentRoom: currentRoom,
+            userId: currentUser.id,
+            creatorId: currentRoom.creatorId
+        });
         
-        await roomService.startGame(currentRoom.id, currentUser.id);
+        // Используем creatorId из комнаты, если currentUser.id undefined
+        const userId = currentUser.id || currentRoom.creatorId;
+        
+        if (!userId) {
+            throw new Error('Не удалось определить ID пользователя для запуска игры');
+        }
+        
+        await roomService.startGame(currentRoom.id, userId);
         
         // Отправляем уведомление всем игрокам о начале игры
         await sendPushNotification('game_started', {
