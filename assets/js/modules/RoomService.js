@@ -1,5 +1,5 @@
 /**
- * RoomService v1.0.2
+ * RoomService v1.0.3
  * Клиентский сервис для работы с игровыми комнатами
  */
 class RoomService {
@@ -69,7 +69,40 @@ class RoomService {
             }
         ];
         
+        // Загружаем динамически созданные комнаты из localStorage
+        this.loadDynamicRooms();
+        
         console.log('🏠 RoomService: Мок-данные инициализированы для продакшна');
+    }
+
+    /**
+     * Сохранение динамически созданных комнат в localStorage
+     */
+    saveDynamicRooms() {
+        try {
+            const dynamicRooms = this.mockRooms.filter(room => room.id.startsWith('mock-room-'));
+            localStorage.setItem('aura_money_dynamic_rooms', JSON.stringify(dynamicRooms));
+            console.log('💾 RoomService: Динамические комнаты сохранены в localStorage:', dynamicRooms.length);
+        } catch (error) {
+            console.error('❌ RoomService: Ошибка сохранения динамических комнат:', error);
+        }
+    }
+
+    /**
+     * Загрузка динамически созданных комнат из localStorage
+     */
+    loadDynamicRooms() {
+        try {
+            const saved = localStorage.getItem('aura_money_dynamic_rooms');
+            if (saved) {
+                const dynamicRooms = JSON.parse(saved);
+                // Добавляем динамические комнаты к базовым мок-данным
+                this.mockRooms = [...dynamicRooms, ...this.mockRooms];
+                console.log('📂 RoomService: Динамические комнаты загружены из localStorage:', dynamicRooms.length);
+            }
+        } catch (error) {
+            console.error('❌ RoomService: Ошибка загрузки динамических комнат:', error);
+        }
     }
 
     /**
@@ -284,6 +317,9 @@ class RoomService {
             // Добавляем комнату в начало списка мок-данных (новые комнаты вверху)
             this.mockRooms.unshift(newRoom);
             
+            // Сохраняем динамически созданные комнаты в localStorage
+            this.saveDynamicRooms();
+            
             console.log('✅ RoomService: Мок-комната создана:', newRoom.name);
             
             return newRoom;
@@ -335,6 +371,9 @@ class RoomService {
             
             // Сохраняем текущую комнату
             this.currentRoom = room;
+            
+            // Сохраняем изменения в localStorage
+            this.saveDynamicRooms();
             
             console.log('✅ RoomService: Присоединение к мок-комнате успешно:', room.name);
             
