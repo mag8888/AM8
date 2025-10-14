@@ -53,7 +53,7 @@ class App {
         // Регистрируем маршруты
         this.router.route('/', () => {
             this.showPage('game-page');
-            this.applyGameRoomNavigation(); // Скрываем навигацию для игры
+            // Навигация удалена
             this.updateNavigation('/');
             // Автоматически выбираем комнату при загрузке главной страницы
             this.autoSelectRoom();
@@ -61,25 +61,25 @@ class App {
         
         this.router.route('/auth', () => {
             this.showPage('auth-page');
-            this.removeGameRoomNavigation();
+            // Навигация удалена
             this.updateNavigation('/auth');
         }, 'Авторизация');
         
         this.router.route('/lobby', () => {
             this.showPage('lobby-page');
-            this.removeGameRoomNavigation();
+            // Навигация удалена
             this.updateNavigation('/lobby');
         }, 'Лобби');
         
         this.router.route('/rooms', () => {
             this.showPage('rooms-page');
-            this.removeGameRoomNavigation();
+            // Навигация удалена
             this.updateNavigation('/rooms');
         }, 'Комнаты');
         
         this.router.route('/game', (state) => {
             this.showPage('game-page');
-            this.applyGameRoomNavigation(); // Скрываем навигацию для игры
+            // Навигация удалена
             this.updateNavigation('/');
             this.handleGameRoute(state);
         }, 'Игра');
@@ -100,7 +100,7 @@ class App {
         console.log('🎮 App: Инициализация игровых компонентов');
         
         // Скрываем навигацию для игровой страницы
-        this.applyGameRoomNavigation();
+        // Навигация удалена
         
         try {
             // Создаем EventBus
@@ -519,7 +519,7 @@ class App {
             console.log('🎮 App: Обновление интерфейса игры');
             
             // Применяем специальную навигацию для игровой комнаты
-            this.applyGameRoomNavigation();
+            // Навигация удалена
             
             // Загружаем игроков в GameState
             if (this.gameState) {
@@ -792,27 +792,7 @@ class App {
         console.log('🧪 App: Тестовые кнопки для движения фишек добавлены');
     }
 
-    /**
-     * Применить специальную навигацию для игровой комнаты
-     */
-    applyGameRoomNavigation() {
-        const navigation = document.querySelector('.app-navigation');
-        if (navigation) {
-            navigation.style.display = 'none'; // Полностью скрываем навигацию
-            console.log('🎮 App: Навигация полностью скрыта для игровой комнаты');
-        }
-    }
-
-    /**
-     * Убрать специальную навигацию для игровой комнаты
-     */
-    removeGameRoomNavigation() {
-        const navigation = document.querySelector('.app-navigation');
-        if (navigation) {
-            navigation.style.display = ''; // Возвращаем стандартное отображение
-            console.log('🎮 App: Навигация восстановлена');
-        }
-    }
+    // Методы управления навигацией удалены - навигация больше не используется
 
     // Инициализация центрального кубика
     initCenterDice() {

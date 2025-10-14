@@ -18,9 +18,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: min(2vmin, 20px);
-    margin-top: 0; /* Убираем отступ, так как навигации нет */
-    min-height: calc(100vh - 10px); /* Учитываем отсутствие навигации */
+    padding: min(1vmin, 10px); /* Минимальные отступы */
+    margin: 0; /* Убираем все отступы */
+    min-height: 100vh; /* Полная высота экрана */
     position: relative;
     flex: 1;
     order: 1; /* Игровое поле должно быть первым */
@@ -28,8 +28,8 @@
 
 .board-wrapper {
     position: relative;
-    width: min(100vmin, 1000px);
-    height: min(100vmin, 1000px);
+    width: min(95vmin, 950px); /* Уменьшаем размер чтобы поместилось на экране */
+    height: min(95vmin, 950px);
     overflow: visible;
     isolation: isolate;
     display: grid;
@@ -370,30 +370,30 @@
 /* Responsive adjustments */
 @media (max-width: 1024px) {
     .board-wrapper {
-        width: min(98vmin, 900px);
-        height: min(98vmin, 900px);
+        width: min(90vmin, 850px); /* Уменьшаем размер */
+        height: min(90vmin, 850px);
     }
 }
 
 @media (max-width: 768px) {
     .game-board-container {
-        padding: min(2vmin, 15px);
-        margin-top: 0; /* Убираем отступ */
+        padding: min(1vmin, 8px); /* Минимальные отступы */
+        margin: 0; /* Убираем все отступы */
     }
     .board-wrapper {
-        width: min(96vmin, 550px);
-        height: min(96vmin, 550px);
+        width: min(88vmin, 520px); /* Уменьшаем размер */
+        height: min(88vmin, 520px);
     }
 }
 
 @media (max-width: 480px) {
     .game-board-container {
-        margin-top: 0;
-        padding: min(1vmin, 10px);
+        margin: 0; /* Убираем все отступы */
+        padding: min(0.5vmin, 5px); /* Минимальные отступы */
     }
     .board-wrapper {
-        width: min(94vmin, 420px);
-        height: min(94vmin, 420px);
+        width: min(85vmin, 400px); /* Уменьшаем размер */
+        height: min(85vmin, 400px);
     }
     
     /* Уменьшаем размеры клеток на мобильных */
