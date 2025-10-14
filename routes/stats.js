@@ -11,6 +11,16 @@ const fallbackStats = {
     playersOnline: 5
 };
 
+// Проверяем доступность базы данных
+function getDatabase() {
+    try {
+        return require('../database/init').getDatabase();
+    } catch (error) {
+        console.warn('⚠️ База данных недоступна, используем fallback данные');
+        return null;
+    }
+}
+
 /**
  * GET /api/stats - Получить общую статистику
  */

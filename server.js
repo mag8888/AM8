@@ -80,8 +80,8 @@ app.use('/api/stats', statsRoutes);
 // Обслуживание статических файлов для продакшена
 if (process.env.NODE_ENV === 'production') {
     app.get('*', (req, res) => {
-        // Если это API запрос, возвращаем 404
-        if (req.path.startsWith('/api/')) {
+        // Если это API запрос или health check, пропускаем
+        if (req.path.startsWith('/api/') || req.path === '/health') {
             return res.status(404).json({ error: 'API endpoint not found' });
         }
         
