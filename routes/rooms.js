@@ -156,8 +156,10 @@ router.get('/', async (req, res, next) => {
                     isStarted: Boolean(row.is_started),
                     isFull: row.current_players >= row.max_players,
                     creator: row.creator_name,
+                    creatorId: row.creator_id, // Добавляем creatorId для проверки хоста
                     turnTime: row.turn_time,
                     assignProfessions: Boolean(row.assign_professions),
+                    minPlayers: 2, // Добавляем минимальное количество игроков
                     players: playersByRoom[row.id] || [],
                     createdAt: row.created_at,
                     updatedAt: row.updated_at
