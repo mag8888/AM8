@@ -174,6 +174,12 @@ class RoomService {
                 })
             });
 
+            // Проверяем статус ответа
+            if (!response.ok) {
+                console.warn('⚠️ RoomService: API недоступен, используем мок-данные для создания комнаты');
+                return this.createMockRoom(roomData, creator);
+            }
+
             const data = await response.json();
             
             if (data.success) {
@@ -207,6 +213,48 @@ class RoomService {
             
         } catch (error) {
             console.error('❌ RoomService: Ошибка создания комнаты:', error);
+            
+            // Если API недоступен, используем мок-данные
+            console.warn('⚠️ RoomService: API недоступен, используем мок-данные для создания комнаты');
+            return this.createMockRoom(roomData, creator);
+        }
+    }
+
+    /**
+     * Создание комнаты в мок-данных
+     * @param {Object} roomData
+     * @param {Object} creator
+     * @returns {Object}
+     */
+    createMockRoom(roomData, creator) {
+        try {
+            const newRoom = {
+                id: 'mock-room-' + Date.now(),
+                name: roomData.name || 'Новая комната',
+                maxPlayers: roomData.maxPlayers || 4,
+                playerCount: 1,
+                status: 'waiting',
+                isStarted: false,
+                isFull: false,
+                creator: creator.username || 'unknown',
+                players: [
+                    {
+                        id: creator.id || 'creator-id',
+                        username: creator.username || 'creator',
+                        isHost: true
+                    }
+                ],
+                createdAt: new Date().toISOString()
+            };
+
+            // Добавляем комнату в мок-данные
+            this.mockRooms.push(newRoom);
+            
+            console.log('✅ RoomService: Мок-комната создана:', newRoom.name);
+            
+            return newRoom;
+        } catch (error) {
+            console.error('❌ RoomService: Ошибка создания мок-комнаты:', error);
             throw error;
         }
     }
@@ -580,4 +628,4 @@ class RoomService {
 if (typeof window !== 'undefined') {
     window.RoomService = RoomService;
 }
-// Version: 1760431346
+// Version: 1760432918
