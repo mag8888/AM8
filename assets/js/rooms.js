@@ -1,5 +1,5 @@
 /**
- * Rooms Page Controller v1.0.0
+ * Rooms Page Controller v1.0.1
  * Управление страницей выбора и создания комнат
  */
 
@@ -808,12 +808,8 @@ function navigateToGame(room) {
     // Сохраняем текущую комнату
     roomService.setCurrentRoom(room);
     
-    // Переходим на страницу игры
-    if (router) {
-        router.navigate('/game', { roomId: room.id });
-    } else {
-        window.location.href = '/';
-    }
+    // Переходим на страницу конфигурации комнаты
+    window.location.href = `room.html?id=${room.id}`;
 }
 
 /**

@@ -1,5 +1,5 @@
 /**
- * RoomService v1.0.0
+ * RoomService v1.0.1
  * Клиентский сервис для работы с игровыми комнатами
  */
 class RoomService {
@@ -294,6 +294,58 @@ class RoomService {
     }
 
     /**
+     * Присоединение к мок-комнате
+     * @param {string} roomId
+     * @param {Object} player
+     * @returns {Object}
+     */
+    joinMockRoom(roomId, player) {
+        try {
+            console.log('🏠 RoomService: Присоединение к мок-комнате:', roomId);
+            
+            // Находим комнату в мок-данных
+            const room = this.mockRooms.find(r => r.id === roomId);
+            if (!room) {
+                throw new Error('Комната не найдена');
+            }
+            
+            // Проверяем, не полная ли комната
+            if (room.playerCount >= room.maxPlayers) {
+                throw new Error('Комната заполнена');
+            }
+            
+            // Проверяем, не присоединился ли уже игрок
+            const existingPlayer = room.players.find(p => p.userId === player.userId);
+            if (existingPlayer) {
+                console.log('✅ RoomService: Игрок уже в комнате');
+                return room;
+            }
+            
+            // Добавляем игрока в комнату
+            const newPlayer = {
+                id: 'player-' + Date.now(),
+                userId: player.userId,
+                username: player.username,
+                name: player.name,
+                isHost: false
+            };
+            
+            room.players.push(newPlayer);
+            room.playerCount = room.players.length;
+            
+            // Сохраняем текущую комнату
+            this.currentRoom = room;
+            
+            console.log('✅ RoomService: Присоединение к мок-комнате успешно:', room.name);
+            
+            return room;
+        } catch (error) {
+            console.error('❌ RoomService: Ошибка присоединения к мок-комнате:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Присоединение к комнате
      * @param {string} roomId
      * @param {Object} player
@@ -302,6 +354,12 @@ class RoomService {
     async joinRoom(roomId, player) {
         try {
             console.log('🏠 RoomService: Присоединение к комнате:', roomId);
+            
+            // Если включены мок-данные, используем их
+            if (this.useMockData) {
+                console.log('🏠 RoomService: Использование мок-данных для присоединения к комнате');
+                return this.joinMockRoom(roomId, player);
+            }
             
             const response = await fetch(`${this.baseUrl}/${roomId}/join`, {
                 method: 'POST',
@@ -312,6 +370,11 @@ class RoomService {
                     player
                 })
             });
+
+            if (!response.ok) {
+                console.warn('⚠️ RoomService: API недоступен, используем мок-данные для присоединения');
+                return this.joinMockRoom(roomId, player);
+            }
 
             const data = await response.json();
             
@@ -325,7 +388,8 @@ class RoomService {
             
         } catch (error) {
             console.error('❌ RoomService: Ошибка присоединения к комнате:', error);
-            throw error;
+            console.warn('⚠️ RoomService: API недоступен, используем мок-данные для присоединения');
+            return this.joinMockRoom(roomId, player);
         }
     }
 
