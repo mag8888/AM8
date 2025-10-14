@@ -800,7 +800,7 @@ class RoomService {
         room.players[playerIndex] = { ...room.players[playerIndex], ...playerData };
         
         // Сохраняем обновленную комнату
-        this._saveDynamicRooms();
+        this._savePersistedRooms();
         
         console.log('✅ RoomService: Игрок успешно обновлен в мок-комнате');
         return {
