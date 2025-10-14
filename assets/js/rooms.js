@@ -164,8 +164,8 @@ function checkRoomsChanges(currentRooms, newRooms) {
  */
 function initializeServices() {
     try {
-        // Инициализируем сервисы
-        roomService = new RoomService();
+        // Инициализируем сервисы с правильными параметрами
+        roomService = new RoomService(window.logger, window.errorHandler);
         // notificationService и userModel доступны глобально как window.notificationService и window.userModel
         
         // Получаем роутер из глобальной области

@@ -222,8 +222,8 @@ function startRoomDataPolling() {
  */
 function initializeServices() {
     try {
-        // Инициализируем сервисы
-        roomService = new RoomService();
+        // Инициализируем сервисы с правильными параметрами
+        roomService = new RoomService(window.logger, window.errorHandler);
         // Экспортируем roomService глобально для отладки
         window.roomService = roomService;
         // notificationService доступен глобально как window.notificationService

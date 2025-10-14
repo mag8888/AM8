@@ -365,18 +365,21 @@ class RoomService {
      * @private
      */
     _createMockRoom(roomData, creator) {
+        // Обеспечиваем безопасность creator
+        const safeCreator = creator || {};
+        
         const newRoom = this._createMockRoom({
             id: 'mock-room-' + Date.now(),
             name: roomData.name || 'Новая комната',
             maxPlayers: roomData.maxPlayers || 4,
             playerCount: 1,
-            creator: creator.username || 'unknown',
+            creator: safeCreator.username || 'unknown',
             turnTime: roomData.turnTime || 30,
             assignProfessions: roomData.assignProfessions || false,
             players: [{
-                id: creator.id || 'creator-id',
-                username: creator.username || 'creator',
-                name: creator.username || 'creator',
+                id: safeCreator.id || 'creator-id',
+                username: safeCreator.username || 'creator',
+                name: safeCreator.username || 'creator',
                 isHost: true
             }]
         });
