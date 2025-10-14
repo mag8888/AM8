@@ -299,18 +299,28 @@
 }
 
 .user-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-full);
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    max-width: 40px;
+    max-height: 40px;
+    border-radius: 50% !important;
+    aspect-ratio: 1/1;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-primary);
-    font-weight: var(--font-semibold);
-    font-size: var(--text-sm);
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
     text-transform: uppercase;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.15),
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 
 .user-name {

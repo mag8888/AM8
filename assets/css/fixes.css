@@ -1,0 +1,358 @@
+/* 🔧 Исправления для круглых элементов и пустых мест */
+
+:root {
+    /* Дополнительные CSS переменные для исправлений */
+    --avatar-size-sm: 32px;
+    --avatar-size-md: 40px;
+    --avatar-size-lg: 48px;
+    --border-radius-perfect: 50%;
+    --spacing-tight: 8px;
+    --spacing-normal: 16px;
+    --spacing-loose: 24px;
+}
+
+/* 🎯 Исправления для аватаров пользователей */
+.user-avatar,
+.player-avatar {
+    /* Принудительно круглые аватары */
+    width: var(--avatar-size-md);
+    height: var(--avatar-size-md);
+    min-width: var(--avatar-size-md);
+    min-height: var(--avatar-size-md);
+    max-width: var(--avatar-size-md);
+    max-height: var(--avatar-size-md);
+    border-radius: var(--border-radius-perfect) !important;
+    
+    /* Центрирование контента */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Предотвращение искажений */
+    aspect-ratio: 1/1;
+    flex-shrink: 0;
+    
+    /* Улучшенные стили */
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    
+    /* Тени и эффекты */
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.15),
+        0 1px 3px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    
+    /* Анимации */
+    transition: all 0.2s ease;
+}
+
+.user-avatar:hover,
+.player-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 
+        0 4px 12px rgba(99, 102, 241, 0.3),
+        0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Размеры аватаров */
+.user-avatar.small,
+.player-avatar.small {
+    width: var(--avatar-size-sm);
+    height: var(--avatar-size-sm);
+    min-width: var(--avatar-size-sm);
+    min-height: var(--avatar-size-sm);
+    max-width: var(--avatar-size-sm);
+    max-height: var(--avatar-size-sm);
+    font-size: 0.875rem;
+}
+
+.user-avatar.large,
+.player-avatar.large {
+    width: var(--avatar-size-lg);
+    height: var(--avatar-size-lg);
+    min-width: var(--avatar-size-lg);
+    min-height: var(--avatar-size-lg);
+    max-width: var(--avatar-size-lg);
+    max-height: var(--avatar-size-lg);
+    font-size: 1.25rem;
+}
+
+/* 🎯 Исправления для кнопок */
+.btn {
+    /* Предотвращение искажений */
+    min-height: 44px; /* Минимальная высота для touch-устройств */
+    border-radius: 12px;
+    overflow: hidden;
+    
+    /* Улучшенные отступы */
+    padding: 12px 20px;
+    
+    /* Flexbox для центрирования */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    
+    /* Предотвращение переноса текста */
+    white-space: nowrap;
+    
+    /* Улучшенные тени */
+    box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* 🎯 Исправления для круглых кнопок */
+.btn-circle,
+.btn-round {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    max-width: 44px;
+    max-height: 44px;
+    border-radius: var(--border-radius-perfect) !important;
+    aspect-ratio: 1/1;
+    padding: 0;
+}
+
+/* 🎯 Исправления для пустых мест */
+.game-container {
+    /* Убираем лишние отступы */
+    padding: var(--spacing-normal);
+    gap: var(--spacing-normal);
+}
+
+.card {
+    /* Оптимизированные отступы */
+    padding: var(--spacing-normal);
+    margin: 0;
+}
+
+/* Исправления для sidebar */
+.game-sidebar {
+    /* Убираем лишние отступы */
+    gap: var(--spacing-normal);
+    padding: 0;
+}
+
+/* 🎯 Исправления для игрового поля */
+.game-board-container {
+    /* Оптимизированные отступы */
+    padding: var(--spacing-normal);
+    margin: 0;
+}
+
+.board-wrapper {
+    /* Убираем лишние отступы */
+    padding: 0;
+    margin: 0;
+}
+
+/* 🎯 Исправления для навигации */
+.app-navigation {
+    /* Компактная навигация */
+    padding: var(--spacing-tight) var(--spacing-normal);
+}
+
+.nav-container {
+    /* Оптимизированные отступы */
+    gap: var(--spacing-normal);
+    padding: 0;
+}
+
+/* 🎯 Исправления для модальных окон */
+.modal {
+    /* Убираем лишние отступы */
+    padding: var(--spacing-normal);
+}
+
+.modal-content {
+    /* Оптимизированные отступы */
+    padding: var(--spacing-loose);
+    margin: 0;
+}
+
+/* 🎯 Исправления для форм */
+.form-group {
+    /* Компактные формы */
+    margin-bottom: var(--spacing-normal);
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+/* 🎯 Исправления для списков */
+.room-list,
+.player-list {
+    /* Убираем лишние отступы */
+    gap: var(--spacing-tight);
+    padding: 0;
+    margin: 0;
+}
+
+.room-card,
+.player-card {
+    /* Оптимизированные отступы */
+    padding: var(--spacing-normal);
+    margin: 0;
+}
+
+/* 🎯 Исправления для статистики */
+.stats-container {
+    /* Компактная статистика */
+    padding: var(--spacing-tight);
+    gap: var(--spacing-tight);
+}
+
+.stat-item {
+    /* Минимальные отступы */
+    padding: var(--spacing-tight);
+    margin: 0;
+}
+
+/* 🎯 Исправления для уведомлений */
+.notifications-container {
+    /* Компактные уведомления */
+    padding: var(--spacing-tight);
+    gap: var(--spacing-tight);
+}
+
+.notification {
+    /* Оптимизированные отступы */
+    padding: var(--spacing-normal);
+    margin: 0;
+}
+
+/* 🎯 Адаптивные исправления */
+@media (max-width: 768px) {
+    :root {
+        --spacing-tight: 6px;
+        --spacing-normal: 12px;
+        --spacing-loose: 18px;
+        --avatar-size-sm: 28px;
+        --avatar-size-md: 36px;
+        --avatar-size-lg: 44px;
+    }
+    
+    .game-container {
+        padding: var(--spacing-normal);
+        gap: var(--spacing-normal);
+    }
+    
+    .card {
+        padding: var(--spacing-normal);
+    }
+    
+    .modal-content {
+        padding: var(--spacing-normal);
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --spacing-tight: 4px;
+        --spacing-normal: 8px;
+        --spacing-loose: 12px;
+    }
+    
+    .game-container {
+        padding: var(--spacing-normal);
+        gap: var(--spacing-normal);
+    }
+    
+    .btn {
+        min-height: 40px;
+        padding: 10px 16px;
+    }
+    
+    .btn-circle,
+    .btn-round {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+        max-width: 40px;
+        max-height: 40px;
+    }
+}
+
+/* 🎯 Специальные исправления для круглых элементов */
+.circular-element {
+    /* Принудительно круглые элементы */
+    border-radius: var(--border-radius-perfect) !important;
+    aspect-ratio: 1/1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Предотвращение искажений изображений в круглых элементах */
+.circular-element img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+/* 🎯 Исправления для игровых элементов */
+.dice-center {
+    /* Идеально круглый центр */
+    border-radius: var(--border-radius-perfect) !important;
+    aspect-ratio: 1/1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.track-cell {
+    /* Исправления для клеток */
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* 🎯 Утилиты для исправлений */
+.no-gap {
+    gap: 0 !important;
+}
+
+.no-padding {
+    padding: 0 !important;
+}
+
+.no-margin {
+    margin: 0 !important;
+}
+
+.tight-spacing {
+    padding: var(--spacing-tight) !important;
+    margin: 0 !important;
+}
+
+.normal-spacing {
+    padding: var(--spacing-normal) !important;
+    margin: 0 !important;
+}
+
+.loose-spacing {
+    padding: var(--spacing-loose) !important;
+    margin: 0 !important;
+}
+
+/* 🎯 Исправления для текста в круглых элементах */
+.circular-text {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1;
+    letter-spacing: 0.025em;
+}
