@@ -224,6 +224,8 @@ function initializeServices() {
     try {
         // Инициализируем сервисы
         roomService = new RoomService();
+        // Экспортируем roomService глобально для отладки
+        window.roomService = roomService;
         // notificationService доступен глобально как window.notificationService
         
         console.log('✅ Room: Сервисы инициализированы');
@@ -323,11 +325,58 @@ async function loadRoomData() {
         const room = await roomService.getRoomById(roomId);
         
         if (!room) {
-            showNotification('Комната не найдена', 'error');
-            setTimeout(() => {
-                window.location.href = 'rooms.html';
-            }, 2000);
-            return;
+            console.warn('⚠️ Room: Комната не найдена в API, пробуем мок-данные');
+            
+            // Fallback на мок-данные
+            const mockRooms = [
+                {
+                    id: 'room-demo-1',
+                    name: 'Демо комната 1',
+                    maxPlayers: 4,
+                    playerCount: 2,
+                    status: 'waiting',
+                    isStarted: false,
+                    isFull: false,
+                    creator: 'demo_user',
+                    turnTime: 30,
+                    assignProfessions: true,
+                    players: [
+                        { id: 'p1', username: 'demo_user', name: 'demo_user', isHost: true },
+                        { id: 'p2', username: 'player1', name: 'player1', isHost: false }
+                    ],
+                    createdAt: new Date(Date.now() - 60000).toISOString()
+                },
+                {
+                    id: 'room-demo-2',
+                    name: 'Турнирная комната',
+                    maxPlayers: 6,
+                    playerCount: 3,
+                    status: 'waiting',
+                    isStarted: false,
+                    isFull: false,
+                    creator: 'tournament_master',
+                    turnTime: 60,
+                    assignProfessions: false,
+                    players: [
+                        { id: 'p3', username: 'tournament_master', name: 'tournament_master', isHost: true },
+                        { id: 'p4', username: 'player2', name: 'player2', isHost: false },
+                        { id: 'p5', username: 'player3', name: 'player3', isHost: false }
+                    ],
+                    createdAt: new Date(Date.now() - 30000).toISOString()
+                }
+            ];
+            
+            const mockRoom = mockRooms.find(r => r.id === roomId);
+            if (mockRoom) {
+                console.log('✅ Room: Комната найдена в мок-данных:', mockRoom.name);
+                room = mockRoom;
+            } else {
+                showNotification('Комната не найдена', 'error');
+                setTimeout(() => {
+                    window.location.href = 'rooms.html';
+                }, 2000);
+                return;
+            }
         }
         
         currentRoom = room;
@@ -395,7 +444,7 @@ function updateRoomInfo() {
     const roomStatus = document.getElementById('room-status');
     
     if (roomName) roomName.textContent = currentRoom.name;
-    if (roomCreator) roomCreator.textContent = currentRoom.creatorName;
+    if (roomCreator) roomCreator.textContent = currentRoom.creator || currentRoom.creatorName || 'Неизвестный';
     if (roomPlayers) roomPlayers.textContent = `${currentRoom.playerCount}/${currentRoom.maxPlayers}`;
     if (roomStatus) {
         roomStatus.textContent = currentRoom.isStarted ? 'Игра начата' : 'Ожидание';
@@ -421,13 +470,15 @@ function updatePlayersList() {
         const playerItem = document.createElement('div');
         playerItem.className = 'player-item';
         
-        const avatar = player.avatar || player.username.charAt(0).toUpperCase();
+        // Используем name или username для отображения
+        const playerName = player.name || player.username || 'Неизвестный игрок';
+        const avatar = player.avatar || playerName.charAt(0).toUpperCase();
         const status = player.isReady ? 'Готов' : 'Готовится';
         
         playerItem.innerHTML = `
             <div class="player-avatar">${avatar}</div>
             <div class="player-info">
-                <div class="player-name">${player.username}</div>
+                <div class="player-name">${playerName}</div>
                 <div class="player-status">${status}</div>
             </div>
         `;

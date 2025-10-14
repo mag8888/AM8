@@ -135,6 +135,19 @@ class RoomService {
         try {
             console.log('🏠 RoomService: Получение комнаты по ID:', roomId);
             
+            // Если включены мок-данные, ищем комнату в них
+            if (this.useMockData) {
+                console.log('🏠 RoomService: Использование мок-данных для поиска комнаты');
+                const room = this.mockRooms.find(r => r.id === roomId);
+                if (room) {
+                    console.log('✅ RoomService: Комната найдена в мок-данных:', room.name);
+                    return room;
+                } else {
+                    console.warn('⚠️ RoomService: Комната не найдена в мок-данных');
+                    return null;
+                }
+            }
+            
             const response = await fetch(`${this.baseUrl}/${roomId}`, {
                 method: 'GET',
                 headers: {
@@ -157,7 +170,17 @@ class RoomService {
             
         } catch (error) {
             console.error('❌ RoomService: Ошибка получения комнаты:', error);
-            throw error;
+            console.warn('⚠️ RoomService: API недоступен, используем мок-данные');
+            
+            // Fallback на мок-данные
+            const room = this.mockRooms.find(r => r.id === roomId);
+            if (room) {
+                console.log('✅ RoomService: Комната найдена в мок-данных (fallback):', room.name);
+                return room;
+            } else {
+                console.warn('⚠️ RoomService: Комната не найдена в мок-данных (fallback)');
+                return null;
+            }
         }
     }
 
@@ -639,4 +662,4 @@ class RoomService {
 if (typeof window !== 'undefined') {
     window.RoomService = RoomService;
 }
-// Version: 1760433464
+// Version: 1760436000
