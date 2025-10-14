@@ -289,15 +289,48 @@ router.post('/', async (req, res, next) => {
         // Проверяем, существует ли пользователь
         db.get('SELECT id FROM users WHERE username = ?', [creator], (err, user) => {
             if (err) {
-                return next(err);
+                console.error('❌ Ошибка проверки пользователя:', err);
+                // Fallback: создаем пользователя если его нет
+                const userId = uuidv4();
+                db.run('INSERT OR IGNORE INTO users (id, username, created_at) VALUES (?, ?, ?)', 
+                       [userId, creator, new Date().toISOString()], (insertErr) => {
+                    if (insertErr) {
+                        console.error('❌ Ошибка создания пользователя:', insertErr);
+                        return res.status(500).json({
+                            success: false,
+                            message: 'Ошибка создания пользователя'
+                        });
+                    }
+                    // Используем созданного пользователя
+                    createRoomWithUser({ id: userId, username: creator });
+                });
+                return;
             }
 
             if (!user) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Пользователь не найден'
+                console.log('⚠️ Пользователь не найден, создаем нового:', creator);
+                // Fallback: создаем пользователя если его нет
+                const userId = uuidv4();
+                db.run('INSERT INTO users (id, username, created_at) VALUES (?, ?, ?)', 
+                       [userId, creator, new Date().toISOString()], (insertErr) => {
+                    if (insertErr) {
+                        console.error('❌ Ошибка создания пользователя:', insertErr);
+                        return res.status(500).json({
+                            success: false,
+                            message: 'Ошибка создания пользователя'
+                        });
+                    }
+                    // Используем созданного пользователя
+                    createRoomWithUser({ id: userId, username: creator });
                 });
+                return;
             }
+
+            // Пользователь найден, создаем комнату
+            createRoomWithUser(user);
+        });
+
+        function createRoomWithUser(user) {
 
             const roomId = uuidv4();
             const playerId = uuidv4();
