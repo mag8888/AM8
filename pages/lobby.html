@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лобби - Aura Money</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            color: white;
+        }
+        
+        .lobby-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-areas: 
+                "header header"
+                "stats rooms"
+                "actions actions";
+            grid-template-columns: 1fr 2fr;
+            grid-template-rows: auto 1fr auto;
+            gap: 2rem;
+            min-height: calc(100vh - 4rem);
+        }
+        
+        .lobby-header {
+            grid-area: header;
+            text-align: center;
+            background: rgba(20, 25, 40, 0.95);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            backdrop-filter: blur(20px);
+        }
+        
+        .lobby-header h1 {
+            font-size: 2.5rem;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .lobby-header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+        
+        .stats-panel {
+            grid-area: stats;
+            background: rgba(20, 25, 40, 0.95);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            backdrop-filter: blur(20px);
+            height: fit-content;
+        }
+        
+        .stats-panel h3 {
+            margin: 0 0 1.5rem 0;
+            color: white;
+            font-size: 1.3rem;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+        }
+        
+        .stat-value {
+            color: #10b981;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .rooms-panel {
+            grid-area: rooms;
+            background: rgba(20, 25, 40, 0.95);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            backdrop-filter: blur(20px);
+        }
+        
+        .rooms-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .rooms-header h3 {
+            margin: 0;
+            color: white;
+            font-size: 1.3rem;
+        }
+        
+        .create-room-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .create-room-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+        
+        .rooms-list {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .room-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .room-card:hover {
+            border-color: rgba(99, 102, 241, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .room-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .room-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+        
+        .room-players {
+            background: rgba(99, 102, 241, 0.2);
+            color: #6366f1;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .room-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .room-status-text {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .join-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .join-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        
+        .actions-panel {
+            grid-area: actions;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .action-btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .lobby-container {
+                grid-template-areas: 
+                    "header"
+                    "stats"
+                    "rooms"
+                    "actions";
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .lobby-header h1 {
+                font-size: 2rem;
+            }
+            
+            .actions-panel {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="lobby-container">
+        <header class="lobby-header">
+            <h1>🎮 Лобби Aura Money</h1>
+            <p>Выберите комнату для игры или создайте новую</p>
+        </header>
+        
+        <aside class="stats-panel">
+            <h3>📊 Ваша статистика</h3>
+            <div class="stat-item">
+                <span class="stat-label">Игр сыграно:</span>
+                <span class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Побед:</span>
+                <span class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Уровень:</span>
+                <span class="stat-value">1</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Рейтинг:</span>
+                <span class="stat-value">1200</span>
+            </div>
+        </aside>
+        
+        <main class="rooms-panel">
+            <div class="rooms-header">
+                <h3>🏠 Игровые комнаты</h3>
+                <button class="create-room-btn" onclick="createRoom()">+ Создать комнату</button>
+            </div>
+            
+            <div class="rooms-list" id="rooms-list">
+                <div class="room-card" onclick="joinRoom('room1')">
+                    <div class="room-info">
+                        <span class="room-name">Быстрая игра</span>
+                        <span class="room-players">2/4</span>
+                    </div>
+                    <div class="room-status">
+                        <span class="room-status-text">Ожидание игроков</span>
+                        <button class="join-btn">Присоединиться</button>
+                    </div>
+                </div>
+                
+                <div class="room-card" onclick="joinRoom('room2')">
+                    <div class="room-info">
+                        <span class="room-name">Турнир</span>
+                        <span class="room-players">3/4</span>
+                    </div>
+                    <div class="room-status">
+                        <span class="room-status-text">Ожидание игроков</span>
+                        <button class="join-btn">Присоединиться</button>
+                    </div>
+                </div>
+                
+                <div class="room-card" onclick="joinRoom('room3')">
+                    <div class="room-info">
+                        <span class="room-name">Новички</span>
+                        <span class="room-players">1/4</span>
+                    </div>
+                    <div class="room-status">
+                        <span class="room-status-text">Ожидание игроков</span>
+                        <button class="join-btn">Присоединиться</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="actions-panel">
+            <a href="../index.html" class="action-btn btn-primary">🎮 Начать игру</a>
+            <a href="../pages/rooms.html" class="action-btn btn-secondary">📋 Все комнаты</a>
+            <a href="#" class="action-btn btn-secondary" onclick="window.history.back()">← Назад</a>
+        </footer>
+    </div>
+    
+    <script>
+        function createRoom() {
+            const roomName = prompt('Введите название комнаты:');
+            if (roomName) {
+                alert(`Комната "${roomName}" создана!`);
+                // Здесь будет логика создания комнаты
+            }
+        }
+        
+        function joinRoom(roomId) {
+            alert(`Присоединение к комнате ${roomId}...`);
+            // Переход в игровую комнату
+            window.location.href = `../index.html?room=${roomId}`;
+        }
+        
+        // Обновление статистики каждые 5 секунд
+        setInterval(() => {
+            // Здесь будет логика обновления статистики
+        }, 5000);
+    </script>
+</body>
+</html>

@@ -124,6 +124,45 @@
         .page.active {
             display: block;
         }
+        
+        /* Стили для iframe страниц */
+        .page iframe {
+            width: 100%;
+            height: calc(100vh - 120px);
+            border: none;
+            border-radius: 1rem;
+            background: transparent;
+        }
+        
+        #auth-page iframe,
+        #lobby-page iframe,
+        #rooms-page iframe {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        }
+        
+        /* Стили для кнопок навигации */
+        .main-navigation .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .main-navigation {
+                position: relative !important;
+                top: auto !important;
+                left: auto !important;
+                margin: 1rem;
+            }
+            
+            .main-navigation div {
+                justify-content: center;
+            }
+            
+            .main-navigation .nav-btn {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
 
         /* Стили для игровой страницы - CSS Grid система */
         .game-page {
@@ -317,8 +356,9 @@
             
             <div class="nav-menu">
                 <a href="/" class="nav-link" data-route="/">Главная</a>
-                <a href="pages/rooms.html" class="nav-link" data-route="/rooms">Комнаты</a>
-                <a href="auth/" class="nav-link" data-route="/auth">Авторизация</a>
+                <a href="#" class="nav-link" data-route="/lobby">Лобби</a>
+                <a href="#" class="nav-link" data-route="/rooms">Комнаты</a>
+                <a href="#" class="nav-link" data-route="/auth">Авторизация</a>
             </div>
             
             <div class="nav-user" id="nav-user">
@@ -359,6 +399,36 @@
                     <!-- Панель игроков -->
                     <div id="players-panel" class="players-panel-container"></div>
                 </div>
+                
+                <!-- Кнопки навигации для главной страницы -->
+                <div class="main-navigation" style="position: absolute; top: 20px; left: 20px; z-index: 1000;">
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button class="nav-btn" onclick="router.navigate('/auth')" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                            🔐 Авторизация
+                        </button>
+                        <button class="nav-btn" onclick="router.navigate('/lobby')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                            🏠 Лобби
+                        </button>
+                        <button class="nav-btn" onclick="router.navigate('/rooms')" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                            📋 Комнаты
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Страница авторизации -->
+            <div id="auth-page" class="page">
+                <iframe src="pages/auth.html" width="100%" height="100%" frameborder="0" style="border-radius: 1rem;"></iframe>
+            </div>
+
+            <!-- Страница лобби -->
+            <div id="lobby-page" class="page">
+                <iframe src="pages/lobby.html" width="100%" height="100%" frameborder="0" style="border-radius: 1rem;"></iframe>
+            </div>
+
+            <!-- Страница комнат -->
+            <div id="rooms-page" class="page">
+                <iframe src="pages/rooms.html" width="100%" height="100%" frameborder="0" style="border-radius: 1rem;"></iframe>
             </div>
 
             <!-- Заглушка для других страниц -->

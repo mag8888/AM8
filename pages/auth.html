@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация - Aura Money</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 2rem;
+        }
+        
+        .auth-container {
+            background: rgba(20, 25, 40, 0.95);
+            border-radius: 1.5rem;
+            padding: 3rem;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            max-width: 450px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .auth-header h1 {
+            color: #ffffff;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .auth-header p {
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.75rem;
+            padding: 0.25rem;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .auth-tab.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .auth-btn {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+        
+        .auth-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .auth-footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .auth-footer a {
+            color: #6366f1;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+            }
+            
+            .auth-header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <button class="back-btn" onclick="window.history.back()">←</button>
+        
+        <div class="auth-header">
+            <h1>🎮 Aura Money</h1>
+            <p>Войдите в игру или создайте аккаунт</p>
+        </div>
+        
+        <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Вход</button>
+            <button class="auth-tab" data-tab="register">Регистрация</button>
+        </div>
+        
+        <form class="auth-form active" id="login-form">
+            <div class="form-group">
+                <label for="login-username">Имя пользователя</label>
+                <input type="text" id="login-username" placeholder="Введите имя пользователя" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="login-password">Пароль</label>
+                <input type="password" id="login-password" placeholder="Введите пароль" required>
+            </div>
+            
+            <button type="submit" class="auth-btn">Войти</button>
+        </form>
+        
+        <form class="auth-form" id="register-form">
+            <div class="form-group">
+                <label for="register-username">Имя пользователя</label>
+                <input type="text" id="register-username" placeholder="Придумайте имя пользователя" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="register-email">Email</label>
+                <input type="email" id="register-email" placeholder="Введите email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="register-password">Пароль</label>
+                <input type="password" id="register-password" placeholder="Придумайте пароль" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="register-confirm">Подтвердите пароль</label>
+                <input type="password" id="register-confirm" placeholder="Подтвердите пароль" required>
+            </div>
+            
+            <button type="submit" class="auth-btn">Зарегистрироваться</button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Есть вопросы? <a href="#" onclick="window.history.back()">Вернуться на главную</a></p>
+        </div>
+    </div>
+    
+    <script>
+        // Переключение между вкладками
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                
+                // Убираем активный класс со всех вкладок
+                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+                
+                // Добавляем активный класс к выбранной вкладке
+                tab.classList.add('active');
+                document.getElementById(tabName + '-form').classList.add('active');
+            });
+        });
+        
+        // Обработка форм
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                // Здесь будет логика авторизации
+                console.log('Логин:', username, password);
+                alert('Авторизация успешна! Переход в игру...');
+                window.location.href = '../index.html';
+            } catch (error) {
+                alert('Ошибка авторизации: ' + error.message);
+            }
+        });
+        
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+            
+            if (password !== confirm) {
+                alert('Пароли не совпадают!');
+                return;
+            }
+            
+            try {
+                // Здесь будет логика регистрации
+                console.log('Регистрация:', username, email, password);
+                alert('Регистрация успешна! Теперь войдите в систему.');
+                document.querySelector('[data-tab="login"]').click();
+            } catch (error) {
+                alert('Ошибка регистрации: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

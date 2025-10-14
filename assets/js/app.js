@@ -59,19 +59,23 @@ class App {
             this.autoSelectRoom();
         }, 'Главная');
         
-        this.router.route('/rooms', () => {
-            this.showPlaceholder('Переход к комнатам...');
-            setTimeout(() => {
-                window.location.href = 'pages/rooms.html';
-            }, 500);
-        }, 'Комнаты');
-        
         this.router.route('/auth', () => {
-            this.showPlaceholder('Переход к авторизации...');
-            setTimeout(() => {
-                window.location.href = 'auth/';
-            }, 500);
+            this.showPage('auth-page');
+            this.removeGameRoomNavigation();
+            this.updateNavigation('/auth');
         }, 'Авторизация');
+        
+        this.router.route('/lobby', () => {
+            this.showPage('lobby-page');
+            this.removeGameRoomNavigation();
+            this.updateNavigation('/lobby');
+        }, 'Лобби');
+        
+        this.router.route('/rooms', () => {
+            this.showPage('rooms-page');
+            this.removeGameRoomNavigation();
+            this.updateNavigation('/rooms');
+        }, 'Комнаты');
         
         this.router.route('/game', (state) => {
             this.showPage('game-page');
@@ -290,6 +294,19 @@ class App {
                     this.router.navigate('/auth');
                 } else {
                     window.location.href = 'auth/';
+                }
+            });
+        }
+        
+        // Обработчик для перехода в лобби
+        const lobbyBtn = document.querySelector('button[onclick*="router.navigate(\'/lobby\')"]');
+        if (lobbyBtn) {
+            lobbyBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (this.router) {
+                    this.router.navigate('/lobby');
+                } else {
+                    window.location.href = 'pages/lobby.html';
                 }
             });
         }
