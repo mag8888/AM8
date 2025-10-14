@@ -86,32 +86,10 @@ router.get('/', async (req, res, next) => {
                 r.creator_id,
                 r.created_at,
                 r.updated_at,
-                u.username as creator_name,
-                COALESCE(GROUP_CONCAT(
-                    CASE 
-                        WHEN rp.user_id IS NOT NULL 
-                        THEN json_object(
-                            'id', rp.user_id,
-                            'username', u2.username,
-                            'name', u2.username,
-                            'isHost', rp.is_host,
-                            'isReady', rp.is_ready,
-                            'token', rp.token,
-                            'dream', rp.dream,
-                            'dreamCost', rp.dream_cost,
-                            'position', rp.position,
-                            'money', rp.money,
-                            'salary', rp.salary
-                        )
-                        ELSE NULL
-                    END
-                ), '') as players
+                u.username as creator_name
             FROM rooms r
             LEFT JOIN users u ON r.creator_id = u.id
-            LEFT JOIN room_players rp ON r.id = rp.room_id
-            LEFT JOIN users u2 ON rp.user_id = u2.id
             WHERE r.status != 'deleted'
-            GROUP BY r.id
             ORDER BY r.created_at DESC
         `;
 
@@ -128,18 +106,47 @@ router.get('/', async (req, res, next) => {
                 });
             }
 
-            const rooms = rows.map(row => {
-                const players = row.players && row.players.trim() !== ''
-                    ? row.players.split(',').map(p => {
-                        try {
-                            return JSON.parse(p);
-                        } catch (e) {
-                            return null;
-                        }
-                    }).filter(p => p !== null)
-                    : [];
+            // Получаем игроков для всех комнат одним запросом
+            const playersQuery = `
+                SELECT 
+                    rp.room_id,
+                    rp.user_id as id,
+                    u.username,
+                    u.username as name,
+                    rp.is_host as isHost,
+                    rp.is_ready as isReady,
+                    rp.token,
+                    rp.dream,
+                    rp.dream_cost as dreamCost,
+                    rp.dream_description as dreamDescription,
+                    rp.position,
+                    rp.money,
+                    rp.salary
+                FROM room_players rp
+                JOIN users u ON rp.user_id = u.id
+                WHERE rp.room_id IN (${rows.map(() => '?').join(',')})
+            `;
 
-                return {
+            const roomIds = rows.map(row => row.id);
+            
+            db.all(playersQuery, roomIds, (err, allPlayers) => {
+                if (err) {
+                    console.error('❌ Ошибка получения игроков:', err);
+                    return next(err);
+                }
+
+                // Группируем игроков по комнатам
+                const playersByRoom = {};
+                allPlayers.forEach(player => {
+                    if (!playersByRoom[player.room_id]) {
+                        playersByRoom[player.room_id] = [];
+                    }
+                    // Удаляем room_id из объекта игрока
+                    const { room_id, ...playerData } = player;
+                    playersByRoom[player.room_id].push(playerData);
+                });
+
+                const rooms = rows.map(row => ({
                     id: row.id,
                     name: row.name,
                     description: row.description,
@@ -151,16 +158,16 @@ router.get('/', async (req, res, next) => {
                     creator: row.creator_name,
                     turnTime: row.turn_time,
                     assignProfessions: Boolean(row.assign_professions),
-                    players: players,
+                    players: playersByRoom[row.id] || [],
                     createdAt: row.created_at,
                     updatedAt: row.updated_at
-                };
-            });
+                }));
 
-            res.json({
-                success: true,
-                data: rooms,
-                count: rooms.length
+                res.json({
+                    success: true,
+                    data: rooms,
+                    count: rooms.length
+                });
             });
         });
 
@@ -245,32 +252,10 @@ router.get('/:id', async (req, res, next) => {
         const query = `
             SELECT 
                 r.*,
-                u.username as creator_name,
-                COALESCE(GROUP_CONCAT(
-                    CASE 
-                        WHEN rp.user_id IS NOT NULL 
-                        THEN json_object(
-                            'id', rp.user_id,
-                            'username', u2.username,
-                            'name', u2.username,
-                            'isHost', rp.is_host,
-                            'isReady', rp.is_ready,
-                            'token', rp.token,
-                            'dream', rp.dream,
-                            'dreamCost', rp.dream_cost,
-                            'position', rp.position,
-                            'money', rp.money,
-                            'salary', rp.salary
-                        )
-                        ELSE NULL
-                    END
-                ), '') as players
+                u.username as creator_name
             FROM rooms r
             LEFT JOIN users u ON r.creator_id = u.id
-            LEFT JOIN room_players rp ON r.id = rp.room_id
-            LEFT JOIN users u2 ON rp.user_id = u2.id
             WHERE r.id = ? AND r.status != 'deleted'
-            GROUP BY r.id
         `;
 
         db.get(query, [id], (err, row) => {
@@ -286,36 +271,53 @@ router.get('/:id', async (req, res, next) => {
                 });
             }
 
-            const players = row.players && row.players.trim() !== ''
-                ? row.players.split(',').map(p => {
-                    try {
-                        return JSON.parse(p);
-                    } catch (e) {
-                        return null;
-                    }
-                }).filter(p => p !== null)
-                : [];
+            // Получаем игроков отдельным запросом
+            const playersQuery = `
+                SELECT 
+                    rp.user_id as id,
+                    u.username,
+                    u.username as name,
+                    rp.is_host as isHost,
+                    rp.is_ready as isReady,
+                    rp.token,
+                    rp.dream,
+                    rp.dream_cost as dreamCost,
+                    rp.dream_description as dreamDescription,
+                    rp.position,
+                    rp.money,
+                    rp.salary
+                FROM room_players rp
+                JOIN users u ON rp.user_id = u.id
+                WHERE rp.room_id = ?
+            `;
 
-            const room = {
-                id: row.id,
-                name: row.name,
-                description: row.description,
-                maxPlayers: row.max_players,
-                playerCount: row.current_players,
-                status: row.status,
-                isStarted: Boolean(row.is_started),
-                isFull: row.current_players >= row.max_players,
-                creator: row.creator_name,
-                turnTime: row.turn_time,
-                assignProfessions: Boolean(row.assign_professions),
-                players: players,
-                createdAt: row.created_at,
-                updatedAt: row.updated_at
-            };
+            db.all(playersQuery, [id], (err, players) => {
+                if (err) {
+                    console.error('❌ Ошибка получения игроков:', err);
+                    return next(err);
+                }
 
-            res.json({
-                success: true,
-                data: room
+                const room = {
+                    id: row.id,
+                    name: row.name,
+                    description: row.description,
+                    maxPlayers: row.max_players,
+                    playerCount: row.current_players,
+                    status: row.status,
+                    isStarted: Boolean(row.is_started),
+                    isFull: row.current_players >= row.max_players,
+                    creator: row.creator_name,
+                    turnTime: row.turn_time,
+                    assignProfessions: Boolean(row.assign_professions),
+                    players: players || [],
+                    createdAt: row.created_at,
+                    updatedAt: row.updated_at
+                };
+
+                res.json({
+                    success: true,
+                    data: room
+                });
             });
         });
 
