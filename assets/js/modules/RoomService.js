@@ -859,7 +859,7 @@ class RoomService {
      */
     async updatePlayerInRoom(roomId, playerData) {
         try {
-            console.log('🏠 RoomService: Обновление игрока в комнате:', roomId);
+            console.log('🏠 RoomService: Обновление игрока в комнате:', roomId, playerData);
             
             // Если используем мок-данные, обновляем локально
             if (this.config.useMockData || this.useMockData) {
@@ -916,18 +916,33 @@ class RoomService {
         }
 
         // Находим игрока в комнате
-        const playerIndex = room.players.findIndex(p => p.id === playerData.id || p.username === playerData.username);
+        // Ищем по userId, id или username
+        const playerIndex = room.players.findIndex(p => 
+            p.id === playerData.id || 
+            p.userId === playerData.userId || 
+            p.username === playerData.username
+        );
         if (playerIndex === -1) {
+            console.log('🔍 RoomService: Поиск игрока в комнате:', {
+                roomId: roomId,
+                playerData: playerData,
+                roomPlayers: room.players.map(p => ({ id: p.id, userId: p.userId, username: p.username }))
+            });
             throw new Error('Игрок не найден в комнате');
         }
 
         // Обновляем данные игрока
+        const oldPlayer = room.players[playerIndex];
         room.players[playerIndex] = { ...room.players[playerIndex], ...playerData };
         
         // Сохраняем обновленную комнату
         this._savePersistedRooms();
         
-        console.log('✅ RoomService: Игрок успешно обновлен в мок-комнате');
+        console.log('✅ RoomService: Игрок успешно обновлен в мок-комнате:', {
+            oldToken: oldPlayer.token,
+            newToken: playerData.token,
+            player: room.players[playerIndex]
+        });
         return {
             success: true,
             player: room.players[playerIndex],
