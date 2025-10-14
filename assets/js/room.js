@@ -405,6 +405,15 @@ async function loadRoomData() {
             setTimeout(() => {
                 const roomId = room.id;
                 console.log('🎮 Room: Автоматический переход к игровой доске:', roomId);
+                
+                // Сохраняем данные пользователя для передачи на игровую доску
+                const userData = {
+                    ...currentUser,
+                    roomId: roomId,
+                    fromRoom: true
+                };
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+                
                 window.location.href = `../index.html#game?roomId=${roomId}`;
             }, 2000);
             return;
@@ -1116,6 +1125,15 @@ async function confirmStartGame() {
                 // Переходим на главную страницу с данными о комнате
                 const roomId = currentRoom.id;
                 console.log('🎮 Room: Переход к игровой доске:', roomId);
+                
+                // Сохраняем данные пользователя для передачи на игровую доску
+                const userData = {
+                    ...currentUser,
+                    roomId: roomId,
+                    fromRoom: true
+                };
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+                
                 window.location.href = `../index.html#game?roomId=${roomId}`;
             }, 2000);
             
@@ -1128,6 +1146,15 @@ async function confirmStartGame() {
                 setTimeout(() => {
                     const roomId = currentRoom.id;
                     console.log('🎮 Room: Переход к игровой доске (игра уже запущена):', roomId);
+                    
+                    // Сохраняем данные пользователя для передачи на игровую доску
+                    const userData = {
+                        ...currentUser,
+                        roomId: roomId,
+                        fromRoom: true
+                    };
+                    localStorage.setItem('currentUser', JSON.stringify(userData));
+                    
                     window.location.href = `../index.html#game?roomId=${roomId}`;
                 }, 2000);
             } else {
