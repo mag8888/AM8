@@ -66,15 +66,13 @@ class App {
         }, 'Авторизация');
         
         this.router.route('/lobby', () => {
-            this.showPage('lobby-page');
-            // Навигация удалена
-            this.updateNavigation('/lobby');
+            // Перенаправляем на отдельную страницу лобби
+            window.location.href = 'pages/lobby.html';
         }, 'Лобби');
         
         this.router.route('/rooms', () => {
-            this.showPage('rooms-page');
-            // Навигация удалена
-            this.updateNavigation('/rooms');
+            // Перенаправляем на отдельную страницу комнат
+            window.location.href = 'pages/rooms.html';
         }, 'Комнаты');
         
         this.router.route('/game', (state) => {
@@ -322,13 +320,25 @@ class App {
         
         try {
             // Проверяем наличие данных пользователя в localStorage
-            const userData = localStorage.getItem('aura_money_user');
+            const userData = localStorage.getItem('currentUser') || localStorage.getItem('aura_money_user');
             if (userData) {
                 this.currentUser = JSON.parse(userData);
                 this.updateUserInterface();
                 console.log('👤 App: Пользователь авторизован:', this.currentUser.username);
+                
+                // Если пользователь авторизован и находится на главной странице - редиректим в лобби
+                if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+                    console.log('🔄 App: Перенаправление авторизованного пользователя в лобби');
+                    this.router.navigate('/lobby');
+                }
             } else {
                 console.log('👤 App: Пользователь не авторизован');
+                
+                // Если пользователь не авторизован и находится на главной странице - редиректим на авторизацию
+                if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+                    console.log('🔄 App: Перенаправление неавторизованного пользователя на авторизацию');
+                    this.router.navigate('/auth');
+                }
             }
         } catch (error) {
             console.error('❌ App: Ошибка проверки авторизации:', error);
