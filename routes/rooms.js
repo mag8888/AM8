@@ -482,6 +482,68 @@ router.post('/', async (req, res, next) => {
 });
 
 /**
+ * Продолжает процесс присоединения к комнате
+ */
+function proceedWithJoin(userId, player, roomId, res, next) {
+    const db = getDatabase();
+    if (!db) {
+        return res.status(503).json({
+            success: false,
+            message: 'База данных временно недоступна'
+        });
+    }
+
+    // Проверяем, не присоединен ли уже пользователь
+    db.get('SELECT id FROM room_players WHERE room_id = ? AND user_id = ?', [roomId, userId], (err, existingPlayer) => {
+        if (err) {
+            return next(err);
+        }
+
+        if (existingPlayer) {
+            return res.status(409).json({
+                success: false,
+                message: 'Вы уже в этой комнате',
+                code: 'ALREADY_JOINED'
+            });
+        }
+
+        const playerId = uuidv4();
+
+        // Добавляем игрока в комнату
+        db.run(
+            `INSERT INTO room_players (id, room_id, user_id, is_host, is_ready) 
+             VALUES (?, ?, ?, 0, 0)`,
+            [playerId, roomId, userId],
+            (err) => {
+                if (err) {
+                    return next(err);
+                }
+
+                // Обновляем количество игроков
+                db.run(
+                    'UPDATE rooms SET current_players = current_players + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                    [roomId],
+                    (err) => {
+                        if (err) {
+                            return next(err);
+                        }
+
+                        res.status(201).json({
+                            success: true,
+                            message: 'Вы присоединились к комнате',
+                            data: {
+                                roomId: roomId,
+                                playerId: playerId
+                            }
+                        });
+                    }
+                );
+            }
+        );
+    });
+}
+
+/**
  * POST /api/rooms/:id/join - Присоединиться к комнате
  */
 router.post('/:id/join', async (req, res, next) => {
@@ -538,56 +600,28 @@ router.post('/:id/join', async (req, res, next) => {
                 }
 
                 if (!user) {
-                    return res.status(404).json({
-                        success: false,
-                        message: 'Пользователь не найден'
-                    });
-                }
-
-                // Проверяем, не присоединен ли уже пользователь
-                db.get('SELECT id FROM room_players WHERE room_id = ? AND user_id = ?', [id, user.id], (err, existingPlayer) => {
-                    if (err) {
-                        return next(err);
-                    }
-
-                    if (existingPlayer) {
-                        return res.status(409).json({
-                            success: false,
-                            message: 'Вы уже в этой комнате',
-                            code: 'ALREADY_JOINED'
-                        });
-                    }
-
-                    const playerId = uuidv4();
-
-                    // Добавляем игрока в комнату
-                    db.run(
-                        `INSERT INTO room_players (id, room_id, user_id, is_host, is_ready) 
-                         VALUES (?, ?, ?, 0, 0)`,
-                        [playerId, id, user.id],
-                        (err) => {
-                            if (err) {
-                                return next(err);
-                            }
-
-                            // Обновляем количество игроков
-                            db.run(
-                                'UPDATE rooms SET current_players = current_players + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-                                [id],
-                                (err) => {
-                                    if (err) {
-                                        return next(err);
-                                    }
-
-                                    res.json({
-                                        success: true,
-                                        message: 'Вы присоединились к комнате'
-                                    });
-                                }
-                            );
+                    console.log('⚠️ Пользователь не найден, создаем нового:', player.username);
+                    // Fallback: создаем пользователя если его нет
+                    const userId = uuidv4();
+                    db.run('INSERT INTO users (id, username, created_at) VALUES (?, ?, ?)', 
+                           [userId, player.username, new Date().toISOString()], (insertErr) => {
+                        if (insertErr) {
+                            console.error('❌ Ошибка создания пользователя:', insertErr);
+                            return res.status(500).json({
+                                success: false,
+                                message: 'Ошибка создания пользователя'
+                            });
                         }
-                    );
-                });
+                        console.log('✅ Пользователь создан:', player.username);
+                        
+                        // Продолжаем с созданным пользователем
+                        proceedWithJoin(userId, player, id, res, next);
+                    });
+                    return;
+                }
+                
+                // Пользователь найден, продолжаем
+                proceedWithJoin(user.id, player, id, res, next);
             });
         });
 
