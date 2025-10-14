@@ -942,12 +942,44 @@ function displayUserInfo() {
                 
                 console.log('✅ Rooms: Информация о пользователе отображена:', user.username);
             }
+            // Обновляем пользовательскую статистику в sidebar
+            updateUserStatsInSidebar(user);
         } else {
             console.log('⚠️ Rooms: Пользователь не авторизован');
             // Можно добавить кнопку входа или перенаправление
         }
     } catch (error) {
         console.error('❌ Rooms: Ошибка отображения информации о пользователе:', error);
+    }
+}
+
+/**
+ * Обновление пользовательской статистики в sidebar
+ */
+function updateUserStatsInSidebar(user) {
+    try {
+        // Получаем статистику пользователя
+        const stats = user.stats || {
+            gamesPlayed: 0,
+            wins: 0,
+            level: 1,
+            rating: 1200
+        };
+        
+        // Обновляем элементы в sidebar
+        const userGames = document.getElementById('user-games');
+        const userWins = document.getElementById('user-wins');
+        const userLevel = document.getElementById('user-level');
+        const userRating = document.getElementById('user-rating');
+        
+        if (userGames) userGames.textContent = stats.gamesPlayed || 0;
+        if (userWins) userWins.textContent = stats.wins || 0;
+        if (userLevel) userLevel.textContent = stats.level || 1;
+        if (userRating) userRating.textContent = stats.rating || 1200;
+        
+        console.log('✅ Rooms: Пользовательская статистика обновлена в sidebar:', stats);
+    } catch (error) {
+        console.error('❌ Rooms: Ошибка обновления пользовательской статистики:', error);
     }
 }
 

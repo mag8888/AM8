@@ -4,15 +4,15 @@
 .container {
     display: grid;
     grid-template-areas: 
-        "header header"
-        "main main"
-        "stats stats";
+        "header header header"
+        "main main sidebar"
+        "stats stats sidebar";
     grid-template-rows: auto 1fr auto;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-md);
+    grid-template-columns: 2fr 1fr 300px;
+    gap: var(--spacing-lg);
     min-height: 100vh;
-    padding: var(--spacing-md);
-    max-width: 1400px;
+    padding: var(--spacing-lg);
+    max-width: 1600px;
     margin: 0 auto;
 }
 
@@ -32,7 +32,12 @@
         "controls"
         "rooms";
     grid-template-rows: auto 1fr;
-    gap: var(--spacing-xl);
+    gap: var(--spacing-lg);
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border-primary);
+    backdrop-filter: blur(8px);
 }
 
 .rooms-controls {
@@ -43,11 +48,123 @@
     grid-area: rooms;
 }
 
+/* Sidebar */
+.sidebar {
+    grid-area: sidebar;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border-primary);
+    backdrop-filter: blur(8px);
+    display: grid;
+    grid-template-areas: 
+        "user-info"
+        "quick-actions"
+        "room-info";
+    grid-template-rows: auto auto 1fr;
+    gap: var(--spacing-lg);
+}
+
+.user-info-panel {
+    grid-area: user-info;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.quick-actions {
+    grid-area: quick-actions;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+}
+
+.room-info-panel {
+    grid-area: room-info;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.1));
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+/* Стили для элементов sidebar */
+.user-info-panel h3,
+.room-info-panel h3 {
+    margin: 0 0 var(--spacing-md) 0;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.user-stats {
+    display: grid;
+    gap: var(--spacing-sm);
+}
+
+.user-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-stat:last-child {
+    border-bottom: none;
+}
+
+.user-stat .stat-label {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.user-stat .stat-value {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.quick-actions .btn {
+    width: 100%;
+    padding: var(--spacing-sm);
+    font-size: var(--text-sm);
+    border-radius: var(--radius-sm);
+}
+
+.room-details {
+    display: grid;
+    gap: var(--spacing-sm);
+}
+
+.room-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.room-detail:last-child {
+    border-bottom: none;
+}
+
+.room-detail .detail-label {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.room-detail .detail-value {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 .stats-section {
     grid-area: stats;
     background: var(--bg-card);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
     border: 1px solid var(--border-primary);
     backdrop-filter: blur(8px);
 }
@@ -876,10 +993,45 @@
     }
 }
 
+@media (max-width: 1024px) {
+    .container {
+        grid-template-areas: 
+            "header"
+            "main"
+            "sidebar"
+            "stats";
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto auto;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+    }
+    
+    .sidebar {
+        grid-template-areas: 
+            "user-info quick-actions"
+            "room-info room-info";
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+    }
+}
+
 @media (max-width: 768px) {
     .container {
-        padding: var(--spacing-md);
-        gap: var(--spacing-lg);
+        padding: var(--spacing-sm);
+        gap: var(--spacing-md);
+    }
+    
+    .sidebar {
+        grid-template-areas: 
+            "user-info"
+            "quick-actions"
+            "room-info";
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+    }
+    
+    .quick-actions {
+        grid-template-columns: 1fr;
     }
     
     .header-left h1 {

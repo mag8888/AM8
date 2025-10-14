@@ -45,27 +45,6 @@
                 </div>
             </div>
 
-            <!-- Статистика -->
-            <div class="stats-section">
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-value" id="total-rooms">0</div>
-                        <div class="stat-label">Всего комнат</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="active-rooms">0</div>
-                        <div class="stat-label">Активных</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="started-games">0</div>
-                        <div class="stat-label">Игр начато</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="total-players">0</div>
-                        <div class="stat-label">Игроков онлайн</div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Список комнат -->
             <div class="rooms-section">
@@ -83,6 +62,83 @@
                 </div>
             </div>
         </main>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Информация о пользователе -->
+            <div class="user-info-panel">
+                <h3>👤 Ваш профиль</h3>
+                <div class="user-stats">
+                    <div class="user-stat">
+                        <span class="stat-label">Игр сыграно:</span>
+                        <span class="stat-value" id="user-games">0</span>
+                    </div>
+                    <div class="user-stat">
+                        <span class="stat-label">Побед:</span>
+                        <span class="stat-value" id="user-wins">0</span>
+                    </div>
+                    <div class="user-stat">
+                        <span class="stat-label">Уровень:</span>
+                        <span class="stat-value" id="user-level">1</span>
+                    </div>
+                    <div class="user-stat">
+                        <span class="stat-label">Рейтинг:</span>
+                        <span class="stat-value" id="user-rating">1200</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="quick-actions">
+                <button class="btn btn-primary" id="quick-create-room">
+                    ➕ Создать
+                </button>
+                <button class="btn btn-secondary" id="quick-refresh">
+                    🔄 Обновить
+                </button>
+            </div>
+
+            <!-- Информация о комнате -->
+            <div class="room-info-panel">
+                <h3>🏠 Информация</h3>
+                <div class="room-details">
+                    <div class="room-detail">
+                        <span class="detail-label">Макс. игроков:</span>
+                        <span class="detail-value">4</span>
+                    </div>
+                    <div class="room-detail">
+                        <span class="detail-label">Время хода:</span>
+                        <span class="detail-value">30с</span>
+                    </div>
+                    <div class="room-detail">
+                        <span class="detail-label">Профессии:</span>
+                        <span class="detail-value">Авто</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Статистика -->
+        <div class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="total-rooms">0</div>
+                    <div class="stat-label">Всего комнат</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="active-rooms">0</div>
+                    <div class="stat-label">Активных</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="started-games">0</div>
+                    <div class="stat-label">Игр начато</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="total-players">0</div>
+                    <div class="stat-label">Игроков онлайн</div>
+                </div>
+            </div>
+        </div>
 
         <!-- Модальное окно создания комнаты -->
         <div id="create-room-modal" class="modal">
