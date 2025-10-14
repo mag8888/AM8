@@ -277,7 +277,7 @@
             const originalRoomService = window.RoomService;
             window.RoomService = class extends originalRoomService {
                 constructor(logger, errorHandler) {
-                    super(logger, errorHandler);
+                    super(logger || null, errorHandler || null);
                     this.mockRooms = [
                         {
                             id: 'room-demo-1',
