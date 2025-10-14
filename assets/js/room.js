@@ -472,25 +472,26 @@ function updateStartGameButton() {
  */
 function displayUserInfo() {
     try {
-        // Получаем текущего пользователя из localStorage
-        const storedUser = localStorage.getItem('aura_money_user');
-        const storedToken = localStorage.getItem('aura_money_token');
+        // Получаем текущего пользователя из localStorage (поддерживаем оба формата)
+        const raw = localStorage.getItem('currentUser') || localStorage.getItem('aura_money_user');
+        const storedToken = localStorage.getItem('aura_money_token') || 'ok'; // для статического режима токен может отсутствовать
         
-        if (storedUser && storedToken) {
-            currentUser = JSON.parse(storedUser);
+        if (raw) {
+            currentUser = JSON.parse(raw);
             
             const userAvatar = document.getElementById('room-user-avatar');
             const userName = document.getElementById('room-user-name');
             
             if (userAvatar && userName) {
                 // Устанавливаем первую букву имени пользователя
-                const firstLetter = currentUser.username ? currentUser.username.charAt(0).toUpperCase() : 'U';
+                const username = currentUser.username || currentUser.name || currentUser.email || 'User';
+                const firstLetter = username.charAt(0).toUpperCase();
                 userAvatar.textContent = firstLetter;
                 
                 // Устанавливаем имя пользователя
-                userName.textContent = currentUser.username || 'Пользователь';
+                userName.textContent = username || 'Пользователь';
                 
-                console.log('✅ Room: Информация о пользователе отображена:', currentUser.username);
+                console.log('✅ Room: Информация о пользователе отображена:', currentUser.username || currentUser.name);
             }
         } else {
             console.log('⚠️ Room: Пользователь не авторизован');
