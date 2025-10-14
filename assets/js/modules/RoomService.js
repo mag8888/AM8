@@ -77,11 +77,12 @@ class RoomService {
         const now = Date.now();
         
         this.mockRooms = [
-            this._createMockRoom({
+            this._createMockRoomObject({
                 id: 'room-demo-1',
                 name: 'Демо комната 1',
                 maxPlayers: 4,
                 playerCount: 2,
+                creator: 'demo_user',
                 turnTime: 30,
                 assignProfessions: true,
                 players: [
@@ -89,12 +90,13 @@ class RoomService {
                     { id: 'p2', username: 'player1', name: 'player1', isHost: false }
                 ],
                 createdAt: new Date(now - 60000).toISOString()
-            }, { username: 'demo_user', id: 'demo_user' }),
-            this._createMockRoom({
+            }),
+            this._createMockRoomObject({
                 id: 'room-demo-2',
                 name: 'Турнирная комната',
                 maxPlayers: 6,
                 playerCount: 3,
+                creator: 'tournament_master',
                 turnTime: 60,
                 assignProfessions: false,
                 players: [
@@ -103,7 +105,7 @@ class RoomService {
                     { id: 'p5', username: 'player3', name: 'player3', isHost: false }
                 ],
                 createdAt: new Date(now - 30000).toISOString()
-            }, { username: 'tournament_master', id: 'tournament_master' })
+            })
         ];
 
         console.log('🏠 RoomService: Базовые мок-данные инициализированы');
@@ -359,6 +361,37 @@ class RoomService {
     }
 
     /**
+     * Создание объекта мок-комнаты
+     * @param {Object} roomData - Данные комнаты
+     * @param {Object} creator - Создатель комнаты
+     * @returns {Object}
+     * @private
+     */
+    _createMockRoomObject(roomData, creator) {
+        const safeCreator = creator || {};
+        
+        return {
+            id: roomData.id || 'mock-room-' + Date.now(),
+            name: roomData.name || 'Новая комната',
+            maxPlayers: roomData.maxPlayers || 4,
+            playerCount: roomData.playerCount || 1,
+            status: roomData.status || 'waiting',
+            isStarted: roomData.isStarted || false,
+            isFull: roomData.isFull || false,
+            creator: roomData.creator || safeCreator.username || 'unknown',
+            turnTime: roomData.turnTime || 30,
+            assignProfessions: roomData.assignProfessions || false,
+            players: roomData.players || [{
+                id: safeCreator.id || 'creator-id',
+                username: safeCreator.username || 'creator',
+                name: safeCreator.username || 'creator',
+                isHost: true
+            }],
+            createdAt: roomData.createdAt || new Date().toISOString()
+        };
+    }
+
+    /**
      * Создание мок-комнаты
      * @private
      */
@@ -366,7 +399,7 @@ class RoomService {
         // Обеспечиваем безопасность creator
         const safeCreator = creator || {};
         
-        const newRoom = this._createMockRoom({
+        const newRoom = this._createMockRoomObject({
             id: 'mock-room-' + Date.now(),
             name: roomData.name || 'Новая комната',
             maxPlayers: roomData.maxPlayers || 4,
