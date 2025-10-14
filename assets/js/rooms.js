@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     loadRooms();
     loadStats();
-    displayUserInfo();
+    updateUserInfo();
     
     // Запускаем периодическое обновление списка комнат
     startRoomsPolling();
@@ -434,6 +434,40 @@ function renderRooms(rooms, animateNewRooms = false) {
     }
     
     console.log(`✅ Rooms: Отрисовано ${rooms.length} комнат`);
+}
+
+/**
+ * Обновление информации о пользователе
+ */
+function updateUserInfo() {
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        
+        if (currentUser && currentUser.isLoggedIn) {
+            // Обновляем отображение имени пользователя
+            const usernameElement = document.getElementById('current-username');
+            const userAvatarElement = document.getElementById('user-avatar');
+            const userNameElement = document.getElementById('user-name');
+            
+            if (usernameElement) {
+                usernameElement.textContent = currentUser.username || 'Пользователь';
+            }
+            
+            if (userAvatarElement) {
+                userAvatarElement.textContent = (currentUser.username || 'U').charAt(0).toUpperCase();
+            }
+            
+            if (userNameElement) {
+                userNameElement.textContent = currentUser.username || 'Пользователь';
+            }
+            
+            console.log('✅ Rooms: Информация о пользователе отображена:', currentUser.username);
+        } else {
+            console.log('⚠️ Rooms: Пользователь не авторизован');
+        }
+    } catch (error) {
+        console.error('❌ Rooms: Ошибка обновления информации о пользователе:', error);
+    }
 }
 
 /**
