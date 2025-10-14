@@ -80,34 +80,26 @@ class PlayersPanel {
                 <div class="game-controls">
                     <div class="dice-controls">
                         <button class="btn btn-primary" id="roll-dice" disabled>
-                            🎲 Бросить кубик
+                            <span class="btn-icon">🎲</span>
+                            <span class="btn-text">Бросить кубик</span>
                         </button>
                         <button class="btn btn-secondary" id="pass-turn" disabled>
-                            ➡️ Передать ход
+                            <span class="btn-icon">➡️</span>
+                            <span class="btn-text">Передать ход</span>
                         </button>
-                    </div>
-                    
-                    <div class="turn-info">
-                        <div class="turn-item">
-                            <span class="label">Ход:</span>
-                            <span class="value" id="current-turn">Ожидание</span>
-                        </div>
-                        <div class="turn-item">
-                            <span class="label">Кубик:</span>
-                            <span class="value" id="dice-result">-</span>
-                        </div>
                     </div>
                     
                     <div class="turn-history">
-                        <h4>Ход 1</h4>
+                        <h4>📊 Игровая статистика</h4>
                         <div class="player-info">
-                            <span class="label">Игрок:</span>
+                            <span class="label">Активный игрок:</span>
                             <span class="value" id="current-player">Загрузка...</span>
                         </div>
                     </div>
                     
                     <button class="btn btn-secondary" id="view-stats">
-                        📊 Просмотр статистики
+                        <span class="btn-icon">📈</span>
+                        <span class="btn-text">Подробная статистика</span>
                     </button>
                 </div>
             </div>
@@ -314,9 +306,39 @@ class PlayersPanel {
             }
             
             .player-item.active {
-                background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.15));
+                background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.2));
                 border-color: #6366f1;
-                box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+                box-shadow: 
+                    0 0 25px rgba(99, 102, 241, 0.4),
+                    0 0 50px rgba(99, 102, 241, 0.2);
+                transform: scale(1.02);
+                animation: activePlayerPulse 2s ease-in-out infinite;
+            }
+            
+            @keyframes activePlayerPulse {
+                0%, 100% {
+                    box-shadow: 
+                        0 0 25px rgba(99, 102, 241, 0.4),
+                        0 0 50px rgba(99, 102, 241, 0.2);
+                }
+                50% {
+                    box-shadow: 
+                        0 0 35px rgba(99, 102, 241, 0.6),
+                        0 0 70px rgba(99, 102, 241, 0.3);
+                }
+            }
+            
+            .active-avatar {
+                animation: avatarGlow 2s ease-in-out infinite;
+            }
+            
+            @keyframes avatarGlow {
+                0%, 100% {
+                    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+                }
+                50% {
+                    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+                }
             }
             
             .player-avatar {
@@ -360,9 +382,26 @@ class PlayersPanel {
             }
             
             .player-money {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1));
+                padding: 0.5rem 0.75rem;
+                border-radius: 0.75rem;
+                border: 1px solid rgba(16, 185, 129, 0.3);
+                box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+            }
+            
+            .money-icon {
+                font-size: 1rem;
+                filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+            }
+            
+            .money-amount {
                 color: #10b981;
-                font-weight: 600;
-                font-size: 0.8rem;
+                font-weight: 700;
+                font-size: 0.9rem;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
             }
             
             .game-controls {
@@ -373,13 +412,18 @@ class PlayersPanel {
 
             .dice-controls {
                 display: flex;
-                gap: 0.5rem;
-                flex-wrap: wrap;
+                gap: 1rem;
+                flex-direction: row; /* Горизонтальное расположение */
+                margin-bottom: 1.5rem;
             }
 
             .dice-controls .btn {
                 flex: 1;
-                min-width: 120px;
+                min-width: 140px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
             }
             
             .turn-info {
@@ -538,11 +582,22 @@ class PlayersPanel {
                 
                 .dice-controls {
                     flex-direction: column;
+                    gap: 0.75rem;
                 }
                 
                 .dice-controls .btn {
                     width: 100%;
                     min-width: auto;
+                    padding: 0.8rem 1rem;
+                }
+                
+                .player-money {
+                    padding: 0.4rem 0.6rem;
+                    gap: 0.4rem;
+                }
+                
+                .money-amount {
+                    font-size: 0.8rem;
                 }
             }
             
@@ -628,12 +683,15 @@ class PlayersPanel {
                 
                 return `
                     <div class="player-item ${isActive ? 'active' : ''}" data-player-id="${player.id}">
-                        <div class="player-avatar">${this.getTokenIcon(player.token)}</div>
+                        <div class="player-avatar ${isActive ? 'active-avatar' : ''}">${this.getTokenIcon(player.token)}</div>
                         <div class="player-info">
                             <p class="player-name">${player.username || `Игрок ${index + 1}`}</p>
                             <p class="player-status">${statusText}</p>
                         </div>
-                        <div class="player-money">$${player.money || 0}</div>
+                        <div class="player-money">
+                            <span class="money-icon">💰</span>
+                            <span class="money-amount">$${player.money || 0}</span>
+                        </div>
                     </div>
                 `;
             }).join('');
