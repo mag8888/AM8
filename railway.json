@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "npm start",
-    "healthcheckPath": "/health"
+    "startCommand": "python3 -m http.server $PORT",
+    "healthcheckPath": "/"
   }
 }

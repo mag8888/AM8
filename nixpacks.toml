@@ -1,5 +1,5 @@
 [phases.install]
-cmds = ["npm install"]
+cmds = ["echo 'Static site - no build required'"]
 
 [start]
-cmd = "npm start"
+cmd = "python3 -m http.server $PORT"
