@@ -25,12 +25,15 @@ class RoomService {
         this.config = {
             isLocal,
             baseUrl: isLocal ? 'http://localhost:3002/api/rooms' : 'https://am8-production.up.railway.app/api/rooms',
-            useMockData: false, // Используем серверную базу данных
+            useMockData: true, // Временно используем мок-данные для исправления проблемы с фишками
             localStorageKey: 'aura_money_dynamic_rooms',
             cacheTimeout: 30000, // 30 секунд
             maxRetries: 3,
             useDynamicRooms: false // Отключаем динамические комнаты для единообразия
         };
+        
+        // Дублируем для совместимости
+        this.useMockData = true;
 
         console.log(`🏠 RoomService v2.0.0: Инициализация ${isLocal ? 'локального' : 'продакшн'} режима`);
     }
