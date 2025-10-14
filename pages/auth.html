@@ -189,6 +189,54 @@
             background: rgba(255, 255, 255, 0.2);
         }
         
+        /* Стили для кнопок быстрого заполнения */
+        .quick-accounts {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .quick-accounts h4 {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin: 0 0 1rem 0;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .quick-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .quick-btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 0.75rem 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .quick-btn:hover {
+            border-color: rgba(99, 102, 241, 0.6);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        
+        .quick-btn:active {
+            transform: translateY(0);
+        }
+        
         @media (max-width: 480px) {
             .auth-container {
                 padding: 2rem 1.5rem;
@@ -197,6 +245,16 @@
             
             .auth-header h1 {
                 font-size: 1.5rem;
+            }
+            
+            .quick-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .quick-btn {
+                min-width: auto;
+                width: 100%;
             }
         }
     </style>
@@ -227,6 +285,22 @@
             </div>
             
             <button type="submit" class="auth-btn">Войти</button>
+            
+            <!-- Кнопки быстрого заполнения -->
+            <div class="quick-accounts">
+                <h4>🚀 Быстрый вход (для тестирования):</h4>
+                <div class="quick-buttons">
+                    <button type="button" class="quick-btn" onclick="fillAccount('admin', 'admin123')">
+                        👑 Админ
+                    </button>
+                    <button type="button" class="quick-btn" onclick="fillAccount('player1', 'player123')">
+                        🎮 Игрок 1
+                    </button>
+                    <button type="button" class="quick-btn" onclick="fillAccount('testuser', 'test123')">
+                        🧪 Тестер
+                    </button>
+                </div>
+            </div>
         </form>
         
         <form class="auth-form" id="register-form">
@@ -274,6 +348,66 @@
             });
         });
         
+        // Функция быстрого заполнения аккаунтов
+        function fillAccount(username, password) {
+            // Переключаемся на вкладку входа
+            document.querySelector('[data-tab="login"]').click();
+            
+            // Заполняем поля
+            document.getElementById('login-username').value = username;
+            document.getElementById('login-password').value = password;
+            
+            // Добавляем визуальный эффект
+            const usernameField = document.getElementById('login-username');
+            const passwordField = document.getElementById('login-password');
+            
+            usernameField.style.borderColor = '#10b981';
+            passwordField.style.borderColor = '#10b981';
+            
+            setTimeout(() => {
+                usernameField.style.borderColor = '';
+                passwordField.style.borderColor = '';
+            }, 1000);
+            
+            // Показываем уведомление
+            showNotification(`Аккаунт "${username}" заполнен!`, 'success');
+        }
+        
+        // Функция показа уведомлений
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 0.75rem;
+                font-weight: 600;
+                z-index: 10000;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Анимация появления
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Автоматическое скрытие
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
         // Обработка форм
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -283,10 +417,14 @@
             try {
                 // Здесь будет логика авторизации
                 console.log('Логин:', username, password);
-                alert('Авторизация успешна! Переход в игру...');
-                window.location.href = '../index.html';
+                showNotification('Авторизация успешна! Переход в игру...', 'success');
+                
+                // Имитация загрузки
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1500);
             } catch (error) {
-                alert('Ошибка авторизации: ' + error.message);
+                showNotification('Ошибка авторизации: ' + error.message, 'error');
             }
         });
         
@@ -298,17 +436,20 @@
             const confirm = document.getElementById('register-confirm').value;
             
             if (password !== confirm) {
-                alert('Пароли не совпадают!');
+                showNotification('Пароли не совпадают!', 'error');
                 return;
             }
             
             try {
                 // Здесь будет логика регистрации
                 console.log('Регистрация:', username, email, password);
-                alert('Регистрация успешна! Теперь войдите в систему.');
-                document.querySelector('[data-tab="login"]').click();
+                showNotification('Регистрация успешна! Теперь войдите в систему.', 'success');
+                
+                setTimeout(() => {
+                    document.querySelector('[data-tab="login"]').click();
+                }, 1500);
             } catch (error) {
-                alert('Ошибка регистрации: ' + error.message);
+                showNotification('Ошибка регистрации: ' + error.message, 'error');
             }
         });
     </script>
