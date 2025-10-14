@@ -580,3 +580,4 @@ class RoomService {
 if (typeof window !== 'undefined') {
     window.RoomService = RoomService;
 }
+// Version: 1760431346
