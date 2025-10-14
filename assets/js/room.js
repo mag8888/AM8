@@ -450,7 +450,7 @@ async function joinRoomIfNeeded() {
         if (!currentRoom || !currentUser) return;
         
         // Проверяем, есть ли пользователь в комнате
-        const isInRoom = currentRoom.players.some(player => player.userId === currentUser.id);
+        const isInRoom = currentRoom.players.some(player => player.userId === currentUser.id || player.username === currentUser.username);
         
         if (!isInRoom) {
             console.log('🏠 Room: Присоединение к комнате');
@@ -859,7 +859,7 @@ function updateReadyStatus() {
     const canBeReady = isDreamComplete && isTokenSelected;
     
     // Проверяем текущее состояние игрока
-    const currentPlayer = currentRoom ? currentRoom.players.find(p => p.userId === currentUser?.id) : null;
+    const currentPlayer = currentRoom ? currentRoom.players.find(p => p.userId === currentUser?.id || p.username === currentUser?.username) : null;
     const isCurrentlyReady = currentPlayer ? currentPlayer.isReady : false;
     
     // Активируем кнопку только если можно быть готовым
@@ -921,7 +921,7 @@ async function toggleReadyStatus() {
         }
         
         // Определяем текущее состояние игрока
-        const currentPlayer = currentRoom.players.find(p => p.userId === currentUser.id);
+        const currentPlayer = currentRoom.players.find(p => p.userId === currentUser.id || p.username === currentUser.username);
         const isCurrentlyReady = currentPlayer ? currentPlayer.isReady : false;
         const newReadyState = !isCurrentlyReady;
         
@@ -1239,12 +1239,13 @@ function updateTokensAvailability() {
     
     // Получаем фишки, занятые другими игроками
     const takenTokens = currentRoom.players
-        .filter(player => player.userId !== currentUser.id && player.token)
+        .filter(player => (player.userId !== currentUser.id && player.username !== currentUser.username) && player.token)
         .map(player => player.token);
     
     // Получаем фишку текущего пользователя
+    // Используем username для поиска, так как userId может быть undefined
     const currentPlayerToken = currentRoom.players
-        .find(player => player.userId === currentUser.id)?.token;
+        .find(player => player.userId === currentUser.id || player.username === currentUser.username)?.token;
     
     // Обновляем визуальное состояние фишек
     const tokenCards = document.querySelectorAll('.token-card');
