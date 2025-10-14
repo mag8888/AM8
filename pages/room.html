@@ -38,8 +38,9 @@
             <header class="room-header">
                 <div class="header-content">
                     <div class="header-left">
-                        <h1 class="room-title" id="room-title">🏠 Комната - Aura Money</h1>
+                        <h1 class="room-title" id="room-title">🏠 Комната</h1>
                         <p class="room-subtitle" id="room-subtitle">Настройте свою мечту и выберите фишку</p>
+                        <p class="username-display" id="room-username-display" style="color: #10b981; font-weight: 600; margin-top: 0.5rem;">Игрок: <span id="room-current-username">Пользователь</span></p>
                     </div>
                     <div class="header-right">
                         <div class="user-info" id="room-user-info">
@@ -195,5 +196,44 @@
     <script src="../assets/js/modules/NotificationService.js"></script>
     <script src="../assets/js/modules/UserModel.js"></script>
     <script src="../assets/js/room.js"></script>
+    
+    <script>
+        // Обновляем отображение юзернейма
+        function updateUsernameDisplay() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                try {
+                    const userData = JSON.parse(currentUser);
+                    const username = userData.username || userData.name || 'Пользователь';
+                    
+                    // Обновляем в заголовке
+                    const usernameSpan = document.getElementById('room-current-username');
+                    if (usernameSpan) {
+                        usernameSpan.textContent = username;
+                    }
+                    
+                    // Обновляем в правом верхнем углу
+                    const userNameElement = document.getElementById('room-user-name');
+                    if (userNameElement) {
+                        userNameElement.textContent = username;
+                    }
+                    
+                    // Обновляем аватар
+                    const userAvatar = document.getElementById('room-user-avatar');
+                    if (userAvatar) {
+                        userAvatar.textContent = username.charAt(0).toUpperCase();
+                    }
+                } catch (error) {
+                    console.error('Ошибка парсинга данных пользователя:', error);
+                }
+            }
+        }
+        
+        // Обновляем юзернейм при загрузке страницы
+        document.addEventListener('DOMContentLoaded', updateUsernameDisplay);
+        
+        // Обновляем при изменении localStorage
+        window.addEventListener('storage', updateUsernameDisplay);
+    </script>
 </body>
 </html>

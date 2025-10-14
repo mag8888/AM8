@@ -15,8 +15,9 @@
         <header class="header">
             <div class="header-content">
                 <div class="header-left">
-                    <h1 class="title">🏠 Игровые комнаты - Aura Money</h1>
+                    <h1 class="title">🏠 Игровые комнаты</h1>
                     <p class="subtitle">Выберите комнату или создайте новую для игры</p>
+                    <p class="username-display" id="username-display" style="color: #10b981; font-weight: 600; margin-top: 0.5rem;">Добро пожаловать, <span id="current-username">Пользователь</span>!</p>
                 </div>
                 <div class="header-right">
                     <div class="user-info" id="user-info">
@@ -335,5 +336,44 @@
     </script>
     
     <script src="../assets/js/rooms.js"></script>
+    
+    <script>
+        // Обновляем отображение юзернейма
+        function updateUsernameDisplay() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                try {
+                    const userData = JSON.parse(currentUser);
+                    const username = userData.username || userData.name || 'Пользователь';
+                    
+                    // Обновляем в заголовке
+                    const usernameSpan = document.getElementById('current-username');
+                    if (usernameSpan) {
+                        usernameSpan.textContent = username;
+                    }
+                    
+                    // Обновляем в правом верхнем углу
+                    const userNameElement = document.getElementById('user-name');
+                    if (userNameElement) {
+                        userNameElement.textContent = username;
+                    }
+                    
+                    // Обновляем аватар
+                    const userAvatar = document.getElementById('user-avatar');
+                    if (userAvatar) {
+                        userAvatar.textContent = username.charAt(0).toUpperCase();
+                    }
+                } catch (error) {
+                    console.error('Ошибка парсинга данных пользователя:', error);
+                }
+            }
+        }
+        
+        // Обновляем юзернейм при загрузке страницы
+        document.addEventListener('DOMContentLoaded', updateUsernameDisplay);
+        
+        // Обновляем при изменении localStorage
+        window.addEventListener('storage', updateUsernameDisplay);
+    </script>
 </body>
 </html>

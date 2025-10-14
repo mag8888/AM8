@@ -263,6 +263,7 @@
         <header class="lobby-header">
             <h1>🎮 Лобби Aura Money</h1>
             <p>Выберите комнату для игры или создайте новую</p>
+            <p class="username-display" id="lobby-username-display" style="color: #10b981; font-weight: 600; margin-top: 0.5rem;">Добро пожаловать, <span id="lobby-current-username">Пользователь</span>!</p>
         </header>
         
         <aside class="stats-panel">
@@ -350,6 +351,31 @@
         setInterval(() => {
             // Здесь будет логика обновления статистики
         }, 5000);
+        
+        // Обновляем отображение юзернейма
+        function updateUsernameDisplay() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                try {
+                    const userData = JSON.parse(currentUser);
+                    const username = userData.username || userData.name || 'Пользователь';
+                    
+                    // Обновляем в заголовке
+                    const usernameSpan = document.getElementById('lobby-current-username');
+                    if (usernameSpan) {
+                        usernameSpan.textContent = username;
+                    }
+                } catch (error) {
+                    console.error('Ошибка парсинга данных пользователя:', error);
+                }
+            }
+        }
+        
+        // Обновляем юзернейм при загрузке страницы
+        document.addEventListener('DOMContentLoaded', updateUsernameDisplay);
+        
+        // Обновляем при изменении localStorage
+        window.addEventListener('storage', updateUsernameDisplay);
     </script>
 </body>
 </html>
