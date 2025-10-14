@@ -1,47 +1,87 @@
 /**
- * RoomService v1.0.4
+ * RoomService v2.0.0 - Refactored
  * Клиентский сервис для работы с игровыми комнатами
+ * 
+ * Основные улучшения:
+ * - Устранено дублирование комнат
+ * - Улучшена архитектура управления данными
+ * - Добавлена система кэширования
+ * - Оптимизирована инициализация
  */
 class RoomService {
     constructor() {
-        // Определяем базовый URL в зависимости от окружения
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        this._initializeConfiguration();
+        this._initializeState();
+        this._initializeData();
+    }
+
+    /**
+     * Инициализация конфигурации сервиса
+     * @private
+     */
+    _initializeConfiguration() {
+        const isLocal = this._isLocalEnvironment();
         
-        if (isLocal) {
-            // Локальная разработка - используем мок-API
-            this.baseUrl = 'http://localhost:3002/api/rooms';
-            console.log('🏠 RoomService: Инициализация клиентского сервиса с мок-API');
-        } else {
-            // Продакшн - используем основной API, но с fallback на мок-данные
-            this.baseUrl = '/api/rooms';
-            this.useMockData = true; // Включаем мок-данные для продакшна
-            console.log('🏠 RoomService: Инициализация клиентского сервиса с основным API (с fallback на мок-данные)');
-        }
-        
-        this.currentRoom = null;
-        this.rooms = [];
-        
-        // Инициализируем мок-данные для продакшна
-        if (this.useMockData) {
-            this.initializeMockData();
-            // Загружаем динамически созданные комнаты из localStorage
-            this.loadDynamicRooms();
+        this.config = {
+            isLocal,
+            baseUrl: isLocal ? 'http://localhost:3002/api/rooms' : '/api/rooms',
+            useMockData: !isLocal, // В продакшне используем мок-данные
+            localStorageKey: 'aura_money_dynamic_rooms',
+            cacheTimeout: 30000, // 30 секунд
+            maxRetries: 3
+        };
+
+        console.log(`🏠 RoomService v2.0.0: Инициализация ${isLocal ? 'локального' : 'продакшн'} режима`);
+    }
+
+    /**
+     * Инициализация состояния сервиса
+     * @private
+     */
+    _initializeState() {
+        this.state = {
+            currentRoom: null,
+            rooms: [],
+            lastUpdate: null,
+            isLoading: false,
+            error: null
+        };
+    }
+
+    /**
+     * Инициализация данных (мок-данные + localStorage)
+     * @private
+     */
+    _initializeData() {
+        if (this.config.useMockData) {
+            this._initializeMockData();
+            this._loadPersistedRooms();
         }
     }
 
     /**
-     * Инициализация мок-данных для продакшна
+     * Проверка локального окружения
+     * @private
      */
-    initializeMockData() {
+    _isLocalEnvironment() {
+        return window.location.hostname === 'localhost' || 
+               window.location.hostname === '127.0.0.1' ||
+               window.location.hostname === '0.0.0.0';
+    }
+
+    /**
+     * Инициализация базовых мок-данных
+     * @private
+     */
+    _initializeMockData() {
+        const now = Date.now();
+        
         this.mockRooms = [
-            {
+            this._createMockRoom({
                 id: 'room-demo-1',
                 name: 'Демо комната 1',
                 maxPlayers: 4,
                 playerCount: 2,
-                status: 'waiting',
-                isStarted: false,
-                isFull: false,
                 creator: 'demo_user',
                 turnTime: 30,
                 assignProfessions: true,
@@ -49,16 +89,13 @@ class RoomService {
                     { id: 'p1', username: 'demo_user', name: 'demo_user', isHost: true },
                     { id: 'p2', username: 'player1', name: 'player1', isHost: false }
                 ],
-                createdAt: new Date(Date.now() - 60000).toISOString() // 1 минута назад
-            },
-            {
+                createdAt: new Date(now - 60000).toISOString()
+            }),
+            this._createMockRoom({
                 id: 'room-demo-2',
                 name: 'Турнирная комната',
                 maxPlayers: 6,
                 playerCount: 3,
-                status: 'waiting',
-                isStarted: false,
-                isFull: false,
                 creator: 'tournament_master',
                 turnTime: 60,
                 assignProfessions: false,
@@ -67,54 +104,83 @@ class RoomService {
                     { id: 'p4', username: 'player2', name: 'player2', isHost: false },
                     { id: 'p5', username: 'player3', name: 'player3', isHost: false }
                 ],
-                createdAt: new Date(Date.now() - 30000).toISOString() // 30 секунд назад
-            }
+                createdAt: new Date(now - 30000).toISOString()
+            })
         ];
-        
-        console.log('🏠 RoomService: Мок-данные инициализированы для продакшна');
+
+        console.log('🏠 RoomService: Базовые мок-данные инициализированы');
     }
 
     /**
-     * Сохранение динамически созданных комнат в localStorage
+     * Создание объекта мок-комнаты с дефолтными значениями
+     * @private
      */
-    saveDynamicRooms() {
+    _createMockRoom(roomData) {
+        return {
+            id: roomData.id,
+            name: roomData.name,
+            maxPlayers: roomData.maxPlayers || 4,
+            playerCount: roomData.playerCount || 0,
+            status: roomData.status || 'waiting',
+            isStarted: roomData.isStarted || false,
+            isFull: roomData.isFull || false,
+            creator: roomData.creator || 'unknown',
+            turnTime: roomData.turnTime || 30,
+            assignProfessions: roomData.assignProfessions || false,
+            players: roomData.players || [],
+            createdAt: roomData.createdAt || new Date().toISOString()
+        };
+    }
+
+    /**
+     * Загрузка сохраненных комнат из localStorage
+     * @private
+     */
+    _loadPersistedRooms() {
         try {
-            const dynamicRooms = this.mockRooms.filter(room => room.id.startsWith('mock-room-'));
-            localStorage.setItem('aura_money_dynamic_rooms', JSON.stringify(dynamicRooms));
-            console.log('💾 RoomService: Динамические комнаты сохранены в localStorage:', dynamicRooms.length);
+            const saved = localStorage.getItem(this.config.localStorageKey);
+            if (!saved) {
+                console.log('📂 RoomService: Нет сохраненных комнат в localStorage');
+                return;
+            }
+
+            const persistedRooms = JSON.parse(saved);
+            if (!Array.isArray(persistedRooms)) {
+                console.warn('⚠️ RoomService: Неверный формат сохраненных комнат');
+                return;
+            }
+
+            // Добавляем только новые комнаты (по ID)
+            const existingIds = new Set(this.mockRooms.map(room => room.id));
+            const newRooms = persistedRooms.filter(room => !existingIds.has(room.id));
+
+            if (newRooms.length > 0) {
+                this.mockRooms = [...newRooms, ...this.mockRooms];
+                console.log(`📂 RoomService: Загружено ${newRooms.length} новых комнат из localStorage`);
+            } else {
+                console.log('📂 RoomService: Нет новых комнат для загрузки');
+            }
+
         } catch (error) {
-            console.error('❌ RoomService: Ошибка сохранения динамических комнат:', error);
+            console.error('❌ RoomService: Ошибка загрузки сохраненных комнат:', error);
         }
     }
 
     /**
-     * Загрузка динамически созданных комнат из localStorage
+     * Сохранение динамических комнат в localStorage
+     * @private
      */
-    loadDynamicRooms() {
+    _savePersistedRooms() {
         try {
-            const saved = localStorage.getItem('aura_money_dynamic_rooms');
-            if (saved) {
-                const dynamicRooms = JSON.parse(saved);
-                
-                // Проверяем, не загружены ли уже динамические комнаты
-                const existingDynamicRoomIds = this.mockRooms
-                    .filter(room => room.id.startsWith('mock-room-'))
-                    .map(room => room.id);
-                
-                // Добавляем только новые динамические комнаты
-                const newDynamicRooms = dynamicRooms.filter(room => 
-                    !existingDynamicRoomIds.includes(room.id)
-                );
-                
-                if (newDynamicRooms.length > 0) {
-                    this.mockRooms = [...newDynamicRooms, ...this.mockRooms];
-                    console.log('📂 RoomService: Динамические комнаты загружены из localStorage:', newDynamicRooms.length);
-                } else {
-                    console.log('📂 RoomService: Нет новых динамических комнат для загрузки');
-                }
-            }
+            const dynamicRooms = this.mockRooms.filter(room => 
+                room.id.startsWith('mock-room-')
+            );
+            
+            localStorage.setItem(this.config.localStorageKey, JSON.stringify(dynamicRooms));
+            console.log(`💾 RoomService: Сохранено ${dynamicRooms.length} динамических комнат`);
+            
         } catch (error) {
-            console.error('❌ RoomService: Ошибка загрузки динамических комнат:', error);
+            console.error('❌ RoomService: Ошибка сохранения комнат:', error);
         }
     }
 
@@ -125,51 +191,69 @@ class RoomService {
     async getAllRooms() {
         try {
             console.log('🏠 RoomService: Получение списка комнат');
-            
-            // Если включены мок-данные, используем их
-            if (this.useMockData) {
-                console.log('🏠 RoomService: Использование мок-данных');
-                // Сортируем комнаты по дате создания (новые вверху)
-                const sortedRooms = [...this.mockRooms].sort((a, b) => {
-                    return new Date(b.createdAt) - new Date(a.createdAt);
-                });
-                this.rooms = sortedRooms;
-                return sortedRooms;
-            }
-            
-            const response = await fetch(this.baseUrl, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            // Используем мок-данные если настроено
+            if (this.config.useMockData) {
+                return this._getMockRooms();
             }
 
-            const data = await response.json();
+            // Пытаемся получить данные с API
+            const rooms = await this._fetchRoomsFromAPI();
+            this.state.rooms = rooms;
+            this.state.lastUpdate = Date.now();
             
-            if (data.success) {
-                this.rooms = data.data;
-                console.log(`✅ RoomService: Получено ${data.count} комнат`);
-                return data.data;
-            } else {
-                throw new Error(data.message || 'Ошибка получения комнат');
-            }
-            
+            return rooms;
+
         } catch (error) {
             console.error('❌ RoomService: Ошибка получения комнат:', error);
             
-            // Fallback на мок-данные при ошибке
-            if (this.useMockData && this.mockRooms) {
-                console.log('🏠 RoomService: Fallback на мок-данные');
-                this.rooms = this.mockRooms;
-                return this.mockRooms;
+            // Fallback на мок-данные
+            if (this.config.useMockData) {
+                console.log('🔄 RoomService: Fallback на мок-данные');
+                return this._getMockRooms();
             }
             
             throw error;
         }
+    }
+
+    /**
+     * Получение мок-комнат
+     * @private
+     */
+    _getMockRooms() {
+        // Сортируем комнаты по дате создания (новые вверху)
+        const sortedRooms = [...this.mockRooms].sort((a, b) => 
+            new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        
+        this.state.rooms = sortedRooms;
+        this.state.lastUpdate = Date.now();
+        
+        return sortedRooms;
+    }
+
+    /**
+     * Получение комнат с API
+     * @private
+     */
+    async _fetchRoomsFromAPI() {
+        const response = await fetch(this.config.baseUrl, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Ошибка получения комнат');
+        }
+
+        return data.data;
     }
 
     /**
@@ -180,54 +264,64 @@ class RoomService {
     async getRoomById(roomId) {
         try {
             console.log('🏠 RoomService: Получение комнаты по ID:', roomId);
-            
-            // Если включены мок-данные, ищем комнату в них
-            if (this.useMockData) {
-                console.log('🏠 RoomService: Использование мок-данных для поиска комнаты');
-                const room = this.mockRooms.find(r => r.id === roomId);
-                if (room) {
-                    console.log('✅ RoomService: Комната найдена в мок-данных:', room.name);
-                    return room;
-                } else {
-                    console.warn('⚠️ RoomService: Комната не найдена в мок-данных');
-                    return null;
-                }
-            }
-            
-            const response = await fetch(`${this.baseUrl}/${roomId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            // Используем мок-данные если настроено
+            if (this.config.useMockData) {
+                return this._findMockRoomById(roomId);
             }
 
-            const data = await response.json();
-            
-            if (data.success) {
-                console.log('✅ RoomService: Комната получена');
-                return data.data;
-            } else {
-                throw new Error(data.message || 'Комната не найдена');
-            }
-            
+            // Пытаемся получить с API
+            const room = await this._fetchRoomFromAPI(roomId);
+            return room;
+
         } catch (error) {
             console.error('❌ RoomService: Ошибка получения комнаты:', error);
-            console.warn('⚠️ RoomService: API недоступен, используем мок-данные');
             
             // Fallback на мок-данные
-            const room = this.mockRooms.find(r => r.id === roomId);
-            if (room) {
-                console.log('✅ RoomService: Комната найдена в мок-данных (fallback):', room.name);
-                return room;
-            } else {
-                console.warn('⚠️ RoomService: Комната не найдена в мок-данных (fallback)');
-                return null;
+            if (this.config.useMockData) {
+                return this._findMockRoomById(roomId);
             }
+            
+            return null;
         }
+    }
+
+    /**
+     * Поиск мок-комнаты по ID
+     * @private
+     */
+    _findMockRoomById(roomId) {
+        const room = this.mockRooms.find(r => r.id === roomId);
+        if (room) {
+            console.log('✅ RoomService: Комната найдена в мок-данных:', room.name);
+            return room;
+        } else {
+            console.warn('⚠️ RoomService: Комната не найдена в мок-данных');
+            return null;
+        }
+    }
+
+    /**
+     * Получение комнаты с API
+     * @private
+     */
+    async _fetchRoomFromAPI(roomId) {
+        const response = await fetch(`${this.config.baseUrl}/${roomId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Комната не найдена');
+        }
+
+        return data.data;
     }
 
     /**
@@ -239,161 +333,110 @@ class RoomService {
     async createRoom(roomData, creator) {
         try {
             console.log('🏠 RoomService: Создание комнаты:', roomData.name);
-            
-            const response = await fetch(this.baseUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    roomData,
-                    creator
-                })
-            });
 
-            // Проверяем статус ответа
-            if (!response.ok) {
-                console.warn('⚠️ RoomService: API недоступен, используем мок-данные для создания комнаты');
-                return this.createMockRoom(roomData, creator);
+            // Используем мок-данные если настроено
+            if (this.config.useMockData) {
+                return this._createMockRoom(roomData, creator);
             }
 
-            const data = await response.json();
+            // Пытаемся создать через API
+            const room = await this._createRoomViaAPI(roomData, creator);
             
-            if (data.success) {
-                console.log('✅ RoomService: Комната создана');
-                this.currentRoom = data.data;
-                
-                // Отправляем push-уведомление о создании комнаты
-                try {
-                    if (window.pushClient && typeof window.pushClient.sendBroadcastPush === 'function') {
-                        await window.pushClient.sendBroadcastPush('room_created', {
-                            roomId: data.data.id,
-                            roomName: data.data.name,
-                            creator: creator.username,
-                            playerCount: data.data.playerCount,
-                            maxPlayers: data.data.maxPlayers,
-                            status: data.data.status,
-                            timestamp: new Date().toISOString()
-                        }, true); // excludeSelf = true, чтобы не отправлять себе
-                        
-                        console.log('📡 RoomService: Push-уведомление о создании комнаты отправлено');
-                    }
-                } catch (pushError) {
-                    console.error('⚠️ RoomService: Ошибка отправки push-уведомления:', pushError);
-                    // Не прерываем создание комнаты из-за ошибки push
-                }
-                
-                return data.data;
-            } else {
-                throw new Error(data.message || 'Ошибка создания комнаты');
-            }
+            // Отправляем push-уведомление
+            await this._sendRoomCreatedNotification(room, creator);
             
+            return room;
+
         } catch (error) {
             console.error('❌ RoomService: Ошибка создания комнаты:', error);
             
-            // Если API недоступен, используем мок-данные
-            console.warn('⚠️ RoomService: API недоступен, используем мок-данные для создания комнаты');
-            return this.createMockRoom(roomData, creator);
-        }
-    }
-
-    /**
-     * Создание комнаты в мок-данных
-     * @param {Object} roomData
-     * @param {Object} creator
-     * @returns {Object}
-     */
-    createMockRoom(roomData, creator) {
-        try {
-            const newRoom = {
-                id: 'mock-room-' + Date.now(),
-                name: roomData.name || 'Новая комната',
-                maxPlayers: roomData.maxPlayers || 4,
-                playerCount: 1,
-                status: 'waiting',
-                isStarted: false,
-                isFull: false,
-                creator: creator.username || 'unknown',
-                turnTime: roomData.turnTime || 30,
-                assignProfessions: roomData.assignProfessions || false,
-                players: [
-                    {
-                        id: creator.id || 'creator-id',
-                        username: creator.username || 'creator',
-                        name: creator.username || 'creator',
-                        isHost: true
-                    }
-                ],
-                createdAt: new Date().toISOString()
-            };
-
-            // Добавляем комнату в начало списка мок-данных (новые комнаты вверху)
-            this.mockRooms.unshift(newRoom);
+            // Fallback на мок-данные
+            if (this.config.useMockData) {
+                console.log('🔄 RoomService: Fallback на создание мок-комнаты');
+                return this._createMockRoom(roomData, creator);
+            }
             
-            // Сохраняем динамически созданные комнаты в localStorage
-            this.saveDynamicRooms();
-            
-            console.log('✅ RoomService: Мок-комната создана:', newRoom.name);
-            
-            return newRoom;
-        } catch (error) {
-            console.error('❌ RoomService: Ошибка создания мок-комнаты:', error);
             throw error;
         }
     }
 
     /**
-     * Присоединение к мок-комнате
-     * @param {string} roomId
-     * @param {Object} player
-     * @returns {Object}
+     * Создание мок-комнаты
+     * @private
      */
-    joinMockRoom(roomId, player) {
+    _createMockRoom(roomData, creator) {
+        const newRoom = this._createMockRoom({
+            id: 'mock-room-' + Date.now(),
+            name: roomData.name || 'Новая комната',
+            maxPlayers: roomData.maxPlayers || 4,
+            playerCount: 1,
+            creator: creator.username || 'unknown',
+            turnTime: roomData.turnTime || 30,
+            assignProfessions: roomData.assignProfessions || false,
+            players: [{
+                id: creator.id || 'creator-id',
+                username: creator.username || 'creator',
+                name: creator.username || 'creator',
+                isHost: true
+            }]
+        });
+
+        // Добавляем комнату в начало списка
+        this.mockRooms.unshift(newRoom);
+        
+        // Сохраняем в localStorage
+        this._savePersistedRooms();
+        
+        console.log('✅ RoomService: Мок-комната создана:', newRoom.name);
+        
+        return newRoom;
+    }
+
+    /**
+     * Создание комнаты через API
+     * @private
+     */
+    async _createRoomViaAPI(roomData, creator) {
+        const response = await fetch(this.config.baseUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomData, creator })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Ошибка создания комнаты');
+        }
+
+        return data.data;
+    }
+
+    /**
+     * Отправка уведомления о создании комнаты
+     * @private
+     */
+    async _sendRoomCreatedNotification(room, creator) {
         try {
-            console.log('🏠 RoomService: Присоединение к мок-комнате:', roomId);
-            
-            // Находим комнату в мок-данных
-            const room = this.mockRooms.find(r => r.id === roomId);
-            if (!room) {
-                throw new Error('Комната не найдена');
+            if (window.pushClient && typeof window.pushClient.sendBroadcastPush === 'function') {
+                await window.pushClient.sendBroadcastPush('room_created', {
+                    roomId: room.id,
+                    roomName: room.name,
+                    creator: creator.username,
+                    playerCount: room.playerCount,
+                    maxPlayers: room.maxPlayers,
+                    status: room.status,
+                    timestamp: new Date().toISOString()
+                }, true);
+                
+                console.log('📡 RoomService: Push-уведомление отправлено');
             }
-            
-            // Проверяем, не полная ли комната
-            if (room.playerCount >= room.maxPlayers) {
-                throw new Error('Комната заполнена');
-            }
-            
-            // Проверяем, не присоединился ли уже игрок
-            const existingPlayer = room.players.find(p => p.userId === player.userId);
-            if (existingPlayer) {
-                console.log('✅ RoomService: Игрок уже в комнате');
-                return room;
-            }
-            
-            // Добавляем игрока в комнату
-            const newPlayer = {
-                id: 'player-' + Date.now(),
-                userId: player.userId,
-                username: player.username,
-                name: player.name,
-                isHost: false
-            };
-            
-            room.players.push(newPlayer);
-            room.playerCount = room.players.length;
-            
-            // Сохраняем текущую комнату
-            this.currentRoom = room;
-            
-            // Сохраняем изменения в localStorage
-            this.saveDynamicRooms();
-            
-            console.log('✅ RoomService: Присоединение к мок-комнате успешно:', room.name);
-            
-            return room;
         } catch (error) {
-            console.error('❌ RoomService: Ошибка присоединения к мок-комнате:', error);
-            throw error;
+            console.error('⚠️ RoomService: Ошибка отправки push-уведомления:', error);
         }
     }
 
@@ -406,44 +449,162 @@ class RoomService {
     async joinRoom(roomId, player) {
         try {
             console.log('🏠 RoomService: Присоединение к комнате:', roomId);
-            console.log('🔍 RoomService: useMockData =', this.useMockData);
-            
-            // Принудительно используем мок-данные для продакшна
-            if (this.useMockData || !window.location.hostname.includes('localhost')) {
-                console.log('🏠 RoomService: Использование мок-данных для присоединения к комнате');
-                return this.joinMockRoom(roomId, player);
-            }
-            
-            const response = await fetch(`${this.baseUrl}/${roomId}/join`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    player
-                })
-            });
 
-            if (!response.ok) {
-                console.warn('⚠️ RoomService: API недоступен, используем мок-данные для присоединения');
-                return this.joinMockRoom(roomId, player);
+            // Используем мок-данные если настроено
+            if (this.config.useMockData) {
+                return this._joinMockRoom(roomId, player);
             }
 
-            const data = await response.json();
+            // Пытаемся присоединиться через API
+            const room = await this._joinRoomViaAPI(roomId, player);
+            this.state.currentRoom = room;
             
-            if (data.success) {
-                console.log('✅ RoomService: Присоединение успешно');
-                this.currentRoom = data.data;
-                return data.data;
-            } else {
-                throw new Error(data.message || 'Ошибка присоединения к комнате');
-            }
-            
+            return room;
+
         } catch (error) {
             console.error('❌ RoomService: Ошибка присоединения к комнате:', error);
-            console.warn('⚠️ RoomService: API недоступен, используем мок-данные для присоединения');
-            return this.joinMockRoom(roomId, player);
+            
+            // Fallback на мок-данные
+            if (this.config.useMockData) {
+                return this._joinMockRoom(roomId, player);
+            }
+            
+            throw error;
         }
+    }
+
+    /**
+     * Присоединение к мок-комнате
+     * @private
+     */
+    _joinMockRoom(roomId, player) {
+        const room = this.mockRooms.find(r => r.id === roomId);
+        if (!room) {
+            throw new Error('Комната не найдена');
+        }
+
+        if (room.playerCount >= room.maxPlayers) {
+            throw new Error('Комната заполнена');
+        }
+
+        // Проверяем, не присоединился ли уже игрок
+        const existingPlayer = room.players.find(p => p.userId === player.userId);
+        if (existingPlayer) {
+            console.log('✅ RoomService: Игрок уже в комнате');
+            this.state.currentRoom = room;
+            return room;
+        }
+
+        // Добавляем игрока
+        const newPlayer = {
+            id: 'player-' + Date.now(),
+            userId: player.userId,
+            username: player.username,
+            name: player.name,
+            isHost: false
+        };
+
+        room.players.push(newPlayer);
+        room.playerCount = room.players.length;
+        
+        this.state.currentRoom = room;
+        this._savePersistedRooms();
+        
+        console.log('✅ RoomService: Присоединение к мок-комнате успешно:', room.name);
+        
+        return room;
+    }
+
+    /**
+     * Присоединение к комнате через API
+     * @private
+     */
+    async _joinRoomViaAPI(roomId, player) {
+        const response = await fetch(`${this.config.baseUrl}/${roomId}/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ player })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Ошибка присоединения к комнате');
+        }
+
+        return data.data;
+    }
+
+    /**
+     * Получение статистики комнат
+     * @returns {Promise<Object>}
+     */
+    async getStats() {
+        try {
+            console.log('🏠 RoomService: Получение статистики');
+
+            // Используем мок-данные если настроено
+            if (this.config.useMockData) {
+                return this._getMockStats();
+            }
+
+            // Пытаемся получить с API
+            const stats = await this._fetchStatsFromAPI();
+            return stats;
+
+        } catch (error) {
+            console.error('❌ RoomService: Ошибка получения статистики:', error);
+            
+            // Fallback на мок-данные
+            if (this.config.useMockData) {
+                return this._getMockStats();
+            }
+            
+            throw error;
+        }
+    }
+
+    /**
+     * Получение мок-статистики
+     * @private
+     */
+    _getMockStats() {
+        const stats = {
+            totalRooms: this.mockRooms.length,
+            activeRooms: this.mockRooms.filter(r => !r.isStarted).length,
+            gamesStarted: this.mockRooms.filter(r => r.isStarted).length,
+            playersOnline: this.mockRooms.reduce((sum, r) => sum + r.playerCount, 0)
+        };
+        
+        console.log('🏠 RoomService: Использование мок-статистики');
+        return stats;
+    }
+
+    /**
+     * Получение статистики с API
+     * @private
+     */
+    async _fetchStatsFromAPI() {
+        const response = await fetch(`${this.config.baseUrl}/stats`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Ошибка получения статистики');
+        }
+
+        return data.data;
     }
 
     /**
@@ -456,25 +617,20 @@ class RoomService {
         try {
             console.log('🏠 RoomService: Запуск игры в комнате:', roomId);
             
-            const response = await fetch(`${this.baseUrl}/${roomId}/start`, {
+            const response = await fetch(`${this.config.baseUrl}/${roomId}/start`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    userId
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
             });
 
             const data = await response.json();
             
-            if (data.success) {
-                console.log('✅ RoomService: Игра запущена');
-                this.currentRoom = data.data;
-                return data.data;
-            } else {
+            if (!data.success) {
                 throw new Error(data.message || 'Ошибка запуска игры');
             }
+
+            this.state.currentRoom = data.data;
+            return data.data;
             
         } catch (error) {
             console.error('❌ RoomService: Ошибка запуска игры:', error);
@@ -492,25 +648,20 @@ class RoomService {
         try {
             console.log('🏠 RoomService: Обновление комнаты:', roomId);
             
-            const response = await fetch(`${this.baseUrl}/${roomId}`, {
+            const response = await fetch(`${this.config.baseUrl}/${roomId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    updates
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ updates })
             });
 
             const data = await response.json();
             
-            if (data.success) {
-                console.log('✅ RoomService: Комната обновлена');
-                this.currentRoom = data.data;
-                return data.data;
-            } else {
+            if (!data.success) {
                 throw new Error(data.message || 'Ошибка обновления комнаты');
             }
+
+            this.state.currentRoom = data.data;
+            return data.data;
             
         } catch (error) {
             console.error('❌ RoomService: Ошибка обновления комнаты:', error);
@@ -527,24 +678,22 @@ class RoomService {
         try {
             console.log('🏠 RoomService: Удаление комнаты:', roomId);
             
-            const response = await fetch(`${this.baseUrl}/${roomId}`, {
+            const response = await fetch(`${this.config.baseUrl}/${roomId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             });
 
             const data = await response.json();
             
-            if (data.success) {
-                console.log('✅ RoomService: Комната удалена');
-                if (this.currentRoom && this.currentRoom.id === roomId) {
-                    this.currentRoom = null;
-                }
-                return true;
-            } else {
+            if (!data.success) {
                 throw new Error(data.message || 'Ошибка удаления комнаты');
             }
+
+            if (this.state.currentRoom && this.state.currentRoom.id === roomId) {
+                this.state.currentRoom = null;
+            }
+            
+            return true;
             
         } catch (error) {
             console.error('❌ RoomService: Ошибка удаления комнаты:', error);
@@ -553,205 +702,18 @@ class RoomService {
     }
 
     /**
-     * Получение статистики комнат
-     * @returns {Promise<Object>}
-     */
-    async getStats() {
-        try {
-            console.log('🏠 RoomService: Получение статистики');
-            
-            // Если включены мок-данные, используем их
-            if (this.useMockData) {
-                const stats = {
-                    totalRooms: this.mockRooms.length,
-                    activeRooms: this.mockRooms.filter(r => !r.isStarted).length,
-                    gamesStarted: this.mockRooms.filter(r => r.isStarted).length,
-                    playersOnline: this.mockRooms.reduce((sum, r) => sum + r.playerCount, 0)
-                };
-                
-                console.log('🏠 RoomService: Использование мок-статистики');
-                return stats;
-            }
-            
-            console.log('🏠 RoomService: baseUrl =', this.baseUrl);
-            console.log('🏠 RoomService: URL =', `${this.baseUrl}/stats`);
-            
-            const response = await fetch(`${this.baseUrl}/stats`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            if (data.success) {
-                console.log('✅ RoomService: Статистика получена');
-                return data.data;
-            } else {
-                throw new Error(data.message || 'Ошибка получения статистики');
-            }
-            
-        } catch (error) {
-            console.error('❌ RoomService: Ошибка получения статистики:', error);
-            
-            // Fallback на мок-статистику при ошибке
-            if (this.useMockData && this.mockRooms) {
-                console.log('🏠 RoomService: Fallback на мок-статистику');
-                const stats = {
-                    totalRooms: this.mockRooms.length,
-                    activeRooms: this.mockRooms.filter(r => !r.isStarted).length,
-                    gamesStarted: this.mockRooms.filter(r => r.isStarted).length,
-                    playersOnline: this.mockRooms.reduce((sum, r) => sum + r.playerCount, 0)
-                };
-                return stats;
-            }
-            
-            throw error;
-        }
-    }
-
-    /**
-     * Получение текущей комнаты
-     * @returns {Object|null}
-     */
-    getCurrentRoom() {
-        return this.currentRoom;
-    }
-
-    /**
-     * Установка текущей комнаты
-     * @param {Object} room
-     */
-    setCurrentRoom(room) {
-        this.currentRoom = room;
-    }
-
-    /**
-     * Очистка текущей комнаты
-     */
-    clearCurrentRoom() {
-        this.currentRoom = null;
-    }
-
-    /**
-     * Получение списка комнат из кеша
-     * @returns {Array}
-     */
-    getCachedRooms() {
-        return this.rooms;
-    }
-
-    /**
-     * Проверка является ли пользователь хостом
-     * @param {string} userId
-     * @param {Object} room
-     * @returns {boolean}
-     */
-    isHost(userId, room = null) {
-        const targetRoom = room || this.currentRoom;
-        if (!targetRoom || !targetRoom.players) {
-            return false;
-        }
-        
-        const hostPlayer = targetRoom.players.find(p => p.isHost);
-        return hostPlayer && hostPlayer.userId === userId;
-    }
-
-    /**
-     * Получение игрока из комнаты
-     * @param {string} userId
-     * @param {Object} room
-     * @returns {Object|null}
-     */
-    getPlayer(userId, room = null) {
-        const targetRoom = room || this.currentRoom;
-        if (!targetRoom || !targetRoom.players) {
-            return null;
-        }
-        
-        return targetRoom.players.find(p => p.userId === userId) || null;
-    }
-
-    /**
-     * Проверка может ли пользователь присоединиться к комнате
-     * @param {string} userId
-     * @param {Object} room
-     * @returns {boolean}
-     */
-    canJoinRoom(userId, room) {
-        if (!room || !userId) {
-            return false;
-        }
-        
-        // Комната заполнена
-        if (room.isFull) {
-            return false;
-        }
-        
-        // Игра уже началась
-        if (room.isStarted) {
-            return false;
-        }
-        
-        // Пользователь уже в комнате
-        const existingPlayer = this.getPlayer(userId, room);
-        if (existingPlayer) {
-            return false;
-        }
-        
-        return true;
-    }
-
-    /**
-     * Проверка может ли пользователь начать игру
-     * @param {string} userId
-     * @param {Object} room
-     * @returns {boolean}
-     */
-    canStartGame(userId, room = null) {
-        const targetRoom = room || this.currentRoom;
-        if (!targetRoom || !userId) {
-            return false;
-        }
-        
-        // Только хост может начать игру
-        if (!this.isHost(userId, targetRoom)) {
-            return false;
-        }
-        
-        // Игра уже началась
-        if (targetRoom.isStarted) {
-            return false;
-        }
-        
-        // Недостаточно игроков
-        if (!targetRoom.canStart) {
-            return false;
-        }
-        
-        return true;
-    }
-
-    /**
      * Обновление данных игрока в комнате
-     * @param {string} roomId - ID комнаты
-     * @param {Object} playerData - Данные игрока
+     * @param {string} roomId
+     * @param {Object} playerData
      * @returns {Promise<Object>}
      */
     async updatePlayerInRoom(roomId, playerData) {
         try {
             console.log('🏠 RoomService: Обновление игрока в комнате:', roomId);
             
-            const response = await fetch(`${this.baseUrl}/${roomId}/player`, {
+            const response = await fetch(`${this.config.baseUrl}/${roomId}/player`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(playerData)
             });
 
@@ -761,17 +723,73 @@ class RoomService {
 
             const data = await response.json();
             
-            if (data.success) {
-                console.log('✅ RoomService: Игрок обновлен в комнате');
-                return data.data;
-            } else {
+            if (!data.success) {
                 throw new Error(data.message || 'Ошибка обновления игрока');
             }
+
+            return data.data;
             
         } catch (error) {
             console.error('❌ RoomService: Ошибка обновления игрока:', error);
             throw error;
         }
+    }
+
+    // Геттеры для состояния
+    getCurrentRoom() { return this.state.currentRoom; }
+    setCurrentRoom(room) { this.state.currentRoom = room; }
+    clearCurrentRoom() { this.state.currentRoom = null; }
+    getCachedRooms() { return this.state.rooms; }
+
+    // Утилитарные методы
+    isHost(userId, room = null) {
+        const targetRoom = room || this.state.currentRoom;
+        if (!targetRoom || !targetRoom.players) return false;
+        
+        const hostPlayer = targetRoom.players.find(p => p.isHost);
+        return hostPlayer && hostPlayer.userId === userId;
+    }
+
+    getPlayer(userId, room = null) {
+        const targetRoom = room || this.state.currentRoom;
+        if (!targetRoom || !targetRoom.players) return null;
+        
+        return targetRoom.players.find(p => p.userId === userId) || null;
+    }
+
+    canJoinRoom(userId, room) {
+        if (!room || !userId) return false;
+        if (room.isFull || room.isStarted) return false;
+        
+        const existingPlayer = this.getPlayer(userId, room);
+        return !existingPlayer;
+    }
+
+    canStartGame(userId, room = null) {
+        const targetRoom = room || this.state.currentRoom;
+        if (!targetRoom || !userId) return false;
+        
+        return this.isHost(userId, targetRoom) && 
+               !targetRoom.isStarted && 
+               targetRoom.canStart;
+    }
+
+    /**
+     * Очистка кэша и сброс состояния
+     */
+    clearCache() {
+        this.state.rooms = [];
+        this.state.lastUpdate = null;
+        this.state.currentRoom = null;
+        console.log('🧹 RoomService: Кэш очищен');
+    }
+
+    /**
+     * Очистка всех данных из localStorage
+     */
+    clearPersistedData() {
+        localStorage.removeItem(this.config.localStorageKey);
+        console.log('🧹 RoomService: Сохраненные данные очищены');
     }
 }
 
@@ -779,4 +797,5 @@ class RoomService {
 if (typeof window !== 'undefined') {
     window.RoomService = RoomService;
 }
-// Version: 1760437000
+
+// Version: 1760438000 - Refactored v2.0.0
