@@ -336,11 +336,8 @@
     
     <script>
         function createRoom() {
-            const roomName = prompt('Введите название комнаты:');
-            if (roomName) {
-                alert(`Комната "${roomName}" создана!`);
-                // Здесь будет логика создания комнаты
-            }
+            // Переходим на страницу создания комнаты
+            window.location.href = 'room.html';
         }
         
         function joinRoom(roomId) {

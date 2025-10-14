@@ -760,12 +760,8 @@
                     
                     // Перенаправляем в лобби через 1.5 секунды
                     setTimeout(() => {
-                        if (window.router && window.router.navigate) {
-                            window.router.navigate('/lobby');
-                        } else {
-                            // Fallback - прямой переход
-                            window.location.href = window.location.origin + '/lobby';
-                        }
+                        // Прямая загрузка страницы лобби
+                        window.location.href = 'pages/lobby.html';
                     }, 1500);
                 });
             }
@@ -800,12 +796,8 @@
                     
                     // Перенаправляем в лобби через 1.5 секунды
                     setTimeout(() => {
-                        if (window.router && window.router.navigate) {
-                            window.router.navigate('/lobby');
-                        } else {
-                            // Fallback - прямой переход
-                            window.location.href = window.location.origin + '/lobby';
-                        }
+                        // Прямая загрузка страницы лобби
+                        window.location.href = 'pages/lobby.html';
                     }, 1500);
                 });
             }
