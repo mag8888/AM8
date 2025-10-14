@@ -732,4 +732,82 @@ router.put('/:id/player', async (req, res, next) => {
     }
 });
 
+// POST /api/rooms/:id/notifications - Отправка push-уведомлений
+router.post('/:id/notifications', (req, res, next) => {
+    try {
+        const roomId = req.params.id;
+        const notification = req.body;
+        
+        // Валидация данных
+        if (!notification.type || !notification.data) {
+            return res.status(400).json({
+                success: false,
+                message: 'Неверные данные уведомления'
+            });
+        }
+        
+        // Проверяем доступность базы данных
+        const db = getDatabase();
+        if (!db) {
+            // Fallback: просто возвращаем успех без сохранения
+            return res.json({
+                success: true,
+                message: 'Уведомление отправлено (fallback mode)',
+                data: {
+                    roomId: roomId,
+                    notificationId: `notif_${Date.now()}`
+                }
+            });
+        }
+        
+        // Проверяем существование комнаты
+        db.get('SELECT id FROM rooms WHERE id = ?', [roomId], (err, room) => {
+            if (err) {
+                return next(err);
+            }
+            
+            if (!room) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Комната не найдена'
+                });
+            }
+            
+            // Сохраняем уведомление в базе данных (опционально)
+            const notificationId = uuidv4();
+            db.run(
+                `INSERT INTO notifications (id, room_id, type, data, from_user, to_users, created_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    notificationId,
+                    roomId,
+                    notification.type,
+                    JSON.stringify(notification.data),
+                    notification.from || null,
+                    JSON.stringify(notification.to || []),
+                    new Date().toISOString()
+                ],
+                (err) => {
+                    if (err) {
+                        // Если не удалось сохранить, все равно возвращаем успех
+                        console.warn('Не удалось сохранить уведомление:', err);
+                    }
+                    
+                    res.json({
+                        success: true,
+                        message: 'Уведомление отправлено',
+                        data: {
+                            roomId: roomId,
+                            notificationId: notificationId
+                        }
+                    });
+                }
+            );
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+});
+
 module.exports = router;

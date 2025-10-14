@@ -107,6 +107,19 @@ function createTables() {
                 total_turns INTEGER DEFAULT 0,
                 FOREIGN KEY (room_id) REFERENCES rooms (id),
                 FOREIGN KEY (winner_id) REFERENCES users (id)
+            )`,
+            
+            // Таблица уведомлений
+            `CREATE TABLE IF NOT EXISTS notifications (
+                id TEXT PRIMARY KEY,
+                room_id TEXT NOT NULL,
+                type TEXT NOT NULL,
+                data TEXT,
+                from_user TEXT,
+                to_users TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (room_id) REFERENCES rooms (id) ON DELETE CASCADE,
+                FOREIGN KEY (from_user) REFERENCES users (id)
             )`
         ];
 
