@@ -84,7 +84,18 @@ if (process.env.NODE_ENV === 'production') {
         }
         
         // Для всех остальных запросов отдаем index.html (SPA)
-        res.sendFile(path.join(__dirname, 'index.html'));
+        const indexPath = path.join(__dirname, 'index.html');
+        console.log('🔍 Ищем index.html по пути:', indexPath);
+        res.sendFile(indexPath, (err) => {
+            if (err) {
+                console.error('❌ Ошибка отправки index.html:', err);
+                res.status(500).json({
+                    error: 'Internal server error',
+                    message: 'Failed to serve index.html',
+                    path: indexPath
+                });
+            }
+        });
     });
 } else {
     // В development режиме просто отдаем index.html
