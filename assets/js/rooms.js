@@ -198,11 +198,8 @@ function setupEventListeners() {
     
     if (backBtn) {
         backBtn.addEventListener('click', () => {
-            if (router) {
-                router.navigate('/auth');
-            } else {
-                window.location.href = '/auth';
-            }
+            // На отдельной странице используем прямую навигацию
+            window.location.href = '/auth';
         });
     }
     
@@ -900,11 +897,11 @@ function showNotification(message, type = 'info') {
  */
 function getCurrentUser() {
     try {
-        const storedUser = localStorage.getItem('aura_money_user');
-        if (!storedUser) {
-            return null;
-        }
-        return JSON.parse(storedUser);
+        // Поддерживаем оба формата хранения пользователя
+        const raw = localStorage.getItem('currentUser') || localStorage.getItem('aura_money_user');
+        if (!raw) return null;
+        const user = JSON.parse(raw);
+        return user;
     } catch (error) {
         console.error('❌ Rooms: Ошибка получения пользователя:', error);
         return null;
@@ -926,8 +923,8 @@ function escapeHtml(text) {
 function displayUserInfo() {
     try {
         // Пытаемся получить информацию о пользователе из localStorage
-        const storedUser = localStorage.getItem('aura_money_user');
-        const storedToken = localStorage.getItem('aura_money_token');
+        const storedUser = localStorage.getItem('currentUser') || localStorage.getItem('aura_money_user');
+        const storedToken = localStorage.getItem('aura_money_token') || 'ok'; // для статического режима токен может отсутствовать
         
         if (storedUser && storedToken) {
             const user = JSON.parse(storedUser);
@@ -936,11 +933,12 @@ function displayUserInfo() {
             
             if (userAvatar && userName) {
                 // Устанавливаем первую букву имени пользователя
-                const firstLetter = user.username ? user.username.charAt(0).toUpperCase() : 'U';
+                const username = user.username || user.name || user.email || 'User';
+                const firstLetter = username.charAt(0).toUpperCase();
                 userAvatar.textContent = firstLetter;
                 
                 // Устанавливаем имя пользователя
-                userName.textContent = user.username || 'Пользователь';
+                userName.textContent = username || 'Пользователь';
                 
                 console.log('✅ Rooms: Информация о пользователе отображена:', user.username);
             }
