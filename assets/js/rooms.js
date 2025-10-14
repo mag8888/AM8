@@ -12,6 +12,12 @@ let selectedRoom = null;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🏠 Rooms: Инициализация страницы комнат');
     
+    // Очищаем localStorage от старых данных комнат
+    if (localStorage.getItem('aura_money_dynamic_rooms')) {
+        console.log('🧹 Очищаем localStorage от старых данных комнат');
+        localStorage.removeItem('aura_money_dynamic_rooms');
+    }
+    
     initializeServices();
     setupEventListeners();
     loadRooms();
