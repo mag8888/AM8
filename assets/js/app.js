@@ -1,872 +1,482 @@
 /**
- * Главное приложение Aura Money v1.0.0
- * Управление навигацией и инициализация компонентов
+ * App v2.0.0 - Главное приложение Aura Money
+ * 
+ * Особенности:
+ * - Модульная архитектура
+ * - Dependency Injection
+ * - Улучшенная обработка ошибок
+ * - Централизованное логирование
+ * - Конфигурируемость
  */
-
 class App {
     constructor() {
-        this.router = null;
-        this.boardLayout = null;
-        this.eventBus = null;
-        this.gameState = null;
-        this.currentUser = null;
-        this.turnService = null;
-        this.turnController = null;
-        this.playerTokenRenderer = null;
-        this.roomApi = null;
+        this.logger = window.logger;
+        this.errorHandler = window.errorHandler;
+        this.config = window.config;
         
-        console.log('🚀 App: Инициализация приложения');
-        this.init();
+        this.modules = new Map();
+        this.services = new Map();
+        this.isInitialized = false;
+        
+        this._initializeCore();
+        this._setupGlobalErrorHandling();
     }
 
     /**
-     * Инициализация приложения
+     * Инициализация ядра приложения
+     * @private
+     */
+    _initializeCore() {
+        this.logger?.info('Инициализация приложения Aura Money v2.0.0', null, 'App');
+        
+        // Создаем основные сервисы
+        this.services.set('eventBus', new window.EventBus(this.logger, this.errorHandler));
+        this.services.set('router', new window.Router());
+        
+        this.logger?.info('Основные сервисы созданы', {
+            services: Array.from(this.services.keys())
+        }, 'App');
+    }
+
+    /**
+     * Настройка глобальной обработки ошибок
+     * @private
+     */
+    _setupGlobalErrorHandling() {
+        // Обработка ошибок инициализации
+        window.addEventListener('error', (event) => {
+            this.errorHandler?.handleError({
+                type: 'APP_ERROR',
+                message: 'Global error in application',
+                error: event.error,
+                context: 'App',
+                filename: event.filename,
+                lineno: event.lineno
+            });
+        });
+
+        // Обработка необработанных промисов
+        window.addEventListener('unhandledrejection', (event) => {
+            this.errorHandler?.handleError({
+                type: 'PROMISE_ERROR',
+                message: 'Unhandled promise rejection',
+                error: event.reason,
+                context: 'App'
+            });
+        });
+    }
+
+    /**
+     * Основная инициализация приложения
      */
     async init() {
+        if (this.isInitialized) {
+            this.logger?.warn('Приложение уже инициализировано', null, 'App');
+            return;
+        }
+
         try {
-        // Инициализируем компоненты игры
-        this.initGameComponents();
-        
-        // Инициализируем роутер
-        this.initRouter();
-            
-            // Настраиваем навигацию
-            this.setupNavigation();
-            
-            // Проверяем авторизацию
-            this.checkAuthentication();
-            
-            console.log('✅ App: Приложение инициализировано');
+            this.logger?.group('Инициализация приложения', () => {
+                this._initializeServices();
+                this._initializeModules();
+                this._setupNavigation();
+                this._checkAuthentication();
+                this._setupPerformanceMonitoring();
+            });
+
+            this.isInitialized = true;
+            this.logger?.info('Приложение успешно инициализировано', {
+                modules: Array.from(this.modules.keys()),
+                services: Array.from(this.services.keys())
+            }, 'App');
+
+            // Уведомляем о готовности приложения
+            this.getEventBus().emit('app:ready', {
+                timestamp: Date.now(),
+                modules: Array.from(this.modules.keys()),
+                config: this.config?.getEnvironmentInfo()
+            });
+
         } catch (error) {
-            console.error('❌ App: Ошибка инициализации:', error);
+            this.errorHandler?.handleError({
+                type: 'APP_ERROR',
+                message: 'Failed to initialize application',
+                error,
+                context: 'App'
+            });
+            throw error;
         }
     }
 
     /**
-     * Инициализация роутера
+     * Инициализация сервисов
+     * @private
      */
-    initRouter() {
-        console.log('🗺️ App: Инициализация роутера');
+    _initializeServices() {
+        this.logger?.info('Инициализация сервисов', null, 'App');
         
-        this.router = new window.Router();
+        // Инициализация роутера
+        const router = this.getRouter();
+        router.route('/', () => this._handleHomeRoute(), 'Главная');
+        router.route('/auth', () => this._handleAuthRoute(), 'Авторизация');
+        router.route('/lobby', () => this._handleLobbyRoute(), 'Лобби');
+        router.route('/rooms', () => this._handleRoomsRoute(), 'Комнаты');
+        router.route('/game', (state) => this._handleGameRoute(state), 'Игра');
+        router.defaultRoute = '/';
         
-        // Регистрируем маршруты
-        this.router.route('/', () => {
-            this.showPage('game-page');
-            // Навигация удалена
-            this.updateNavigation('/');
-            // Автоматически выбираем комнату при загрузке главной страницы
-            this.autoSelectRoom();
-        }, 'Главная');
-        
-        this.router.route('/auth', () => {
-            this.showPage('auth-page');
-            // Навигация удалена
-            this.updateNavigation('/auth');
-        }, 'Авторизация');
-        
-        this.router.route('/lobby', () => {
-            // Перенаправляем на отдельную страницу лобби
-            window.location.href = 'pages/lobby.html';
-        }, 'Лобби');
-        
-        this.router.route('/rooms', () => {
-            // Перенаправляем на отдельную страницу комнат
-            window.location.href = 'pages/rooms.html';
-        }, 'Комнаты');
-        
-        this.router.route('/game', (state) => {
-            this.showPage('game-page');
-            // Навигация удалена
-            this.updateNavigation('/');
-            this.handleGameRoute(state);
-        }, 'Игра');
-        
-        // Устанавливаем маршрут по умолчанию
-        this.router.defaultRoute = '/';
-        
-        // Сохраняем роутер в глобальной области
-        window.router = this.router;
-        
-        console.log('✅ App: Роутер инициализирован');
+        this.logger?.debug('Роутер настроен', {
+            routes: router.getRoutes?.() || 'routes info not available'
+        }, 'App');
     }
 
     /**
-     * Инициализация игровых компонентов
+     * Инициализация модулей
+     * @private
      */
-    initGameComponents() {
-        console.log('🎮 App: Инициализация игровых компонентов');
+    _initializeModules() {
+        this.logger?.info('Инициализация модулей', null, 'App');
         
-        // Скрываем навигацию для игровой страницы
-        // Навигация удалена
-        
-        try {
-            // Создаем EventBus
-            this.eventBus = new window.EventBus();
-            console.log('✅ EventBus создан');
-            
-            // Создаем GameState
-            this.gameState = new window.GameState(this.eventBus);
-            console.log('✅ GameState создан');
-            
-            // Создаем RoomApi
-            this.roomApi = new window.RoomApi();
-            console.log('✅ RoomApi создан');
-            
-            // Создаем PushClient
-            this.pushClient = new window.PushClient({
-                gameState: this.gameState,
-                eventBus: this.eventBus
-            });
-            console.log('📱 App: PushClient создан');
-            
-            // Создаем DiceService
-            this.diceService = new window.DiceService({
-                gameState: this.gameState,
-                eventBus: this.eventBus
-            });
-            console.log('🎲 App: DiceService создан');
-            
-            // Создаем MovementService
-            this.movementService = new window.MovementService({
-                gameState: this.gameState,
-                eventBus: this.eventBus
-            });
-            console.log('🚀 App: MovementService создан');
-            
-            // Создаем TurnService
-            this.turnService = new window.TurnService({
-                state: this.gameState,
-                roomApi: this.roomApi,
-                diceService: this.diceService,
-                movementService: this.movementService
-            });
-            console.log('✅ TurnService создан');
-            
-            // Создаем PlayerTokenRenderer
-            this.playerTokenRenderer = new window.PlayerTokenRenderer({
-                gameState: this.gameState,
-                eventBus: this.eventBus,
-                movementService: this.movementService
-            });
-            console.log('✅ PlayerTokenRenderer создан');
-            
-            // Создаем TurnController
-            try {
-                this.turnController = new window.TurnController(
-                    this.turnService,
-                    this.playerTokenRenderer
-                );
-                console.log('🎮 App: TurnController создан:', this.turnController);
-            } catch (error) {
-                console.error('❌ App: Ошибка создания TurnController:', error);
-                this.turnController = null;
-            }
-            
-        // Создаем ModalService
-        this.modalService = new window.ModalService({
-            eventBus: this.eventBus
-        });
-        console.log('🪟 App: ModalService создан');
-        
-        // Создаем BalanceManager
-        this.balanceManager = new window.BalanceManager({
-            gameState: this.gameState
-        });
-        console.log('💰 App: BalanceManager создан');
-        
-        // Создаем PlayersPanel
-        this.playersPanel = new window.PlayersPanel({
-            gameState: this.gameState,
-            eventBus: this.eventBus,
-            containerId: 'players-panel'
-        });
-        console.log('👥 App: PlayersPanel создан');
-        
-        // Создаем PlayerTokens
-        this.playerTokens = new window.PlayerTokens({
-            gameState: this.gameState,
-            eventBus: this.eventBus,
-            outerTrackSelector: '#outer-track',
-            innerTrackSelector: '#inner-track'
-        });
-        console.log('🎯 App: PlayerTokens создан');
-        
-        // Создаем CellInteractionService
-        this.cellInteractionService = new window.CellInteractionService({
-            gameState: this.gameState,
-            eventBus: this.eventBus,
-            balanceManager: this.balanceManager
-        });
-        console.log('🎯 App: CellInteractionService создан');
-        
-        // Сохраняем компоненты в глобальной области
-        window.balanceManager = this.balanceManager;
-        window.pushClient = this.pushClient;
-            
-            // Инициализируем BoardLayout
-            this.boardLayout = new window.BoardLayout({
+        // Инициализируем модули по необходимости
+        this._loadGameModules();
+        this._loadUIModules();
+    }
+
+    /**
+     * Загрузка игровых модулей
+     * @private
+     */
+    _loadGameModules() {
+        if (window.GameState) {
+            const gameState = new window.GameState(this.getEventBus());
+            this.modules.set('gameState', gameState);
+            this.logger?.debug('GameState модуль загружен', null, 'App');
+        }
+
+        if (window.BoardLayout) {
+            const boardLayout = new window.BoardLayout({
                 outerTrackSelector: '#outer-track',
                 innerTrackSelector: '#inner-track',
-                gameState: this.gameState,
-                eventBus: this.eventBus
+                gameState: this.modules.get('gameState'),
+                eventBus: this.getEventBus()
             });
-            
-            console.log('✅ App: Игровые компоненты инициализированы');
-            
-            // Добавляем тестовых игроков для демонстрации
-            this.gameState.addTestPlayers();
-            
-            // Настраиваем обработчики кликов для главной страницы
-            this.setupMainPageHandlers();
-            
-            // Инициализируем центральный кубик
-            this.initCenterDice();
-        } catch (error) {
-            console.error('❌ App: Ошибка инициализации игровых компонентов:', error);
-            // Продолжаем работу без игровых компонентов
-            this.eventBus = null;
-            this.gameState = null;
-            this.boardLayout = null;
-            
-            // Настраиваем обработчики кликов для главной страницы даже без игровых компонентов
-            this.setupMainPageHandlers();
-            
-            // Инициализируем центральный кубик даже при ошибке
-            this.initCenterDice();
-            this.turnService = null;
-            this.turnController = null;
-            this.playerTokenRenderer = null;
-            this.roomApi = null;
+            this.modules.set('boardLayout', boardLayout);
+            this.logger?.debug('BoardLayout модуль загружен', null, 'App');
+        }
+    }
+
+    /**
+     * Загрузка UI модулей
+     * @private
+     */
+    _loadUIModules() {
+        // Загружаем модули по необходимости
+        if (window.UserModel) {
+            const userModel = new window.UserModel();
+            this.modules.set('userModel', userModel);
+            this.logger?.debug('UserModel модуль загружен', null, 'App');
         }
     }
 
     /**
      * Настройка навигации
+     * @private
      */
-    setupNavigation() {
-        console.log('🧭 App: Настройка навигации');
+    _setupNavigation() {
+        this.logger?.info('Настройка навигации', null, 'App');
         
-        // Обработчики для навигационных ссылок
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const route = link.dataset.route;
-                if (route && this.router) {
-                    this.router.navigate(route);
-                }
-            });
+        // Обработчики навигации
+        this.getEventBus().on('navigate:to', (data) => {
+            this.getRouter().navigate(data.route, data.state);
+        }, { priority: 10 });
+
+        this.getEventBus().on('navigate:back', () => {
+            window.history.back();
         });
-        
-        // Обработчик для кнопки авторизации
-        const authButton = document.getElementById('auth-button');
-        if (authButton) {
-            authButton.addEventListener('click', () => {
-                if (this.router) {
-                    this.router.navigate('/auth');
-                } else {
-                    window.location.href = 'auth/';
-                }
-            });
-        }
-        
-        // Обработчики для кнопок на главной странице
-        const selectRoomBtn = document.querySelector('button[onclick*="router.navigate(\'/rooms\')"]');
-        if (selectRoomBtn) {
-            selectRoomBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (this.router) {
-                    this.router.navigate('/rooms');
-                } else {
-                    window.location.href = 'pages/rooms.html';
-                }
-            });
-        }
-        
-        const authBtnMain = document.querySelector('button[onclick*="router.navigate(\'/auth\')"]');
-        if (authBtnMain) {
-            authBtnMain.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (this.router) {
-                    this.router.navigate('/auth');
-                } else {
-                    window.location.href = 'auth/';
-                }
-            });
-        }
-        
-        // Обработчик для перехода в лобби
-        const lobbyBtn = document.querySelector('button[onclick*="router.navigate(\'/lobby\')"]');
-        if (lobbyBtn) {
-            lobbyBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (this.router) {
-                    this.router.navigate('/lobby');
-                } else {
-                    window.location.href = 'pages/lobby.html';
-                }
-            });
-        }
-        
-        console.log('✅ App: Навигация настроена');
+
+        this.getEventBus().on('navigate:forward', () => {
+            window.history.forward();
+        });
     }
 
     /**
      * Проверка авторизации
+     * @private
      */
-    checkAuthentication() {
-        console.log('🔐 App: Проверка авторизации');
+    _checkAuthentication() {
+        this.logger?.info('Проверка авторизации', null, 'App');
         
         try {
-            // Проверяем наличие данных пользователя в localStorage
-            const userData = localStorage.getItem('currentUser') || localStorage.getItem('aura_money_user');
+            const userData = this._getUserData();
+            
             if (userData) {
-                try {
-                    this.currentUser = JSON.parse(userData);
-                    this.updateUserInterface();
-                    console.log('👤 App: Пользователь авторизован:', this.currentUser.username);
-                    
-                    // Если пользователь авторизован и находится на главной странице - редиректим в лобби
-                    if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
-                        console.log('🔄 App: Перенаправление авторизованного пользователя в лобби');
-                        this.router.navigate('/lobby');
-                    }
-                } catch (parseError) {
-                    console.error('❌ App: Ошибка парсинга данных пользователя:', parseError);
-                    console.log('👤 App: Пользователь не авторизован (ошибка парсинга)');
-                    
-                    // Если пользователь не авторизован и находится на главной странице - редиректим на авторизацию
-                    if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
-                        console.log('🔄 App: Перенаправление неавторизованного пользователя на авторизацию');
-                        this.router.navigate('/auth');
-                    }
+                this.currentUser = userData;
+                this._updateUserInterface();
+                
+                this.logger?.info('Пользователь авторизован', {
+                    username: userData.username
+                }, 'App');
+                
+                // Перенаправляем авторизованного пользователя
+                if (this._shouldRedirectAuthenticated()) {
+                    this.getRouter().navigate('/lobby');
                 }
             } else {
-                console.log('👤 App: Пользователь не авторизован');
+                this.logger?.info('Пользователь не авторизован', null, 'App');
                 
-                // Если пользователь не авторизован и находится на главной странице - редиректим на авторизацию
-                if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
-                    console.log('🔄 App: Перенаправление неавторизованного пользователя на авторизацию');
-                    this.router.navigate('/auth');
+                // Перенаправляем неавторизованного пользователя
+                if (this._shouldRedirectUnauthenticated()) {
+                    this.getRouter().navigate('/auth');
                 }
             }
         } catch (error) {
-            console.error('❌ App: Ошибка проверки авторизации:', error);
+            this.errorHandler?.handleError({
+                type: 'AUTH_ERROR',
+                message: 'Authentication check failed',
+                error,
+                context: 'App'
+            });
         }
+    }
+
+    /**
+     * Получение данных пользователя
+     * @returns {Object|null}
+     * @private
+     */
+    _getUserData() {
+        const userData = localStorage.getItem('currentUser') || 
+                        localStorage.getItem('aura_money_user');
+        
+        if (userData) {
+            try {
+                return JSON.parse(userData);
+            } catch (parseError) {
+                this.logger?.warn('Ошибка парсинга данных пользователя', parseError, 'App');
+                return null;
+            }
+        }
+        
+        return null;
     }
 
     /**
      * Обновление интерфейса пользователя
+     * @private
      */
-    updateUserInterface() {
-        const userInfo = document.getElementById('user-info');
-        const userAvatar = document.getElementById('user-avatar');
-        const userName = document.getElementById('user-name');
-        const authButton = document.getElementById('auth-button');
+    _updateUserInterface() {
+        if (!this.currentUser) return;
         
-        if (this.currentUser) {
-            // Показываем информацию о пользователе
-            if (userInfo) userInfo.style.display = 'flex';
-            if (userAvatar) userAvatar.textContent = this.currentUser.name?.charAt(0).toUpperCase() || 'U';
-            if (userName) userName.textContent = this.currentUser.name || this.currentUser.username || 'Пользователь';
-            
-            // Меняем кнопку на "Выйти"
-            if (authButton) {
-                authButton.textContent = 'Выйти';
-                authButton.onclick = () => this.logout();
-            }
-        } else {
-            // Скрываем информацию о пользователе
-            if (userInfo) userInfo.style.display = 'none';
-            
-            // Возвращаем кнопку "Войти"
-            if (authButton) {
-                authButton.textContent = 'Войти';
-                authButton.onclick = () => this.router.navigate('/auth');
-            }
+        const usernameElement = document.querySelector('.username-display');
+        if (usernameElement) {
+            usernameElement.textContent = this.currentUser.username;
         }
+        
+        // Уведомляем другие модули об обновлении пользователя
+        this.getEventBus().emit('user:updated', this.currentUser);
     }
 
     /**
-     * Выход из системы
+     * Проверка необходимости перенаправления авторизованного пользователя
+     * @returns {boolean}
+     * @private
      */
-    logout() {
-        console.log('🚪 App: Выход из системы');
+    _shouldRedirectAuthenticated() {
+        const currentPath = window.location.pathname;
+        const isOnGameBoard = window.location.hash.includes('game');
         
-        // Очищаем данные пользователя
-        localStorage.removeItem('aura_money_user');
-        localStorage.removeItem('aura_money_token');
+        // Не перенаправляем, если мы на игровой доске
+        if (isOnGameBoard) {
+            return false;
+        }
         
-        this.currentUser = null;
-        this.updateUserInterface();
-        
-        // Переходим на главную страницу
-        this.router.navigate('/');
-        
-        // Показываем уведомление
-        this.showNotification('Вы вышли из системы', 'info');
+        return currentPath === '/' || currentPath === '/index.html';
     }
 
     /**
-     * Показать страницу
+     * Проверка необходимости перенаправления неавторизованного пользователя
+     * @returns {boolean}
+     * @private
      */
-    showPage(pageId) {
-        // Скрываем все страницы
+    _shouldRedirectUnauthenticated() {
+        const currentPath = window.location.pathname;
+        return currentPath === '/' || currentPath === '/index.html';
+    }
+
+    /**
+     * Настройка мониторинга производительности
+     * @private
+     */
+    _setupPerformanceMonitoring() {
+        if (!this.config?.get('performance.enableProfiling', false)) {
+            return;
+        }
+        
+        this.logger?.info('Настройка мониторинга производительности', null, 'App');
+        
+        // Мониторинг производительности
+        this.getEventBus().on('performance:measure', (data) => {
+            this.logger?.measure(data.name, data.fn, 'Performance');
+        });
+    }
+
+    /**
+     * Обработчики маршрутов
+     */
+    _handleHomeRoute() {
+        this._showPage('game-page');
+        this._updateNavigation('/');
+        this._autoSelectRoom();
+    }
+
+    _handleAuthRoute() {
+        this._showPage('auth-page');
+        this._updateNavigation('/auth');
+    }
+
+    _handleLobbyRoute() {
+        window.location.href = 'pages/lobby.html';
+    }
+
+    _handleRoomsRoute() {
+        window.location.href = 'pages/rooms.html';
+    }
+
+    _handleGameRoute(state) {
+        this._showPage('game-page');
+        this._updateNavigation('/');
+        this._handleGameState(state);
+    }
+
+    /**
+     * Вспомогательные методы
+     */
+    _showPage(pageId) {
         const pages = document.querySelectorAll('.page');
-        pages.forEach(page => page.classList.remove('active'));
+        pages.forEach(page => page.style.display = 'none');
         
-        // Показываем нужную страницу
         const targetPage = document.getElementById(pageId);
         if (targetPage) {
-            targetPage.classList.add('active');
+            targetPage.style.display = 'block';
+            this.logger?.debug(`Показана страница: ${pageId}`, null, 'App');
         }
     }
 
-    /**
-     * Показать заглушку
-     */
-    showPlaceholder(message) {
-        this.showPage('placeholder-page');
-        
-        const placeholder = document.querySelector('#placeholder-page');
-        if (placeholder) {
-            placeholder.innerHTML = `
-                <div style="padding: 4rem 2rem; text-align: center; color: #a0a0a0;">
-                    <h2>🔄 ${message}</h2>
-                    <p>Пожалуйста, подождите...</p>
-                </div>
-            `;
-        }
-    }
-
-    /**
-     * Обновление навигации
-     */
-    updateNavigation(activeRoute) {
+    _updateNavigation(route) {
         const navLinks = document.querySelectorAll('.nav-link');
         navLinks.forEach(link => {
-            const route = link.dataset.route;
-            if (route === activeRoute) {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === route) {
                 link.classList.add('active');
-            } else {
-                link.classList.remove('active');
             }
         });
     }
 
-    /**
-     * Обработка игрового маршрута
-     */
-    handleGameRoute(state) {
-        console.log('🎮 App: Обработка игрового маршрута', state);
-        
+    _autoSelectRoom() {
+        // Автоматический выбор комнаты если нужно
+        this.logger?.debug('Автоматический выбор комнаты', null, 'App');
+    }
+
+    _handleGameState(state) {
         if (state && state.roomId) {
-            // Загружаем данные комнаты
-            this.loadRoomData(state.roomId);
+            this.logger?.debug('Обработка состояния игры', { roomId: state.roomId }, 'App');
+            // Логика обработки состояния игры
         }
     }
 
     /**
-     * Загрузка данных комнаты
+     * Публичные методы для получения сервисов и модулей
      */
-    async loadRoomData(roomId) {
-        try {
-            console.log('🏠 App: Загрузка данных комнаты:', roomId);
-            
-            // Загружаем данные комнаты через API
-            const response = await fetch(`/api/rooms/${roomId}`);
-            if (response.ok) {
-                const roomData = await response.json();
-                console.log('✅ App: Данные комнаты загружены:', roomData);
-                
-                // Сохраняем данные комнаты в глобальной области
-                window.currentRoom = roomData.data;
-                
-                // Обновляем интерфейс
-                this.updateGameInterface(roomData.data);
-            } else {
-                console.error('❌ App: Ошибка загрузки комнаты:', response.status);
-                this.showNotification('Комната не найдена', 'error');
-            }
-        } catch (error) {
-            console.error('❌ App: Ошибка загрузки данных комнаты:', error);
-            this.showNotification('Ошибка загрузки комнаты', 'error');
-        }
+    getEventBus() {
+        return this.services.get('eventBus');
     }
 
-    /**
-     * Автоматический выбор комнаты
-     */
-    async autoSelectRoom() {
-        try {
-            console.log('🏠 App: Автоматический выбор комнаты');
-            
-            // Получаем список комнат
-            const response = await fetch('/api/rooms');
-            if (response.ok) {
-                const roomsData = await response.json();
-                const rooms = roomsData.data || [];
-                
-                if (rooms.length > 0) {
-                    // Выбираем первую доступную комнату
-                    const availableRoom = rooms.find(room => !room.isStarted && !room.isFull);
-                    
-                    if (availableRoom) {
-                        console.log('✅ App: Автоматически выбрана комната:', availableRoom.id);
-                        await this.loadRoomData(availableRoom.id);
-                        this.showNotification(`Автоматически выбрана комната: ${availableRoom.name}`, 'success');
-                    } else {
-                        console.log('⚠️ App: Нет доступных комнат');
-                        this.showNotification('Нет доступных комнат', 'warning');
-                    }
-                } else {
-                    console.log('⚠️ App: Комнаты не найдены');
-                    this.showNotification('Комнаты не найдены', 'warning');
-                }
-            } else {
-                console.error('❌ App: Ошибка получения списка комнат');
-            }
-        } catch (error) {
-            console.error('❌ App: Ошибка автоматического выбора комнаты:', error);
-        }
+    getRouter() {
+        return this.services.get('router');
     }
 
-    /**
-     * Обновление интерфейса игры
-     */
-    updateGameInterface(roomData) {
-        try {
-            console.log('🎮 App: Обновление интерфейса игры');
-            
-            // Применяем специальную навигацию для игровой комнаты
-            // Навигация удалена
-            
-            // Загружаем игроков в GameState
-            if (this.gameState) {
-                this.gameState.loadPlayersFromRoom(roomData);
-            }
-            
-            // Инициализируем центральный кубик
-            this.initCenterDice();
-            
-            // Обновляем балансы игроков через BalanceManager
-            if (this.balanceManager && roomData.players) {
-                this.balanceManager.refreshFromGameState(roomData.players);
-            }
-            
-            console.log('✅ App: Интерфейс игры обновлен');
-        } catch (error) {
-            console.error('❌ App: Ошибка обновления интерфейса:', error);
-        }
+    getModule(name) {
+        return this.modules.get(name);
     }
 
-    /**
-     * Запуск игры
-     */
-    startGame() {
-        try {
-            console.log('🚀 App: Запуск игры');
-            
-            if (window.currentRoom) {
-                // Здесь можно добавить логику запуска игры
-                this.showNotification('Игра запущена!', 'success');
-            } else {
-                this.showNotification('Сначала выберите комнату', 'error');
-            }
-        } catch (error) {
-            console.error('❌ App: Ошибка запуска игры:', error);
-        }
+    getService(name) {
+        return this.services.get(name);
     }
 
-    /**
-     * Показать уведомление
-     */
-    showNotification(message, type = 'info') {
-        // Создаем элемент уведомления
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.textContent = message;
-        
-        // Стили для уведомления
-        Object.assign(notification.style, {
-            position: 'fixed',
-            top: '100px',
-            right: '20px',
-            background: type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6',
-            color: 'white',
-            padding: '1rem 1.5rem',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-            zIndex: '10000',
-            fontSize: '0.9rem',
-            fontWeight: '500',
-            maxWidth: '300px',
-            animation: 'slideIn 0.3s ease'
-        });
-        
-        // Добавляем анимацию
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Добавляем уведомление на страницу
-        document.body.appendChild(notification);
-        
-        // Удаляем через 3 секунды
-        setTimeout(() => {
-            notification.style.animation = 'slideIn 0.3s ease reverse';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 3000);
-    }
-
-    /**
-     * Получение текущего пользователя
-     */
     getCurrentUser() {
         return this.currentUser;
     }
 
     /**
-     * Установка текущего пользователя
+     * Методы управления приложением
      */
-    setCurrentUser(user) {
-        this.currentUser = user;
-        this.updateUserInterface();
-    }
-    
-    /**
-     * Настройка обработчиков для главной страницы
-     */
-    setupMainPageHandlers() {
-        console.log('🖱️ App: Настройка обработчиков главной страницы');
+    async destroy() {
+        this.logger?.info('Уничтожение приложения', null, 'App');
         
-        // Обработчик кнопки "Выбрать комнату"
-        const selectRoomBtn = document.getElementById('select-room-btn');
-        if (selectRoomBtn) {
-            selectRoomBtn.addEventListener('click', () => {
-                console.log('🏠 App: Переход к выбору комнаты');
-                window.location.href = 'pages/rooms.html';
-            });
-            console.log('✅ App: Обработчик кнопки "Выбрать комнату" настроен');
-        } else {
-            console.warn('⚠️ App: Кнопка "Выбрать комнату" не найдена');
+        // Очищаем модули
+        for (const [name, module] of this.modules) {
+            if (module.destroy) {
+                try {
+                    await module.destroy();
+                    this.logger?.debug(`Модуль ${name} уничтожен`, null, 'App');
+                } catch (error) {
+                    this.logger?.warn(`Ошибка при уничтожении модуля ${name}`, error, 'App');
+                }
+            }
         }
         
-        // Обработчик кнопки "Авторизация"
-        const authBtn = document.getElementById('auth-btn');
-        if (authBtn) {
-            authBtn.addEventListener('click', () => {
-                console.log('🔐 App: Переход к авторизации');
-                window.location.href = 'auth/';
-            });
-            console.log('✅ App: Обработчик кнопки "Авторизация" настроен');
-        } else {
-            console.warn('⚠️ App: Кнопка "Авторизация" не найдена');
-        }
-
-        // Тестовые кнопки убраны для production
-        
-        // Обработчик кнопки "Админ" в навигации
-        const adminBtn = document.querySelector('.nav-button[href="/admin/"]');
-        if (adminBtn) {
-            adminBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('⚙️ App: Переход к админ панели');
-                window.location.href = 'admin/';
-            });
-            console.log('✅ App: Обработчик кнопки "Админ" настроен');
+        // Очищаем сервисы
+        for (const [name, service] of this.services) {
+            if (service.destroy) {
+                try {
+                    await service.destroy();
+                    this.logger?.debug(`Сервис ${name} уничтожен`, null, 'App');
+                } catch (error) {
+                    this.logger?.warn(`Ошибка при уничтожении сервиса ${name}`, error, 'App');
+                }
+            }
         }
         
-        // Обработчик кнопки "Войти" в навигации
-        const navAuthBtn = document.getElementById('auth-button');
-        if (navAuthBtn) {
-            navAuthBtn.addEventListener('click', () => {
-                console.log('🔐 App: Переход к авторизации через навигацию');
-                window.location.href = 'auth/';
-            });
-            console.log('✅ App: Обработчик кнопки "Войти" в навигации настроен');
-        }
+        this.modules.clear();
+        this.services.clear();
+        this.isInitialized = false;
         
-        console.log('✅ App: Обработчики главной страницы настроены');
+        this.logger?.info('Приложение уничтожено', null, 'App');
     }
 
     /**
-     * Добавление тестовых кнопок для движения фишек (только для разработки)
+     * Получение статистики приложения
      */
-    addTestMovementButtons() {
-        // Проверяем, что мы на главной странице и есть игровые компоненты
-        if (!this.gameState || !document.querySelector('.game-board-container')) {
-            return;
-        }
-
-        // Создаем контейнер для тестовых кнопок
-        const testControls = document.createElement('div');
-        testControls.id = 'test-movement-controls';
-        testControls.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            padding: 12px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        `;
-
-        // Кнопка для перемещения первого игрока
-        const movePlayer1Btn = document.createElement('button');
-        movePlayer1Btn.textContent = '🎲 Ход игрока 1';
-        movePlayer1Btn.style.cssText = `
-            padding: 8px 12px;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        `;
-        movePlayer1Btn.addEventListener('click', () => {
-            if (this.gameState.players.length > 0) {
-                const player = this.gameState.players[0];
-                const steps = Math.floor(Math.random() * 6) + 1; // 1-6
-                
-                // Устанавливаем игрока как активного
-                this.gameState.setActivePlayer(player.id);
-                
-                // Перемещаем игрока
-                this.gameState.movePlayerForward(player.id, steps);
-                
-                console.log(`🎲 Тестовый ход: игрок ${player.username} прошел ${steps} шагов`);
-            }
-        });
-
-        // Кнопка для перемещения второго игрока
-        const movePlayer2Btn = document.createElement('button');
-        movePlayer2Btn.textContent = '🎲 Ход игрока 2';
-        movePlayer2Btn.style.cssText = `
-            padding: 8px 12px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        `;
-        movePlayer2Btn.addEventListener('click', () => {
-            if (this.gameState.players.length > 1) {
-                const player = this.gameState.players[1];
-                const steps = Math.floor(Math.random() * 6) + 1; // 1-6
-                
-                // Устанавливаем игрока как активного
-                this.gameState.setActivePlayer(player.id);
-                
-                // Перемещаем игрока
-                this.gameState.movePlayerForward(player.id, steps);
-                
-                console.log(`🎲 Тестовый ход: игрок ${player.username} прошел ${steps} шагов`);
-            }
-        });
-
-        // Кнопка для сброса позиций
-        const resetBtn = document.createElement('button');
-        resetBtn.textContent = '🔄 Сброс';
-        resetBtn.style.cssText = `
-            padding: 8px 12px;
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        `;
-        resetBtn.addEventListener('click', () => {
-            this.gameState.players.forEach(player => {
-                this.gameState.movePlayer(player.id, 0, true); // Возвращаем на старт
-            });
-            console.log('🔄 Тестовый сброс: все игроки возвращены на старт');
-        });
-
-        testControls.appendChild(movePlayer1Btn);
-        testControls.appendChild(movePlayer2Btn);
-        testControls.appendChild(resetBtn);
-
-        document.body.appendChild(testControls);
-        console.log('🧪 App: Тестовые кнопки для движения фишек добавлены');
+    getStats() {
+        return {
+            isInitialized: this.isInitialized,
+            modulesCount: this.modules.size,
+            servicesCount: this.services.size,
+            modules: Array.from(this.modules.keys()),
+            services: Array.from(this.services.keys()),
+            user: this.currentUser ? {
+                username: this.currentUser.username,
+                isLoggedIn: true
+            } : null
+        };
     }
 
-    // Методы управления навигацией удалены - навигация больше не используется
-
-    // Инициализация центрального кубика
-    initCenterDice() {
-        const diceIcon = document.getElementById('dice-center-icon');
-        if (diceIcon) {
-            // Добавляем обработчик клика для броска кубика
-            diceIcon.addEventListener('click', () => {
-                this.rollCenterDice();
-            });
-            
-            // Устанавливаем начальную иконку доллара
-            diceIcon.innerHTML = '💰';
-            diceIcon.className = 'dice-icon';
-            
-            console.log('🎲 App: Центральный кубик инициализирован');
-        }
+    /**
+     * Режим отладки
+     */
+    enableDebugMode() {
+        this.config?.setLevel('DEBUG');
+        this.logger?.info('Режим отладки включен', null, 'App');
     }
 
-    // Бросок центрального кубика
-    rollCenterDice() {
-        const diceIcon = document.getElementById('dice-center-icon');
-        if (!diceIcon) return;
-
-        // Добавляем анимацию вращения
-        diceIcon.classList.add('rolling');
-        
-        // Генерируем случайное число от 1 до 6
-        const diceNumber = Math.floor(Math.random() * 6) + 1;
-        
-        // Через 1 секунду показываем результат
-        setTimeout(() => {
-            diceIcon.classList.remove('rolling');
-            diceIcon.classList.add('showing-number');
-            diceIcon.innerHTML = diceNumber;
-            
-            // Через 3 секунды возвращаем иконку доллара
-            setTimeout(() => {
-                diceIcon.classList.remove('showing-number');
-                diceIcon.innerHTML = '💰';
-            }, 3000);
-            
-            console.log(`🎲 App: Выпало число ${diceNumber}`);
-        }, 1000);
+    disableDebugMode() {
+        this.config?.setLevel('WARN');
+        this.logger?.info('Режим отладки отключен', null, 'App');
     }
 }
 
-// Инициализация приложения при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Запуск приложения Aura Money');
-    window.app = new App();
-});
-
-// Экспорт для использования в других модулях
+// Экспорт
 if (typeof window !== 'undefined') {
     window.App = App;
 }
+
+// Version: 1760439000 - App v2.0.0

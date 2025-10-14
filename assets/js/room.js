@@ -397,6 +397,19 @@ async function loadRoomData() {
         currentRoom = room;
         updateRoomInfo();
         
+        // Проверяем, запущена ли игра
+        if (room.isStarted && room.status === 'playing') {
+            console.log('🎮 Room: Игра уже запущена, перенаправляем на игровую доску');
+            showNotification('Игра уже запущена! Переходим к игровому полю...', 'info');
+            
+            setTimeout(() => {
+                const roomId = room.id;
+                console.log('🎮 Room: Автоматический переход к игровой доске:', roomId);
+                window.location.href = `../index.html#game?roomId=${roomId}`;
+            }, 2000);
+            return;
+        }
+        
         // Присоединяемся к комнате если еще не присоединены
         await joinRoomIfNeeded();
         
@@ -1086,24 +1099,41 @@ async function confirmStartGame() {
             throw new Error('Не удалось определить ID пользователя для запуска игры');
         }
         
-        await roomService.startGame(currentRoom.id, userId);
-        
-        // Отправляем уведомление всем игрокам о начале игры
-        await sendPushNotification('game_started', {
-            roomId: currentRoom.id,
-            roomName: currentRoom.name,
-            hostName: currentUser.username
-        });
-        
-        showNotification('Игра начата! Переходим к игровому полю...', 'success');
-        
-        // Переходим к игровой доске
-        setTimeout(() => {
-            // Переходим на главную страницу с данными о комнате
-            const roomId = currentRoom.id;
-            console.log('🎮 Room: Переход к игровой доске:', roomId);
-            window.location.href = `../index.html#game?roomId=${roomId}`;
-        }, 2000);
+        try {
+            await roomService.startGame(currentRoom.id, userId);
+            
+            // Отправляем уведомление всем игрокам о начале игры
+            await sendPushNotification('game_started', {
+                roomId: currentRoom.id,
+                roomName: currentRoom.name,
+                hostName: currentUser.username
+            });
+            
+            showNotification('Игра начата! Переходим к игровому полю...', 'success');
+            
+            // Переходим к игровой доске
+            setTimeout(() => {
+                // Переходим на главную страницу с данными о комнате
+                const roomId = currentRoom.id;
+                console.log('🎮 Room: Переход к игровой доске:', roomId);
+                window.location.href = `../index.html#game?roomId=${roomId}`;
+            }, 2000);
+            
+        } catch (error) {
+            // Если игра уже запущена, перенаправляем на игровую доску
+            if (error.message && error.message.includes('уже запущена')) {
+                console.log('🎮 Room: Игра уже запущена, перенаправляем на игровую доску');
+                showNotification('Игра уже запущена! Переходим к игровому полю...', 'info');
+                
+                setTimeout(() => {
+                    const roomId = currentRoom.id;
+                    console.log('🎮 Room: Переход к игровой доске (игра уже запущена):', roomId);
+                    window.location.href = `../index.html#game?roomId=${roomId}`;
+                }, 2000);
+            } else {
+                throw error; // Перебрасываем другие ошибки
+            }
+        }
         
     } catch (error) {
         console.error('❌ Room: Ошибка начала игры:', error);
