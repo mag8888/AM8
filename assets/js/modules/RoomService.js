@@ -82,7 +82,6 @@ class RoomService {
                 name: 'Демо комната 1',
                 maxPlayers: 4,
                 playerCount: 2,
-                creator: 'demo_user',
                 turnTime: 30,
                 assignProfessions: true,
                 players: [
@@ -90,13 +89,12 @@ class RoomService {
                     { id: 'p2', username: 'player1', name: 'player1', isHost: false }
                 ],
                 createdAt: new Date(now - 60000).toISOString()
-            }),
+            }, { username: 'demo_user', id: 'demo_user' }),
             this._createMockRoom({
                 id: 'room-demo-2',
                 name: 'Турнирная комната',
                 maxPlayers: 6,
                 playerCount: 3,
-                creator: 'tournament_master',
                 turnTime: 60,
                 assignProfessions: false,
                 players: [
@@ -105,7 +103,7 @@ class RoomService {
                     { id: 'p5', username: 'player3', name: 'player3', isHost: false }
                 ],
                 createdAt: new Date(now - 30000).toISOString()
-            })
+            }, { username: 'tournament_master', id: 'tournament_master' })
         ];
 
         console.log('🏠 RoomService: Базовые мок-данные инициализированы');
