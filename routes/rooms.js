@@ -177,6 +177,55 @@ router.get('/', async (req, res, next) => {
 });
 
 /**
+ * GET /api/rooms/stats - Получить статистику комнат
+ */
+router.get('/stats', async (req, res, next) => {
+    try {
+        const db = getDatabase();
+        if (!db) {
+            console.log('⚠️ База данных недоступна, возвращаем fallback статистику');
+            return res.json({
+                success: true,
+                data: {
+                    totalRooms: 4,
+                    activeRooms: 4,
+                    gamesInProgress: 0,
+                    playersOnline: 4
+                },
+                fallback: true
+            });
+        }
+
+        const stats = await new Promise((resolve, reject) => {
+            const query = `
+                SELECT 
+                    COUNT(*) as totalRooms,
+                    SUM(CASE WHEN status = 'waiting' THEN 1 ELSE 0 END) as activeRooms,
+                    SUM(CASE WHEN status = 'playing' THEN 1 ELSE 0 END) as gamesInProgress,
+                    (SELECT COUNT(*) FROM room_players) as playersOnline
+                FROM rooms 
+                WHERE status != 'deleted'
+            `;
+            
+            db.get(query, [], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        res.json({
+            success: true,
+            data: stats,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Ошибка получения статистики комнат:', error);
+        next(error);
+    }
+});
+
+/**
  * GET /api/rooms/:id - Получить комнату по ID
  */
 router.get('/:id', async (req, res, next) => {
