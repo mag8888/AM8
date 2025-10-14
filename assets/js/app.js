@@ -53,6 +53,7 @@ class App {
         // Регистрируем маршруты
         this.router.route('/', () => {
             this.showPage('game-page');
+            this.applyGameRoomNavigation(); // Скрываем навигацию для игры
             this.updateNavigation('/');
             // Автоматически выбираем комнату при загрузке главной страницы
             this.autoSelectRoom();
@@ -74,6 +75,7 @@ class App {
         
         this.router.route('/game', (state) => {
             this.showPage('game-page');
+            this.applyGameRoomNavigation(); // Скрываем навигацию для игры
             this.updateNavigation('/');
             this.handleGameRoute(state);
         }, 'Игра');
@@ -92,6 +94,9 @@ class App {
      */
     initGameComponents() {
         console.log('🎮 App: Инициализация игровых компонентов');
+        
+        // Скрываем навигацию для игровой страницы
+        this.applyGameRoomNavigation();
         
         try {
             // Создаем EventBus
@@ -637,8 +642,7 @@ class App {
             console.warn('⚠️ App: Кнопка "Авторизация" не найдена');
         }
 
-        // Добавляем тестовые кнопки для движения фишек (только для разработки)
-        this.addTestMovementButtons();
+        // Тестовые кнопки убраны для production
         
         // Обработчик кнопки "Админ" в навигации
         const adminBtn = document.querySelector('.nav-button[href="/admin/"]');
