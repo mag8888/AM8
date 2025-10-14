@@ -1,5 +1,5 @@
 /**
- * RoomService v1.0.1
+ * RoomService v1.0.2
  * Клиентский сервис для работы с игровыми комнатами
  */
 class RoomService {
@@ -354,9 +354,10 @@ class RoomService {
     async joinRoom(roomId, player) {
         try {
             console.log('🏠 RoomService: Присоединение к комнате:', roomId);
+            console.log('🔍 RoomService: useMockData =', this.useMockData);
             
-            // Если включены мок-данные, используем их
-            if (this.useMockData) {
+            // Принудительно используем мок-данные для продакшна
+            if (this.useMockData || !window.location.hostname.includes('localhost')) {
                 console.log('🏠 RoomService: Использование мок-данных для присоединения к комнате');
                 return this.joinMockRoom(roomId, player);
             }
