@@ -95,9 +95,23 @@ class RoomService {
             const saved = localStorage.getItem('aura_money_dynamic_rooms');
             if (saved) {
                 const dynamicRooms = JSON.parse(saved);
-                // Добавляем динамические комнаты к базовым мок-данным
-                this.mockRooms = [...dynamicRooms, ...this.mockRooms];
-                console.log('📂 RoomService: Динамические комнаты загружены из localStorage:', dynamicRooms.length);
+                
+                // Проверяем, не загружены ли уже динамические комнаты
+                const existingDynamicRoomIds = this.mockRooms
+                    .filter(room => room.id.startsWith('mock-room-'))
+                    .map(room => room.id);
+                
+                // Добавляем только новые динамические комнаты
+                const newDynamicRooms = dynamicRooms.filter(room => 
+                    !existingDynamicRoomIds.includes(room.id)
+                );
+                
+                if (newDynamicRooms.length > 0) {
+                    this.mockRooms = [...newDynamicRooms, ...this.mockRooms];
+                    console.log('📂 RoomService: Динамические комнаты загружены из localStorage:', newDynamicRooms.length);
+                } else {
+                    console.log('📂 RoomService: Нет новых динамических комнат для загрузки');
+                }
             }
         } catch (error) {
             console.error('❌ RoomService: Ошибка загрузки динамических комнат:', error);
@@ -765,4 +779,4 @@ class RoomService {
 if (typeof window !== 'undefined') {
     window.RoomService = RoomService;
 }
-// Version: 1760436500
+// Version: 1760437000
