@@ -338,9 +338,30 @@ class App {
     }
 
     _handleGameRoute(state) {
-        this._showPage('game-page');
-        this._updateNavigation('/');
-        this._handleGameState(state);
+        // Поддержка ссылок формата #game?roomId=...
+        try {
+            const hash = window.location.hash || '';
+            const hashParams = hash.includes('?') ? new URLSearchParams(hash.split('?')[1]) : null;
+            const roomIdFromHash = hashParams ? hashParams.get('roomId') : null;
+            const roomId = state?.roomId || roomIdFromHash;
+
+            if (roomId) {
+                // Перенаправляем на полноценную страницу комнаты
+                window.location.href = `pages/room.html?id=${roomId}`;
+                return;
+            }
+
+            // Если roomId не указан — отправляем в список комнат
+            this.getRouter().navigate('/rooms');
+        } catch (error) {
+            this.errorHandler?.handleError({
+                type: 'ROUTER_ERROR',
+                message: 'Failed to handle /game route',
+                error,
+                context: 'App._handleGameRoute'
+            });
+            this.getRouter().navigate('/rooms');
+        }
     }
 
     /**
