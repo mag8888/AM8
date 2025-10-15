@@ -317,6 +317,43 @@ function setupDynamicEventListeners() {
 }
 
 /**
+ * Быстрое присоединение к комнате и переход на страницу комнаты
+ */
+async function quickJoinRoom(roomId) {
+    try {
+        if (!roomId) return;
+        const currentUser = getCurrentUser();
+        if (!currentUser) {
+            showNotification('Сначала войдите в систему', 'warning');
+            window.location.href = '/auth';
+            return;
+        }
+
+        // Минимальные данные игрока (полный PlayerBundle будет выбран в комнате)
+        const playerData = {
+            username: currentUser.username,
+            token: '',
+            dream: '',
+            dreamCost: 0,
+            dreamDescription: '',
+            isReady: false
+        };
+
+        try {
+            await roomService.joinRoom(roomId, currentUser.id, playerData);
+        } catch (_) {
+            // Игнорируем ошибку, если уже в комнате или игра начата — просто переходим
+        }
+
+        console.log('🎮 Rooms: Переход в комнату после быстрого присоединения:', roomId);
+        window.location.href = `room.html?id=${roomId}`;
+    } catch (error) {
+        console.error('❌ Rooms: Ошибка быстрого присоединения:', error);
+        showNotification('Не удалось присоединиться к комнате', 'error');
+    }
+}
+
+/**
  * Загрузка списка комнат
  */
 async function loadRooms() {
