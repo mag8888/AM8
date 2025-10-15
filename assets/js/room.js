@@ -590,14 +590,17 @@ function updateStartGameButton() {
                        (p.isCreator || p.role === 'creator')
                    ));
     const playersCount = currentRoom.players.length;
-    const minPlayers = currentRoom.minPlayers || 2; // По умолчанию минимум 2 игрока
+    const readyCount = currentRoom.players.filter(p => p.isReady).length;
+    const minPlayers = currentRoom.minPlayers || 1; // Тестовый режим: достаточно 1 игрока
     const allPlayersReady = currentRoom.players.every(player => player.isReady);
-    const canStart = playersCount >= minPlayers && allPlayersReady;
+    // Тестовый режим: разрешаем старт при наличии хотя бы 1 готового игрока
+    const canStart = (playersCount >= 1 && readyCount >= 1) || (playersCount >= minPlayers && allPlayersReady);
     
     // Дополнительная отладка
     console.log('🔍 Room: Отладка кнопки "Начать игру":', {
         isHost,
         playersCount,
+        readyCount,
         minPlayers,
         allPlayersReady,
         canStart,
@@ -623,7 +626,7 @@ function updateStartGameButton() {
     } else if (!isHost) {
         startGameButton.textContent = '⏳ Ожидание хоста';
     } else if (!canStart) {
-        startGameButton.textContent = '👥 Ждем игроков';
+        startGameButton.textContent = `👥 Ждем готовности (${readyCount}/${playersCount})`;
     } else {
         startGameButton.textContent = '🚀 Начать игру';
     }
