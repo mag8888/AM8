@@ -203,6 +203,18 @@ document.addEventListener('DOMContentLoaded', function() {
     startRoomDataPolling();
 });
 
+// Единая функция перехода к игровому полю без обратного редиректа в комнату
+function navigateToGameBoard(roomId) {
+    try {
+        // Помечаем флаг, чтобы индексная страница не переинициализировала комнаты
+        sessionStorage.setItem('am_navigated_to_game', '1');
+        // Идем сразу на полноценную страницу комнаты (игровая доска)
+        window.location.href = `room.html?id=${roomId}`;
+    } catch (e) {
+        window.location.href = `room.html?id=${roomId}`;
+    }
+}
+
 /**
  * Запуск периодического обновления данных комнаты
  */
@@ -399,7 +411,7 @@ async function loadRoomData() {
         
         // Проверяем, запущена ли игра
         if (room.isStarted && room.status === 'playing') {
-            console.log('🎮 Room: Игра уже запущена, перенаправляем на игровую доску');
+            console.log('🎮 Room: Игра уже запущена');
             showNotification('Игра уже запущена! Переходим к игровому полю...', 'info');
             
             setTimeout(() => {
@@ -414,7 +426,7 @@ async function loadRoomData() {
                 };
                 localStorage.setItem('currentUser', JSON.stringify(userData));
                 
-                window.location.href = `../index.html#game?roomId=${roomId}`;
+                navigateToGameBoard(roomId);
             }, 2000);
             return;
         }
@@ -1141,7 +1153,7 @@ async function refreshRoomData() {
                 showNotification('Игра началась! Переходим к игровому полю...', 'success');
                 
                 setTimeout(() => {
-                    window.location.href = `../index.html#game?roomId=${room.id}`;
+                navigateToGameBoard(room.id);
                 }, 2000);
                 return;
             }
@@ -1282,7 +1294,7 @@ async function confirmStartGame() {
                 };
                 localStorage.setItem('currentUser', JSON.stringify(userData));
                 
-                window.location.href = `../index.html#game?roomId=${roomId}`;
+                navigateToGameBoard(roomId);
             }, 2000);
             
         } catch (error) {
@@ -1303,7 +1315,7 @@ async function confirmStartGame() {
                     };
                     localStorage.setItem('currentUser', JSON.stringify(userData));
                     
-                    window.location.href = `../index.html#game?roomId=${roomId}`;
+                    navigateToGameBoard(roomId);
                 }, 2000);
             } else {
                 throw error; // Перебрасываем другие ошибки
@@ -1477,7 +1489,7 @@ function handleGameStartedNotification(data) {
         // Переходим к игровому полю через 2 секунды
         setTimeout(() => {
             console.log('🎮 Room: Переход к игровому полю...');
-            window.location.href = `../index.html#game?roomId=${data.roomId}`;
+            navigateToGameBoard(data.roomId);
         }, 2000);
         
     } catch (error) {
