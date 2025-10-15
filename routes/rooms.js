@@ -525,8 +525,11 @@ function proceedWithJoin(userId, player, roomId, res, next) {
             [playerId, roomId, userId],
             (err) => {
                 if (err) {
+                    console.error('❌ Ошибка добавления игрока в room_players:', err);
                     return next(err);
                 }
+
+                console.log('✅ Игрок добавлен в room_players:', { playerId, roomId, userId, username: player.username });
 
                 // Обновляем количество игроков
                 db.run(
@@ -534,9 +537,11 @@ function proceedWithJoin(userId, player, roomId, res, next) {
                     [roomId],
                     (err) => {
                         if (err) {
+                            console.error('❌ Ошибка обновления количества игроков:', err);
                             return next(err);
                         }
 
+                        console.log('✅ Количество игроков обновлено для комнаты:', roomId);
                         res.status(201).json({
                             success: true,
                             message: 'Вы присоединились к комнате',
@@ -603,36 +608,37 @@ router.post('/:id/join', async (req, res, next) => {
             //     });
             // }
 
-            // Проверяем, существует ли пользователь
-            db.get('SELECT id FROM users WHERE username = ?', [player.username], (err, user) => {
-                if (err) {
-                    return next(err);
-                }
+        // Проверяем, существует ли пользователь
+        db.get('SELECT id FROM users WHERE username = ?', [player.username], (err, user) => {
+            if (err) {
+                return next(err);
+            }
 
-                if (!user) {
-                    console.log('⚠️ Пользователь не найден, создаем нового:', player.username);
-                    // Fallback: создаем пользователя если его нет
-                    const userId = uuidv4();
-                    db.run('INSERT INTO users (id, username, created_at) VALUES (?, ?, ?)', 
-                           [userId, player.username, new Date().toISOString()], (insertErr) => {
-                        if (insertErr) {
-                            console.error('❌ Ошибка создания пользователя:', insertErr);
-                            return res.status(500).json({
-                                success: false,
-                                message: 'Ошибка создания пользователя'
-                            });
-                        }
-                        console.log('✅ Пользователь создан:', player.username);
-                        
-                        // Продолжаем с созданным пользователем
-                        proceedWithJoin(userId, player, id, res, next);
-                    });
-                    return;
-                }
-                
-                // Пользователь найден, продолжаем
-                proceedWithJoin(user.id, player, id, res, next);
-            });
+            if (!user) {
+                console.log('⚠️ Пользователь не найден, создаем нового:', player.username);
+                // Fallback: создаем пользователя если его нет
+                const userId = uuidv4();
+                db.run('INSERT INTO users (id, username, created_at) VALUES (?, ?, ?)', 
+                       [userId, player.username, new Date().toISOString()], (insertErr) => {
+                    if (insertErr) {
+                        console.error('❌ Ошибка создания пользователя:', insertErr);
+                        return res.status(500).json({
+                            success: false,
+                            message: 'Ошибка создания пользователя'
+                        });
+                    }
+                    console.log('✅ Пользователь создан:', player.username);
+                    
+                    // Продолжаем с созданным пользователем
+                    proceedWithJoin(userId, player, id, res, next);
+                });
+                return;
+            }
+            
+            // Пользователь найден, продолжаем
+            console.log('✅ Пользователь найден в БД:', user.id, player.username);
+            proceedWithJoin(user.id, player, id, res, next);
+        });
         });
 
     } catch (error) {

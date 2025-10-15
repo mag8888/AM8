@@ -477,14 +477,18 @@ async function joinRoomIfNeeded() {
         if (!isInRoom) {
             console.log('🏠 Room: Присоединение к комнате');
             
+            // Убеждаемся, что у нас есть корректные данные пользователя
             const playerData = {
-                userId: currentUser.id,
-                username: currentUser.username,
+                userId: currentUser.id || currentUser.userId || 'unknown',
+                username: currentUser.username || currentUser.name || 'unknown',
+                name: currentUser.username || currentUser.name || 'unknown',
                 avatar: currentUser.avatar || '',
                 isReady: false,
                 dream: null,
                 token: null
             };
+            
+            console.log('🔍 Room: Данные игрока для присоединения:', playerData);
             
             await roomService.joinRoom(currentRoom.id, playerData);
             showNotification('Вы присоединились к комнате', 'success');
