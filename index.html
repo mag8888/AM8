@@ -430,6 +430,17 @@
                                 if (window.app && window.app._loadGameModules) {
                                     window.app._loadGameModules();
                                 }
+                                // Инициализируем панель игроков в правом меню
+                                try {
+                                    if (window.PlayersPanel) {
+                                        const gameState = window.app.getModule?.('gameState');
+                                        new window.PlayersPanel({
+                                            gameState,
+                                            eventBus: window.app.getEventBus?.(),
+                                            containerId: 'players-panel'
+                                        });
+                                    }
+                                } catch (e) { console.warn('PlayersPanel init warn', e); }
                             } catch (_) { /* no-op */ }
                             const gameState = window.app.getModule?.('gameState');
                             if (gameState) {
