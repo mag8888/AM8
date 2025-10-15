@@ -3,7 +3,9 @@ const { v4: uuidv4 } = require('uuid');
 const { getDatabase } = require('../database/init');
 
 const router = express.Router();
-const db = getDatabase();
+function db() {
+    return getDatabase();
+}
 
 /**
  * POST /api/auth/login - Вход пользователя
@@ -36,7 +38,7 @@ router.post('/login', async (req, res, next) => {
             WHERE username = COALESCE(?, username) OR email = COALESCE(?, email)
         `;
 
-        db.get(query, [username || null, email || null], (err, user) => {
+        db().get(query, [username || null, email || null], (err, user) => {
             if (err) {
                 return next(err);
             }
@@ -46,7 +48,7 @@ router.post('/login', async (req, res, next) => {
                 const userId = uuidv4();
                 const finalUsername = username || (email ? email.split('@')[0] : `user_${userId.slice(0,8)}`);
                 
-                db.run(
+                db().run(
                     `INSERT INTO users (id, username, level, games_played, games_won, rating) 
                      VALUES (?, ?, 1, 0, 0, 1000)`,
                     [userId, finalUsername],
@@ -68,7 +70,7 @@ router.post('/login', async (req, res, next) => {
                         };
 
                         // Обновляем время последнего входа
-                        db.run(
+                        db().run(
                             'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
                             [userId]
                         );
@@ -85,7 +87,7 @@ router.post('/login', async (req, res, next) => {
                 );
             } else {
                 // Обновляем время последнего входа
-                db.run(
+                db().run(
                     'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
                     [user.id]
                 );
