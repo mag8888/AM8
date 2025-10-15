@@ -898,3 +898,27 @@ router.post('/:id/start', async (req, res, next) => {
 });
 
 module.exports = router;
+/**
+ * DELETE /api/rooms/:id/players/:playerId - Удалить игрока из комнаты (только хост)
+ */
+router.delete('/:id/players/:playerId', async (req, res, next) => {
+    try {
+        const { id, playerId } = req.params;
+        const db = getDatabase();
+        if (!db) {
+            return res.status(503).json({ success: false, message: 'База данных недоступна' });
+        }
+
+        // Удаляем игрока из room_players
+        db.run('DELETE FROM room_players WHERE room_id = ? AND user_id = ?', [id, playerId], (err) => {
+            if (err) return next(err);
+
+            // Уменьшаем счётчик игроков
+            db.run('UPDATE rooms SET current_players = MAX(current_players - 1, 0), updated_at = CURRENT_TIMESTAMP WHERE id = ?', [id]);
+
+            return res.json({ success: true, message: 'Игрок удалён' });
+        });
+    } catch (error) {
+        next(error);
+    }
+});

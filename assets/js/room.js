@@ -564,8 +564,44 @@ function updatePlayersList() {
             </div>
         `;
         
+        // Кнопка удаления для хоста (кроме себя)
+        const isHost = currentRoom.creatorId === currentUser?.id ||
+                       currentRoom.creator === currentUser?.username ||
+                       currentRoom.players.some(p => (p.userId === currentUser?.id || p.username === currentUser?.username) && (p.isCreator || p.isHost || p.role === 'creator'));
+        const isSelf = player.userId === currentUser?.id || player.username === currentUser?.username;
+        if (isHost && !isSelf) {
+            const kickBtn = document.createElement('button');
+            kickBtn.className = 'btn btn-danger btn-sm';
+            kickBtn.style.marginLeft = '8px';
+            kickBtn.textContent = 'Удалить';
+            kickBtn.addEventListener('click', () => kickPlayer(player));
+            playerItem.querySelector('.player-info')?.appendChild(kickBtn);
+        }
+
         playersList.appendChild(playerItem);
     });
+}
+
+/**
+ * Удаление игрока (только хост)
+ */
+async function kickPlayer(player) {
+    try {
+        if (!currentRoom || !player) return;
+        const confirmKick = confirm(`Удалить игрока ${player.name || player.username || 'игрок'} из комнаты?`);
+        if (!confirmKick) return;
+
+        await fetch(`/api/rooms/${currentRoom.id}/players/${player.userId || player.id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        showNotification('Игрок удалён', 'success');
+        await refreshRoomData();
+    } catch (error) {
+        console.error('❌ Room: Ошибка удаления игрока:', error);
+        showNotification('Не удалось удалить игрока', 'error');
+    }
 }
 
 /**
