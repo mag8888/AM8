@@ -206,12 +206,31 @@ document.addEventListener('DOMContentLoaded', function() {
 // Единая функция перехода к игровому полю без обратного редиректа в комнату
 function navigateToGameBoard(roomId) {
     try {
-        // Помечаем флаг, чтобы индексная страница не переинициализировала комнаты
-        sessionStorage.setItem('am_navigated_to_game', '1');
-        // Идем сразу на полноценную страницу комнаты (игровая доска)
-        window.location.href = `room.html?id=${roomId}`;
+        // Формируем и сохраняем пакет игрока и комнаты для игрового поля
+        const bundle = {
+            roomId,
+            currentUser: {
+                id: currentUser?.id,
+                username: currentUser?.username,
+                name: currentUser?.name,
+                avatar: currentUser?.avatar || ''
+            },
+            player: buildPlayerBundle({ user: currentUser, dream: dreamData, token: selectedToken, isReady: true }),
+            players: (currentRoom?.players || []).map((p, index) => ({
+                id: p.userId || p.id || `player${index+1}`,
+                username: p.username || p.name || `Игрок ${index+1}`,
+                token: p.token || (p.username === currentUser?.username ? selectedToken : (p.token || '🎯')),
+                dream: p.dream || null,
+                isReady: !!p.isReady,
+                position: 0,
+                isInner: true
+            }))
+        };
+        sessionStorage.setItem('am_player_bundle', JSON.stringify(bundle));
+        // Переходим на игровую доску SPA
+        window.location.href = `../index.html#game?roomId=${roomId}`;
     } catch (e) {
-        window.location.href = `room.html?id=${roomId}`;
+        window.location.href = `../index.html#game?roomId=${roomId}`;
     }
 }
 

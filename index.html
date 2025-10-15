@@ -369,14 +369,75 @@
     <!-- Главный скрипт приложения -->
     <script src="assets/js/app.js"></script>
     
+    <!-- Кнопка ротации хода (показывается на гейм-борде) -->
+    <style>
+        #pass-turn-btn {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            z-index: 9999;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+            display: none;
+        }
+        #pass-turn-btn:hover { transform: translateY(-1px); }
+    </style>
+    <button id="pass-turn-btn">➡️ Передать ход</button>
+    
     <!-- Скрипты для страницы авторизации -->
     <script>
         // Если пришли по ссылке вида #game?roomId=..., сразу открываем страницу комнаты
-        if (window.location.hash && window.location.hash.includes('game')) {
+        const isGameHash = window.location.hash && window.location.hash.includes('game');
+        if (isGameHash) {
             try {
                 const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
                 const roomId = params.get('roomId');
                 if (roomId) {
+                    // Попытка инициализировать игровое состояние из sessionStorage
+                    try {
+                        const bundleRaw = sessionStorage.getItem('am_player_bundle');
+                        if (bundleRaw && window.App && window.GameState) {
+                            const bundle = JSON.parse(bundleRaw);
+                            // Инициализация App, если ещё не выполнена
+                            if (!window.app) {
+                                window.app = new window.App();
+                                window.app.init?.();
+                            }
+                            const gameState = window.app.getModule?.('gameState');
+                            if (gameState) {
+                                gameState.setRoomId(roomId);
+                                // Собираем игроков
+                                const players = (bundle?.players || []).map(p => ({
+                                    id: p.id,
+                                    username: p.username,
+                                    token: p.token || '🎯',
+                                    position: p.position ?? 0,
+                                    isInner: p.isInner ?? true,
+                                    money: 5000,
+                                    salary: 5000,
+                                    totalIncome: 0,
+                                    monthlyExpenses: 2000,
+                                    assets: [],
+                                    dreams: p.dream ? [p.dream] : []
+                                }));
+                                gameState.startGame(players);
+                                // Устанавливаем активного игрока на текущего пользователя
+                                const self = bundle?.currentUser;
+                                const selfPlayer = players.find(pl => pl.id === (self?.id));
+                                if (selfPlayer) {
+                                    gameState.setActivePlayer(selfPlayer.id);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Не удалось инициализировать GameState из sessionStorage', e);
+                    }
                     window.location.replace(`pages/room.html?id=${roomId}`);
                 }
             } catch (e) {
@@ -394,6 +455,30 @@
                 }
             });
         }
+        
+        // Кнопка "Передать ход" — работает, когда инициализировано приложение и GameState
+        (function initPassTurnButton() {
+            const btn = document.getElementById('pass-turn-btn');
+            const updateVisibility = () => {
+                const onGame = (window.location.hash || '').includes('game');
+                btn.style.display = onGame ? 'block' : 'none';
+            };
+            updateVisibility();
+            window.addEventListener('hashchange', updateVisibility);
+            btn.addEventListener('click', () => {
+                try {
+                    const gameState = (window.app && window.app.getModule) ? window.app.getModule('gameState') : (window.gameState || null);
+                    if (gameState && typeof gameState.passTurnToNextPlayer === 'function') {
+                        gameState.passTurnToNextPlayer();
+                        console.log('🔄 Передан ход следующему игроку');
+                    } else {
+                        console.warn('⚠️ GameState не инициализирован для ротации хода');
+                    }
+                } catch (err) {
+                    console.error('❌ Ошибка передачи хода:', err);
+                }
+            });
+        })();
         
         // Обработчик для навигационных кнопок с data-route
         document.addEventListener('click', (e) => {
