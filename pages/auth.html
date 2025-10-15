@@ -446,8 +446,9 @@
                     throw new Error(result.message || 'Неверный email или пароль');
                 }
 
-                const user = { ...result.user, isLoggedIn: true };
-                localStorage.setItem('aura_money_token', result.token);
+                const payload = result.user ? { user: result.user, token: result.token } : (result.data || {});
+                const user = { ...(payload.user || {}), isLoggedIn: true };
+                localStorage.setItem('aura_money_token', payload.token || '');
                 localStorage.setItem('aura_money_user', JSON.stringify(user));
                 localStorage.setItem('currentUser', JSON.stringify({
                     id: user.id,
@@ -487,8 +488,9 @@
                     throw new Error(result.message || 'Ошибка регистрации');
                 }
 
-                const user = { ...result.user, isLoggedIn: true };
-                localStorage.setItem('aura_money_token', result.token);
+                const payload = result.user ? { user: result.user, token: result.token } : (result.data || {});
+                const user = { ...(payload.user || {}), isLoggedIn: true };
+                localStorage.setItem('aura_money_token', payload.token || '');
                 localStorage.setItem('aura_money_user', JSON.stringify(user));
                 localStorage.setItem('currentUser', JSON.stringify({
                     id: user.id,
