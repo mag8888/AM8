@@ -2,6 +2,126 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
+// Простое серверное состояние игры (на одном инстансе). Для прод-реализации заменить на Redis/БД/вебсокеты
+const gameStateByRoomId = new Map();
+
+function ensureGameState(db, roomId, cb) {
+    if (gameStateByRoomId.has(roomId)) return cb(null, gameStateByRoomId.get(roomId));
+    const q = `SELECT rp.user_id as userId, u.username as username
+               FROM room_players rp LEFT JOIN users u ON u.id = rp.user_id
+               WHERE rp.room_id = ? ORDER BY u.username ASC`;
+    if (!db) {
+        const state = { players: [], currentPlayerIndex: 0, activePlayer: null, lastDiceResult: null, canRoll: true, canMove: false, canEndTurn: false };
+        gameStateByRoomId.set(roomId, state);
+        return cb(null, state);
+    }
+    db.all(q, [roomId], (err, rows) => {
+        if (err) return cb(err);
+        const players = (rows || []).map((r, idx) => ({
+            id: r.userId,
+            userId: r.userId,
+            username: r.username || `player${idx+1}`,
+            position: 0,
+            isInner: true,
+            token: '🎯',
+            money: 5000,
+            isReady: true
+        }));
+        const state = {
+            players,
+            currentPlayerIndex: 0,
+            activePlayer: players[0] || null,
+            lastDiceResult: null,
+            canRoll: true,
+            canMove: false,
+            canEndTurn: false
+        };
+        gameStateByRoomId.set(roomId, state);
+        cb(null, state);
+    });
+}
+
+// --- Game sync endpoints ---
+router.get('/:id/players', (req, res, next) => {
+    const db = getDatabase();
+    const { id } = req.params;
+    if (!db) return res.json({ success:true, data: [] });
+    db.all(`SELECT rp.user_id as userId, u.username as username FROM room_players rp LEFT JOIN users u ON u.id = rp.user_id WHERE rp.room_id = ? ORDER BY u.username ASC`, [id], (err, rows) => {
+        if (err) return next(err);
+        res.json({ success:true, data: rows || [] });
+    });
+});
+
+router.get('/:id/game-state', (req, res, next) => {
+    const db = getDatabase();
+    const { id } = req.params;
+    ensureGameState(db, id, (err, state) => {
+        if (err) return next(err);
+        res.json({ success:true, state });
+    });
+});
+
+router.post('/:id/roll', (req, res, next) => {
+    const db = getDatabase();
+    const { id } = req.params;
+    ensureGameState(db, id, (err, state) => {
+        if (err) return next(err);
+        const value = Math.floor(Math.random()*6)+1;
+        state.lastDiceResult = { value };
+        state.canRoll = false;
+        state.canMove = true;
+        state.canEndTurn = false;
+        res.json({ success:true, diceResult:{ value }, state });
+    });
+});
+
+router.post('/:id/move', (req, res, next) => {
+    const db = getDatabase();
+    const { id } = req.params;
+    const { steps } = req.body || {};
+    ensureGameState(db, id, (err, state) => {
+        if (err) return next(err);
+        const current = state.players[state.currentPlayerIndex];
+        if (!current) return res.json({ success:true, moveResult:{ steps:0 }, state });
+        const maxInner = 12;
+        current.position = (current.position + (Number(steps)||0)) % maxInner;
+        state.canRoll = false;
+        state.canMove = false;
+        state.canEndTurn = true;
+        res.json({ success:true, moveResult:{ steps:Number(steps)||0 }, state });
+    });
+});
+
+router.post('/:id/end-turn', (req, res, next) => {
+    const db = getDatabase();
+    const { id } = req.params;
+    ensureGameState(db, id, (err, state) => {
+        if (err) return next(err);
+        state.currentPlayerIndex = (state.currentPlayerIndex + 1) % (state.players.length || 1);
+        state.activePlayer = state.players[state.currentPlayerIndex] || null;
+        state.canRoll = true;
+        state.canMove = false;
+        state.canEndTurn = false;
+        res.json({ success:true, state });
+    });
+});
+
+router.put('/:id/active-player', (req, res, next) => {
+    const db = getDatabase();
+    const { id } = req.params;
+    const { playerId } = req.body || {};
+    ensureGameState(db, id, (err, state) => {
+        if (err) return next(err);
+        const idx = state.players.findIndex(p => p.id === playerId);
+        if (idx === -1) return res.status(404).json({ success:false, message:'Игрок не найден' });
+        state.currentPlayerIndex = idx;
+        state.activePlayer = state.players[idx];
+        state.canRoll = true;
+        state.canMove = false;
+        state.canEndTurn = false;
+        res.json({ success:true, state });
+    });
+});
 
 // Fallback данные для демо
 const fallbackRooms = [
