@@ -672,7 +672,10 @@ class RoomService {
     async _joinRoomViaAPI(roomId, player) {
         const requestData = {
             player: {
+                userId: player.userId,
                 username: player.username || player.name || 'unknown',
+                name: player.name || player.username || 'unknown',
+                avatar: player.avatar || '',
                 token: player.token || '',
                 dream: player.dream || '',
                 dreamCost: player.dreamCost || 0

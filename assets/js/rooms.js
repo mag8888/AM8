@@ -297,12 +297,10 @@ function setupDynamicEventListeners() {
                     break;
                 case 'join-room':
                     // Быстрое присоединение: сразу в комнату для выбора мечты и фишки
-                    if (typeof quickJoinRoom === 'function') {
-                        quickJoinRoom(roomId);
-                    } else if (window.quickJoinRoom) {
+                    if (typeof window.quickJoinRoom === 'function') {
                         window.quickJoinRoom(roomId);
                     } else {
-                        console.error('quickJoinRoom is not available');
+                        console.error('❌ quickJoinRoom is not defined on window');
                     }
                     break;
                 case 'view-details':
@@ -337,7 +335,10 @@ async function quickJoinRoom(roomId) {
 
         // Минимальные данные игрока (полный PlayerBundle будет выбран в комнате)
         const playerData = {
+            userId: currentUser.id,
             username: currentUser.username,
+            name: currentUser.name || currentUser.username,
+            avatar: currentUser.avatar || '',
             token: '',
             dream: '',
             dreamCost: 0,
