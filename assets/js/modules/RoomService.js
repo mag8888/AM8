@@ -50,6 +50,7 @@ class RoomService {
             isLoading: false,
             error: null
         };
+        this.roomsCacheKey = 'am_rooms_cache_v1';
     }
 
     /**
@@ -237,15 +238,27 @@ class RoomService {
             }
 
             // Пытаемся получить данные с API
-            const rooms = await this._fetchRoomsFromAPI();
+            let rooms = await this._fetchRoomsFromAPI();
+            if (!rooms || rooms.length === 0) {
+                const cached = this._readRoomsCache();
+                if (cached && cached.length) rooms = cached;
+            }
             this.state.rooms = rooms;
             this.state.lastUpdate = Date.now();
-            
+            this._writeRoomsCache(rooms);
             return rooms;
 
         } catch (error) {
             console.error('❌ RoomService: Ошибка получения комнат:', error);
             
+            // Пробуем кэш
+            const cached = this._readRoomsCache();
+            if (cached && cached.length) {
+                console.log('🗂️ RoomService: Используем кэш комнат из localStorage');
+                this.state.rooms = cached;
+                this.state.lastUpdate = Date.now();
+                return cached;
+            }
             // Fallback на мок-данные в любом случае для стабильности
             console.log('🔄 RoomService: Fallback на мок-данные из-за ошибки API');
             return this._getMockRooms();
@@ -264,6 +277,7 @@ class RoomService {
         
         this.state.rooms = sortedRooms;
         this.state.lastUpdate = Date.now();
+        this._writeRoomsCache(sortedRooms);
         
         return sortedRooms;
     }
@@ -305,6 +319,14 @@ class RoomService {
             createdAt: room.createdAt,
             updatedAt: room.updatedAt
         }));
+    }
+
+    // КЭШ комнат
+    _writeRoomsCache(rooms) {
+        try { localStorage.setItem(this.roomsCacheKey, JSON.stringify(rooms || [])); } catch (_) {}
+    }
+    _readRoomsCache() {
+        try { const raw = localStorage.getItem(this.roomsCacheKey); return raw ? JSON.parse(raw) : []; } catch (_) { return []; }
     }
 
     /**
