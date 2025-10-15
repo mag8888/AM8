@@ -421,6 +421,32 @@
                                 if (window.app && window.app._loadGameModules) {
                                     window.app._loadGameModules();
                                 }
+                                // Получаем серверное состояние и список игроков для синхронизации
+                                try {
+                                    const api = new window.RoomApi();
+                                    api.getGameState(roomId).then(gs => {
+                                        if (gs && gs.state && window.app.getModule) {
+                                            const gameState = window.app.getModule('gameState');
+                                            gameState.applyState(gs.state);
+                                        }
+                                    });
+                                    api.getPlayers(roomId).then(pl => {
+                                        const gameState = window.app.getModule?.('gameState');
+                                        if (gameState && pl && Array.isArray(pl.data)) {
+                                            const srvPlayers = pl.data.map((p, idx) => ({
+                                                id: p.userId || `player${idx+1}`,
+                                                username: p.username || `Игрок ${idx+1}`,
+                                                position: 0,
+                                                isInner: true,
+                                                money: 5000,
+                                                token: '🎯',
+                                                isReady: true
+                                            }));
+                                            gameState.startGame(srvPlayers);
+                                        }
+                                    });
+                                } catch(_) {}
+
                                 // Инициализируем панель игроков в правом меню
                                 try {
                                     if (window.PlayersPanel) {
