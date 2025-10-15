@@ -10,12 +10,12 @@ const db = getDatabase();
  */
 router.post('/login', async (req, res, next) => {
     try {
-        const { username, password } = req.body;
+        const { username, email, password } = req.body;
 
-        if (!username) {
+        if (!username && !email) {
             return res.status(400).json({
                 success: false,
-                message: 'Username обязателен'
+                message: 'Username или Email обязателен'
             });
         }
 
@@ -33,10 +33,10 @@ router.post('/login', async (req, res, next) => {
                 rating,
                 created_at
             FROM users 
-            WHERE username = ?
+            WHERE username = COALESCE(?, username) OR email = COALESCE(?, email)
         `;
 
-        db.get(query, [username], (err, user) => {
+        db.get(query, [username || null, email || null], (err, user) => {
             if (err) {
                 return next(err);
             }
@@ -44,11 +44,12 @@ router.post('/login', async (req, res, next) => {
             if (!user) {
                 // Автоматически создаем пользователя для демо
                 const userId = uuidv4();
+                const finalUsername = username || (email ? email.split('@')[0] : `user_${userId.slice(0,8)}`);
                 
                 db.run(
                     `INSERT INTO users (id, username, level, games_played, games_won, rating) 
                      VALUES (?, ?, 1, 0, 0, 1000)`,
-                    [userId, username],
+                    [userId, finalUsername],
                     function(err) {
                         if (err) {
                             return next(err);
@@ -56,8 +57,8 @@ router.post('/login', async (req, res, next) => {
 
                         const newUser = {
                             id: userId,
-                            username,
-                            email: null,
+                            username: finalUsername,
+                            email: email || null,
                             avatar: '',
                             level: 1,
                             gamesPlayed: 0,
