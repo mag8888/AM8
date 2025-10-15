@@ -422,6 +422,15 @@
                                 window.app = new window.App();
                                 window.app.init?.();
                             }
+                            // Форсируем показ страницы геймборда и загрузку игровых модулей
+                            try {
+                                if (window.app && window.app._showPage) {
+                                    window.app._showPage('game-page');
+                                }
+                                if (window.app && window.app._loadGameModules) {
+                                    window.app._loadGameModules();
+                                }
+                            } catch (_) { /* no-op */ }
                             const gameState = window.app.getModule?.('gameState');
                             if (gameState) {
                                 gameState.setRoomId(roomId);
@@ -454,7 +463,6 @@
                         console.warn('⚠️ Не удалось инициализировать GameState из sessionStorage', e);
                     }
                     // Остаёмся на этой странице для отображения только игрового поля
-                    // (не перенаправляем в room.html)
                 }
             } catch (e) {
                 console.warn('⚠️ Не удалось распарсить roomId из hash, остаёмся на главной');

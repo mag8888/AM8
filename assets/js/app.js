@@ -118,6 +118,8 @@ class App {
         // Инициализация роутера
         const router = this.getRouter();
         router.route('/', () => this._handleHomeRoute(), 'Главная');
+        // Алиас для прямого захода на index.html, чтобы не было предупреждений Router
+        router.route('/index.html', () => this._handleHomeRoute(), 'Главная');
         router.route('/auth', () => this._handleAuthRoute(), 'Авторизация');
         router.route('/rooms', () => this._handleRoomsRoute(), 'Комнаты');
         router.route('/game', (state) => this._handleGameRoute(state), 'Игра');
