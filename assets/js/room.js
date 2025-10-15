@@ -917,6 +917,16 @@ function updateReadyStatus() {
     const currentPlayer = currentRoom ? currentRoom.players.find(p => p.userId === currentUser?.id || p.username === currentUser?.username) : null;
     const isCurrentlyReady = currentPlayer ? currentPlayer.isReady : false;
     
+    // Отладочная информация
+    console.log('🔍 Room: Обновление кнопки готовности:', {
+        isDreamComplete,
+        isTokenSelected,
+        canBeReady,
+        isCurrentlyReady,
+        currentPlayer: currentPlayer ? { name: currentPlayer.name, isReady: currentPlayer.isReady } : null,
+        currentUser: currentUser ? { id: currentUser.id, username: currentUser.username } : null
+    });
+    
     // Активируем кнопку только если можно быть готовым
     readyButton.disabled = !canBeReady;
     
@@ -1010,6 +1020,9 @@ async function toggleReadyStatus() {
         
         // Обновляем информацию о комнате
         await refreshRoomData();
+        
+        // Принудительно обновляем кнопку готовности
+        updateReadyStatus();
         
     } catch (error) {
         console.error('❌ Room: Ошибка обновления статуса готовности:', error);
