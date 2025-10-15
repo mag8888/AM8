@@ -291,7 +291,8 @@ function setupDynamicEventListeners() {
                     startGame(roomId);
                     break;
                 case 'join-room':
-                    showJoinRoomModal(roomId);
+                    // Быстрое присоединение: сразу в комнату для выбора мечты и фишки
+                    quickJoinRoom(roomId);
                     break;
                 case 'view-details':
                     viewRoomDetails(roomId);

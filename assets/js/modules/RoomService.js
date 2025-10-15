@@ -697,12 +697,12 @@ class RoomService {
         } catch (error) {
             console.error('❌ RoomService: Ошибка получения статистики:', error);
             
-            // Fallback на мок-данные
-            if (this.config.useMockData) {
+            // Всегда возвращаем безопасный фолбэк, чтобы UI не ломался
+            try {
                 return this._getMockStats();
+            } catch(_) {
+                return { totalRooms: this.state.rooms?.length || 0, activeRooms: 0, gamesStarted: 0, playersOnline: 0 };
             }
-            
-            throw error;
         }
     }
 
