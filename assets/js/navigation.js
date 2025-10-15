@@ -106,6 +106,8 @@ class NavigationHandler {
 
     fillAccount(username, password) {
         // Заполнение формы авторизации
+        console.log(`🔄 NavigationHandler: Попытка заполнения аккаунта ${username}`);
+        
         const usernameField = document.getElementById('login-username');
         const passwordField = document.getElementById('login-password');
 
@@ -116,14 +118,73 @@ class NavigationHandler {
             // Визуальная обратная связь
             usernameField.style.borderColor = '#10b981';
             passwordField.style.borderColor = '#10b981';
+            usernameField.style.transition = 'border-color 0.3s ease';
+            passwordField.style.transition = 'border-color 0.3s ease';
 
+            // Убираем подсветку через 2 секунды
             setTimeout(() => {
                 usernameField.style.borderColor = '';
                 passwordField.style.borderColor = '';
             }, 2000);
 
             console.log(`✅ NavigationHandler: Заполнен аккаунт ${username}`);
+            
+            // Показываем уведомление
+            this.showNotification(`Аккаунт ${username} заполнен!`, 'success');
+        } else {
+            console.warn(`⚠️ NavigationHandler: Поля формы не найдены`);
+            console.log('Username field:', usernameField);
+            console.log('Password field:', passwordField);
         }
+    }
+
+    showNotification(message, type = 'info') {
+        // Создаем уведомление
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        `;
+
+        // Цвета для разных типов
+        const colors = {
+            success: '#10b981',
+            error: '#ef4444',
+            warning: '#f59e0b',
+            info: '#6366f1'
+        };
+        notification.style.backgroundColor = colors[type] || colors.info;
+
+        // Добавляем в DOM
+        document.body.appendChild(notification);
+
+        // Анимация появления
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+
+        // Убираем через 3 секунды
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
     }
 }
 

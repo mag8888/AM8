@@ -688,10 +688,10 @@
             // Показываем нужную форму и активируем кнопку
             if (tabName === 'login') {
                 document.getElementById('login-form').classList.add('active');
-                document.querySelector('.tab-btn[onclick="switchTab(\'login\')"]').classList.add('active');
+                document.querySelector('.tab-btn[data-tab="login"]').classList.add('active');
             } else if (tabName === 'register') {
                 document.getElementById('register-form').classList.add('active');
-                document.querySelector('.tab-btn[onclick="switchTab(\'register\')"]').classList.add('active');
+                document.querySelector('.tab-btn[data-tab="register"]').classList.add('active');
             }
         }
 
@@ -832,6 +832,50 @@
                         window.location.href = 'pages/lobby.html';
                     }, 1500);
                 });
+            }
+        });
+
+        // Обработчик для кнопок быстрого входа с data-атрибутами
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-username]');
+            if (target) {
+                const username = target.getAttribute('data-username');
+                const password = target.getAttribute('data-password');
+                fillAccount(username, password);
+            }
+        });
+
+        // Обработчик для навигационных кнопок с data-route
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-route]');
+            if (target) {
+                const route = target.getAttribute('data-route');
+                if (typeof router !== 'undefined' && router.navigate) {
+                    router.navigate(route);
+                } else {
+                    // Fallback навигация
+                    const pages = {
+                        '/': 'home-page',
+                        '/auth': 'auth-page',
+                        '/lobby': 'lobby-page',
+                        '/rooms': 'rooms-page'
+                    };
+                    const pageId = pages[route];
+                    if (pageId) {
+                        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                        const targetPage = document.getElementById(pageId);
+                        if (targetPage) targetPage.classList.add('active');
+                    }
+                }
+            }
+        });
+
+        // Обработчик для переключения табов с data-tab
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-tab]');
+            if (target) {
+                const tab = target.getAttribute('data-tab');
+                switchTab(tab);
             }
         });
     </script>

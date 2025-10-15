@@ -407,6 +407,25 @@
                 }, 300);
             }, 3000);
         }
+
+        // Обработчик для кнопок быстрого входа с data-атрибутами
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-username]');
+            if (target) {
+                const username = target.getAttribute('data-username');
+                const password = target.getAttribute('data-password');
+                fillAccount(username, password);
+            }
+        });
+
+        // Обработчик для кнопки "Назад"
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-action="back"]');
+            if (target) {
+                e.preventDefault();
+                window.history.back();
+            }
+        });
         
         // Обработка форм
         document.getElementById('login-form').addEventListener('submit', async (e) => {
