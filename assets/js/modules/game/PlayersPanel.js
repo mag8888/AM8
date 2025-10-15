@@ -750,7 +750,7 @@ class PlayersPanel {
         } else {
             playersList.innerHTML = others.map((player, index) => {
                 const isActive = activePlayer && activePlayer.id === player.id;
-                const statusText = this.getPlayerStatusText(player, isActive, index);
+                const statusText = isActive ? '🎯 Ход игрока' : (player.isReady ? '✅ Готов' : '⏳ Готовится');
                 
                 return `
                     <div class="player-item ${isActive ? 'active' : ''}" data-player-id="${player.id}">

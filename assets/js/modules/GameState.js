@@ -225,6 +225,11 @@ class GameState {
         if (serverState.activePlayer) {
             this.gameState.activePlayer = serverState.activePlayer;
         }
+        // Синхронизируем текущий индекс с activePlayer, если он пришёл
+        if (this.gameState.activePlayer) {
+            const idx = this.players.findIndex(p => p.id === this.gameState.activePlayer.id);
+            if (idx >= 0) this.currentPlayerIndex = idx;
+        }
         
         if (serverState.lastDiceResult) {
             this.gameState.lastDiceResult = serverState.lastDiceResult;

@@ -102,7 +102,8 @@ router.post('/:id/end-turn', (req, res, next) => {
         state.canRoll = true;
         state.canMove = false;
         state.canEndTurn = false;
-        res.json({ success:true, state });
+        // TODO: здесь можно интегрировать PushService.broadcast(roomId, 'turn_changed', { activePlayer: state.activePlayer })
+        res.json({ success:true, state, event: { type: 'turn_changed', activePlayer: state.activePlayer } });
     });
 });
 
