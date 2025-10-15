@@ -1134,25 +1134,33 @@ async function confirmStartGame() {
             player.name === currentUser.username
         );
         
-        // Определяем ID пользователя для запуска игры
-        let userId = currentUser.id;
-        
-        // Если currentUser.id отсутствует, ищем в списке игроков
-        if (!userId && currentRoom.players) {
-            const foundPlayer = currentRoom.players.find(p => 
-                p.username === currentUser.username || 
-                p.name === currentUser.username ||
-                p.userId === currentUser.id
-            );
-            if (foundPlayer) {
-                userId = foundPlayer.userId || foundPlayer.id;
-            }
+        // Определяем ID пользователя (UUID из БД) для запуска игры
+        // Приоритет: игрок из списка комнаты -> явные поля создателя -> текущий пользователь
+        let userId = null;
+        const foundPlayer = currentRoom.players?.find(p => 
+            p.username === currentUser.username || 
+            p.name === currentUser.username ||
+            p.userId === currentUser.id
+        );
+        if (foundPlayer) {
+            userId = foundPlayer.userId || foundPlayer.id || null;
         }
-        
-        // Если всё ещё нет userId, используем username как fallback
         if (!userId) {
-            userId = currentUser.username;
+            userId = currentRoom.creatorUserId || currentRoom.creator_id || currentRoom.creatorId || null;
         }
+        if (!userId) {
+            // как крайний случай — используем currentUser.id, если он похож на UUID
+            const maybeId = currentUser.id;
+            const uuidLike = typeof maybeId === 'string' && /[a-f0-9\-]{8,}/i.test(maybeId);
+            userId = uuidLike ? maybeId : null;
+        }
+        
+        // Если всё ещё нет корректного userId — пробуем найти создателя среди игроков
+        if (!userId && currentRoom.players) {
+            const creatorPlayer = currentRoom.players.find(p => p.isCreator || p.role === 'creator' || p.isHost);
+            if (creatorPlayer) userId = creatorPlayer.userId || creatorPlayer.id || null;
+        }
+        
         
         console.log('🔍 Room: Финальные данные для запуска игры:', {
             userId: userId,
