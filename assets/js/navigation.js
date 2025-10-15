@@ -63,7 +63,6 @@ class NavigationHandler {
         const pages = {
             '/': 'home-page',
             '/auth': 'auth-page',
-            '/lobby': 'lobby-page',
             '/rooms': 'rooms-page'
         };
 

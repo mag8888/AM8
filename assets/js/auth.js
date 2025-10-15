@@ -38,11 +38,6 @@ function checkAuth() {
  * @param {string} username - имя пользователя
  */
 function updateUsernameDisplay(username) {
-    // Обновляем в заголовке лобби
-    const lobbyUsernameSpan = document.getElementById('lobby-current-username');
-    if (lobbyUsernameSpan) {
-        lobbyUsernameSpan.textContent = username;
-    }
     
     // Обновляем в заголовке комнат
     const roomsUsernameSpan = document.getElementById('current-username');

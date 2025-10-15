@@ -119,7 +119,6 @@ class App {
         const router = this.getRouter();
         router.route('/', () => this._handleHomeRoute(), 'Главная');
         router.route('/auth', () => this._handleAuthRoute(), 'Авторизация');
-        router.route('/lobby', () => this._handleLobbyRoute(), 'Лобби');
         router.route('/rooms', () => this._handleRoomsRoute(), 'Комнаты');
         router.route('/game', (state) => this._handleGameRoute(state), 'Игра');
         router.defaultRoute = '/';
@@ -218,7 +217,7 @@ class App {
                 
                 // Перенаправляем авторизованного пользователя
                 if (this._shouldRedirectAuthenticated()) {
-                    this.getRouter().navigate('/lobby');
+                    this.getRouter().navigate('/rooms');
                 }
             } else {
                 this.logger?.info('Пользователь не авторизован', null, 'App');
@@ -333,9 +332,6 @@ class App {
         this._updateNavigation('/auth');
     }
 
-    _handleLobbyRoute() {
-        window.location.href = 'pages/lobby.html';
-    }
 
     _handleRoomsRoute() {
         window.location.href = 'pages/rooms.html';
