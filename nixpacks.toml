@@ -1,5 +1,5 @@
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm ci --omit=dev || npm install --production"]
 
 [start]
-cmd = "node static-server.js"
+cmd = "node server.js"
