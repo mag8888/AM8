@@ -839,62 +839,80 @@ router.post('/:id/start', async (req, res, next) => {
                 });
             }
 
-            // Проверяем, что пользователь является создателем комнаты
-            if (room.creator_id !== userId) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Только создатель комнаты может запустить игру'
-                });
-            }
-
-            // Проверяем количество готовых игроков
-            const playersQuery = `
-                SELECT COUNT(*) as ready_count, 
-                       (SELECT COUNT(*) FROM room_players WHERE room_id = ?) as total_count
-                FROM room_players 
-                WHERE room_id = ? AND is_ready = 1
-            `;
-
-            db.get(playersQuery, [id, id], (err, counts) => {
-                if (err) {
-                    console.error('❌ Ошибка подсчета игроков:', err);
-                    return next(err);
-                }
-
-                // Для тестового режима: разрешаем старт при наличии хотя бы 1 готового игрока
-                if (counts.ready_count < 1) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Для запуска игры нужен хотя бы 1 готовый игрок'
-                    });
-                }
-
-                // Запускаем игру
-                const updateQuery = `
-                    UPDATE rooms 
-                    SET is_started = 1, status = 'playing', updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
+            // В тестовом режиме: разрешаем старт не только создателю,
+            // но любому игроку, который находится в комнате
+            const ensureMemberThenStart = () => {
+                // Проверяем количество готовых игроков
+                const playersQuery = `
+                    SELECT COUNT(*) as ready_count, 
+                           (SELECT COUNT(*) FROM room_players WHERE room_id = ?) as total_count
+                    FROM room_players 
+                    WHERE room_id = ? AND is_ready = 1
                 `;
 
-                db.run(updateQuery, [id], function(err) {
+                db.get(playersQuery, [id, id], (err, counts) => {
                     if (err) {
-                        console.error('❌ Ошибка запуска игры:', err);
+                        console.error('❌ Ошибка подсчета игроков:', err);
                         return next(err);
                     }
 
-                    console.log('🎮 Игра запущена в комнате:', id);
+                    // Разрешаем старт при наличии хотя бы 1 готового игрока (тестовый режим)
+                    if (counts.ready_count < 1) {
+                        return res.status(400).json({
+                            success: false,
+                            message: 'Для запуска игры нужен хотя бы 1 готовый игрок'
+                        });
+                    }
 
-                    res.json({
-                        success: true,
-                        message: 'Игра успешно запущена',
-                        data: {
-                            roomId: id,
-                            isStarted: true,
-                            status: 'playing'
+                    // Запускаем игру
+                    const updateQuery = `
+                        UPDATE rooms 
+                        SET is_started = 1, status = 'playing', updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    `;
+
+                    db.run(updateQuery, [id], function(err) {
+                        if (err) {
+                            console.error('❌ Ошибка запуска игры:', err);
+                            return next(err);
                         }
+
+                        console.log('🎮 Игра запущена в комнате:', id);
+
+                        res.json({
+                            success: true,
+                            message: 'Игра успешно запущена',
+                            data: {
+                                roomId: id,
+                                isStarted: true,
+                                status: 'playing'
+                            }
+                        });
                     });
                 });
-            });
+            };
+
+            if (room.creator_id !== userId) {
+                // Если не создатель — проверяем, что пользователь является участником комнаты
+                db.get('SELECT 1 FROM room_players WHERE room_id = ? AND user_id = ? LIMIT 1', [id, userId], (err, member) => {
+                    if (err) {
+                        console.error('❌ Ошибка проверки участника комнаты:', err);
+                        return next(err);
+                    }
+                    if (!member) {
+                        return res.status(403).json({
+                            success: false,
+                            message: 'Только участники комнаты могут запускать игру'
+                        });
+                    }
+                    // Участник найден — продолжаем процедуру запуска
+                    ensureMemberThenStart();
+                });
+                return; // Ждём колбэк выше
+            }
+
+            // Создатель — запускаем напрямую
+            ensureMemberThenStart();
         });
 
     } catch (error) {
