@@ -451,11 +451,16 @@
                                     dreams: p.dream ? [p.dream] : []
                                 }));
                                 gameState.startGame(players);
-                                // Устанавливаем активного игрока на текущего пользователя
-                                const self = bundle?.currentUser;
-                                const selfPlayer = players.find(pl => pl.id === (self?.id));
-                                if (selfPlayer) {
-                                    gameState.setActivePlayer(selfPlayer.id);
+                                // Детерминированно выбираем активного игрока,
+                                // чтобы клиенты были синхронны: первый по username (или id)
+                                const sorted = [...players].sort((a,b)=>{
+                                    const ua = (a.username||'').toLowerCase();
+                                    const ub = (b.username||'').toLowerCase();
+                                    if (ua && ub && ua!==ub) return ua<ub?-1:1;
+                                    return (a.id||'')<(b.id||'')?-1:1;
+                                });
+                                if (sorted[0]) {
+                                    gameState.setActivePlayer(sorted[0].id);
                                 }
                                 // Включаем режим геймборда: скрываем всё лишнее, оставляем поле
                                 document.body.classList.add('game-board-only');

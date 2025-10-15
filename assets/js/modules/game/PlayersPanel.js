@@ -722,22 +722,33 @@ class PlayersPanel {
         const playersCount = document.getElementById('players-count');
         
         if (!playersList || !playersCount) return;
-        
-        // Обновляем счетчик
+        // Обновляем счетчик (всех игроков в комнате)
         playersCount.textContent = `${players.length}/4`;
-        
+
+        // Определяем текущего пользователя, чтобы не дублировать его в списке
+        const me = this.getCurrentUserFromStorage();
+
+        // Список для отрисовки: только другие игроки
+        const others = Array.isArray(players)
+            ? players.filter(p => {
+                if (!me) return true;
+                return (p.id && p.id !== me.id) && (p.username && p.username !== me.username);
+            })
+            : [];
+
         // Получаем текущего активного игрока
+        // Активный игрок определяется по GameState (который установлен детерминированно)
         const activePlayer = this.getCurrentActivePlayer(players);
-        
-        if (players.length === 0) {
+
+        if (others.length === 0) {
             playersList.innerHTML = `
                 <div class="no-players-message">
-                    <p>Нет игроков</p>
-                    <p>Ожидание подключения</p>
+                    <p>Ждём других игроков</p>
+                    <p>Пригласите друзей или дождитесь подключения</p>
                 </div>
             `;
         } else {
-            playersList.innerHTML = players.map((player, index) => {
+            playersList.innerHTML = others.map((player, index) => {
                 const isActive = activePlayer && activePlayer.id === player.id;
                 const statusText = this.getPlayerStatusText(player, isActive, index);
                 
@@ -828,6 +839,23 @@ class PlayersPanel {
         }
         
         return '✅ Готов';
+    }
+
+    /**
+     * Текущий пользователь (из sessionStorage bundle либо localStorage)
+     */
+    getCurrentUserFromStorage() {
+        try {
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                if (bundle && bundle.currentUser) return bundle.currentUser;
+            }
+        } catch(_) {}
+        try {
+            const stored = localStorage.getItem('aura_money_user') || localStorage.getItem('currentUser');
+            return stored ? JSON.parse(stored) : null;
+        } catch(_) { return null; }
     }
 
     /**
