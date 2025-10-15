@@ -827,7 +827,8 @@ async function handleJoinRoom(event) {
     }
     
     const currentUser = getCurrentUser();
-    if (!currentUser) {
+    if (!currentUser || !currentUser.id) {
+        console.error('❌ Rooms: currentUser или currentUser.id отсутствует:', currentUser);
         showNotification('Ошибка: пользователь не авторизован', 'error');
         return;
     }
@@ -860,7 +861,8 @@ async function handleJoinRoom(event) {
         }, 1500);
         
         // Если игра может начаться и мы хост, предлагаем начать
-        if (roomService.canStartGame(currentUser.id, room)) {
+        const userId = currentUser.id; // Сохраняем ID в переменную для использования в setTimeout
+        if (userId && roomService.canStartGame(userId, room)) {
             setTimeout(() => {
                 if (confirm('Хотите начать игру сейчас?')) {
                     startGame(room.id);
