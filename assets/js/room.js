@@ -1408,8 +1408,26 @@ function showNotification(message, type = 'info') {
     }
 }
 
-// Экспорт функций для глобального доступа
+// Экспорт функций и переменных для глобального доступа
 window.loadRoomData = loadRoomData;
 window.displayUserInfo = displayUserInfo;
 window.selectToken = selectToken;
 window.toggleReadyStatus = toggleReadyStatus;
+
+// Экспорт переменных для отладки
+Object.defineProperty(window, 'currentUser', {
+    get: () => currentUser,
+    configurable: true
+});
+Object.defineProperty(window, 'currentRoom', {
+    get: () => currentRoom,
+    configurable: true
+});
+Object.defineProperty(window, 'selectedToken', {
+    get: () => selectedToken,
+    configurable: true
+});
+Object.defineProperty(window, 'dreamData', {
+    get: () => dreamData,
+    configurable: true
+});
