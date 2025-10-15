@@ -197,6 +197,7 @@ function setupEventListeners() {
     const refreshBtn = document.getElementById('refresh-rooms');
     const backBtn = document.getElementById('back-to-auth');
     const createRoomBtn = document.getElementById('create-room-btn');
+    const logoutBtn = document.getElementById('logout-btn');
     
     if (refreshBtn) {
         refreshBtn.addEventListener('click', refreshRoomsWithAnimation);
@@ -211,6 +212,10 @@ function setupEventListeners() {
     
     if (createRoomBtn) {
         createRoomBtn.addEventListener('click', showCreateRoomModal);
+    }
+    
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
     }
     
     // Модальное окно создания комнаты
@@ -1140,6 +1145,50 @@ async function refreshRoomsWithAnimation() {
         setTimeout(() => {
             roomsList.classList.remove('refreshing');
         }, 500);
+    }
+}
+
+/**
+ * Обработка выхода из системы с очисткой кеша
+ */
+async function handleLogout() {
+    try {
+        console.log('🚪 Rooms: Выход из системы...');
+        
+        // Показываем подтверждение
+        const confirmed = confirm('Вы уверены, что хотите выйти из системы?');
+        if (!confirmed) {
+            return;
+        }
+        
+        // Очищаем все данные авторизации из localStorage
+        const keysToRemove = [
+            'aura_money_token',
+            'aura_money_user', 
+            'currentUser',
+            'aura_money_dynamic_rooms',
+            'aura_money_rooms_cache',
+            'aura_money_stats_cache'
+        ];
+        
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+        });
+        
+        console.log('🧹 Rooms: Кеш сессии очищен');
+        
+        // Показываем уведомление
+        showNotification('Вы вышли из системы', 'success');
+        
+        // Перенаправляем на страницу авторизации
+        setTimeout(() => {
+            window.location.href = '/auth';
+        }, 1000);
+        
+    } catch (error) {
+        console.error('❌ Rooms: Ошибка при выходе:', error);
+        showNotification('Ошибка при выходе из системы', 'error');
     }
 }
 
