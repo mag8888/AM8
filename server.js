@@ -106,6 +106,17 @@ app.use('/api/users', usersRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
 
+// Единая страница авторизации/регистрации
+app.get(['/auth', '/auth/*', '/login', '/signin', '/pages/login', '/auth.html'], (req, res) => {
+    const authPath = path.join(process.cwd(), 'pages', 'auth.html');
+    res.sendFile(authPath, (err) => {
+        if (err) {
+            console.error('❌ Ошибка отправки pages/auth.html:', err);
+            res.status(500).json({ error: 'Failed to serve auth page' });
+        }
+    });
+});
+
 // Статические файлы (для продакшена)
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(process.cwd()));
