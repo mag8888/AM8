@@ -432,12 +432,14 @@
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+            const username = (email && email.includes('@')) ? email.split('@')[0] : email;
             
             try {
                 const resp = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    // Отправляем и email, и username для совместимости с разными бэкендами
+                    body: JSON.stringify({ email, username, password })
                 });
                 const result = await resp.json();
                 if (!resp.ok || !result.success) {
