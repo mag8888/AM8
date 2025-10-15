@@ -392,6 +392,7 @@
     
     <!-- Скрипты для страницы авторизации -->
     <script>
+        (function() {
         // Если пришли по ссылке вида #game?roomId=..., сразу открываем страницу комнаты
         const isGameHash = window.location.hash && window.location.hash.includes('game');
         if (isGameHash) {
@@ -518,6 +519,7 @@
                 }
             }
         });
+        })();
     </script>
 </body>
 </html>
