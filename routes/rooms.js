@@ -692,6 +692,7 @@ router.put('/:id/player', async (req, res, next) => {
                 updateValues.push(playerData.token);
             }
 
+            // Поддержка PlayerBundle: dream.id|description|cost
             if (playerData.dream !== undefined) {
                 updateFields.push('dream = ?');
                 updateValues.push(playerData.dream);

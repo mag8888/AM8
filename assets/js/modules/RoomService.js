@@ -888,14 +888,15 @@ class RoomService {
                 return this._updatePlayerInMockRoom(roomId, playerData);
             }
             
-            const requestData = {
-                username: playerData.username || playerData.name || 'unknown',
-                token: playerData.token || '',
-                dream: playerData.dream || '',
-                dreamCost: playerData.dreamCost || 0,
-                dreamDescription: playerData.dreamDescription || '',
-                isReady: playerData.isReady || false
-            };
+        // Принимаем единый PlayerBundle с полями { userId, username, token, dream{ id,title,description,cost }, isReady }
+        const requestData = {
+            username: playerData.username || playerData.name || 'unknown',
+            token: playerData.token || '',
+            dream: playerData.dream?.id || '',
+            dreamCost: playerData.dream?.cost || 0,
+            dreamDescription: playerData.dream?.description || '',
+            isReady: !!playerData.isReady
+        };
 
             const response = await fetch(`${this.config.baseUrl}/${roomId}/player`, {
                 method: 'PUT',

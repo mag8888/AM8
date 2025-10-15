@@ -995,15 +995,19 @@ async function toggleReadyStatus() {
         const isCurrentlyReady = currentPlayer ? currentPlayer.isReady : false;
         const newReadyState = !isCurrentlyReady;
         
-        // Отправляем данные игрока
-        const playerData = {
-            userId: currentUser.id,
-            username: currentUser.username,
-            avatar: currentUser.avatar || '',
-            isReady: newReadyState,
+        // Формируем пакет игрока (PlayerBundle)
+        const playerData = buildPlayerBundle({
+            user: currentUser,
             dream: dreamData,
-            token: selectedToken
-        };
+            token: selectedToken,
+            isReady: newReadyState
+        });
+
+        const validation = validatePlayerBundle(playerData);
+        if (!validation.isValid) {
+            showNotification(validation.message || 'Проверьте данные игрока', 'error');
+            return;
+        }
         
         // Обновляем игрока в комнате
         await roomService.updatePlayerInRoom(currentRoom.id, playerData);
@@ -1033,6 +1037,41 @@ async function toggleReadyStatus() {
         console.error('❌ Room: Ошибка обновления статуса готовности:', error);
         showNotification('Ошибка обновления статуса', 'error');
     }
+}
+
+/**
+ * Построение пакета данных игрока для сервера
+ */
+function buildPlayerBundle({ user, dream, token, isReady }) {
+    return {
+        userId: user?.id || user?.userId || null,
+        username: user?.username || user?.name || '',
+        avatar: user?.avatar || '',
+        token: token || '',
+        dream: dream?.id ? {
+            id: dream.id,
+            title: dream.title || '',
+            description: dream.description || '',
+            cost: Number(dream.cost) || 0
+        } : null,
+        isReady: !!isReady
+    };
+}
+
+/**
+ * Валидация пакета PlayerBundle
+ */
+function validatePlayerBundle(bundle) {
+    if (!bundle?.userId || !bundle?.username) {
+        return { isValid: false, message: 'Не удалось определить пользователя' };
+    }
+    if (!bundle?.token) {
+        return { isValid: false, message: 'Выберите фишку' };
+    }
+    if (!bundle?.dream || !bundle.dream.id || !bundle.dream.title || !bundle.dream.cost) {
+        return { isValid: false, message: 'Заполните мечту полностью' };
+    }
+    return { isValid: true };
 }
 
 /**
