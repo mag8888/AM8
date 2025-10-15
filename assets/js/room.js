@@ -1104,8 +1104,20 @@ async function confirmStartGame() {
         console.log('🔍 Room: Финальные данные для запуска игры:', {
             userId: userId,
             currentUser: currentUser,
-            currentRoom: currentRoom
+            currentRoom: currentRoom,
+            currentPlayer: currentPlayer,
+            creatorId: currentRoom.creatorId,
+            creator_id: currentRoom.creator_id
         });
+        
+        // Дополнительная проверка: если userId не найден, попробуем найти создателя в списке игроков
+        if (!userId && currentRoom.players) {
+            const creatorPlayer = currentRoom.players.find(p => p.isCreator || p.role === 'creator');
+            if (creatorPlayer) {
+                console.log('🔍 Room: Найден создатель в списке игроков:', creatorPlayer);
+                userId = creatorPlayer.userId || creatorPlayer.id;
+            }
+        }
         
         if (!userId) {
             throw new Error('Не удалось определить ID пользователя для запуска игры');
