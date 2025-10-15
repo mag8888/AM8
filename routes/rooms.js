@@ -595,12 +595,13 @@ router.post('/:id/join', async (req, res, next) => {
                 });
             }
 
-            if (room.is_started) {
-                return res.status(409).json({
-                    success: false,
-                    message: 'Игра уже началась'
-                });
-            }
+            // Разрешаем присоединяться после старта (тестовый режим)
+            // if (room.is_started) {
+            //     return res.status(409).json({
+            //         success: false,
+            //         message: 'Игра уже началась'
+            //     });
+            // }
 
             // Проверяем, существует ли пользователь
             db.get('SELECT id FROM users WHERE username = ?', [player.username], (err, user) => {
@@ -823,6 +824,7 @@ router.post('/:id/start', async (req, res, next) => {
                 });
             }
 
+            // Разрешаем запуск повторно только если игра ещё не начата
             if (room.is_started) {
                 return res.status(400).json({
                     success: false,
@@ -852,10 +854,11 @@ router.post('/:id/start', async (req, res, next) => {
                     return next(err);
                 }
 
-                if (counts.ready_count < 2) {
+                // Для тестового режима: разрешаем старт при наличии хотя бы 1 готового игрока
+                if (counts.ready_count < 1) {
                     return res.status(400).json({
                         success: false,
-                        message: 'Для запуска игры нужно минимум 2 готовых игрока'
+                        message: 'Для запуска игры нужен хотя бы 1 готовый игрок'
                     });
                 }
 

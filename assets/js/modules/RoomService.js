@@ -973,7 +973,8 @@ class RoomService {
 
     canJoinRoom(userId, room) {
         if (!room || !userId) return false;
-        if (room.isFull || room.isStarted) return false;
+        // Разрешаем присоединение после старта (тестовый режим)
+        if (room.isFull) return false;
         
         const existingPlayer = this.getPlayer(userId, room);
         return !existingPlayer;
@@ -983,9 +984,10 @@ class RoomService {
         const targetRoom = room || this.state.currentRoom;
         if (!targetRoom || !userId) return false;
         
-        return this.isHost(userId, targetRoom) && 
-               !targetRoom.isStarted && 
-               targetRoom.canStart;
+        // В тестовом режиме разрешаем старт, если есть хотя бы 1 готовый игрок
+        const readyCount = (targetRoom.players || []).filter(p => p.isReady).length;
+        const canStartByReady = readyCount >= 1;
+        return this.isHost(userId, targetRoom) && !targetRoom.isStarted && (targetRoom.canStart || canStartByReady);
     }
 
     /**
