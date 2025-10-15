@@ -522,9 +522,10 @@ function createRoomActions(room) {
         return '<button class="room-action view" disabled>Войдите в систему</button>';
     }
     
-    const canJoin = roomService.canJoinRoom(currentUser.id, room);
-    const canStart = roomService.canStartGame(currentUser.id, room);
-    const isInRoom = roomService.getPlayer(currentUser.id, room) !== null;
+    // Исправляем логику проверки нахождения в комнате
+    const isInRoom = checkIfPlayerInRoom(currentUser, room);
+    const canJoin = !isInRoom && roomService.canJoinRoom(currentUser.id, room);
+    const canStart = isInRoom && roomService.canStartGame(currentUser.id, room);
     
     let actions = '';
     
@@ -543,6 +544,23 @@ function createRoomActions(room) {
     actions += `<button class="room-action view" data-action="view-details" data-room-id="${room.id}">Подробнее</button>`;
     
     return actions;
+}
+
+/**
+ * Проверка, находится ли игрок в комнате
+ */
+function checkIfPlayerInRoom(user, room) {
+    if (!user || !room || !room.players) {
+        return false;
+    }
+    
+    // Проверяем по userId, id или username
+    return room.players.some(player => 
+        player.userId === user.id || 
+        player.id === user.id || 
+        player.username === user.username ||
+        player.name === user.username
+    );
 }
 
 /**
@@ -984,7 +1002,20 @@ function getCurrentUser() {
         const raw = localStorage.getItem('currentUser') || localStorage.getItem('aura_money_user');
         if (!raw) return null;
         const user = JSON.parse(raw);
-        return user;
+        
+        // Убеждаемся, что у пользователя есть все необходимые поля
+        if (user && user.isLoggedIn) {
+            return {
+                id: user.id || user.userId || 'admin',
+                username: user.username || user.name || 'admin',
+                name: user.name || user.username || 'admin',
+                email: user.email || '',
+                avatar: user.avatar || '',
+                isLoggedIn: true
+            };
+        }
+        
+        return null;
     } catch (error) {
         console.error('❌ Rooms: Ошибка получения пользователя:', error);
         return null;
