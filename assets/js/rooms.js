@@ -319,12 +319,14 @@ async function loadRooms() {
         showLoadingState();
         
         const rooms = await roomService.getAllRooms();
-        renderRooms(rooms);
+        // Если API вернул пусто, используем последние сохранённые/мок-данные, чтобы не показывать 0 комнат
+        const safeRooms = rooms && rooms.length > 0 ? rooms : (roomService.state?.rooms || roomService.mockRooms || []);
+        renderRooms(safeRooms);
         
         // Обновляем счетчик комнат
         const roomsCount = document.getElementById('rooms-count');
         if (roomsCount) {
-            roomsCount.textContent = `${rooms.length} комнат`;
+            roomsCount.textContent = `${(safeRooms || []).length} комнат`;
         }
         
     } catch (error) {
