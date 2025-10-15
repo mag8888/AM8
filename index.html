@@ -399,6 +399,18 @@
                 const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
                 const roomId = params.get('roomId');
                 if (roomId) {
+                    // Проверяем авторизацию: доступ только авторизованным
+                    try {
+                        const userRaw = localStorage.getItem('currentUser') || localStorage.getItem('aura_money_user');
+                        const user = userRaw ? JSON.parse(userRaw) : null;
+                        if (!user || !user.isLoggedIn) {
+                            window.location.href = '/auth';
+                            return;
+                        }
+                    } catch (_) {
+                        window.location.href = '/auth';
+                        return;
+                    }
                     // Попытка инициализировать игровое состояние из sessionStorage
                     try {
                         const bundleRaw = sessionStorage.getItem('am_player_bundle');
@@ -433,12 +445,15 @@
                                 if (selfPlayer) {
                                     gameState.setActivePlayer(selfPlayer.id);
                                 }
+                                // Включаем режим геймборда: скрываем всё лишнее, оставляем поле
+                                document.body.classList.add('game-board-only');
                             }
                         }
                     } catch (e) {
                         console.warn('⚠️ Не удалось инициализировать GameState из sessionStorage', e);
                     }
-                    window.location.replace(`pages/room.html?id=${roomId}`);
+                    // Остаёмся на этой странице для отображения только игрового поля
+                    // (не перенаправляем в room.html)
                 }
             } catch (e) {
                 console.warn('⚠️ Не удалось распарсить roomId из hash, остаёмся на главной');

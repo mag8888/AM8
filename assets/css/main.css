@@ -1,3 +1,31 @@
+/* Режим: только геймборд */
+.game-board-only .app-header,
+.game-board-only .auth-section,
+.game-board-only .rooms-section,
+.game-board-only .nav,
+.game-board-only .footer,
+.game-board-only .sidebar,
+.game-board-only #auth-page,
+.game-board-only #rooms-page,
+.game-board-only #home-page .non-board,
+.game-board-only .controls,
+.game-board-only .login-panel,
+.game-board-only .stats-section {
+    display: none !important;
+}
+
+.game-board-only #outer-track,
+.game-board-only #inner-track,
+.game-board-only #game-control-panel,
+.game-board-only #game-page,
+.game-board-only .board-container {
+    display: block !important;
+}
+
+.game-board-only #game-page {
+    margin: 0;
+    padding: 0;
+}
 :root {
     --page-bg-start: #030712;
     --page-bg-end: #0b1224;
