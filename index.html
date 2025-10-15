@@ -371,20 +371,17 @@
     
     <!-- Скрипты для страницы авторизации -->
     <script>
-        // Проверяем, не находимся ли мы на игровой доске
+        // Если пришли по ссылке вида #game?roomId=..., сразу открываем страницу комнаты
         if (window.location.hash && window.location.hash.includes('game')) {
-            console.log('🎮 Находимся на игровой доске, пропускаем перенаправление');
-            
-            // Проверяем, пришли ли мы с игровой комнаты
-            document.addEventListener('DOMContentLoaded', function() {
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-                if (currentUser && currentUser.fromRoom) {
-                    console.log('🎮 Переход с игровой комнаты, данные пользователя сохранены:', currentUser.username);
-                    // Убираем флаг fromRoom, чтобы не мешать дальнейшей работе
-                    currentUser.fromRoom = false;
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            try {
+                const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+                const roomId = params.get('roomId');
+                if (roomId) {
+                    window.location.replace(`pages/room.html?id=${roomId}`);
                 }
-            });
+            } catch (e) {
+                console.warn('⚠️ Не удалось распарсить roomId из hash, остаёмся на главной');
+            }
         } else {
             // Проверяем авторизацию только если не на игровой доске
             document.addEventListener('DOMContentLoaded', function() {
