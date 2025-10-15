@@ -261,7 +261,7 @@
 </head>
 <body>
     <div class="auth-container">
-        <button class="back-btn" onclick="window.history.back()">←</button>
+        <button class="back-btn" data-action="back">←</button>
         
         <div class="auth-header">
             <h1>🎮 Aura Money</h1>
@@ -290,13 +290,13 @@
             <div class="quick-accounts">
                 <h4>🚀 Быстрый вход (для тестирования):</h4>
                 <div class="quick-buttons">
-                    <button type="button" class="quick-btn" onclick="fillAccount('admin', 'admin123')">
+                    <button type="button" class="quick-btn" data-username="admin" data-password="admin123">
                         👑 Админ
                     </button>
-                    <button type="button" class="quick-btn" onclick="fillAccount('player1', 'player123')">
+                    <button type="button" class="quick-btn" data-username="player1" data-password="player123">
                         🎮 Игрок 1
                     </button>
-                    <button type="button" class="quick-btn" onclick="fillAccount('testuser', 'test123')">
+                    <button type="button" class="quick-btn" data-username="testuser" data-password="test123">
                         🧪 Тестер
                     </button>
                 </div>
@@ -328,7 +328,7 @@
         </form>
         
         <div class="auth-footer">
-            <p>Есть вопросы? <a href="#" onclick="window.history.back()">Вернуться на главную</a></p>
+            <p>Есть вопросы? <a href="#" data-action="back">Вернуться на главную</a></p>
         </div>
     </div>
     

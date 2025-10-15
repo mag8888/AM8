@@ -30,9 +30,9 @@ router.get('/', async (req, res) => {
             throw new Error('Не удалось извлечь конфигурацию из файла');
         }
         
-        // Парсим конфигурацию
-        const bigCircle = eval(bigCircleMatch[1]);
-        const smallCircle = eval(smallCircleMatch[1]);
+        // Парсим конфигурацию безопасно
+        const bigCircle = JSON.parse(bigCircleMatch[1]);
+        const smallCircle = JSON.parse(smallCircleMatch[1]);
         
         res.json({
             success: true,

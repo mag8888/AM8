@@ -133,7 +133,10 @@ router.post('/register',
             });
 
             // Генерация токена
-            const jwtSecret = process.env.JWT_SECRET || 'em1-production-secret-key-2024-railway';
+            const jwtSecret = process.env.JWT_SECRET;
+            if (!jwtSecret) {
+                throw new Error('JWT_SECRET не настроен в переменных окружения');
+            }
             const token = jwt.sign(
                 { 
                     id: user.id, 
@@ -222,7 +225,10 @@ router.post('/login',
             }
 
             // Генерация токена
-            const jwtSecret = process.env.JWT_SECRET || 'em1-production-secret-key-2024-railway';
+            const jwtSecret = process.env.JWT_SECRET;
+            if (!jwtSecret) {
+                throw new Error('JWT_SECRET не настроен в переменных окружения');
+            }
             const token = jwt.sign(
                 { 
                     id: user.id, 

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="assets/css/board.css">
     <link rel="stylesheet" href="assets/css/modals.css">
     <link rel="stylesheet" href="assets/css/fixes.css">
+    <link rel="stylesheet" href="assets/css/navigation.css">
     <style>
         /* Стили для контейнера страниц */
         #page-container {
@@ -507,15 +508,15 @@
                 </div>
                 
                 <!-- Кнопки навигации для главной страницы -->
-                <div class="main-navigation" style="position: absolute; top: 20px; left: 20px; z-index: 1000;">
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <button class="nav-btn" onclick="router.navigate('/auth')" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                <div class="main-navigation">
+                    <div class="nav-container">
+                        <button class="nav-btn" data-route="/auth">
                             🔐 Авторизация
                         </button>
-                        <button class="nav-btn" onclick="router.navigate('/lobby')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        <button class="nav-btn lobby" data-route="/lobby">
                             🏠 Лобби
                         </button>
-                        <button class="nav-btn" onclick="router.navigate('/rooms')" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        <button class="nav-btn rooms" data-route="/rooms">
                             📋 Комнаты
                         </button>
                     </div>
@@ -526,7 +527,7 @@
             <div id="auth-page" class="page">
                 <div class="auth-container">
                     <div class="auth-header">
-                        <button class="back-btn" onclick="router.navigate('/')">←</button>
+                        <button class="back-btn" data-route="/">←</button>
                         <div class="auth-title">
                             <h1>🎮 Aura Money</h1>
                             <p>Войдите в игру или создайте аккаунт</p>
@@ -534,8 +535,8 @@
                     </div>
                     
                     <div class="auth-tabs">
-                        <button class="tab-btn active" onclick="switchTab('login')">Вход</button>
-                        <button class="tab-btn" onclick="switchTab('register')">Регистрация</button>
+                        <button class="tab-btn active" data-tab="login">Вход</button>
+                        <button class="tab-btn" data-tab="register">Регистрация</button>
                     </div>
                     
                     <div class="auth-forms">
@@ -575,26 +576,26 @@
                     <div class="quick-accounts">
                         <h4>🚀 Быстрый вход (для тестирования):</h4>
                         <div class="quick-buttons">
-                            <button class="quick-btn" onclick="fillAccount('admin', 'admin123')">👑 Админ</button>
-                            <button class="quick-btn" onclick="fillAccount('player1', 'player123')">🎮 Игрок 1</button>
-                            <button class="quick-btn" onclick="fillAccount('testuser', 'test123')">🧪 Тестер</button>
+                            <button class="quick-btn" data-username="admin" data-password="admin123">👑 Админ</button>
+                            <button class="quick-btn" data-username="player1" data-password="player123">🎮 Игрок 1</button>
+                            <button class="quick-btn" data-username="testuser" data-password="test123">🧪 Тестер</button>
                         </div>
                     </div>
                     
                     <div class="auth-footer">
-                        <p>Есть вопросы? <a href="#" onclick="router.navigate('/')">Вернуться на главную</a></p>
+                        <p>Есть вопросы? <a href="#" data-route="/">Вернуться на главную</a></p>
                     </div>
                 </div>
             </div>
 
             <!-- Страница лобби -->
             <div id="lobby-page" class="page">
-                <iframe src="pages/lobby.html" width="100%" height="100%" frameborder="0" style="border-radius: 1rem;"></iframe>
+                <iframe src="pages/lobby.html" width="100%" height="100%" frameborder="0" class="page-iframe"></iframe>
             </div>
 
             <!-- Страница комнат -->
             <div id="rooms-page" class="page">
-                <iframe src="pages/rooms.html" width="100%" height="100%" frameborder="0" style="border-radius: 1rem;"></iframe>
+                <iframe src="pages/rooms.html" width="100%" height="100%" frameborder="0" class="page-iframe"></iframe>
             </div>
 
             <!-- Заглушка для других страниц -->
@@ -636,6 +637,9 @@
     
     <!-- Модуль профессий -->
     <script src="assets/js/modules/ProfessionModule.js"></script>
+    
+    <!-- Навигация -->
+    <script src="assets/js/navigation.js"></script>
 
     <!-- Главный скрипт приложения -->
     <script src="assets/js/app.js"></script>

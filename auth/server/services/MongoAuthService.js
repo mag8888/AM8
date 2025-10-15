@@ -12,7 +12,10 @@ const databaseConfig = require('../../../server/config/database');
 
 class MongoAuthService {
     constructor() {
-        this.jwtSecret = process.env.JWT_SECRET || 'default-secret-key';
+        this.jwtSecret = process.env.JWT_SECRET;
+        if (!this.jwtSecret) {
+            throw new Error('JWT_SECRET не настроен в переменных окружения');
+        }
         this.jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
         this.bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
         this.isInitialized = false;

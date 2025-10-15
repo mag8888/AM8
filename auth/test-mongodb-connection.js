@@ -4,11 +4,12 @@
  */
 
 // Устанавливаем переменные окружения для теста
-process.env.MONGODB_USERNAME = 'xqrmedia_db_user';
-process.env.MONGODB_PASSWORD = 'pOs1rKxSv9Y3e7rl';
-process.env.MONGODB_CLUSTER = 'cluster0.wvumcaj.mongodb.net';
-process.env.MONGODB_DATABASE = 'energy_money_game';
-process.env.MONGODB_OPTIONS = 'retryWrites=true&w=majority&appName=Cluster0';
+// ВНИМАНИЕ: Используйте переменные окружения, не хардкодите секреты!
+process.env.MONGODB_USERNAME = process.env.MONGODB_USERNAME || 'test_user';
+process.env.MONGODB_PASSWORD = process.env.MONGODB_PASSWORD || 'test_password';
+process.env.MONGODB_CLUSTER = process.env.MONGODB_CLUSTER || 'test-cluster.mongodb.net';
+process.env.MONGODB_DATABASE = process.env.MONGODB_DATABASE || 'test_database';
+process.env.MONGODB_OPTIONS = process.env.MONGODB_OPTIONS || 'retryWrites=true&w=majority';
 process.env.USE_MONGODB = 'true';
 
 const databaseConfig = require('./server/config/database');
