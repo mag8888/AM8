@@ -297,7 +297,13 @@ function setupDynamicEventListeners() {
                     break;
                 case 'join-room':
                     // Быстрое присоединение: сразу в комнату для выбора мечты и фишки
-                    quickJoinRoom(roomId);
+                    if (typeof quickJoinRoom === 'function') {
+                        quickJoinRoom(roomId);
+                    } else if (window.quickJoinRoom) {
+                        window.quickJoinRoom(roomId);
+                    } else {
+                        console.error('quickJoinRoom is not available');
+                    }
                     break;
                 case 'view-details':
                     viewRoomDetails(roomId);
@@ -340,7 +346,8 @@ async function quickJoinRoom(roomId) {
         };
 
         try {
-            await roomService.joinRoom(roomId, currentUser.id, playerData);
+            // joinRoom(roomId, player)
+            await roomService.joinRoom(roomId, playerData);
         } catch (_) {
             // Игнорируем ошибку, если уже в комнате или игра начата — просто переходим
         }
@@ -351,6 +358,11 @@ async function quickJoinRoom(roomId) {
         console.error('❌ Rooms: Ошибка быстрого присоединения:', error);
         showNotification('Не удалось присоединиться к комнате', 'error');
     }
+}
+
+// Экспортируем в глобальную область на всякий случай (для обработчиков делегирования и возможного inline-использования)
+if (typeof window !== 'undefined') {
+    window.quickJoinRoom = quickJoinRoom;
 }
 
 /**
