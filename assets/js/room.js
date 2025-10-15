@@ -582,11 +582,29 @@ function updateStartGameButton() {
         return;
     }
     
-    const isHost = currentRoom.creatorId === currentUser.id;
+    // Проверяем, является ли пользователь создателем комнаты
+    const isHost = currentRoom.creatorId === currentUser.id || 
+                   currentRoom.creator_id === currentUser.id ||
+                   (currentRoom.players && currentRoom.players.some(p => 
+                       (p.userId === currentUser.id || p.id === currentUser.id) && 
+                       (p.isCreator || p.role === 'creator')
+                   ));
     const playersCount = currentRoom.players.length;
     const minPlayers = currentRoom.minPlayers || 2; // По умолчанию минимум 2 игрока
     const allPlayersReady = currentRoom.players.every(player => player.isReady);
     const canStart = playersCount >= minPlayers && allPlayersReady;
+    
+    // Дополнительная отладка
+    console.log('🔍 Room: Отладка кнопки "Начать игру":', {
+        isHost,
+        playersCount,
+        minPlayers,
+        allPlayersReady,
+        canStart,
+        creatorId: currentRoom.creatorId,
+        currentUserId: currentUser.id,
+        players: currentRoom.players.map(p => ({ name: p.name, isReady: p.isReady }))
+    });
     
     // Логи для отладки (можно убрать в продакшене)
     if (playersCount >= minPlayers && !allPlayersReady) {
