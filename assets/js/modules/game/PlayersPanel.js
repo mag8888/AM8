@@ -25,7 +25,14 @@ class PlayersPanel {
         
         this.setupEventListeners();
         this.render();
-        this.renderCurrentPlayerInfo(); // Добавляем отображение информации о текущем пользователе
+        // Первичная отрисовка текущего пользователя и списка игроков
+        this.renderCurrentPlayerInfo();
+        try {
+            const initialPlayers = (this.gameState && Array.isArray(this.gameState.players)) ? this.gameState.players : [];
+            if (initialPlayers.length) {
+                this.updatePlayers(initialPlayers);
+            }
+        } catch(_) {}
         
         console.log('✅ PlayersPanel: Инициализирован');
     }
@@ -35,6 +42,12 @@ class PlayersPanel {
      */
     setupEventListeners() {
         if (this.eventBus) {
+            this.eventBus.on('game:started', (data) => {
+                if (data && Array.isArray(data.players)) {
+                    this.updatePlayers(data.players);
+                }
+                this.renderCurrentPlayerInfo();
+            });
             this.eventBus.on('game:playersUpdated', (data) => {
                 this.updatePlayers(data.players);
             });
@@ -901,20 +914,42 @@ class PlayersPanel {
         }
 
         try {
-            // Получаем данные пользователя из localStorage
-            const storedUser = localStorage.getItem('aura_money_user');
-            if (storedUser) {
-                const currentUser = JSON.parse(storedUser);
+            // Пытаемся получить PlayerBundle из sessionStorage, чтобы взять фишку и имя
+            let bundleUser = null;
+            try {
+                const bundleRaw = sessionStorage.getItem('am_player_bundle');
+                if (bundleRaw) {
+                    const bundle = JSON.parse(bundleRaw);
+                    bundleUser = bundle?.currentUser || null;
+                    // Найдём игрока из игрового состояния для получения token
+                    if (!bundleUser?.token && this.gameState && Array.isArray(this.gameState.players)) {
+                        const found = this.gameState.players.find(p => p.id === bundleUser?.id || p.username === bundleUser?.username);
+                        if (found) {
+                            bundleUser.token = found.token;
+                        }
+                    }
+                }
+            } catch(_) {}
+
+            // Фолбэк к localStorage
+            if (!bundleUser) {
+                const storedUser = localStorage.getItem('aura_money_user');
+                if (storedUser) bundleUser = JSON.parse(storedUser);
+            }
+
+            if (bundleUser) {
+                const tokenEmoji = this.getTokenIcon(bundleUser.token);
+                const avatarHtml = tokenEmoji !== '🎯' ? tokenEmoji : (bundleUser.username ? bundleUser.username.charAt(0).toUpperCase() : 'U');
                 currentPlayerInfoContainer.innerHTML = `
                     <div class="current-user-card">
-                        <div class="user-avatar">${currentUser.username ? currentUser.username.charAt(0).toUpperCase() : 'U'}</div>
+                        <div class="user-avatar">${avatarHtml}</div>
                         <div class="user-details">
-                            <span class="user-name">${currentUser.username || 'Пользователь'}</span>
+                            <span class="user-name">${bundleUser.username || 'Пользователь'}</span>
                             <span class="user-status">В игре</span>
                         </div>
                     </div>
                 `;
-                console.log('✅ PlayersPanel: Информация о текущем пользователе отрисована:', currentUser.username);
+                console.log('✅ PlayersPanel: Информация о текущем пользователе отрисована:', bundleUser.username);
             } else {
                 currentPlayerInfoContainer.innerHTML = `
                     <div class="current-user-card">
