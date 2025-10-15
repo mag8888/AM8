@@ -275,8 +275,8 @@
         
         <form class="auth-form active" id="login-form">
             <div class="form-group">
-                <label for="login-username">Имя пользователя</label>
-                <input type="text" id="login-username" placeholder="Введите имя пользователя" required>
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" placeholder="Введите email" required>
             </div>
             
             <div class="form-group">
@@ -290,13 +290,13 @@
             <div class="quick-accounts">
                 <h4>🚀 Быстрый вход (для тестирования):</h4>
                 <div class="quick-buttons">
-                    <button type="button" class="quick-btn" data-username="admin" data-password="admin123">
+                    <button type="button" class="quick-btn" data-email="admin@admin.com" data-password="admin123">
                         👑 Админ
                     </button>
-                    <button type="button" class="quick-btn" data-username="player1" data-password="player123">
+                    <button type="button" class="quick-btn" data-email="test@test.com" data-password="test123">
                         🎮 Игрок 1
                     </button>
-                    <button type="button" class="quick-btn" data-username="testuser" data-password="test123">
+                    <button type="button" class="quick-btn" data-email="roman@roman.com" data-password="roman123">
                         🧪 Тестер
                     </button>
                 </div>
@@ -349,16 +349,16 @@
         });
         
         // Функция быстрого заполнения аккаунтов
-        function fillAccount(username, password) {
+        function fillAccountByEmail(email, password) {
             // Переключаемся на вкладку входа
             document.querySelector('[data-tab="login"]').click();
             
             // Заполняем поля
-            document.getElementById('login-username').value = username;
+            document.getElementById('login-email').value = email;
             document.getElementById('login-password').value = password;
             
             // Добавляем визуальный эффект
-            const usernameField = document.getElementById('login-username');
+            const usernameField = document.getElementById('login-email');
             const passwordField = document.getElementById('login-password');
             
             usernameField.style.borderColor = '#10b981';
@@ -370,7 +370,7 @@
             }, 1000);
             
             // Показываем уведомление
-            showNotification(`Аккаунт "${username}" заполнен!`, 'success');
+            showNotification(`Данные для входа заполнены`, 'success');
         }
         
         // Функция показа уведомлений
@@ -408,13 +408,13 @@
             }, 3000);
         }
 
-        // Обработчик для кнопок быстрого входа с data-атрибутами
+        // Обработчик для кнопок быстрого входа с data-атрибутами (email)
         document.addEventListener('click', (e) => {
-            const target = e.target.closest('[data-username]');
+            const target = e.target.closest('[data-email]');
             if (target) {
-                const username = target.getAttribute('data-username');
+                const email = target.getAttribute('data-email');
                 const password = target.getAttribute('data-password');
-                fillAccount(username, password);
+                fillAccountByEmail(email, password);
             }
         });
 
@@ -427,21 +427,36 @@
             }
         });
         
-        // Обработка форм
+        // Обработка форм: реальная авторизация через /api/auth/login
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('login-username').value;
+            const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             
             try {
-                // Здесь будет логика авторизации
-                console.log('Логин:', username, password);
-                showNotification('Авторизация успешна! Переход в игру...', 'success');
-                
-                // Имитация загрузки
-                setTimeout(() => {
-                    window.location.href = '../index.html';
-                }, 1500);
+                const resp = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const result = await resp.json();
+                if (!resp.ok || !result.success) {
+                    throw new Error(result.message || 'Неверный email или пароль');
+                }
+
+                const user = { ...result.user, isLoggedIn: true };
+                localStorage.setItem('aura_money_token', result.token);
+                localStorage.setItem('aura_money_user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify({
+                    id: user.id,
+                    username: user.username,
+                    name: user.username,
+                    email: user.email,
+                    isLoggedIn: true
+                }));
+
+                showNotification('Авторизация успешна! Переход в комнаты...', 'success');
+                window.location.href = '../pages/rooms.html';
             } catch (error) {
                 showNotification('Ошибка авторизации: ' + error.message, 'error');
             }
@@ -460,13 +475,29 @@
             }
             
             try {
-                // Здесь будет логика регистрации
-                console.log('Регистрация:', username, email, password);
-                showNotification('Регистрация успешна! Теперь войдите в систему.', 'success');
-                
-                setTimeout(() => {
-                    document.querySelector('[data-tab="login"]').click();
-                }, 1500);
+                const resp = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                const result = await resp.json();
+                if (!resp.ok || !result.success) {
+                    throw new Error(result.message || 'Ошибка регистрации');
+                }
+
+                const user = { ...result.user, isLoggedIn: true };
+                localStorage.setItem('aura_money_token', result.token);
+                localStorage.setItem('aura_money_user', JSON.stringify(user));
+                localStorage.setItem('currentUser', JSON.stringify({
+                    id: user.id,
+                    username: user.username,
+                    name: user.username,
+                    email: user.email,
+                    isLoggedIn: true
+                }));
+
+                showNotification('Регистрация успешна! Переход в комнаты...', 'success');
+                window.location.href = '../pages/rooms.html';
             } catch (error) {
                 showNotification('Ошибка регистрации: ' + error.message, 'error');
             }
