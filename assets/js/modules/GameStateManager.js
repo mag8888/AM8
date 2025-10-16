@@ -37,8 +37,8 @@ class GameStateManager {
     updateFromServer(serverState) {
         const oldState = this.getState();
         
-        // Обновляем игроков
-        if (serverState.players) {
+        // Обновляем игроков (не затираем актуальное состояние пустыми данными)
+        if (Array.isArray(serverState.players) && serverState.players.length > 0) {
             this.players = serverState.players;
             console.log('🏗️ GameStateManager: Игроки обновлены:', serverState.players.map(p => ({
                 id: p.id,
@@ -81,7 +81,7 @@ class GameStateManager {
             });
         }
         
-        if (serverState.players && serverState.players.length !== oldState.players.length) {
+        if (Array.isArray(serverState.players) && serverState.players.length !== oldState.players.length && serverState.players.length > 0) {
             console.log('🏗️ GameStateManager: Отправляем событие players:updated', serverState.players);
             this.notifyListeners('players:updated', {
                 players: serverState.players,
