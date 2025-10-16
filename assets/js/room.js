@@ -1101,10 +1101,19 @@ function updateReadyStatus() {
     const readyButton = document.getElementById('ready-button');
     if (!readyButton) return;
     
-    const isDreamSelected = dreamData.id && dreamData.title;
+    const isDreamSelected = dreamData && dreamData.id && dreamData.title;
     const isDreamComplete = isDreamSelected && dreamData.description && dreamData.cost > 0;
-    const isTokenSelected = selectedToken !== null;
+    const isTokenSelected = selectedToken !== null && selectedToken !== 'null';
     const canBeReady = isDreamComplete && isTokenSelected;
+    
+    console.log('🔍 Room: Проверка готовности:', {
+        dreamData: dreamData,
+        isDreamSelected: isDreamSelected,
+        isDreamComplete: isDreamComplete,
+        selectedToken: selectedToken,
+        isTokenSelected: isTokenSelected,
+        canBeReady: canBeReady
+    });
     
     // Проверяем текущее состояние игрока
     const currentPlayer = currentRoom ? currentRoom.players.find(p => {
