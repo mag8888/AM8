@@ -452,6 +452,7 @@ class App {
         
         // Инициализируем PlayerTokens для отображения фишек игроков
         if (window.PlayerTokens) {
+            console.log('🎯 App: Инициализируем PlayerTokens...');
             const playerTokens = new window.PlayerTokens({
                 gameState: this.getModule('gameState'),
                 eventBus: this.getEventBus(),
@@ -460,26 +461,34 @@ class App {
             });
             this.modules.set('playerTokens', playerTokens);
             console.log('🎯 PlayerTokens: Инициализирован');
+        } else {
+            console.warn('⚠️ App: PlayerTokens не найден в window');
         }
         
         // Инициализируем DiceService для бросков кубика
         if (window.DiceService) {
+            console.log('🎲 App: Инициализируем DiceService...');
             const diceService = new window.DiceService({
                 gameState: this.getModule('gameState'),
                 eventBus: this.getEventBus()
             });
             this.modules.set('diceService', diceService);
             console.log('🎲 DiceService: Инициализирован');
+        } else {
+            console.warn('⚠️ App: DiceService не найден в window');
         }
         
         // Инициализируем DiceDisplay для отображения результата броска
         if (window.DiceDisplay) {
+            console.log('🎲 App: Инициализируем DiceDisplay...');
             const diceDisplay = new window.DiceDisplay({
                 eventBus: this.getEventBus(),
                 diceService: this.modules.get('diceService')
             });
             this.modules.set('diceDisplay', diceDisplay);
             console.log('🎲 DiceDisplay: Инициализирован');
+        } else {
+            console.warn('⚠️ App: DiceDisplay не найден в window');
         }
         
         // Инициализируем PlayersPanel с GameStateManager
@@ -508,6 +517,15 @@ class App {
         }
         
         this.logger?.info('Игровые модули инициализированы', null, 'App');
+        
+        // Принудительно обновляем фишки игроков после инициализации
+        setTimeout(() => {
+            const playerTokens = this.modules.get('playerTokens');
+            if (playerTokens) {
+                console.log('🎯 App: Принудительное обновление фишек игроков...');
+                playerTokens.forceUpdate();
+            }
+        }, 2000);
     }
 
     /**
