@@ -888,10 +888,31 @@ router.put('/:id/player', async (req, res, next) => {
 
         const db = getDatabase();
         if (!db) {
-            return res.status(503).json({
-                success: false,
-                message: 'База данных временно недоступна'
-            });
+            // Mongo-first path (Railway)
+            try {
+                const repo = new RoomRepository();
+                const room = await repo.getById(id);
+                if (!room) {
+                    return res.status(404).json({ success: false, message: 'Комната не найдена' });
+                }
+                const players = Array.isArray(room.players) ? room.players.slice() : [];
+                const idx = players.findIndex(p => p.username === playerData.username || p.id === playerData.userId);
+                if (idx === -1) {
+                    return res.status(404).json({ success: false, message: 'Игрок не найден в комнате' });
+                }
+                const upd = { ...players[idx] };
+                if (playerData.token !== undefined) upd.token = playerData.token;
+                if (playerData.dream !== undefined) upd.dream = playerData.dream;
+                if (playerData.dreamCost !== undefined) upd.dreamCost = playerData.dreamCost;
+                if (playerData.dreamDescription !== undefined) upd.dreamDescription = playerData.dreamDescription;
+                if (playerData.isReady !== undefined) upd.isReady = !!playerData.isReady;
+                players[idx] = upd;
+                await repo.updatePlayers(id, players);
+                return res.json({ success: true, message: 'Данные игрока обновлены (mongo)' });
+            } catch (e) {
+                console.error('❌ Mongo update player error:', e);
+                return res.status(503).json({ success: false, message: 'Сервис временно недоступен' });
+            }
         }
 
         // Находим игрока в комнате
