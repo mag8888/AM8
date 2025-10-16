@@ -232,7 +232,7 @@ class PlayerTokens {
         token.dataset.playerId = player.id;
         token.dataset.playerName = player.username;
         token.setAttribute('data-position', player.position || 0); // Добавляем атрибут позиции
-        token.style.zIndex = '2000';
+        token.style.zIndex = '2000'; /* Фишки поверх */
         
         // Используем иконку фишки вместо текста
         const tokenIcon = this.getTokenIcon(player.token);
@@ -450,7 +450,7 @@ class PlayerTokens {
             token.style.top = newY + 'px';
             
             // Добавляем визуальную индикацию сдвига
-            token.style.zIndex = 10 + index;
+            token.style.zIndex = 2000 + index; /* Фишки поверх */
             token.style.boxShadow = '0 0 10px rgba(255, 255, 255, 0.3)';
             
             console.log(`🎯 PlayerTokens: Фишка ${playerId} сдвинута на (${offset.x}, ${offset.y})`);
@@ -835,11 +835,11 @@ class PlayerTokens {
         
         // Добавляем визуальную индикацию для множественных фишек
         if (totalPlayers > 1) {
-            token.style.zIndex = 10 + (offset.x + offset.y); // Уникальный z-index
+            token.style.zIndex = 2000 + Math.abs(offset.x + offset.y); /* Фишки поверх */
             token.style.boxShadow = '0 0 8px rgba(255, 255, 255, 0.4)';
             token.style.border = '2px solid rgba(255, 255, 255, 0.6)';
         } else {
-            token.style.zIndex = '';
+            token.style.zIndex = '2000'; /* Базовый z-index */
             token.style.boxShadow = '';
             token.style.border = '';
         }
