@@ -198,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDreams();
     loadTokens();
     updateStartGameButton();
+    updateReadyStatus();
     
     // Запускаем периодическое обновление данных комнаты для получения изменений в реальном времени
     startRoomDataPolling();
@@ -826,6 +827,17 @@ function handleDreamSelection() {
             dreamCost.removeAttribute('readonly');
             
             console.log('✅ Room: Мечта выбрана:', dream.name);
+            
+            // Обновляем данные мечты
+            dreamData = {
+                id: dream.id,
+                title: dream.name,
+                description: dream.description,
+                cost: dream.cost
+            };
+            
+            // Обновляем статус готовности
+            updateReadyStatus();
         }
     } else {
         // Очищаем поля если ничего не выбрано
@@ -835,6 +847,12 @@ function handleDreamSelection() {
         // Блокируем поля
         dreamDescription.setAttribute('readonly', 'readonly');
         dreamCost.setAttribute('readonly', 'readonly');
+        
+        // Очищаем данные мечты
+        dreamData = {};
+        
+        // Обновляем статус готовности
+        updateReadyStatus();
     }
     
     // Обновляем данные мечты
@@ -999,6 +1017,8 @@ function updateReadyStatus() {
         isTokenSelected,
         canBeReady,
         isCurrentlyReady,
+        dreamData: dreamData,
+        selectedToken: selectedToken,
         currentPlayer: currentPlayer ? { name: currentPlayer.name, isReady: currentPlayer.isReady } : null,
         currentUser: currentUser ? { id: currentUser.id, username: currentUser.username } : null
     });
@@ -1045,7 +1065,17 @@ function updateReadyStatus() {
  */
 async function toggleReadyStatus() {
     try {
-        if (!currentRoom || !currentUser || !selectedToken) return;
+        console.log('🎮 Room: Попытка переключения готовности:', {
+            currentRoom: !!currentRoom,
+            currentUser: !!currentUser,
+            selectedToken: selectedToken,
+            dreamData: dreamData
+        });
+        
+        if (!currentRoom || !currentUser || !selectedToken) {
+            console.warn('⚠️ Room: Недостаточно данных для переключения готовности');
+            return;
+        }
         
         const isDreamSelected = dreamData.id && dreamData.title;
         const isDreamComplete = isDreamSelected && dreamData.description && dreamData.cost > 0;
