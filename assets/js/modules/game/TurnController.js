@@ -674,7 +674,9 @@ class TurnController {
     updateTurnInfo(state) {
         const turnInfo = this.ui.querySelector('.turn-info');
         if (turnInfo) {
-            if (state.canRoll) {
+            const currentUserId = this.getCurrentUserId();
+            const isMyTurn = state.activePlayer && (state.activePlayer.id === currentUserId);
+            if (isMyTurn) {
                 turnInfo.textContent = 'Ваш ход';
             } else if (state.activePlayer) {
                 turnInfo.textContent = `Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
