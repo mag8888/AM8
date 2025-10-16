@@ -249,8 +249,15 @@ class TurnService extends EventTarget {
      * @returns {boolean} Можно ли бросить кубик
      */
     canRoll() {
-        const state = this.getState();
-        return state && state.canRoll === true;
+        try {
+            const state = this.getState();
+            const can = state && state.canRoll === true;
+            console.log('🎲 TurnService.canRoll ->', can, state);
+            return can;
+        } catch (e) {
+            console.warn('⚠️ TurnService.canRoll: no state yet');
+            return true; // позволяем бросок, если состояние не готово
+        }
     }
     
     /**

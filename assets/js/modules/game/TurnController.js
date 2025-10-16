@@ -766,8 +766,8 @@ class TurnController {
      * Обработка броска кубика
      */
     async handleRollDice() {
-        if (this.isRolling || !this.turnService.canRoll()) return;
-        
+        if (this.isRolling) return;
+        console.log('🎲 TurnController: click roll, canRoll =', this.turnService ? this.turnService.canRoll() : 'n/a');
         try {
             await this.turnService.roll({ diceChoice: 'single' });
         } catch (error) {
