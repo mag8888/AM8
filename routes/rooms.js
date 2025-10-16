@@ -209,7 +209,16 @@ const fallbackRooms = [
 // Проверяем доступность базы данных
 function getDatabase() {
     try {
-        return require('../database/init').getDatabase();
+        // В проде на Railway используем MongoDB, локальную SQLite не поднимаем
+        if (process.env.MONGO_URL || process.env.MONGODB_URI || process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_ENVIRONMENT) {
+            console.log('🗄️ DB: Используем режим MongoDB/Remote (SQLite отключен)');
+            return null; // отключаем локальную SQLite, чтобы не нарушать правило
+        }
+        if (process.env.USE_SQLITE === 'true') {
+            return require('../database/init').getDatabase();
+        }
+        console.warn('⚠️ DB: Локальная SQLite отключена. Для Mongo используйте отдельный сервис.');
+        return null;
     } catch (error) {
         console.warn('⚠️ База данных недоступна, используем fallback данные');
         return null;
@@ -1067,11 +1076,20 @@ router.post('/:id/start', async (req, res, next) => {
 
                         console.log('🎮 Игра запущена в комнате:', id);
 
+                        // Формируем игроков из текущего server-state (если есть)
+                        let startPlayers = [];
+                        const state = gameStateByRoomId.get(id);
+                        if (state && Array.isArray(state.players) && state.players.length) {
+                            startPlayers = state.players;
+                        } else {
+                            startPlayers = [{ id: userId, username: room.creator_name || 'player1' }];
+                        }
+
                         // Отправляем push-уведомление о начале игры
                         pushService.broadcastPush('game_started', { 
                             roomId: id, 
-                            players: players,
-                            activePlayer: players[0] // Первый игрок начинает
+                            players: startPlayers,
+                            activePlayer: startPlayers[0] // Первый игрок начинает
                         }).catch(err => console.error('❌ Ошибка отправки push о начале игры:', err));
                         
                         // Отправляем реальное push-уведомление
