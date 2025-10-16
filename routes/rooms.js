@@ -50,7 +50,21 @@ function ensureGameState(db, roomId, cb) {
 router.get('/:id/players', (req, res, next) => {
     const db = getDatabase();
     const { id } = req.params;
-    if (!db) return res.json({ success:true, data: [] });
+    if (!db) {
+        // Mongo-first: вернуть игроков из Mongo комнаты
+        (async () => {
+            try {
+                const repo = new RoomRepository();
+                const room = await repo.getById(id);
+                const players = (room && Array.isArray(room.players)) ? room.players.map(p => ({ userId: p.userId || p.id, username: p.username })) : [];
+                return res.json({ success: true, data: players });
+            } catch (e) {
+                console.warn('⚠️ Mongo get players error:', e?.message);
+                return res.json({ success: true, data: [] });
+            }
+        })();
+        return;
+    }
     db.all(`SELECT rp.user_id as userId, u.username as username FROM room_players rp LEFT JOIN users u ON u.id = rp.user_id WHERE rp.room_id = ? ORDER BY u.username ASC`, [id], (err, rows) => {
         if (err) return next(err);
         res.json({ success:true, data: rows || [] });
@@ -60,6 +74,33 @@ router.get('/:id/players', (req, res, next) => {
 router.get('/:id/game-state', (req, res, next) => {
     const db = getDatabase();
     const { id } = req.params;
+    if (!db) {
+        // Mongo-first: собираем state из Mongo комнаты и кэша
+        (async () => {
+            try {
+                const repo = new RoomRepository();
+                const room = await repo.getById(id);
+                let state = gameStateByRoomId.get(id);
+                if (!state) {
+                    state = {
+                        players: (room?.players || []).map(p => ({ id: p.id || p.userId, username: p.username, position: 0, isInner: true, token: p.token || '🎯', money: 5000, isReady: !!p.isReady })),
+                        currentPlayerIndex: 0,
+                        activePlayer: null,
+                        lastDiceResult: null,
+                        canRoll: true,
+                        canMove: false,
+                        canEndTurn: false
+                    };
+                    state.activePlayer = state.players[0] || null;
+                    gameStateByRoomId.set(id, state);
+                }
+                return res.json({ success: true, state });
+            } catch (e) {
+                return res.json({ success: true, state: { players: [], currentPlayerIndex: 0, activePlayer: null } });
+            }
+        })();
+        return;
+    }
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
         res.json({ success:true, state });
