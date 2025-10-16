@@ -1111,11 +1111,39 @@ router.post('/:id/start', async (req, res, next) => {
 
         const db = getDatabase();
         if (!db) {
-            console.error('❌ База данных недоступна');
-            return res.status(503).json({
-                success: false,
-                message: 'База данных недоступна'
-            });
+            // Mongo-first start: обновляем статус комнаты и инициализируем server-state
+            try {
+                const repo = new RoomRepository();
+                const room = await repo.getById(id);
+                if (!room) return res.status(404).json({ success: false, message: 'Комната не найдена' });
+
+                await repo.updateStatus(id, { isStarted: true, status: 'playing' });
+
+                // ensure game state
+                const state = gameStateByRoomId.get(id) || {
+                    players: (room.players || []).map(p => ({ id: p.id || p.userId, username: p.username, position: 0, isInner: true, token: p.token || '🎯', money: 5000, isReady: !!p.isReady })),
+                    currentPlayerIndex: 0,
+                    activePlayer: null,
+                    lastDiceResult: null,
+                    canRoll: true,
+                    canMove: false,
+                    canEndTurn: false
+                };
+                state.activePlayer = state.players[0] || null;
+                gameStateByRoomId.set(id, state);
+
+                // push notify (safe)
+                pushService.broadcastPush('game_started', {
+                    roomId: id,
+                    players: state.players,
+                    activePlayer: state.activePlayer
+                }).catch(err => console.error('❌ Ошибка отправки push о начале игры:', err));
+
+                return res.json({ success: true, message: 'Игра успешно запущена', data: { roomId: id, isStarted: true, status: 'playing' } });
+            } catch (e) {
+                console.error('❌ Mongo start error:', e);
+                return res.status(503).json({ success: false, message: 'Сервис недоступен' });
+            }
         }
 
         // Проверяем, что комната существует и не запущена

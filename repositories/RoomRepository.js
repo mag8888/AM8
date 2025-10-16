@@ -68,6 +68,16 @@ class RoomRepository {
         );
         return this.getById(id);
     }
+
+    async updateStatus(id, patch) {
+        const db = await this.ensureDb();
+        await db.collection('rooms').updateOne(
+            { id },
+            { $set: { ...patch, updatedAt: new Date().toISOString() } },
+            { upsert: false }
+        );
+        return this.getById(id);
+    }
 }
 
 module.exports = RoomRepository;
