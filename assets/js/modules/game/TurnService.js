@@ -230,12 +230,14 @@ class TurnService extends EventTarget {
             // Эмит успешного результата
             this.emit('end:success', response);
             
+            console.log('✅ end:success', { roomId, activePlayer: response?.state?.activePlayer });
             console.log('🎮 TurnService: Ход завершен успешно');
             return response;
             
         } catch (error) {
             // Эмит ошибки
             this.emit('end:error', error);
+            console.error('❌ end:error', { roomId, error });
             console.error('❌ TurnService: Ошибка завершения хода:', error);
             throw error;
         } finally {
