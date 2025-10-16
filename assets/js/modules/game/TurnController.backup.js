@@ -1,25 +1,20 @@
 /**
- * TurnController v2.0.0 - Рефакторенная версия
+ * TurnController v1.0.0
  * UI контроллер для управления ходами игроков
- * Использует GameStateManager и PlayerList для унификации
  */
 
 class TurnController {
-    constructor(turnService, playerTokenRenderer, gameStateManager) {
+    constructor(turnService, playerTokenRenderer) {
         this.turnService = turnService;
         this.playerTokenRenderer = playerTokenRenderer;
-        this.gameStateManager = gameStateManager;
         this.ui = null;
         this.isRolling = false;
         this.isMoving = false;
         this.isMobile = window.innerWidth <= 768;
         
-        // Создаем PlayerList для отображения игроков
-        this.playerList = null;
-        
-        console.log('🎮 TurnController v2.0: Инициализация, isMobile:', this.isMobile, 'window.innerWidth:', window.innerWidth);
+        console.log('🎮 TurnController: Инициализация, isMobile:', this.isMobile, 'window.innerWidth:', window.innerWidth);
         this.init();
-        console.log('🎮 TurnController v2.0: Инициализирован');
+        console.log('🎮 TurnController: Инициализирован');
     }
     
     /**
@@ -28,45 +23,14 @@ class TurnController {
     init() {
         this.createUI();
         this.setupEventListeners();
-        this.initializePlayerList();
         this.updateUI();
-    }
-    
-    /**
-     * Инициализация PlayerList
-     */
-    initializePlayerList() {
-        if (!this.gameStateManager) {
-            console.warn('⚠️ TurnController: GameStateManager не найден');
-            return;
-        }
-        
-        // Создаем PlayerList с настройками для игрового меню
-        this.playerList = new PlayerList('turn-controller-players', {
-            showBalance: true,
-            showStatus: true,
-            showToken: true,
-            showOrder: false,
-            showCurrentUser: true,
-            filterCurrentUser: false, // Показываем всех игроков включая текущего
-            sortBy: 'status'
-        });
-        
-        // Подписываемся на обновления GameStateManager
-        this.gameStateManager.on('state:updated', (state) => {
-            this.updateFromGameState(state);
-        });
-        
-        this.gameStateManager.on('turn:changed', (data) => {
-            this.handleTurnChanged(data);
-        });
     }
     
     /**
      * Создание UI элементов
      */
     createUI() {
-        console.log('🎮 TurnController v2.0: Создание UI, isMobile:', this.isMobile);
+        console.log('🎮 TurnController: Создание UI, isMobile:', this.isMobile);
         
         // Создаем контейнер для меню ходов
         const turnMenu = document.createElement('div');
@@ -108,7 +72,7 @@ class TurnController {
                             <h3>👥 Игроки в комнате</h3>
                             <div class="players-count">2/4</div>
                         </div>
-                        <div class="players-list" id="turn-controller-players">
+                        <div class="players-list">
                             <!-- Список игроков будет генерироваться динамически -->
                             <div class="player-item active">
                                 <div class="player-avatar">🎯</div>
@@ -515,6 +479,8 @@ class TurnController {
                 animation: pulse 1s infinite;
             }
             
+            
+            
             /* На больших экранах - вертикальное расположение */
             @media (min-width: 1200px) {
                 .turn-menu {
@@ -572,7 +538,12 @@ class TurnController {
             this.ui = turnMenu;
         }
         
-        console.log('🎮 TurnController v2.0: UI создан и добавлен в DOM');
+        console.log('🎮 TurnController: UI создан и добавлен в DOM');
+        console.log('🎮 TurnController: Элементы меню:', {
+            mobileToggle: this.ui.querySelector('#mobile-menu-toggle'),
+            operationsCard: this.ui.querySelector('.game-operations-card'),
+            statusCard: this.ui.querySelector('.game-status-card')
+        });
     }
     
     /**
@@ -596,6 +567,7 @@ class TurnController {
         const endTurnBtn = this.ui.querySelector('#end-turn-btn');
         endTurnBtn.addEventListener('click', () => this.handleEndTurn());
         
+        
         // Слушатели событий TurnService
         this.turnService.on('roll:start', () => this.onRollStart());
         this.turnService.on('roll:success', (response) => this.onRollSuccess(response));
@@ -611,155 +583,6 @@ class TurnController {
         this.turnService.on('end:success', (response) => this.onEndSuccess(response));
         this.turnService.on('end:error', (error) => this.onEndError(error));
         this.turnService.on('end:finish', () => this.onEndFinish());
-    }
-    
-    /**
-     * Обновление от GameStateManager
-     * @param {Object} state - Состояние игры
-     */
-    updateFromGameState(state) {
-        if (!this.playerList) return;
-        
-        // Обновляем список игроков
-        this.playerList.updatePlayers(
-            state.players || [],
-            state.activePlayer,
-            this.getCurrentUserId()
-        );
-        
-        // Обновляем счетчик игроков
-        this.updatePlayersCount(state.players?.length || 0);
-        
-        // Обновляем информацию о ходе
-        this.updateTurnInfo(state);
-        
-        // Обновляем результат кубика
-        this.updateDiceInfo(state.lastDiceResult);
-        
-        // Обновляем кнопки
-        this.updateControlButtons(state);
-    }
-    
-    /**
-     * Обработка смены хода
-     * @param {Object} data - Данные смены хода
-     */
-    handleTurnChanged(data) {
-        console.log('🔄 TurnController: Смена хода', data);
-        
-        // Подсвечиваем активного игрока
-        if (this.playerList && data.activePlayer) {
-            this.playerList.highlightActivePlayer(data.activePlayer.id);
-        }
-        
-        // Обновляем информацию о текущем игроке
-        this.updateCurrentPlayer(data.activePlayer);
-    }
-    
-    /**
-     * Обновление счетчика игроков
-     * @param {number} count - Количество игроков
-     */
-    updatePlayersCount(count) {
-        const playersCount = this.ui.querySelector('.players-count');
-        if (playersCount) {
-            playersCount.textContent = `${count}/4`;
-        }
-    }
-    
-    /**
-     * Обновление информации о ходе
-     * @param {Object} state - Состояние игры
-     */
-    updateTurnInfo(state) {
-        const turnInfo = this.ui.querySelector('.turn-info');
-        if (turnInfo) {
-            if (state.canRoll) {
-                turnInfo.textContent = 'Ваш ход';
-            } else if (state.activePlayer) {
-                turnInfo.textContent = `Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
-            } else {
-                turnInfo.textContent = 'Ожидание';
-            }
-        }
-    }
-    
-    /**
-     * Обновление информации о кубике
-     * @param {Object} diceResult - Результат броска
-     */
-    updateDiceInfo(diceResult) {
-        if (diceResult) {
-            const diceInfo = this.ui.querySelector('.dice-info');
-            if (diceInfo) {
-                diceInfo.textContent = this.getDiceEmoji(diceResult.value);
-                diceInfo.style.color = '#10b981';
-            }
-        }
-    }
-    
-    /**
-     * Обновление информации о текущем игроке
-     * @param {Object} activePlayer - Активный игрок
-     */
-    updateCurrentPlayer(activePlayer) {
-        const currentPlayer = this.ui.querySelector('.current-player');
-        if (currentPlayer) {
-            if (activePlayer) {
-                currentPlayer.textContent = PlayerStatusUtils.getPlayerDisplayName(activePlayer);
-            } else {
-                currentPlayer.textContent = 'Загрузка...';
-            }
-        }
-    }
-    
-    /**
-     * Обновление кнопок управления
-     * @param {Object} state - Состояние игры
-     */
-    updateControlButtons(state) {
-        const rollBtn = this.ui.querySelector('#roll-dice-btn');
-        const endTurnBtn = this.ui.querySelector('#end-turn-btn');
-        
-        if (rollBtn) {
-            rollBtn.disabled = !state.canRoll || this.isRolling;
-        }
-        
-        if (endTurnBtn) {
-            endTurnBtn.disabled = !state.canEndTurn;
-        }
-        
-        // Обновляем кнопки перемещения
-        const moveBtns = this.ui.querySelectorAll('.move-btn');
-        moveBtns.forEach(btn => {
-            btn.disabled = !state.canMove || this.isMoving;
-        });
-    }
-    
-    /**
-     * Получение ID текущего пользователя
-     * @returns {string|null} ID пользователя
-     */
-    getCurrentUserId() {
-        try {
-            // Пытаемся получить из sessionStorage
-            const bundleRaw = sessionStorage.getItem('am_player_bundle');
-            if (bundleRaw) {
-                const bundle = JSON.parse(bundleRaw);
-                return bundle?.currentUser?.id;
-            }
-            
-            // Fallback к localStorage
-            const userRaw = localStorage.getItem('aura_money_user');
-            if (userRaw) {
-                const user = JSON.parse(userRaw);
-                return user?.id;
-            }
-        } catch (error) {
-            console.error('❌ TurnController: Ошибка получения ID пользователя:', error);
-        }
-        
-        return null;
     }
     
     /**
@@ -916,13 +739,110 @@ class TurnController {
     }
     
     /**
-     * Обновление UI (legacy метод для совместимости)
+     * Обновление UI
      */
     updateUI() {
-        if (!this.gameStateManager) return;
+        const state = this.turnService.getState();
+        if (!state) return;
         
-        const state = this.gameStateManager.getState();
-        this.updateFromGameState(state);
+        // Получаем всех игроков из GameState
+        const gameState = window.app ? window.app.gameState : window.gameState;
+        const allPlayers = gameState ? gameState.getPlayers() : [];
+        const activePlayer = this.turnService.getActivePlayer();
+        
+        // Обновляем список игроков
+        this.updatePlayersList(allPlayers, activePlayer);
+        
+        // Обновляем счетчик игроков
+        const playersCount = this.ui.querySelector('.players-count');
+        if (playersCount) {
+            playersCount.textContent = `${allPlayers.length}/4`;
+        }
+        
+        // Обновляем информацию о ходе
+        const turnInfo = this.ui.querySelector('.turn-info');
+        if (turnInfo) {
+            turnInfo.textContent = this.turnService.canRoll() ? 'Ваш ход' : 'Ожидание';
+        }
+        
+        // Обновляем результат кубика
+        const diceResult = this.turnService.getLastDiceResult();
+        if (diceResult) {
+            const diceInfo = this.ui.querySelector('.dice-info');
+            if (diceInfo) {
+                diceInfo.textContent = this.getDiceEmoji(diceResult.value);
+                diceInfo.style.color = '#10b981';
+            }
+        }
+        
+        // Обновляем кнопки
+        const rollBtn = this.ui.querySelector('#roll-dice-btn');
+        const endTurnBtn = this.ui.querySelector('#end-turn-btn');
+        
+        if (rollBtn) {
+            rollBtn.disabled = !this.turnService.canRoll() || this.isRolling;
+        }
+        
+        if (endTurnBtn) {
+            endTurnBtn.disabled = !this.turnService.canEndTurn();
+        }
+        
+        // Обновляем кнопки перемещения
+        const moveBtns = this.ui.querySelectorAll('.move-btn');
+        moveBtns.forEach(btn => {
+            btn.disabled = !this.turnService.canMove() || this.isMoving;
+        });
+    }
+    
+    /**
+     * Обновление списка игроков
+     */
+    updatePlayersList(allPlayers, activePlayer) {
+        const playersList = this.ui.querySelector('.players-list');
+        if (!playersList) return;
+        
+        // Очищаем список
+        playersList.innerHTML = '';
+        
+        if (allPlayers.length === 0) {
+            // Показываем заглушку, если нет игроков
+            playersList.innerHTML = `
+                <div class="player-item">
+                    <div class="player-avatar">👤</div>
+                    <div class="player-details">
+                        <div class="player-name">Нет игроков</div>
+                        <div class="player-status">Ожидание подключения</div>
+                        <div class="player-balance">-</div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Создаем элементы для каждого игрока
+        allPlayers.forEach((player, index) => {
+            const isActive = activePlayer && player.id === activePlayer.id;
+            const playerItem = document.createElement('div');
+            playerItem.className = `player-item ${isActive ? 'active' : 'waiting'}`;
+            
+            // Получаем баланс игрока
+            let playerBalance = '$0';
+            if (window.balanceManager) {
+                playerBalance = window.balanceManager.getFormattedBalance(player.id);
+            }
+            
+            playerItem.innerHTML = `
+                <div class="player-avatar">${player.token || '🎯'}</div>
+                <div class="player-details">
+                    <div class="player-name">${player.username || 'Игрок'}</div>
+                    <div class="player-status">${isActive ? 'Активен' : 'Ожидание'}</div>
+                    <div class="player-balance">${playerBalance}</div>
+                </div>
+                <div class="player-turn-indicator">${isActive ? '🎲' : '⏳'}</div>
+            `;
+            
+            playersList.appendChild(playerItem);
+        });
     }
     
     /**
@@ -942,19 +862,15 @@ class TurnController {
         }
     }
     
+    
     /**
      * Уничтожение контроллера
      */
     destroy() {
-        if (this.playerList) {
-            this.playerList.destroy();
-        }
-        
         if (this.ui) {
             this.ui.remove();
         }
-        
-        console.log('🎮 TurnController v2.0: Уничтожен');
+        console.log('🎮 TurnController: Уничтожен');
     }
 }
 

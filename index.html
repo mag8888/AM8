@@ -336,6 +336,11 @@
     <script src="assets/js/modules/EventBus.js"></script>
     <script src="assets/js/modules/GameState.js"></script>
     
+    <!-- Новые компоненты для рефакторинга -->
+    <script src="assets/js/modules/GameStateManager.js"></script>
+    <script src="assets/js/utils/PlayerStatusUtils.js"></script>
+    <script src="assets/js/components/PlayerList.js"></script>
+    
     <!-- Модули управления ходами -->
     <script src="assets/js/modules/game/RoomApi.js"></script>
     <script src="assets/js/modules/game/DiceService.js"></script>
@@ -418,46 +423,43 @@
                                 if (window.app && window.app._showPage) {
                                     window.app._showPage('game-page');
                                 }
-                                if (window.app && window.app._loadGameModules) {
-                                    window.app._loadGameModules();
+                                // Инициализируем игровые модули с GameStateManager
+                                if (window.app && window.app._initializeGameModules) {
+                                    window.app._initializeGameModules(roomId);
                                 }
-                                // Получаем серверное состояние и список игроков для синхронизации
+                                
+                                // Получаем серверное состояние и синхронизируем с GameStateManager
                                 try {
                                     const api = new window.RoomApi();
+                                    const gameStateManager = window.app.getGameStateManager();
+                                    
+                                    // Получаем состояние игры
                                     api.getGameState(roomId).then(gs => {
-                                        if (gs && gs.state && window.app.getModule) {
-                                            const gameState = window.app.getModule('gameState');
-                                            gameState.applyState(gs.state);
+                                        if (gs && gs.state && gameStateManager) {
+                                            gameStateManager.updateFromServer(gs.state);
                                         }
                                     });
+                                    
+                                    // Получаем список игроков
                                     api.getPlayers(roomId).then(pl => {
-                                        const gameState = window.app.getModule?.('gameState');
-                                        if (gameState && pl && Array.isArray(pl.data)) {
+                                        if (gameStateManager && pl && Array.isArray(pl.data)) {
                                             const srvPlayers = pl.data.map((p, idx) => ({
                                                 id: p.userId || `player${idx+1}`,
                                                 username: p.username || `Игрок ${idx+1}`,
                                                 position: 0,
                                                 isInner: true,
                                                 money: 5000,
-                                                token: '🎯',
-                                                isReady: true
+                                                token: p.token || '🎯',
+                                                isReady: p.isReady || true
                                             }));
-                                            gameState.startGame(srvPlayers);
+                                            gameStateManager.updateFromServer({ players: srvPlayers });
                                         }
                                     });
-                                } catch(_) {}
+                                } catch(error) {
+                                    console.error('❌ Ошибка синхронизации с сервером:', error);
+                                }
 
-                                // Инициализируем панель игроков в правом меню
-                                try {
-                                    if (window.PlayersPanel) {
-                                        const gameState = window.app.getModule?.('gameState');
-                                        new window.PlayersPanel({
-                                            gameState,
-                                            eventBus: window.app.getEventBus?.(),
-                                            containerId: 'players-panel'
-                                        });
-                                    }
-                                } catch (e) { console.warn('PlayersPanel init warn', e); }
+                                // PlayersPanel теперь инициализируется в _initializeGameModules
                             } catch (_) { /* no-op */ }
                             const gameState = window.app.getModule?.('gameState');
                             if (gameState) {

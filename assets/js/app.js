@@ -33,6 +33,9 @@ class App {
         this.services.set('eventBus', new window.EventBus(this.logger, this.errorHandler));
         this.services.set('router', new window.Router());
         
+        // Создаем GameStateManager для централизованного управления состоянием
+        this.services.set('gameStateManager', new window.GameStateManager());
+        
         this.logger?.info('Основные сервисы созданы', {
             services: Array.from(this.services.keys())
         }, 'App');
@@ -162,6 +165,18 @@ class App {
             });
             this.modules.set('boardLayout', boardLayout);
             this.logger?.debug('BoardLayout модуль загружен', null, 'App');
+        }
+        
+        // Инициализируем PushClient для real-time синхронизации
+        if (window.PushClient) {
+            const gameStateManager = this.getGameStateManager();
+            const pushClient = new window.PushClient(gameStateManager, {
+                enableLogging: true,
+                reconnectInterval: 5000,
+                maxReconnectAttempts: 10
+            });
+            this.services.set('pushClient', pushClient);
+            this.logger?.debug('PushClient сервис загружен', null, 'App');
         }
     }
 
@@ -403,6 +418,52 @@ class App {
     }
 
     /**
+     * Инициализация игровых модулей с GameStateManager
+     * @param {string} roomId - ID комнаты
+     */
+    _initializeGameModules(roomId) {
+        this.logger?.info('Инициализация игровых модулей для комнаты', { roomId }, 'App');
+        
+        const gameStateManager = this.getGameStateManager();
+        const pushClient = this.getPushClient();
+        
+        if (gameStateManager) {
+            gameStateManager.setRoomId(roomId);
+        }
+        
+        if (pushClient) {
+            pushClient.connect(roomId);
+        }
+        
+        // Инициализируем PlayersPanel с GameStateManager
+        if (window.PlayersPanel) {
+            const playersPanel = new window.PlayersPanel({
+                gameStateManager: gameStateManager,
+                eventBus: this.getEventBus(),
+                containerId: 'game-control-panel'
+            });
+            this.modules.set('playersPanel', playersPanel);
+        }
+        
+        // Инициализируем TurnController с GameStateManager
+        if (window.TurnController && window.TurnService) {
+            const turnService = this.modules.get('turnService');
+            const playerTokenRenderer = this.modules.get('playerTokenRenderer');
+            
+            if (turnService && playerTokenRenderer) {
+                const turnController = new window.TurnController(
+                    turnService,
+                    playerTokenRenderer,
+                    gameStateManager
+                );
+                this.modules.set('turnController', turnController);
+            }
+        }
+        
+        this.logger?.info('Игровые модули инициализированы', null, 'App');
+    }
+
+    /**
      * Публичные методы для получения сервисов и модулей
      */
     getEventBus() {
@@ -419,6 +480,14 @@ class App {
 
     getService(name) {
         return this.services.get(name);
+    }
+
+    getGameStateManager() {
+        return this.services.get('gameStateManager');
+    }
+
+    getPushClient() {
+        return this.services.get('pushClient');
     }
 
     getCurrentUser() {
