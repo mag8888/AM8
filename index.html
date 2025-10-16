@@ -175,55 +175,7 @@
             line-height: 16px !important;
         }
         
-        /* Стили для кнопки броска кубика */
-        .dice-roll-btn {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            border: 2px solid #d97706;
-            border-radius: 12px;
-            color: #1e293b;
-            font-weight: bold;
-            font-size: 0.9rem;
-            padding: 12px 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 0 auto; /* Центрирование */
-            min-width: 120px;
-            justify-content: center;
-            position: relative;
-            z-index: 3;
-        }
-        
-        .dice-roll-btn:hover {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-        }
-        
-        .dice-roll-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-        
-        .dice-roll-btn:disabled {
-            background: linear-gradient(135deg, #6b7280, #4b5563);
-            border-color: #374151;
-            color: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        
-        .dice-btn-icon {
-            font-size: 1.2rem;
-        }
-        
-        .dice-btn-text {
-            font-family: 'Courier New', monospace;
-        }
+        /* Стили кнопки удалены - только логотип */
         
         /* Стили для кнопок */
         .btn {
@@ -339,16 +291,10 @@
                             <!-- Внутренний трек (маленький круг) -->
                             <div id="inner-track" class="track inner-track"></div>
                             
-                            <!-- Центральная область с кубиком -->
+                            <!-- Центральная область с логотипом -->
                             <div class="center-area">
-                                <div class="dice-center">
-                                    <div class="logo-center" id="logo-center">
-                                        <img src="assets/images/logo.svg?v=2" alt="Aura Money" class="logo-img" id="center-logo">
-                                    </div>
-                                    <button id="roll-dice-btn" class="dice-roll-btn" title="Бросить кубик">
-                                        <span class="dice-btn-text">Бросить</span>
-                                        <span class="dice-btn-icon">🎲</span>
-                                    </button>
+                                <div class="logo-center" id="logo-center">
+                                    <img src="assets/images/logo.svg?v=2" alt="Энергия денег" class="logo-img" id="center-logo">
                                 </div>
                             </div>
                         </div>
