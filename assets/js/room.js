@@ -1157,7 +1157,7 @@ async function toggleReadyStatus() {
         
         // Определяем текущее состояние игрока
         const currentPlayer = currentRoom.players.find(p => p.userId === currentUser.id || p.username === currentUser.username);
-        const isCurrentlyReady = currentPlayer ? currentPlayer.isReady : false;
+        const isCurrentlyReady = currentPlayer ? Boolean(currentPlayer.isReady) : false;
         const newReadyState = !isCurrentlyReady;
         
         console.log('🔍 Room: Состояние игрока:', {
@@ -1167,26 +1167,38 @@ async function toggleReadyStatus() {
         });
         
         // Формируем пакет игрока (PlayerBundle)
+        console.log('🔍 Room: Формируем пакет игрока...');
         const playerData = buildPlayerBundle({
             user: currentUser,
             dream: dreamData,
             token: selectedToken,
             isReady: newReadyState
         });
+        console.log('✅ Room: Пакет игрока сформирован');
 
+        console.log('🔍 Room: Валидируем пакет игрока...');
         const validation = validatePlayerBundle(playerData);
+        console.log('🔍 Room: Результат валидации:', validation);
         if (!validation.isValid) {
             showNotification(validation.message || 'Проверьте данные игрока', 'error');
             window._toggleReadyStatusInProgress = false;
             return;
         }
+        console.log('✅ Room: Пакет игрока прошел валидацию');
         
         console.log('🔍 Room: Данные игрока для обновления:', playerData);
         
         // Обновляем игрока в комнате
         console.log('🔄 Room: Обновляем игрока в комнате...');
-        await roomService.updatePlayerInRoom(currentRoom.id, playerData);
-        console.log('✅ Room: Игрок обновлен в комнате');
+        try {
+            await roomService.updatePlayerInRoom(currentRoom.id, playerData);
+            console.log('✅ Room: Игрок обновлен в комнате');
+        } catch (error) {
+            console.error('❌ Room: Ошибка обновления игрока в комнате:', error);
+            showNotification('Ошибка обновления игрока', 'error');
+            window._toggleReadyStatusInProgress = false;
+            return;
+        }
         
         // Показываем соответствующее уведомление
         if (newReadyState) {
