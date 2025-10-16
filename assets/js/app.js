@@ -542,7 +542,9 @@ class App {
                 }
                 if (gameState) {
                     const turnService = new window.TurnService({
-                        gameState,
+                        // Некоторые реализации ожидают свойство state, добавляем алиас
+                        state: gameState,
+                        gameState: gameState,
                         eventBus: this.getEventBus()
                     });
                     this.modules.set('turnService', turnService);
