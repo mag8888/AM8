@@ -9,6 +9,7 @@ class BankModule {
         this.gameState = config.gameState || null;
         this.eventBus = config.eventBus || null;
         this.roomApi = config.roomApi || null;
+        this.professionSystem = config.professionSystem || null;
         this.currentUserId = null;
         this.currentRoomId = null;
         
@@ -89,17 +90,68 @@ class BankModule {
                                     <div class="summary-item">
                                         <span class="summary-icon income">📈</span>
                                         <span class="summary-label">Доход:</span>
-                                        <span class="summary-value income" id="bank-income">$6 000</span>
+                                        <span class="summary-value income" id="bank-income">$10 000</span>
                                     </div>
                                     <div class="summary-item">
                                         <span class="summary-icon expense">📉</span>
                                         <span class="summary-label">Расходы:</span>
-                                        <span class="summary-value expense" id="bank-expenses">$2 500</span>
+                                        <span class="summary-value expense" id="bank-expenses">$6 200</span>
                                     </div>
                                     <div class="summary-item">
                                         <span class="summary-icon payday">💰</span>
                                         <span class="summary-label">PAYDAY:</span>
-                                        <span class="summary-value payday" id="bank-salary">$3 500/мес</span>
+                                        <span class="summary-value payday" id="bank-salary">$10 000/мес</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-icon net">💎</span>
+                                        <span class="summary-label">Чистый доход:</span>
+                                        <span class="summary-value net" id="bank-net-income">$3 800/мес</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="profession-details" id="profession-details">
+                                    <div class="profession-header">
+                                        <span class="profession-icon">💼</span>
+                                        <span class="profession-name">Предприниматель</span>
+                                        <span class="profession-title">Владелец бизнеса</span>
+                                    </div>
+                                    
+                                    <div class="expenses-breakdown">
+                                        <div class="expense-item">
+                                            <span class="expense-label">Налоги (13%):</span>
+                                            <span class="expense-amount">$1 300</span>
+                                            <span class="expense-status no-payoff">Нельзя погасить</span>
+                                        </div>
+                                        <div class="expense-item">
+                                            <span class="expense-label">Прочие расходы:</span>
+                                            <span class="expense-amount">$1 500</span>
+                                            <span class="expense-status no-payoff">Нельзя погасить</span>
+                                        </div>
+                                        <div class="expense-item">
+                                            <span class="expense-label">Кредит на авто:</span>
+                                            <span class="expense-amount">$700</span>
+                                            <button class="payoff-btn" data-loan="carLoan">Погасить $14 000</button>
+                                        </div>
+                                        <div class="expense-item">
+                                            <span class="expense-label">Образовательный кредит:</span>
+                                            <span class="expense-amount">$500</span>
+                                            <button class="payoff-btn" data-loan="educationLoan">Погасить $10 000</button>
+                                        </div>
+                                        <div class="expense-item">
+                                            <span class="expense-label">Кредитные карты:</span>
+                                            <span class="expense-amount">$1 000</span>
+                                            <button class="payoff-btn" data-loan="creditCards">Погасить $20 000</button>
+                                        </div>
+                                        <div class="expense-item">
+                                            <span class="expense-label">Ипотека студия:</span>
+                                            <span class="expense-amount">$1 200</span>
+                                            <button class="payoff-btn" data-loan="mortgage">Погасить $48 000</button>
+                                        </div>
+                                        <div class="expense-item">
+                                            <span class="expense-label">Расходы на детей:</span>
+                                            <span class="expense-amount" id="children-expense">$0</span>
+                                            <button class="add-child-btn" id="add-child">Добавить ребенка</button>
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -607,6 +659,132 @@ class BankModule {
                 color: white;
             }
             
+            .profession-details {
+                margin-top: 25px;
+                padding-top: 20px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .profession-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 20px;
+            }
+            
+            .profession-icon {
+                font-size: 1.4rem;
+            }
+            
+            .profession-name {
+                color: white;
+                font-weight: 600;
+                font-size: 1.1rem;
+            }
+            
+            .profession-title {
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 0.9rem;
+                margin-left: auto;
+            }
+            
+            .expenses-breakdown {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .expense-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .expense-label {
+                color: white;
+                font-weight: 500;
+                min-width: 140px;
+                font-size: 0.9rem;
+            }
+            
+            .expense-amount {
+                color: #ef4444;
+                font-weight: 600;
+                min-width: 80px;
+                text-align: right;
+            }
+            
+            .expense-status {
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                margin-left: auto;
+            }
+            
+            .expense-status.no-payoff {
+                background: rgba(107, 114, 128, 0.3);
+                color: #9ca3af;
+            }
+            
+            .payoff-btn {
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                margin-left: auto;
+            }
+            
+            .payoff-btn:hover {
+                background: linear-gradient(135deg, #059669, #047857);
+                transform: translateY(-1px);
+            }
+            
+            .payoff-btn:disabled {
+                background: rgba(107, 114, 128, 0.3);
+                color: #9ca3af;
+                cursor: not-allowed;
+                transform: none;
+            }
+            
+            .add-child-btn {
+                background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                margin-left: auto;
+            }
+            
+            .add-child-btn:hover {
+                background: linear-gradient(135deg, #7c3aed, #6d28d9);
+                transform: translateY(-1px);
+            }
+            
+            .add-child-btn:disabled {
+                background: rgba(107, 114, 128, 0.3);
+                color: #9ca3af;
+                cursor: not-allowed;
+                transform: none;
+            }
+            
+            .summary-value.net {
+                color: #10b981;
+            }
+            
             /* Адаптивность */
             @media (max-width: 768px) {
                 .bank-container {
@@ -656,6 +834,21 @@ class BankModule {
         const creditTake = this.ui.querySelector('#credit-take');
         creditTake.addEventListener('click', () => this.takeCredit());
         
+        // Погашение кредитов
+        const payoffButtons = this.ui.querySelectorAll('.payoff-btn');
+        payoffButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const loanType = e.target.dataset.loan;
+                this.payOffLoan(loanType);
+            });
+        });
+        
+        // Добавление ребенка
+        const addChildBtn = this.ui.querySelector('#add-child');
+        if (addChildBtn) {
+            addChildBtn.addEventListener('click', () => this.addChild());
+        }
+        
         console.log('🏦 BankModule: Обработчики настроены');
     }
     
@@ -692,28 +885,41 @@ class BankModule {
         const currentPlayer = this.gameState.getCurrentPlayer();
         if (!currentPlayer) return;
         
+        // Получаем данные профессии
+        const professionId = currentPlayer.profession || 'entrepreneur';
+        const professionDetails = this.professionSystem ? 
+            this.professionSystem.getProfessionDetails(professionId, {
+                money: currentPlayer.money || 0,
+                children: currentPlayer.children || 0,
+                paidOffLoans: currentPlayer.paidOffLoans || {},
+                extraIncome: currentPlayer.extraIncome || 0
+            }) : null;
+        
         // Обновляем баланс
         const balanceElement = this.ui.querySelector('#bank-balance');
         if (balanceElement) {
             balanceElement.textContent = `$${this.formatNumber(currentPlayer.money || 0)}`;
         }
         
-        // Обновляем доходы
+        // Обновляем доходы (из профессии или из игрока)
         const incomeElement = this.ui.querySelector('#bank-income');
         if (incomeElement) {
-            incomeElement.textContent = `$${this.formatNumber(currentPlayer.totalIncome || 0)}`;
+            const totalIncome = professionDetails ? professionDetails.income.total : (currentPlayer.totalIncome || 0);
+            incomeElement.textContent = `$${this.formatNumber(totalIncome)}`;
         }
         
-        // Обновляем расходы
+        // Обновляем расходы (из профессии или из игрока)
         const expensesElement = this.ui.querySelector('#bank-expenses');
         if (expensesElement) {
-            expensesElement.textContent = `$${this.formatNumber(currentPlayer.monthlyExpenses || 0)}`;
+            const totalExpenses = professionDetails ? professionDetails.expenses.total : (currentPlayer.monthlyExpenses || 0);
+            expensesElement.textContent = `$${this.formatNumber(totalExpenses)}`;
         }
         
-        // Обновляем зарплату
+        // Обновляем зарплату (из профессии или из игрока)
         const salaryElement = this.ui.querySelector('#bank-salary');
         if (salaryElement) {
-            salaryElement.textContent = `$${this.formatNumber(currentPlayer.salary || 0)}/мес`;
+            const salary = professionDetails ? professionDetails.income.salary : (currentPlayer.salary || 0);
+            salaryElement.textContent = `$${this.formatNumber(salary)}/мес`;
         }
         
         // Обновляем кредит
@@ -728,7 +934,66 @@ class BankModule {
             maxCreditElement.textContent = `$${this.formatNumber(this.bankState.maxCredit)}`;
         }
         
-        console.log('🏦 BankModule: Данные обновлены');
+        // Обновляем чистый доход
+        const netIncomeElement = this.ui.querySelector('#bank-net-income');
+        if (netIncomeElement && professionDetails) {
+            netIncomeElement.textContent = `$${this.formatNumber(professionDetails.netIncome.netIncome)}/мес`;
+        }
+        
+        // Обновляем детальную информацию о профессии
+        if (professionDetails) {
+            this.updateProfessionDetails(professionDetails, currentPlayer);
+        }
+        
+        // Сохраняем детали профессии для использования в других методах
+        this.currentProfessionDetails = professionDetails;
+        
+        console.log('🏦 BankModule: Данные обновлены с учетом профессии');
+    }
+    
+    /**
+     * Обновление детальной информации о профессии
+     */
+    updateProfessionDetails(professionDetails, player) {
+        if (!professionDetails || !this.ui) return;
+        
+        // Обновляем заголовок профессии
+        const professionName = this.ui.querySelector('.profession-name');
+        const professionTitle = this.ui.querySelector('.profession-title');
+        if (professionName) professionName.textContent = professionDetails.profession.name;
+        if (professionTitle) professionTitle.textContent = professionDetails.profession.title;
+        
+        // Обновляем расходы на детей
+        const childrenExpense = this.ui.querySelector('#children-expense');
+        if (childrenExpense && professionDetails.children) {
+            childrenExpense.textContent = `$${this.formatNumber(professionDetails.children.monthlyExpense)}`;
+        }
+        
+        // Обновляем кнопки погашения кредитов
+        const payoffButtons = this.ui.querySelectorAll('.payoff-btn');
+        payoffButtons.forEach(btn => {
+            const loanType = btn.dataset.loan;
+            const loan = professionDetails.expenses[loanType];
+            
+            if (loan && loan.amount > 0) {
+                btn.textContent = `Погасить $${this.formatNumber(loan.payOffAmount)}`;
+                btn.disabled = !this.professionSystem.canPayOffLoan('entrepreneur', loanType, player.money || 0);
+            } else {
+                btn.textContent = 'Погашено';
+                btn.disabled = true;
+            }
+        });
+        
+        // Обновляем кнопку добавления ребенка
+        const addChildBtn = this.ui.querySelector('#add-child');
+        if (addChildBtn && professionDetails.children) {
+            addChildBtn.disabled = !professionDetails.children.canHaveMore;
+            if (professionDetails.children.canHaveMore) {
+                addChildBtn.textContent = `Добавить ребенка (+$${this.formatNumber(professionDetails.children.nextChildExpense - professionDetails.children.monthlyExpense)}/мес)`;
+            } else {
+                addChildBtn.textContent = 'Максимум детей';
+            }
+        }
     }
     
     /**
@@ -848,6 +1113,104 @@ class BankModule {
      */
     takeCredit() {
         this.showNotification('Функция кредитов в разработке', 'info');
+    }
+    
+    /**
+     * Погашение кредита
+     */
+    payOffLoan(loanType) {
+        if (!this.professionSystem || !this.gameState) {
+            this.showNotification('Система профессий недоступна', 'error');
+            return;
+        }
+        
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        if (!currentPlayer) {
+            this.showNotification('Текущий игрок не найден', 'error');
+            return;
+        }
+        
+        const payOffResult = this.professionSystem.payOffLoan('entrepreneur', loanType, {
+            money: currentPlayer.money || 0,
+            paidOffLoans: currentPlayer.paidOffLoans || {}
+        });
+        
+        if (!payOffResult || !payOffResult.success) {
+            this.showNotification(payOffResult?.message || 'Не удалось погасить кредит', 'error');
+            return;
+        }
+        
+        // Обновляем данные игрока
+        if (!currentPlayer.paidOffLoans) {
+            currentPlayer.paidOffLoans = {};
+        }
+        currentPlayer.paidOffLoans[loanType] = true;
+        currentPlayer.money -= payOffResult.payOffAmount;
+        
+        // Обновляем UI
+        this.updateBankData();
+        
+        // Добавляем транзакцию
+        this.addTransaction(
+            `Погашение ${this.getLoanDisplayName(loanType)}`,
+            `Погашен кредит на $${this.formatNumber(payOffResult.payOffAmount)}`,
+            -payOffResult.payOffAmount,
+            'completed'
+        );
+        
+        this.showNotification(
+            `Кредит погашен! Экономия: $${this.formatNumber(payOffResult.monthlySavings)}/мес`,
+            'success'
+        );
+    }
+    
+    /**
+     * Добавление ребенка
+     */
+    addChild() {
+        if (!this.professionSystem || !this.gameState) {
+            this.showNotification('Система профессий недоступна', 'error');
+            return;
+        }
+        
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        if (!currentPlayer) {
+            this.showNotification('Текущий игрок не найден', 'error');
+            return;
+        }
+        
+        const addChildResult = this.professionSystem.addChild('entrepreneur', {
+            children: currentPlayer.children || 0
+        });
+        
+        if (!addChildResult || !addChildResult.success) {
+            this.showNotification(addChildResult?.message || 'Не удалось добавить ребенка', 'error');
+            return;
+        }
+        
+        // Обновляем данные игрока
+        currentPlayer.children = addChildResult.newChildrenCount;
+        
+        // Обновляем UI
+        this.updateBankData();
+        
+        this.showNotification(
+            `Ребенок добавлен! Дополнительные расходы: $${this.formatNumber(addChildResult.additionalMonthlyExpense)}/мес`,
+            'info'
+        );
+    }
+    
+    /**
+     * Получение отображаемого названия кредита
+     */
+    getLoanDisplayName(loanType) {
+        const names = {
+            carLoan: 'Кредит на авто',
+            educationLoan: 'Образовательный кредит',
+            creditCards: 'Кредитные карты',
+            mortgage: 'Ипотека студия'
+        };
+        return names[loanType] || loanType;
     }
     
     /**

@@ -507,6 +507,18 @@ class App {
             console.warn('⚠️ App: DiceDisplay не найден в window');
         }
         
+        // Инициализируем ProfessionSystem
+        if (window.ProfessionSystem) {
+            const professionSystem = new window.ProfessionSystem({
+                gameState: this.modules.get('gameState'),
+                eventBus: this.getEventBus()
+            });
+            this.modules.set('professionSystem', professionSystem);
+            console.log('💼 ProfessionSystem: Инициализирован');
+        } else {
+            console.warn('⚠️ App: ProfessionSystem не найден в window');
+        }
+        
         // Инициализируем PlayersPanel с GameStateManager
         if (window.PlayersPanel) {
             const playersPanel = new window.PlayersPanel({
