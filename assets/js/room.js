@@ -669,7 +669,7 @@ function updatePlayersList() {
             kickBtn.addEventListener('click', () => kickPlayer(player));
             playerItem.querySelector('.player-info')?.appendChild(kickBtn);
         }
-
+        
         playersList.appendChild(playerItem);
     });
 }
@@ -773,7 +773,7 @@ function displayUserInfo() {
         
         if (raw) {
             try {
-                currentUser = JSON.parse(raw);
+            currentUser = JSON.parse(raw);
             } catch (error) {
                 console.error('❌ Room: Ошибка парсинга currentUser:', error);
                 currentUser = null;
@@ -791,20 +791,20 @@ function displayUserInfo() {
             };
             console.log('🔧 Room: Создан fallback currentUser:', currentUser);
         }
-        
-        const userAvatar = document.getElementById('room-user-avatar');
-        const userName = document.getElementById('room-user-name');
-        
-        if (userAvatar && userName) {
-            // Устанавливаем первую букву имени пользователя
-            const username = currentUser.username || currentUser.name || currentUser.email || 'User';
-            const firstLetter = username.charAt(0).toUpperCase();
-            userAvatar.textContent = firstLetter;
             
-            // Устанавливаем имя пользователя
-            userName.textContent = username || 'Пользователь';
+            const userAvatar = document.getElementById('room-user-avatar');
+            const userName = document.getElementById('room-user-name');
             
-            console.log('✅ Room: Информация о пользователе отображена:', currentUser.username || currentUser.name);
+            if (userAvatar && userName) {
+                // Устанавливаем первую букву имени пользователя
+                const username = currentUser.username || currentUser.name || currentUser.email || 'User';
+                const firstLetter = username.charAt(0).toUpperCase();
+                userAvatar.textContent = firstLetter;
+                
+                // Устанавливаем имя пользователя
+                userName.textContent = username || 'Пользователь';
+                
+                console.log('✅ Room: Информация о пользователе отображена:', currentUser.username || currentUser.name);
         } else {
             console.log('⚠️ Room: Пользователь не авторизован');
             showAuthRequired();
@@ -1023,8 +1023,18 @@ async function selectToken(tokenId) {
                 };
                 
                 console.log('🔍 Room: selectToken - обновляем игрока с данными:', playerData);
-                await roomService.updatePlayerInRoom(currentRoom.id, playerData);
+                const updateResult = await roomService.updatePlayerInRoom(currentRoom.id, playerData);
                 console.log('✅ Room: selectToken - игрок обновлен');
+                console.log('🔍 Room: selectToken - ответ сервера:', {
+                    success: updateResult.success,
+                    room: updateResult.room,
+                    players: updateResult.room?.players?.map(p => ({
+                        name: p.name,
+                        username: p.username,
+                        isReady: p.isReady,
+                        isReadyType: typeof p.isReady
+                    }))
+                });
             }
             
             // Отправляем уведомление другим игрокам о выборе фишки
@@ -1090,12 +1100,28 @@ function updateReadyStatus() {
             console.log('🔍 Room: Найден текущий игрок:', {
                 player: p,
                 currentUser: currentUser,
-                matchType: p.userId === currentUser?.id ? 'userId' : 'username'
+                matchType: p.userId === currentUser?.id ? 'userId' : 'username',
+                playerIsReady: p.isReady,
+                playerIsReadyType: typeof p.isReady
             });
         }
         return matches;
     }) : null;
+    
+    // Проверяем готовность игрока - только если он действительно готов
     const isCurrentlyReady = currentPlayer ? Boolean(currentPlayer.isReady) : false;
+    
+    console.log('🔍 Room: Анализ готовности игрока:', {
+        currentPlayer: currentPlayer ? {
+            name: currentPlayer.name,
+            username: currentPlayer.username,
+            isReady: currentPlayer.isReady,
+            isReadyType: typeof currentPlayer.isReady,
+            isReadyValue: currentPlayer.isReady
+        } : null,
+        isCurrentlyReady,
+        isCurrentlyReadyType: typeof isCurrentlyReady
+    });
     
     // Если игрок не найден в комнате, считаем что он не готов
     const playerExists = currentPlayer !== null;
@@ -1260,7 +1286,7 @@ async function toggleReadyStatus() {
         // Обновляем игрока в комнате
         console.log('🔄 Room: Обновляем игрока в комнате...');
         try {
-            await roomService.updatePlayerInRoom(currentRoom.id, playerData);
+        await roomService.updatePlayerInRoom(currentRoom.id, playerData);
             console.log('✅ Room: Игрок обновлен в комнате');
         } catch (error) {
             console.error('❌ Room: Ошибка обновления игрока в комнате:', error);
