@@ -815,20 +815,26 @@ class TurnController {
     }
     
     onRollSuccess(response) {
-        const diceResult = this.ui.querySelector('#dice-result');
-        const diceValue = this.ui.querySelector('.dice-value');
-        const diceNumber = this.ui.querySelector('.dice-number');
+        const diceResultEl = this.ui.querySelector('#dice-result');
+        const diceValueEl = this.ui.querySelector('.dice-value');
+        const diceNumberEl = this.ui.querySelector('.dice-number');
         const moveActions = this.ui.querySelector('#move-actions');
-        
-        // Показываем результат броска
-        diceResult.style.display = 'block';
-        diceValue.textContent = this.getDiceEmoji(response.diceResult.value);
-        diceNumber.textContent = response.diceResult.value;
+
+        // Универсально достаём значение броска: сервер или локальный
+        const serverValue = response && response.diceResult && response.diceResult.value;
+        const localValue = response && response.localRoll && (response.localRoll.value || response.localRoll.total);
+        const value = serverValue ?? localValue ?? null;
+
+        // Показываем результат броска (если значение неизвестно — ставим ?)
+        diceResultEl.style.display = 'block';
+        const valueEmoji = this.getDiceEmoji(Math.max(1, Math.min(6, Number(value) || 1)));
+        diceValueEl.textContent = valueEmoji;
+        diceNumberEl.textContent = value != null ? String(value) : '?';
         
         // Показываем кнопки перемещения
         moveActions.style.display = 'block';
         
-        this.updateStatus(`Выпало: ${response.diceResult.value}`);
+        this.updateStatus(`Выпало: ${value != null ? value : '?'}`);
     }
     
     onRollError(error) {
