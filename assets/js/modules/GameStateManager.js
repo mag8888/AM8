@@ -82,12 +82,14 @@ class GameStateManager {
         }
         
         if (serverState.players && serverState.players.length !== oldState.players.length) {
+            console.log('🏗️ GameStateManager: Отправляем событие players:updated', serverState.players);
             this.notifyListeners('players:updated', {
                 players: serverState.players,
                 added: serverState.players.length > oldState.players.length
             });
             
             // Уведомляем о необходимости обновить фишки
+            console.log('🏗️ GameStateManager: Отправляем событие game:playersUpdated', serverState.players);
             this.notifyListeners('game:playersUpdated', {
                 players: serverState.players
             });
@@ -243,6 +245,8 @@ class GameStateManager {
      * @param {*} data - Данные события
      */
     notifyListeners(event, data) {
+        console.log(`🏗️ GameStateManager: notifyListeners(${event})`, { listenersCount: this.listeners.has(event) ? this.listeners.get(event).length : 0, data });
+        
         if (this.listeners.has(event)) {
             this.listeners.get(event).forEach(callback => {
                 try {
@@ -251,6 +255,8 @@ class GameStateManager {
                     console.error(`❌ GameStateManager: Ошибка в обработчике ${event}:`, error);
                 }
             });
+        } else {
+            console.warn(`⚠️ GameStateManager: Нет слушателей для события ${event}`);
         }
     }
     

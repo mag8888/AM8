@@ -23,6 +23,11 @@ class PlayerTokens {
         this.setupEventListeners();
         this.addStyles();
         
+        // Принудительно обновляем фишки через небольшую задержку
+        setTimeout(() => {
+            this.forceUpdate();
+        }, 1000);
+        
         console.log('✅ PlayerTokens: Инициализирован');
     }
     
@@ -32,19 +37,30 @@ class PlayerTokens {
     setupEventListeners() {
         if (this.eventBus) {
             this.eventBus.on('game:playersUpdated', (data) => {
+                console.log('🎯 PlayerTokens: Получено событие game:playersUpdated', data);
                 this.updateTokens(data.players);
             });
             
             this.eventBus.on('player:positionUpdated', (data) => {
+                console.log('🎯 PlayerTokens: Получено событие player:positionUpdated', data);
                 this.updateTokenPosition(data.playerId, data.position, data.player.isInner);
             });
             
             this.eventBus.on('game:started', () => {
+                console.log('🎯 PlayerTokens: Получено событие game:started');
                 // При старте игры рендерим фишки всех игроков
                 if (this.gameState && this.gameState.players) {
                     this.renderTokens(this.gameState.players);
                 }
             });
+            
+            // Добавляем слушатель для обновления игроков из GameStateManager
+            this.eventBus.on('players:updated', (data) => {
+                console.log('🎯 PlayerTokens: Получено событие players:updated', data);
+                this.updateTokens(data.players);
+            });
+        } else {
+            console.warn('⚠️ PlayerTokens: EventBus не найден');
         }
     }
     
@@ -157,10 +173,16 @@ class PlayerTokens {
      * Рендер фишек для всех игроков
      */
     renderTokens(players) {
+        console.log('🎯 PlayerTokens: renderTokens вызван с игроками:', players);
+        
         if (!players || players.length === 0) {
             // Пытаемся получить игроков из GameState
             players = this.getPlayers();
-            if (!players || players.length === 0) return;
+            console.log('🎯 PlayerTokens: Получены игроки из GameState:', players);
+            if (!players || players.length === 0) {
+                console.warn('⚠️ PlayerTokens: Нет игроков для отображения');
+                return;
+            }
         }
         
         console.log('🎯 PlayerTokens: Рендер фишек для', players.length, 'игроков');
@@ -189,6 +211,8 @@ class PlayerTokens {
      * Создание фишек на определенной позиции
      */
     createTokensAtPosition(players, position, isInner) {
+        console.log('🎯 PlayerTokens: createTokensAtPosition', { players, position, isInner });
+        
         const trackSelector = isInner ? this.innerTrackSelector : this.outerTrackSelector;
         const trackElement = document.querySelector(trackSelector);
         
@@ -196,6 +220,8 @@ class PlayerTokens {
             console.warn('⚠️ PlayerTokens: Трек не найден:', trackSelector);
             return;
         }
+        
+        console.log('🎯 PlayerTokens: Трек найден:', trackElement);
         
         // Находим клетку по позиции
         const cell = trackElement.querySelector(`[data-position="${position}"]`);
