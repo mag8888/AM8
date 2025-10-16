@@ -756,16 +756,34 @@ function displayUserInfo() {
         const storedToken = localStorage.getItem('aura_money_token') || 'ok'; // для статического режима токен может отсутствовать
         
         if (raw) {
-            currentUser = JSON.parse(raw);
-            
-            const userAvatar = document.getElementById('room-user-avatar');
-            const userName = document.getElementById('room-user-name');
-            
-            if (userAvatar && userName) {
-                // Устанавливаем первую букву имени пользователя
-                const username = currentUser.username || currentUser.name || currentUser.email || 'User';
-                const firstLetter = username.charAt(0).toUpperCase();
-                userAvatar.textContent = firstLetter;
+            try {
+                currentUser = JSON.parse(raw);
+            } catch (error) {
+                console.error('❌ Room: Ошибка парсинга currentUser:', error);
+                currentUser = null;
+            }
+        }
+        
+        // Если currentUser не найден или некорректный, создаем fallback
+        if (!currentUser || !currentUser.username) {
+            console.warn('⚠️ Room: currentUser не найден, создаем fallback');
+            currentUser = {
+                id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                username: 'player1',
+                name: 'Игрок 1',
+                avatar: '👤'
+            };
+            console.log('🔧 Room: Создан fallback currentUser:', currentUser);
+        }
+        
+        const userAvatar = document.getElementById('room-user-avatar');
+        const userName = document.getElementById('room-user-name');
+        
+        if (userAvatar && userName) {
+            // Устанавливаем первую букву имени пользователя
+            const username = currentUser.username || currentUser.name || currentUser.email || 'User';
+            const firstLetter = username.charAt(0).toUpperCase();
+            userAvatar.textContent = firstLetter;
                 
                 // Устанавливаем имя пользователя
                 userName.textContent = username || 'Пользователь';
@@ -982,13 +1000,16 @@ async function selectToken(tokenId) {
                 const playerData = {
                     userId: currentUser.id,
                     username: currentUser.username,
+                    name: currentUser.name || currentUser.username,
                     avatar: currentUser.avatar || '',
                     isReady: false, // Сбрасываем готовность при смене фишки
                     dream: dreamData,
                     token: selectedToken
                 };
                 
+                console.log('🔍 Room: selectToken - обновляем игрока с данными:', playerData);
                 await roomService.updatePlayerInRoom(currentRoom.id, playerData);
+                console.log('✅ Room: selectToken - игрок обновлен');
             }
             
             // Отправляем уведомление другим игрокам о выборе фишки
@@ -1169,6 +1190,10 @@ async function toggleReadyStatus() {
         // Формируем пакет игрока (PlayerBundle)
         console.log('🔍 Room: Формируем пакет игрока...');
         console.log('🔍 Room: currentUser для пакета:', currentUser);
+        console.log('🔍 Room: dreamData для пакета:', dreamData);
+        console.log('🔍 Room: selectedToken для пакета:', selectedToken);
+        console.log('🔍 Room: newReadyState для пакета:', newReadyState);
+        
         const playerData = buildPlayerBundle({
             user: currentUser,
             dream: dreamData,
@@ -1500,10 +1525,16 @@ async function confirmStartGame() {
  */
 async function checkTokenUniqueness(tokenId) {
     try {
-        if (!currentRoom || !currentUser) return true;
+        if (!currentRoom || !currentUser) {
+            console.log('🔍 Room: checkTokenUniqueness - нет currentRoom или currentUser');
+            return true;
+        }
+        
+        console.log('🔍 Room: checkTokenUniqueness - проверяем фишку:', tokenId);
+        console.log('🔍 Room: checkTokenUniqueness - currentUser:', currentUser);
+        console.log('🔍 Room: checkTokenUniqueness - игроки в комнате:', currentRoom.players);
         
         // Проверяем, не выбрана ли эта фишка другими игроками
-        // Используем username для поиска, как в updateTokensAvailability
         const isTokenTaken = currentRoom.players.some(player => {
             // Проверяем, что это не текущий пользователь
             const isNotCurrentUser = player.username !== currentUser.username && 
@@ -1511,7 +1542,17 @@ async function checkTokenUniqueness(tokenId) {
                                    (currentUser.id ? player.userId !== currentUser.id : true);
             
             // И что фишка выбрана
-            return isNotCurrentUser && player.token === tokenId;
+            const isTokenSelected = player.token === tokenId;
+            
+            console.log('🔍 Room: checkTokenUniqueness - проверяем игрока:', {
+                player: player,
+                isNotCurrentUser,
+                isTokenSelected,
+                playerToken: player.token,
+                targetToken: tokenId
+            });
+            
+            return isNotCurrentUser && isTokenSelected;
         });
         
         if (isTokenTaken) {
