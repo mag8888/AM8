@@ -93,7 +93,7 @@ class PlayersPanel {
                                 <span class="btn-icon">🎲</span>
                                 <span class="btn-text">Бросить кубик</span>
                             </button>
-                            <button class="btn btn-secondary" id="pass-turn" disabled>
+                            <button class="btn btn-secondary" id="pass-turn" type="button" disabled>
                                 <span class="btn-icon">➡️</span>
                                 <span class="btn-text">Передать ход</span>
                             </button>
@@ -415,9 +415,13 @@ class PlayersPanel {
 
         const passTurnBtn = document.getElementById('pass-turn');
         if (passTurnBtn) {
-            passTurnBtn.addEventListener('click', () => {
+            passTurnBtn.addEventListener('click', (e) => {
+                // На всякий случай предотвращаем любое дефолтное поведение и всплытие
+                try { e.preventDefault && e.preventDefault(); } catch (_) {}
+                try { e.stopPropagation && e.stopPropagation(); } catch (_) {}
                 this.passTurn();
-            });
+                return false;
+            }, { passive: false });
         }
         
         // Подписываемся на события TurnService
