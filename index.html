@@ -418,6 +418,13 @@
                                 window.app = new window.App();
                                 window.app.init?.();
                             }
+                            
+                            // Инициализируем GameState если его нет
+                            if (!window.app.getModule('gameState')) {
+                                const gameState = new window.GameState(window.app.getEventBus());
+                                window.app.modules.set('gameState', gameState);
+                                console.log('✅ GameState: Инициализирован для ротации хода');
+                            }
                             // Форсируем показ страницы геймборда и загрузку игровых модулей
                             try {
                                 if (window.app && window.app._showPage) {
@@ -434,6 +441,9 @@
                                 try {
                                     const api = new window.RoomApi();
                                     const gameStateManager = window.app.getGameStateManager();
+                                    
+                                    // Переменная для отслеживания последнего состояния
+                                    let lastSyncState = null;
                                     
                                     // Функция синхронизации с сервером
                                     const syncWithServer = () => {
@@ -456,7 +466,14 @@
                                                     token: p.token || '🎯',
                                                     isReady: p.isReady || true
                                                 }));
-                                                gameStateManager.updateFromServer({ players: srvPlayers });
+                                                
+                                                // Проверяем, изменились ли игроки
+                                                const currentState = JSON.stringify(srvPlayers);
+                                                if (lastSyncState !== currentState) {
+                                                    gameStateManager.updateFromServer({ players: srvPlayers });
+                                                    lastSyncState = currentState;
+                                                    console.log('🔄 Синхронизация: Обновлены игроки');
+                                                }
                                             }
                                         }).catch(err => console.warn('⚠️ Ошибка получения списка игроков:', err));
                                     };
@@ -464,8 +481,8 @@
                                     // Первоначальная синхронизация
                                     syncWithServer();
                                     
-                                    // Периодическая синхронизация каждые 2 секунды
-                                    const syncInterval = setInterval(syncWithServer, 2000);
+                                    // Периодическая синхронизация каждые 5 секунд
+                                    const syncInterval = setInterval(syncWithServer, 5000);
                                     
                                     // Очищаем интервал при закрытии страницы
                                     window.addEventListener('beforeunload', () => {
