@@ -318,9 +318,21 @@ function setupEventListeners() {
     const readyButton = document.getElementById('ready-button');
     if (readyButton) {
         readyButton.addEventListener('click', (event) => {
+            console.log('🎯 Room: КЛИК ПО КНОПКЕ ГОТОВНОСТИ!');
+            console.log('🔍 Room: Состояние кнопки:', {
+                disabled: readyButton.disabled,
+                text: readyButton.textContent,
+                className: readyButton.className
+            });
+            
+            // Проверяем, не заблокирована ли кнопка
+            if (readyButton.disabled) {
+                console.warn('⚠️ Room: Кнопка заблокирована, клик игнорируется');
+                return;
+            }
+            
             event.preventDefault();
             event.stopPropagation();
-            console.log('🎯 Room: Прямой клик по кнопке готовности');
             toggleReadyStatus();
         });
         console.log('✅ Room: Обработчик клика добавлен к кнопке готовности');
@@ -1217,7 +1229,11 @@ function updateReadyStatus() {
         disabled: readyButton.disabled,
         canBeReady: canBeReady,
         buttonText: readyButton.innerHTML,
-        buttonClass: readyButton.className
+        buttonClass: readyButton.className,
+        isDreamComplete: isDreamComplete,
+        isTokenSelected: isTokenSelected,
+        dreamData: dreamData,
+        selectedToken: selectedToken
     });
     
     // Обновляем текст кнопки в зависимости от состояния

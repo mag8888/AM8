@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Ready Button</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a2e;
+            color: white;
+        }
+        .debug-panel {
+            background: #2a2a3e;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn-success { background: #28a745; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .debug-info {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug Ready Button</h1>
+    
+    <div class="debug-panel">
+        <h3>Тест кнопки готовности</h3>
+        <button class="btn btn-success btn-large" id="ready-button" disabled>
+            ✅ Готов к игре!
+        </button>
+        <button class="btn btn-secondary" id="debug-btn">
+            🔍 Показать отладочную информацию
+        </button>
+    </div>
+    
+    <div class="debug-panel">
+        <h3>Отладочная информация</h3>
+        <div id="debug-info" class="debug-info">
+            Нажмите кнопку "Показать отладочную информацию"
+        </div>
+    </div>
+    
+    <div class="debug-panel">
+        <h3>Тестовые данные</h3>
+        <button class="btn btn-secondary" id="set-dream-btn">Установить мечту</button>
+        <button class="btn btn-secondary" id="set-token-btn">Установить фишку</button>
+        <button class="btn btn-secondary" id="clear-data-btn">Очистить данные</button>
+    </div>
+
+    <script>
+        // Имитируем данные из room.js
+        let dreamData = {};
+        let selectedToken = null;
+        let currentUser = { id: 'test-user', username: 'test' };
+        let currentRoom = {
+            players: [
+                { userId: 'test-user', username: 'test', isReady: false }
+            ]
+        };
+
+        const readyButton = document.getElementById('ready-button');
+        const debugInfo = document.getElementById('debug-info');
+        
+        // Функция обновления статуса готовности (копия из room.js)
+        function updateReadyStatus() {
+            const isDreamSelected = dreamData && dreamData.id && dreamData.title;
+            const isDreamComplete = isDreamSelected && dreamData.description && dreamData.cost > 0;
+            const isTokenSelected = selectedToken !== null && selectedToken !== 'null';
+            const canBeReady = isDreamComplete && isTokenSelected;
+            
+            // Проверяем текущее состояние игрока
+            const currentPlayer = currentRoom ? currentRoom.players.find(p => {
+                const matches = p.userId === currentUser?.id || p.username === currentUser?.username;
+                if (matches) {
+                    console.log('🔍 Debug: Найден текущий игрок:', {
+                        player: p,
+                        currentUser: currentUser,
+                        matchType: p.userId === currentUser?.id ? 'userId' : 'username',
+                        playerIsReady: p.isReady,
+                        playerIsReadyType: typeof p.isReady
+                    });
+                }
+                return matches;
+            }) : null;
+            
+            const isCurrentlyReady = currentPlayer ? Boolean(currentPlayer.isReady) : false;
+            const actualReadyState = currentPlayer !== null && canBeReady ? isCurrentlyReady : false;
+            
+            // Активируем кнопку только если можно быть готовым
+            readyButton.disabled = !canBeReady;
+            
+            console.log('🔍 Debug: Состояние кнопки готовности:', {
+                isDreamComplete,
+                isTokenSelected,
+                canBeReady,
+                isCurrentlyReady,
+                actualReadyState,
+                currentPlayer: currentPlayer ? { 
+                    name: currentPlayer.name, 
+                    username: currentPlayer.username,
+                    isReady: currentPlayer.isReady,
+                    userId: currentPlayer.userId,
+                    id: currentPlayer.id
+                } : null,
+                currentUser: currentUser ? { 
+                    id: currentUser.id, 
+                    username: currentUser.username,
+                    userId: currentUser.userId
+                } : null,
+                roomPlayers: currentRoom ? currentRoom.players.map(p => ({
+                    name: p.name,
+                    username: p.username,
+                    isReady: p.isReady,
+                    userId: p.userId,
+                    id: p.id
+                })) : [],
+                disabled: readyButton.disabled,
+                buttonText: readyButton.innerHTML,
+                buttonClass: readyButton.className
+            });
+            
+            if (canBeReady === true) {
+                if (actualReadyState === true) {
+                    readyButton.innerHTML = '❌ Не готов';
+                    readyButton.className = 'btn btn-secondary btn-large';
+                } else {
+                    readyButton.innerHTML = '✅ Готов к игре!';
+                    readyButton.className = 'btn btn-success btn-large';
+                }
+            } else {
+                readyButton.innerHTML = '⏳ Выберите мечту и фишку';
+                readyButton.className = 'btn btn-secondary btn-large';
+            }
+        }
+        
+        // Обработчик клика по кнопке готовности
+        readyButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            console.log('🎯 Debug: КЛИК ПО КНОПКЕ ГОТОВНОСТИ!');
+            
+            if (readyButton.disabled) {
+                console.warn('⚠️ Debug: Кнопка заблокирована');
+                return;
+            }
+            
+            // Переключаем состояние
+            const currentPlayer = currentRoom.players.find(p => p.userId === currentUser.id || p.username === currentUser.username);
+            if (currentPlayer) {
+                currentPlayer.isReady = !currentPlayer.isReady;
+                console.log('🔄 Debug: Состояние готовности изменено на:', currentPlayer.isReady);
+                updateReadyStatus();
+            }
+        });
+        
+        // Обработчики тестовых кнопок
+        document.getElementById('set-dream-btn').addEventListener('click', () => {
+            dreamData = {
+                id: 'test-dream',
+                title: 'Тестовая мечта',
+                description: 'Описание тестовой мечты',
+                cost: 100000
+            };
+            console.log('✅ Debug: Мечта установлена:', dreamData);
+            updateReadyStatus();
+        });
+        
+        document.getElementById('set-token-btn').addEventListener('click', () => {
+            selectedToken = '🦁';
+            console.log('✅ Debug: Фишка установлена:', selectedToken);
+            updateReadyStatus();
+        });
+        
+        document.getElementById('clear-data-btn').addEventListener('click', () => {
+            dreamData = {};
+            selectedToken = null;
+            console.log('🗑️ Debug: Данные очищены');
+            updateReadyStatus();
+        });
+        
+        document.getElementById('debug-btn').addEventListener('click', () => {
+            const info = {
+                dreamData,
+                selectedToken,
+                currentUser,
+                currentRoom,
+                buttonDisabled: readyButton.disabled,
+                buttonText: readyButton.innerHTML,
+                buttonClass: readyButton.className
+            };
+            debugInfo.textContent = JSON.stringify(info, null, 2);
+        });
+        
+        // Инициализация
+        updateReadyStatus();
+    </script>
+</body>
+</html>
