@@ -116,6 +116,13 @@ class PlayersPanel {
                                 <span class="value" id="dice-result">🎲</span>
                             </div>
                         </div>
+                        
+                        <div class="bank-section">
+                            <button class="btn btn-bank" id="open-bank" type="button">
+                                <span class="btn-icon">🏦</span>
+                                <span class="btn-text">Банк</span>
+                            </button>
+                        </div>
                     </section>
                 </div>
             </div>
@@ -182,6 +189,39 @@ class PlayersPanel {
             } else {
                 currentPlayer.textContent = 'Загрузка...';
             }
+        }
+    }
+    
+    /**
+     * Открытие банк модуля
+     */
+    openBankModule() {
+        try {
+            const app = window.app;
+            if (app && app.getModule) {
+                let bankModule = app.getModule('bankModule');
+                if (!bankModule) {
+                    // Создаем банк модуль если его нет
+                    const gameState = app.getModule('gameState');
+                    const eventBus = app.getEventBus();
+                    const roomApi = app.getModule('roomApi');
+                    
+                    bankModule = new window.BankModule({
+                        gameState: gameState,
+                        eventBus: eventBus,
+                        roomApi: roomApi
+                    });
+                    
+                    app.modules.set('bankModule', bankModule);
+                }
+                
+                bankModule.open();
+                console.log('🏦 PlayersPanel: Банк модуль открыт');
+            } else {
+                console.warn('⚠️ PlayersPanel: App недоступен для открытия банка');
+            }
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
         }
     }
     
@@ -404,6 +444,33 @@ class PlayersPanel {
                 transform: none !important;
                 box-shadow: none !important;
             }
+            
+            .bank-section {
+                margin-top: 15px;
+                display: flex;
+                justify-content: center;
+            }
+            
+            .btn-bank {
+                background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                color: white;
+                font-weight: 600;
+                padding: 12px 24px;
+                border-radius: 10px;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            }
+            
+            .btn-bank:hover {
+                background: linear-gradient(135deg, #7c3aed, #6d28d9);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+            }
+            
+            .btn-bank:active {
+                transform: translateY(0);
+            }
         `;
         
         document.head.appendChild(styles);
@@ -417,6 +484,14 @@ class PlayersPanel {
         // PlayersPanel больше не управляет броском кубика и ходами
         // Эта функциональность полностью делегирована TurnController
         console.log('ℹ️ PlayersPanel: UI контроллеры не настраиваются - используется TurnController');
+        
+        // Обработчик кнопки банка
+        const openBankBtn = this.container.querySelector('#open-bank');
+        if (openBankBtn) {
+            openBankBtn.addEventListener('click', () => {
+                this.openBankModule();
+            });
+        }
         
         // Подписываемся на события TurnService для обновления UI
         try {

@@ -200,8 +200,8 @@
 }
 
 .logo-img {
-    width: 150px;
-    height: 150px;
+    width: 210px;
+    height: 210px;
     filter: drop-shadow(0 0 40px rgba(255, 255, 255, 0.9));
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
@@ -465,8 +465,8 @@
     }
     
     .logo-img {
-        width: 100px;
-        height: 100px;
+        width: 140px;
+        height: 140px;
     }
     
     .dice-roll-btn {
