@@ -177,8 +177,23 @@ class PlayersPanel {
     updateDiceResult(result) {
         const diceResult = document.getElementById('dice-result');
         if (diceResult) {
-            diceResult.textContent = result || '🎲';
+            if (result && typeof result === 'number' && result >= 1 && result <= 6) {
+                const diceEmoji = this.getDiceEmoji(result);
+                diceResult.textContent = `${diceEmoji} ${result}`;
+            } else {
+                diceResult.textContent = '🎲';
+            }
         }
+    }
+
+    /**
+     * Получение эмодзи для значения кубика
+     * @param {number} value - Значение кубика (1-6)
+     * @returns {string} Эмодзи кубика
+     */
+    getDiceEmoji(value) {
+        const diceEmojis = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+        return diceEmojis[value - 1] || '⚀';
     }
     
     /**

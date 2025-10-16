@@ -61,11 +61,20 @@ class TurnService extends EventTarget {
                     this.state.applyState(response.state);
                 }
                 
-                // Используем MovementService для движения фишки
-                if (this.movementService && rollResult.total > 0) {
-                    const activePlayer = this.state.getActivePlayer();
-                    if (activePlayer) {
-                        this.movementService.movePlayer(activePlayer.id, rollResult.total);
+                // Автоматически двигаем фишку после броска
+                if (rollResult.total > 0) {
+                    try {
+                        console.log('🎲 TurnService: Автоматическое движение фишки на', rollResult.total, 'шагов');
+                        const moveResponse = await this.roomApi.move(roomId, rollResult.total);
+                        
+                        // Применяем обновленное состояние от сервера
+                        if (moveResponse.state && this.state.applyState) {
+                            this.state.applyState(moveResponse.state);
+                        }
+                        
+                        console.log('🎲 TurnService: Фишка перемещена успешно');
+                    } catch (moveError) {
+                        console.error('❌ TurnService: Ошибка автоматического движения фишки:', moveError);
                     }
                 }
                 
