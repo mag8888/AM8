@@ -1011,6 +1011,10 @@ function updateReadyStatus() {
     const currentPlayer = currentRoom ? currentRoom.players.find(p => p.userId === currentUser?.id || p.username === currentUser?.username) : null;
     const isCurrentlyReady = currentPlayer ? currentPlayer.isReady : false;
     
+    // Если игрок не найден в комнате, считаем что он не готов
+    const playerExists = currentPlayer !== null;
+    const actualReadyState = playerExists ? isCurrentlyReady : false;
+    
     // Отладочная информация
     console.log('🔍 Room: Обновление кнопки готовности:', {
         isDreamComplete,
@@ -1028,7 +1032,7 @@ function updateReadyStatus() {
     
     // Обновляем текст кнопки в зависимости от состояния
     if (canBeReady) {
-        if (isCurrentlyReady) {
+        if (actualReadyState) {
             readyButton.innerHTML = '❌ Не готов';
             readyButton.className = 'btn btn-secondary btn-large';
         } else {
@@ -1043,7 +1047,7 @@ function updateReadyStatus() {
     const hint = document.querySelector('.ready-hint');
     if (hint) {
         if (canBeReady) {
-            if (isCurrentlyReady) {
+            if (actualReadyState) {
                 hint.textContent = 'Вы готовы к игре!';
                 hint.style.color = '#10b981';
             } else {

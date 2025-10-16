@@ -435,28 +435,43 @@
                                     const api = new window.RoomApi();
                                     const gameStateManager = window.app.getGameStateManager();
                                     
-                                    // Получаем состояние игры
-                                    api.getGameState(roomId).then(gs => {
-                                        if (gs && gs.state && gameStateManager) {
-                                            gameStateManager.updateFromServer(gs.state);
-                                        }
+                                    // Функция синхронизации с сервером
+                                    const syncWithServer = () => {
+                                        // Получаем состояние игры
+                                        api.getGameState(roomId).then(gs => {
+                                            if (gs && gs.state && gameStateManager) {
+                                                gameStateManager.updateFromServer(gs.state);
+                                            }
+                                        }).catch(err => console.warn('⚠️ Ошибка получения состояния игры:', err));
+                                        
+                                        // Получаем список игроков
+                                        api.getPlayers(roomId).then(pl => {
+                                            if (gameStateManager && pl && Array.isArray(pl.data)) {
+                                                const srvPlayers = pl.data.map((p, idx) => ({
+                                                    id: p.userId || `player${idx+1}`,
+                                                    username: p.username || `Игрок ${idx+1}`,
+                                                    position: 0,
+                                                    isInner: true,
+                                                    money: 5000,
+                                                    token: p.token || '🎯',
+                                                    isReady: p.isReady || true
+                                                }));
+                                                gameStateManager.updateFromServer({ players: srvPlayers });
+                                            }
+                                        }).catch(err => console.warn('⚠️ Ошибка получения списка игроков:', err));
+                                    };
+                                    
+                                    // Первоначальная синхронизация
+                                    syncWithServer();
+                                    
+                                    // Периодическая синхронизация каждые 2 секунды
+                                    const syncInterval = setInterval(syncWithServer, 2000);
+                                    
+                                    // Очищаем интервал при закрытии страницы
+                                    window.addEventListener('beforeunload', () => {
+                                        clearInterval(syncInterval);
                                     });
                                     
-                                    // Получаем список игроков
-                                    api.getPlayers(roomId).then(pl => {
-                                        if (gameStateManager && pl && Array.isArray(pl.data)) {
-                                            const srvPlayers = pl.data.map((p, idx) => ({
-                                                id: p.userId || `player${idx+1}`,
-                                                username: p.username || `Игрок ${idx+1}`,
-                                                position: 0,
-                                                isInner: true,
-                                                money: 5000,
-                                                token: p.token || '🎯',
-                                                isReady: p.isReady || true
-                                            }));
-                                            gameStateManager.updateFromServer({ players: srvPlayers });
-                                        }
-                                    });
                                 } catch(error) {
                                     console.error('❌ Ошибка синхронизации с сервером:', error);
                                 }
