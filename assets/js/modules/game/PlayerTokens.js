@@ -68,8 +68,12 @@ class PlayerTokens {
      * Добавление стилей для фишек
      */
     addStyles() {
-        if (document.getElementById('player-tokens-styles')) return;
+        if (document.getElementById('player-tokens-styles')) {
+            console.log('🎯 PlayerTokens: Стили уже добавлены');
+            return;
+        }
         
+        console.log('🎯 PlayerTokens: Добавляем стили для фишек');
         const styles = document.createElement('style');
         styles.id = 'player-tokens-styles';
         styles.textContent = `
@@ -221,7 +225,17 @@ class PlayerTokens {
             return;
         }
         
-        console.log('🎯 PlayerTokens: Трек найден:', trackElement);
+        // Проверяем размеры трека
+        const trackRect = trackElement.getBoundingClientRect();
+        console.log('🎯 PlayerTokens: Трек найден:', {
+            element: trackElement,
+            selector: trackSelector,
+            width: trackRect.width,
+            height: trackRect.height,
+            x: trackRect.x,
+            y: trackRect.y,
+            isVisible: trackRect.width > 0 && trackRect.height > 0
+        });
         
         // Находим клетку по позиции
         const cell = trackElement.querySelector(`[data-position="${position}"]`);
@@ -252,6 +266,28 @@ class PlayerTokens {
             
             // Запускаем анимацию появления
             this.animateTokenAppearance(token);
+            
+            // Проверяем видимость фишки
+            setTimeout(() => {
+                const rect = token.getBoundingClientRect();
+                const computedStyle = window.getComputedStyle(token);
+                console.log(`🎯 PlayerTokens: Проверка видимости фишки ${player.username}:`, {
+                    isVisible: rect.width > 0 && rect.height > 0,
+                    display: computedStyle.display,
+                    visibility: computedStyle.visibility,
+                    opacity: computedStyle.opacity,
+                    position: computedStyle.position,
+                    left: computedStyle.left,
+                    top: computedStyle.top,
+                    zIndex: computedStyle.zIndex,
+                    rect: {
+                        width: rect.width,
+                        height: rect.height,
+                        x: rect.x,
+                        y: rect.y
+                    }
+                });
+            }, 100);
             
             console.log(`🎯 PlayerTokens: Фишка ${player.username} создана на позиции ${position}`);
         });
