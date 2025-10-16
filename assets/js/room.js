@@ -1084,7 +1084,17 @@ function updateReadyStatus() {
     const canBeReady = isDreamComplete && isTokenSelected;
     
     // Проверяем текущее состояние игрока
-    const currentPlayer = currentRoom ? currentRoom.players.find(p => p.userId === currentUser?.id || p.username === currentUser?.username) : null;
+    const currentPlayer = currentRoom ? currentRoom.players.find(p => {
+        const matches = p.userId === currentUser?.id || p.username === currentUser?.username;
+        if (matches) {
+            console.log('🔍 Room: Найден текущий игрок:', {
+                player: p,
+                currentUser: currentUser,
+                matchType: p.userId === currentUser?.id ? 'userId' : 'username'
+            });
+        }
+        return matches;
+    }) : null;
     const isCurrentlyReady = currentPlayer ? Boolean(currentPlayer.isReady) : false;
     
     // Если игрок не найден в комнате, считаем что он не готов
@@ -1102,8 +1112,25 @@ function updateReadyStatus() {
         playerExists,
         dreamData: dreamData,
         selectedToken: selectedToken,
-        currentPlayer: currentPlayer ? { name: currentPlayer.name, isReady: currentPlayer.isReady } : null,
-        currentUser: currentUser ? { id: currentUser.id, username: currentUser.username } : null
+        currentPlayer: currentPlayer ? { 
+            name: currentPlayer.name, 
+            username: currentPlayer.username,
+            isReady: currentPlayer.isReady,
+            userId: currentPlayer.userId,
+            id: currentPlayer.id
+        } : null,
+        currentUser: currentUser ? { 
+            id: currentUser.id, 
+            username: currentUser.username,
+            userId: currentUser.userId
+        } : null,
+        roomPlayers: currentRoom ? currentRoom.players.map(p => ({
+            name: p.name,
+            username: p.username,
+            isReady: p.isReady,
+            userId: p.userId,
+            id: p.id
+        })) : []
     });
     
     // Активируем кнопку только если можно быть готовым
