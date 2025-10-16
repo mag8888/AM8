@@ -902,7 +902,7 @@ class TurnController {
         const diceValueEl = this.ui.querySelector('.dice-value');
         const diceNumberEl = this.ui.querySelector('.dice-number');
         const moveActions = this.ui.querySelector('#move-actions');
-
+        
         // Универсально достаём значение броска: сервер или локальный
         const serverValue = response && response.diceResult && response.diceResult.value;
         const localValue = response && response.localRoll && (response.localRoll.value || response.localRoll.total);

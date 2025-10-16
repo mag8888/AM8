@@ -139,14 +139,64 @@ class TurnService extends EventTarget {
             
             // Эмит успешного результата
             this.emit('move:success', response);
-            
+            console.log('✅ move:success', { roomId, steps, server: true, moveResult: response.moveResult });
             console.log(`🎮 TurnService: Игрок перемещен на ${steps} шагов`);
             return response;
             
         } catch (error) {
             // Эмит ошибки
             this.emit('move:error', error);
+            console.error('❌ move:error', { roomId, steps, error });
             console.error('❌ TurnService: Ошибка перемещения:', error);
+            
+            // Локальный fallback движения, чтобы не блокировать UX
+            try {
+                const currentState = typeof this.state.getState === 'function' ? this.state.getState() : null;
+                const players = Array.isArray(currentState?.players) ? currentState.players.slice() : [];
+                const activePlayer = currentState?.activePlayer || (players.length ? players[currentState.currentPlayerIndex || 0] : null);
+                if (activePlayer) {
+                    // Предпочтительно задействовать MovementService, если он есть
+                    if (this.movementService && typeof this.movementService.movePlayer === 'function') {
+                        try {
+                            this.movementService.movePlayer(activePlayer.id || activePlayer.userId, steps);
+                        } catch (e) {
+                            console.warn('⚠️ Fallback MovementService.movePlayer error, continue with simple applyState:', e);
+                        }
+                    }
+                    
+                    // Простейшая модель позиции (внутренний круг 12 клеток, как на сервере)
+                    const maxInner = 12;
+                    const nextPlayers = players.map(p => {
+                        if ((p.id || p.userId) === (activePlayer.id || activePlayer.userId)) {
+                            const prev = Number(p.position) || 0;
+                            const next = (prev + Number(steps)) % maxInner;
+                            return { ...p, position: next };
+                        }
+                        return p;
+                    });
+                    
+                    const fallbackState = {
+                        ...currentState,
+                        players: nextPlayers,
+                        canRoll: false,
+                        canMove: false,
+                        canEndTurn: true
+                    };
+                    
+                    if (typeof this.state.applyState === 'function') {
+                        this.state.applyState(fallbackState);
+                    }
+                    
+                    const fallbackResponse = { success: true, moveResult: { steps: Number(steps) || 0 }, state: fallbackState, fallback: true };
+                    this.emit('move:success', fallbackResponse);
+                    console.log('✅ move:success', { roomId, steps, server: false, fallback: true });
+                    return fallbackResponse;
+                }
+            } catch (fallbackError) {
+                console.error('❌ TurnService: Fallback movement failed:', fallbackError);
+            }
+            
+            // Если даже fallback не удался — пробрасываем ошибку дальше
             throw error;
         } finally {
             // Всегда эмитим завершение
