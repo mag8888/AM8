@@ -1192,17 +1192,27 @@ function updateReadyStatus() {
     });
     
     // Обновляем текст кнопки в зависимости от состояния
-    if (canBeReady) {
-        if (actualReadyState) {
+    console.log('🔍 Room: Логика кнопки готовности:', {
+        canBeReady: canBeReady,
+        canBeReadyType: typeof canBeReady,
+        actualReadyState: actualReadyState,
+        actualReadyStateType: typeof actualReadyState
+    });
+    
+    if (canBeReady === true) {
+        if (actualReadyState === true) {
             readyButton.innerHTML = '❌ Не готов';
             readyButton.className = 'btn btn-secondary btn-large';
+            console.log('🔍 Room: Показываем "Не готов"');
         } else {
             readyButton.innerHTML = '✅ Готов к игре!';
             readyButton.className = 'btn btn-success btn-large';
+            console.log('🔍 Room: Показываем "Готов к игре"');
         }
     } else {
         readyButton.innerHTML = '⏳ Выберите мечту и фишку';
         readyButton.className = 'btn btn-secondary btn-large';
+        console.log('🔍 Room: Показываем "Выберите мечту и фишку"');
     }
     
     const hint = document.querySelector('.ready-hint');

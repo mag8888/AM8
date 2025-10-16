@@ -261,6 +261,13 @@ class PlayerTokens {
      * Создание DOM элемента фишки
      */
     createPlayerToken(player, index, totalPlayers) {
+        console.log(`🎯 PlayerTokens: createPlayerToken для ${player.username}:`, {
+            player: player,
+            token: player.token,
+            position: player.position,
+            isInner: player.isInner
+        });
+        
         const token = document.createElement('div');
         token.className = `player-token ${player.isInner ? 'inner' : 'outer'}`;
         token.dataset.playerId = player.id;
@@ -273,6 +280,12 @@ class PlayerTokens {
         
         // Добавляем информацию о игроке в title
         token.title = `${player.username} - $${player.money || 0}`;
+        
+        console.log(`🎯 PlayerTokens: Создана фишка для ${player.username}:`, {
+            className: token.className,
+            textContent: token.textContent,
+            dataPosition: token.getAttribute('data-position')
+        });
         
         return token;
     }
@@ -294,7 +307,9 @@ class PlayerTokens {
             'dolphin': '🐬'
         };
         
-        return tokenIcons[tokenId] || '🎯';
+        const icon = tokenIcons[tokenId] || '🎯';
+        console.log(`🎯 PlayerTokens: getTokenIcon(${tokenId}) = ${icon}`);
+        return icon;
     }
     
     /**
