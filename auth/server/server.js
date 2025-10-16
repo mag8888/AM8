@@ -295,9 +295,8 @@ module.exports = AuthServer;
 if (require.main === module) {
     const server = new AuthServer();
     
-    // Сначала инициализируем, потом запускаем
-    server.init()
-        .then(() => server.start())
+    // Сервер уже инициализирован в конструкторе, просто запускаем
+    server.start()
         .catch((error) => {
             console.error('❌ AuthServer: Критическая ошибка:', error);
             process.exit(1);

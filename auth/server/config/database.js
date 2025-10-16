@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 class DatabaseConfig {
     constructor() {
         this.isConnected = false;
+        this.eventHandlersSet = false;
         // Инициализируем только если MongoDB используется
         if (process.env.USE_MONGODB !== 'false') {
             this.connectionString = this.buildConnectionString();
@@ -84,11 +85,19 @@ class DatabaseConfig {
                 return;
             }
 
+            // Проверяем, не подключены ли мы уже
+            if (mongoose.connection.readyState === 1) {
+                console.log('📊 Database: Mongoose уже подключен');
+                this.isConnected = true;
+                return;
+            }
+
             console.log('📊 Database: Подключение к MongoDB Atlas...');
             console.log(`📊 Database: Cluster: ${process.env.MONGODB_CLUSTER || 'cluster0.xyz123.mongodb.net'}`);
 
-            // Закрываем существующие подключения
+            // Закрываем существующие подключения только если они есть
             if (mongoose.connection.readyState !== 0) {
+                console.log('📊 Database: Закрываем существующие подключения...');
                 await mongoose.disconnect();
             }
 
@@ -97,21 +106,25 @@ class DatabaseConfig {
             this.isConnected = true;
             console.log('✅ Database: Успешно подключено к MongoDB Atlas');
 
-            // Обработчики событий
-            mongoose.connection.on('error', (error) => {
-                console.error('❌ Database: Ошибка подключения:', error);
-                this.isConnected = false;
-            });
+            // Обработчики событий (устанавливаем только один раз)
+            if (!this.eventHandlersSet) {
+                mongoose.connection.on('error', (error) => {
+                    console.error('❌ Database: Ошибка подключения:', error);
+                    this.isConnected = false;
+                });
 
-            mongoose.connection.on('disconnected', () => {
-                console.log('⚠️ Database: Отключено от MongoDB');
-                this.isConnected = false;
-            });
+                mongoose.connection.on('disconnected', () => {
+                    console.log('⚠️ Database: Отключено от MongoDB');
+                    this.isConnected = false;
+                });
 
-            mongoose.connection.on('reconnected', () => {
-                console.log('🔄 Database: Переподключено к MongoDB');
-                this.isConnected = true;
-            });
+                mongoose.connection.on('reconnected', () => {
+                    console.log('🔄 Database: Переподключено к MongoDB');
+                    this.isConnected = true;
+                });
+                
+                this.eventHandlersSet = true;
+            }
 
         } catch (error) {
             console.error('❌ Database: Ошибка подключения к MongoDB Atlas:', error);
