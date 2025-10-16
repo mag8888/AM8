@@ -383,6 +383,10 @@ class PlayersPanel {
         const rollDiceBtn = document.getElementById('roll-dice');
         if (rollDiceBtn) {
             rollDiceBtn.addEventListener('click', () => {
+                // Мгновенный локальный результат 1-6 для поля "Кубик:"
+                const instantValue = Math.floor(Math.random() * 6) + 1;
+                this.updateDiceResult(instantValue);
+                // Параллельно запускаем полноценный бросок через сервис/сервер
                 this.rollDice();
             });
         }
@@ -394,6 +398,19 @@ class PlayersPanel {
             });
         }
         
+        // Подписываемся на подтверждение броска, чтобы отобразить точное значение
+        try {
+            const app = window.app;
+            const turnService = app && app.getModule ? app.getModule('turnService') : null;
+            if (turnService && typeof turnService.on === 'function') {
+                turnService.on('roll:success', (response) => {
+                    const serverValue = response && response.diceResult && response.diceResult.value;
+                    const localValue = response && response.localRoll && (response.localRoll.value || response.localRoll.total);
+                    const value = serverValue ?? localValue ?? null;
+                    if (value != null) this.updateDiceResult(value);
+                });
+            }
+        } catch (_) {}
     }
     
     /**
