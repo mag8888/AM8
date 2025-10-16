@@ -1089,6 +1089,7 @@ function updateReadyStatus() {
     
     // Если игрок не найден в комнате, считаем что он не готов
     const playerExists = currentPlayer !== null;
+    // actualReadyState должно быть true только если игрок действительно готов
     const actualReadyState = playerExists ? isCurrentlyReady : false;
     
     // Отладочная информация
