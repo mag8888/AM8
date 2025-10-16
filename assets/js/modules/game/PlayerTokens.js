@@ -3,6 +3,8 @@
  * Компонент для отображения фишек игроков на игровом поле
  */
 
+console.log('🎯 PlayerTokens: Файл загружается...');
+
 class PlayerTokens {
     constructor(config = {}) {
         this.gameState = config.gameState || null;
@@ -545,4 +547,6 @@ class PlayerTokens {
     }
 }
 
+console.log('🎯 PlayerTokens: Класс определен, экспортируем в window...');
 window.PlayerTokens = PlayerTokens;
+console.log('🎯 PlayerTokens: Экспорт завершен, window.PlayerTokens =', !!window.PlayerTokens);

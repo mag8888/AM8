@@ -451,6 +451,10 @@ class App {
         }
         
         // Инициализируем PlayerTokens для отображения фишек игроков
+        console.log('🎯 App: Проверяем window.PlayerTokens:', !!window.PlayerTokens);
+        console.log('🎯 App: window.PlayerTokens тип:', typeof window.PlayerTokens);
+        console.log('🎯 App: window объект содержит PlayerTokens:', 'PlayerTokens' in window);
+        
         if (window.PlayerTokens) {
             console.log('🎯 App: Инициализируем PlayerTokens...');
             const playerTokens = new window.PlayerTokens({
@@ -463,6 +467,7 @@ class App {
             console.log('🎯 PlayerTokens: Инициализирован');
         } else {
             console.warn('⚠️ App: PlayerTokens не найден в window');
+            console.warn('⚠️ App: Доступные модули в window:', Object.keys(window).filter(key => key.includes('Token') || key.includes('Player')));
         }
         
         // Инициализируем DiceService для бросков кубика
