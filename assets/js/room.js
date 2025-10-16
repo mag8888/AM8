@@ -290,6 +290,48 @@ function setupEventListeners() {
     if (readyButton) {
         readyButton.addEventListener('click', toggleReadyStatus);
         console.log('✅ Room: Обработчик клика добавлен к кнопке готовности');
+        
+        // Альтернативный способ - делегирование событий
+        document.addEventListener('click', (event) => {
+            if (event.target && event.target.id === 'ready-button') {
+                console.log('🎯 Room: Клик по кнопке готовности через делегирование');
+                event.preventDefault();
+                event.stopPropagation();
+                toggleReadyStatus();
+            }
+        });
+        
+        // Дополнительная отладка для Chrome
+        readyButton.addEventListener('mousedown', () => {
+            console.log('🖱️ Room: Mouse down на кнопке готовности');
+        });
+        
+        readyButton.addEventListener('mouseup', () => {
+            console.log('🖱️ Room: Mouse up на кнопке готовности');
+        });
+        
+        // Проверяем стили кнопки
+        const computedStyle = window.getComputedStyle(readyButton);
+        console.log('🔍 Room: Стили кнопки готовности:', {
+            pointerEvents: computedStyle.pointerEvents,
+            cursor: computedStyle.cursor,
+            zIndex: computedStyle.zIndex,
+            position: computedStyle.position,
+            disabled: readyButton.disabled,
+            opacity: computedStyle.opacity,
+            visibility: computedStyle.visibility,
+            display: computedStyle.display
+        });
+        
+        // Проверяем, есть ли элементы поверх кнопки
+        const rect = readyButton.getBoundingClientRect();
+        const elementAtCenter = document.elementFromPoint(
+            rect.left + rect.width / 2,
+            rect.top + rect.height / 2
+        );
+        console.log('🔍 Room: Элемент в центре кнопки:', elementAtCenter);
+        console.log('🔍 Room: Это сама кнопка?', elementAtCenter === readyButton);
+        
     } else {
         console.error('❌ Room: Кнопка ready-button не найдена!');
     }
@@ -1089,6 +1131,13 @@ async function toggleReadyStatus() {
             dreamData: dreamData
         });
         
+        // Проверяем, что функция не вызывается дважды
+        if (window._toggleReadyStatusInProgress) {
+            console.warn('⚠️ Room: toggleReadyStatus уже выполняется, пропускаем');
+            return;
+        }
+        window._toggleReadyStatusInProgress = true;
+        
         if (!currentRoom || !currentUser || !selectedToken) {
             console.warn('⚠️ Room: Недостаточно данных для переключения готовности');
             return;
@@ -1154,6 +1203,9 @@ async function toggleReadyStatus() {
     } catch (error) {
         console.error('❌ Room: Ошибка обновления статуса готовности:', error);
         showNotification('Ошибка обновления статуса', 'error');
+    } finally {
+        // Очищаем флаг выполнения
+        window._toggleReadyStatusInProgress = false;
     }
 }
 
