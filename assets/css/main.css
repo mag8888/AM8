@@ -53,10 +53,21 @@
     max-width: 350px;
     height: 100vh;
     overflow-y: auto;
+    overflow-x: hidden;
     background: rgba(15, 23, 42, 0.9);
     border-left: 1px solid rgba(148, 163, 184, 0.2);
     padding: 1rem;
     box-sizing: border-box;
+}
+
+.players-panel-container .player-item {
+    margin-bottom: 0.75rem;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.players-panel-container .player-item:last-child {
+    margin-bottom: 0;
 }
 :root {
     --page-bg-start: #030712;

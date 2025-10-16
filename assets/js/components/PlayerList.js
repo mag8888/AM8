@@ -54,7 +54,12 @@ class PlayerList {
         
         // Рендерим игроков
         displayPlayers.forEach((player, index) => {
-            const isCurrentUser = currentUserId && player.id === currentUserId;
+            // Проверяем, является ли игрок текущим пользователем по разным полям
+            const isCurrentUser = currentUserId && (
+                player.id === currentUserId || 
+                player.userId === currentUserId ||
+                player.username === currentUserId
+            );
             const playerElement = this.renderPlayerItem(player, activePlayer, isCurrentUser, index);
             this.container.appendChild(playerElement);
         });

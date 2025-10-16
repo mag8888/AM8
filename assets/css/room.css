@@ -279,6 +279,9 @@
     border-radius: 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .player-item:hover {
@@ -302,6 +305,8 @@
 
 .player-info {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .player-name {
@@ -313,6 +318,25 @@
 .player-status {
     color: #a0a0a0;
     font-size: 0.9rem;
+}
+
+.player-money {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #fbbf24;
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    min-width: fit-content;
+}
+
+.money-icon {
+    font-size: 1rem;
+}
+
+.money-amount {
+    font-family: 'Courier New', monospace;
 }
 
 /* Кнопки действий */
