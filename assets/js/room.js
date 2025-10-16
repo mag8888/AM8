@@ -694,9 +694,10 @@ function updatePlayersList() {
         const isSelf = player.userId === currentUser?.id || player.username === currentUser?.username;
         if (isHost && !isSelf) {
             const kickBtn = document.createElement('button');
-            kickBtn.className = 'btn btn-danger btn-sm';
+            kickBtn.className = 'btn btn-danger btn-sm kick-btn';
             kickBtn.style.marginLeft = '8px';
-            kickBtn.textContent = 'Удалить';
+            kickBtn.textContent = '✖';
+            kickBtn.title = 'Удалить игрока';
             kickBtn.addEventListener('click', () => kickPlayer(player));
             playerItem.querySelector('.player-info')?.appendChild(kickBtn);
         }
