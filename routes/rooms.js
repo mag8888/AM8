@@ -1,9 +1,13 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
+const PushService = require('../services/PushService');
 
 const router = express.Router();
 // Простое серверное состояние игры (на одном инстансе). Для прод-реализации заменить на Redis/БД/вебсокеты
 const gameStateByRoomId = new Map();
+
+// Инициализируем PushService для уведомлений
+const pushService = new PushService();
 
 function ensureGameState(db, roomId, cb) {
     if (gameStateByRoomId.has(roomId)) return cb(null, gameStateByRoomId.get(roomId));
@@ -71,6 +75,14 @@ router.post('/:id/roll', (req, res, next) => {
         state.canRoll = false;
         state.canMove = true;
         state.canEndTurn = false;
+        
+        // Отправляем push-уведомление о броске кубика
+        pushService.broadcastPush('dice_rolled', { 
+            roomId: id, 
+            activePlayer: state.activePlayer,
+            diceValue: value
+        }).catch(err => console.error('❌ Ошибка отправки push о броске кубика:', err));
+        
         res.json({ success:true, diceResult:{ value }, state });
     });
 });
@@ -88,6 +100,15 @@ router.post('/:id/move', (req, res, next) => {
         state.canRoll = false;
         state.canMove = false;
         state.canEndTurn = true;
+        
+        // Отправляем push-уведомление о движении
+        pushService.broadcastPush('player_moved', { 
+            roomId: id, 
+            activePlayer: state.activePlayer,
+            steps: Number(steps)||0,
+            newPosition: current.position
+        }).catch(err => console.error('❌ Ошибка отправки push о движении:', err));
+        
         res.json({ success:true, moveResult:{ steps:Number(steps)||0 }, state });
     });
 });
@@ -102,7 +123,13 @@ router.post('/:id/end-turn', (req, res, next) => {
         state.canRoll = true;
         state.canMove = false;
         state.canEndTurn = false;
-        // TODO: здесь можно интегрировать PushService.broadcast(roomId, 'turn_changed', { activePlayer: state.activePlayer })
+        // Отправляем push-уведомление о смене хода
+        pushService.broadcastPush('turn_changed', { 
+            roomId: id, 
+            activePlayer: state.activePlayer,
+            previousPlayer: state.players[state.currentPlayerIndex - 1] || state.players[state.players.length - 1]
+        }).catch(err => console.error('❌ Ошибка отправки push о смене хода:', err));
+        
         res.json({ success:true, state, event: { type: 'turn_changed', activePlayer: state.activePlayer } });
     });
 });
@@ -663,6 +690,18 @@ function proceedWithJoin(userId, player, roomId, res, next) {
                         }
 
                         console.log('✅ Количество игроков обновлено для комнаты:', roomId);
+                        
+                        // Отправляем push-уведомление о присоединении игрока
+                        pushService.broadcastPush('player_joined', { 
+                            roomId: roomId, 
+                            player: {
+                                id: playerId,
+                                username: player.username,
+                                token: player.token || '',
+                                dream: player.dream || ''
+                            }
+                        }).catch(err => console.error('❌ Ошибка отправки push о присоединении:', err));
+                        
                         res.status(201).json({
                             success: true,
                             message: 'Вы присоединились к комнате',
@@ -1000,6 +1039,13 @@ router.post('/:id/start', async (req, res, next) => {
 
                         console.log('🎮 Игра запущена в комнате:', id);
 
+                        // Отправляем push-уведомление о начале игры
+                        pushService.broadcastPush('game_started', { 
+                            roomId: id, 
+                            players: players,
+                            activePlayer: players[0] // Первый игрок начинает
+                        }).catch(err => console.error('❌ Ошибка отправки push о начале игры:', err));
+
                         res.json({
                             success: true,
                             message: 'Игра успешно запущена',
@@ -1028,6 +1074,54 @@ router.post('/:id/start', async (req, res, next) => {
         console.error('❌ Ошибка запуска игры:', error);
         next(error);
     }
+});
+
+// Endpoint для регистрации клиентов в PushService
+router.post('/push/register', (req, res) => {
+    const { clientId, userInfo } = req.body;
+    
+    if (!clientId) {
+        return res.status(400).json({
+            success: false,
+            message: 'clientId обязателен'
+        });
+    }
+    
+    pushService.registerClient(clientId, userInfo);
+    
+    res.json({
+        success: true,
+        message: 'Клиент зарегистрирован для push-уведомлений',
+        clientId: clientId
+    });
+});
+
+// Endpoint для отключения клиента
+router.post('/push/unregister', (req, res) => {
+    const { clientId } = req.body;
+    
+    if (!clientId) {
+        return res.status(400).json({
+            success: false,
+            message: 'clientId обязателен'
+        });
+    }
+    
+    pushService.unregisterClient(clientId);
+    
+    res.json({
+        success: true,
+        message: 'Клиент отключен от push-уведомлений'
+    });
+});
+
+// Endpoint для получения статистики PushService
+router.get('/push/stats', (req, res) => {
+    const stats = pushService.getStats();
+    res.json({
+        success: true,
+        data: stats
+    });
 });
 
 module.exports = router;
