@@ -10,6 +10,7 @@ class BankModule {
         this.eventBus = config.eventBus || null;
         this.roomApi = config.roomApi || null;
         this.professionSystem = config.professionSystem || null;
+        this.bankApi = config.bankApi || null;
         this.currentUserId = null;
         this.currentRoomId = null;
         
@@ -1035,6 +1036,12 @@ class BankModule {
             return;
         }
         
+        // Проверяем, что игрок не переводит самому себе
+        if (recipientId === this.currentUserId) {
+            this.showNotification('Нельзя переводить средства самому себе', 'error');
+            return;
+        }
+        
         if (!this.gameState) {
             this.showNotification('Ошибка: GameState недоступен', 'error');
             return;
@@ -1070,12 +1077,48 @@ class BankModule {
     }
     
     /**
-     * Выполнение перевода (заглушка для API)
+     * Выполнение перевода через серверный API
      */
     async performTransfer(recipientId, amount) {
-        // TODO: Реализовать API вызов для перевода
-        // Пока что обновляем локальное состояние
+        if (!this.bankApi || !this.currentRoomId) {
+            // Fallback на локальное обновление если API недоступен
+            return this.performTransferLocal(recipientId, amount);
+        }
         
+        try {
+            const response = await this.bankApi.transferMoney(
+                this.currentUserId,
+                recipientId,
+                amount,
+                this.currentRoomId
+            );
+            
+            if (response.success) {
+                // Эмитим событие обновления для синхронизации
+                if (this.eventBus) {
+                    this.eventBus.emit('bank:transfer', {
+                        from: this.currentUserId,
+                        to: recipientId,
+                        amount: amount,
+                        serverResponse: response
+                    });
+                }
+                return true;
+            } else {
+                console.error('❌ BankModule: Сервер отклонил перевод:', response.message);
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ BankModule: Ошибка серверного перевода:', error);
+            // Fallback на локальное обновление
+            return this.performTransferLocal(recipientId, amount);
+        }
+    }
+    
+    /**
+     * Локальное выполнение перевода (fallback)
+     */
+    async performTransferLocal(recipientId, amount) {
         if (!this.gameState) return false;
         
         const currentPlayer = this.gameState.getCurrentPlayer();

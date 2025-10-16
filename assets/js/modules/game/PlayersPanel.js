@@ -207,12 +207,14 @@ class PlayersPanel {
                     const roomApi = app.getModule('roomApi');
                     
                     const professionSystem = app.getModule('professionSystem');
+                    const bankApi = app.getModule('bankApi');
                     
                     bankModule = new window.BankModule({
                         gameState: gameState,
                         eventBus: eventBus,
                         roomApi: roomApi,
-                        professionSystem: professionSystem
+                        professionSystem: professionSystem,
+                        bankApi: bankApi
                     });
                     
                     app.modules.set('bankModule', bankModule);

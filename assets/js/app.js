@@ -519,6 +519,28 @@ class App {
             console.warn('⚠️ App: ProfessionSystem не найден в window');
         }
         
+        // Инициализируем BankApi
+        if (window.BankApi) {
+            const bankApi = new window.BankApi();
+            this.modules.set('bankApi', bankApi);
+            console.log('🏦 BankApi: Инициализирован');
+        } else {
+            console.warn('⚠️ App: BankApi не найден в window');
+        }
+        
+        // Инициализируем BalanceSyncService
+        if (window.BalanceSyncService) {
+            const balanceSyncService = new window.BalanceSyncService({
+                gameState: this.modules.get('gameState'),
+                eventBus: this.getEventBus(),
+                bankApi: this.modules.get('bankApi')
+            });
+            this.modules.set('balanceSyncService', balanceSyncService);
+            console.log('🔄 BalanceSyncService: Инициализирован');
+        } else {
+            console.warn('⚠️ App: BalanceSyncService не найден в window');
+        }
+        
         // Инициализируем PlayersPanel с GameStateManager
         if (window.PlayersPanel) {
             const playersPanel = new window.PlayersPanel({
