@@ -92,9 +92,11 @@ class PlayerTokens {
                 border: 3px solid rgba(255, 255, 255, 0.9);
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.2);
                 transition: all 0.3s ease;
-                z-index: 200;
+                z-index: 2000;
                 pointer-events: none;
                 backdrop-filter: blur(5px);
+                transform: translate3d(0, 0, 0);
+                will-change: transform, left, top;
             }
             
             .player-token:hover {
@@ -310,6 +312,7 @@ class PlayerTokens {
         token.dataset.playerId = player.id;
         token.dataset.playerName = player.username;
         token.setAttribute('data-position', player.position || 0); // Добавляем атрибут позиции
+        token.style.zIndex = '2000';
         
         // Используем иконку фишки вместо текста
         const tokenIcon = this.getTokenIcon(player.token);

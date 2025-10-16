@@ -5,7 +5,7 @@
  */
 
 class TurnService extends EventTarget {
-    constructor({ state, roomApi, diceService, movementService }) {
+    constructor({ state, roomApi, diceService, movementService, gameStateManager }) {
         super();
         
         // Проверка обязательных зависимостей
@@ -20,6 +20,7 @@ class TurnService extends EventTarget {
         this.roomApi = roomApi;
         this.diceService = diceService;
         this.movementService = movementService;
+        this.gameStateManager = gameStateManager || null;
         this.listeners = new Map();
         this.lastRollValue = null;
         
@@ -46,11 +47,7 @@ class TurnService extends EventTarget {
             // Эмит начала броска
             this.emit('roll:start', { diceChoice, isReroll });
             response = await this.roomApi.rollDice(roomId, diceChoice, isReroll);
-
-            // Применяем состояние от сервера
-            if (response.state && this.state.applyState) {
-                this.state.applyState(response.state);
-            }
+            this._applyServerState(response?.state);
 
             const serverValue = Number(response?.diceResult?.value);
             if (Number.isFinite(serverValue)) {
@@ -120,11 +117,7 @@ class TurnService extends EventTarget {
             
             // Вызов API
             const response = await this.roomApi.move(roomId, targetSteps);
-            
-            // Применение состояния от сервера
-            if (response.state && this.state.applyState) {
-                this.state.applyState(response.state);
-            }
+            this._applyServerState(response?.state);
             
             // Эмит успешного результата
             this.emit('move:success', response);
@@ -172,10 +165,7 @@ class TurnService extends EventTarget {
                         canMove: false,
                         canEndTurn: true
                     };
-                    
-                    if (typeof this.state.applyState === 'function') {
-                        this.state.applyState(fallbackState);
-                    }
+                    this._applyServerState(fallbackState);
                     
                     const fallbackResponse = { success: true, moveResult: { steps: Number(targetSteps) || 0 }, state: fallbackState, fallback: true };
                     this.emit('move:success', fallbackResponse);
@@ -191,7 +181,7 @@ class TurnService extends EventTarget {
             throw error;
         } finally {
             // Всегда эмитим завершение
-            this.emit('move:finish', { steps });
+            this.emit('move:finish', { steps: targetSteps });
         }
     }
     
@@ -212,17 +202,14 @@ class TurnService extends EventTarget {
             
             // Вызов API
             const response = await this.roomApi.endTurn(roomId);
-            
-            // Применение состояния от сервера
-            if (response.state && this.state.applyState) {
-                this.state.applyState(response.state);
-            }
+            this._applyServerState(response?.state);
             
             // Эмит успешного результата
             this.emit('end:success', response);
             
             console.log('✅ end:success', { roomId, activePlayer: response?.state?.activePlayer });
             console.log('🎮 TurnService: Ход завершен успешно');
+            this.lastRollValue = null;
             return response;
             
         } catch (error) {
@@ -354,6 +341,21 @@ class TurnService extends EventTarget {
     destroy() {
         this.listeners.clear();
         console.log('🎮 TurnService: Уничтожен');
+    }
+
+    /**
+     * Применение состояния от сервера к локальным менеджерам
+     * @param {Object} serverState
+     * @private
+     */
+    _applyServerState(serverState) {
+        if (!serverState) return;
+        if (this.state && typeof this.state.applyState === 'function') {
+            this.state.applyState(serverState);
+        }
+        if (this.gameStateManager && typeof this.gameStateManager.updateFromServer === 'function') {
+            this.gameStateManager.updateFromServer(serverState);
+        }
     }
 }
 

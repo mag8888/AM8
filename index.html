@@ -608,6 +608,7 @@
                                 try {
                                     const api = new window.RoomApi();
                                     const gameStateManager = window.app.getGameStateManager();
+                                    const gameStateModule = window.app.getModule?.('gameState');
                                     
                                     // Переменная для отслеживания последнего состояния
                                     let lastSyncState = null;
@@ -616,29 +617,60 @@
                                     const syncWithServer = () => {
                                         // Получаем состояние игры
                                         api.getGameState(roomId).then(gs => {
-                                            if (gs && gs.state && gameStateManager) {
-                                                gameStateManager.updateFromServer(gs.state);
+                                            if (gs && gs.state) {
+                                                if (gameStateModule && typeof gameStateModule.applyState === 'function') {
+                                                    gameStateModule.applyState(gs.state);
+                                                }
+                                                if (gameStateManager) {
+                                                    gameStateManager.updateFromServer(gs.state);
+                                                }
                                             }
                                         }).catch(err => console.warn('⚠️ Ошибка получения состояния игры:', err));
                                         
                                         // Получаем список игроков
                                         api.getPlayers(roomId).then(pl => {
                                             if (gameStateManager && pl && Array.isArray(pl.data)) {
-                                                const srvPlayers = pl.data.map((p, idx) => ({
-                                                    id: p.userId || `player${idx+1}`,
-                                                    username: p.username || `Игрок ${idx+1}`,
-                                                    position: 0,
-                                                    isInner: true,
-                                                    money: 5000,
-                                                    token: p.token || '🎯',
-                                                    isReady: p.isReady || true
-                                                }));
+                                                const managerState = gameStateManager.getState?.() || { players: [] };
+                                                const positionById = new Map(
+                                                    (managerState.players || [])
+                                                        .map(player => {
+                                                            const key = player?.id || player?.userId || player?.username;
+                                                            if (!key) return null;
+                                                            return [key, player];
+                                                        })
+                                                        .filter(Boolean)
+                                                );
+                                                const srvPlayers = pl.data.map((p, idx) => {
+                                                    const id = p.userId || p.id || `player${idx+1}`;
+                                                    const stateInfo = positionById.get(id) || {};
+                                                    return {
+                                                        id,
+                                                        username: p.username || stateInfo.username || `Игрок ${idx+1}`,
+                                                        position: Number(stateInfo.position) || 0,
+                                                        isInner: stateInfo.isInner ?? true,
+                                                        money: stateInfo.money ?? p.money ?? 5000,
+                                                        token: p.token || stateInfo.token || '🎯',
+                                                        isReady: p.isReady !== undefined ? p.isReady : (stateInfo.isReady ?? true)
+                                                    };
+                                                });
+                                                const uniqueSrvPlayers = [];
+                                                const seenPlayers = new Set();
+                                                srvPlayers.forEach(player => {
+                                                    const key = player.id || player.username;
+                                                    if (!seenPlayers.has(key)) {
+                                                        seenPlayers.add(key);
+                                                        uniqueSrvPlayers.push(player);
+                                                    }
+                                                });
                                                 
                                                 // Проверяем, изменились ли игроки
-                                                const currentState = JSON.stringify(srvPlayers);
-                                                if (lastSyncState !== currentState) {
-                                                    gameStateManager.updateFromServer({ players: srvPlayers });
-                                                    lastSyncState = currentState;
+                                                const serializedState = JSON.stringify(uniqueSrvPlayers);
+                                                if (lastSyncState !== serializedState) {
+                                                    if (gameStateModule && typeof gameStateModule.applyState === 'function') {
+                                                        gameStateModule.applyState({ players: uniqueSrvPlayers });
+                                                    }
+                                                    gameStateManager.updateFromServer({ players: uniqueSrvPlayers });
+                                                    lastSyncState = serializedState;
                                                     console.log('🔄 Синхронизация: Обновлены игроки');
                                                 }
                                             }
@@ -665,35 +697,9 @@
                             const gameState = window.app.getModule?.('gameState');
                             if (gameState) {
                                 gameState.setRoomId(roomId);
-                                // Собираем игроков
-                                const players = (bundle?.players || []).map(p => ({
-                                    id: p.id,
-                                    username: p.username,
-                                    token: p.token || '🎯',
-                                    position: p.position ?? 0,
-                                    isInner: p.isInner ?? true,
-                                    money: 5000,
-                                    salary: 5000,
-                                    totalIncome: 0,
-                                    monthlyExpenses: 2000,
-                                    assets: [],
-                                    dreams: p.dream ? [p.dream] : []
-                                }));
-                                gameState.startGame(players);
-                                // Детерминированно выбираем активного игрока,
-                                // чтобы клиенты были синхронны: первый по username (или id)
-                                const sorted = [...players].sort((a,b)=>{
-                                    const ua = (a.username||'').toLowerCase();
-                                    const ub = (b.username||'').toLowerCase();
-                                    if (ua && ub && ua!==ub) return ua<ub?-1:1;
-                                    return (a.id||'')<(b.id||'')?-1:1;
-                                });
-                                if (sorted[0]) {
-                                    gameState.setActivePlayer(sorted[0].id);
-                                }
-                                // Включаем режим геймборда: скрываем всё лишнее, оставляем поле
-                                document.body.classList.add('game-board-only');
                             }
+                            // Включаем режим геймборда: скрываем всё лишнее, оставляем поле
+                            document.body.classList.add('game-board-only');
                         }
                     } catch (e) {
                         console.warn('⚠️ Не удалось инициализировать GameState из sessionStorage', e);

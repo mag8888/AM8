@@ -133,6 +133,14 @@ class PlayersPanel {
         
         // Обновляем кнопки управления
         this.updateControlButtons(state);
+
+        // Обновляем результат кубика, если есть данные
+        if (state && Object.prototype.hasOwnProperty.call(state, 'lastDiceResult')) {
+            const diceResultValue = state.lastDiceResult && typeof state.lastDiceResult === 'object'
+                ? state.lastDiceResult.value ?? state.lastDiceResult.total
+                : state.lastDiceResult;
+            this.updateDiceResult(diceResultValue);
+        }
     }
     
     /**
@@ -177,9 +185,12 @@ class PlayersPanel {
     updateDiceResult(result) {
         const diceResult = document.getElementById('dice-result');
         if (diceResult) {
-            if (result && typeof result === 'number' && result >= 1 && result <= 6) {
-                const diceEmoji = this.getDiceEmoji(result);
-                diceResult.textContent = `${diceEmoji} ${result}`;
+            const numericValue = typeof result === 'object'
+                ? Number(result?.value ?? result?.total)
+                : Number(result);
+            if (Number.isFinite(numericValue) && numericValue >= 1 && numericValue <= 6) {
+                const diceEmoji = this.getDiceEmoji(numericValue);
+                diceResult.textContent = `${diceEmoji} ${numericValue}`;
             } else {
                 diceResult.textContent = '🎲';
             }

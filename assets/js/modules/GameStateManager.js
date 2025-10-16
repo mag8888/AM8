@@ -37,16 +37,33 @@ class GameStateManager {
     updateFromServer(serverState) {
         const oldState = this.getState();
         
-        // Обновляем игроков (не затираем актуальное состояние пустыми данными)
-        if (Array.isArray(serverState.players) && serverState.players.length > 0) {
-            this.players = serverState.players;
-            console.log('🏗️ GameStateManager: Игроки обновлены:', serverState.players.map(p => ({
+        const oldPlayersKey = JSON.stringify((oldState.players || []).map(p => (p && (p.id || p.userId || p.username)) || null));
+
+        // Обновляем игроков (с фильтрацией дубликатов)
+        if (Array.isArray(serverState.players)) {
+            const uniquePlayers = [];
+            const seen = new Set();
+            serverState.players.forEach((player, idx) => {
+                if (!player) {
+                    return;
+                }
+                const key = player.id || player.userId || player.username || `idx_${idx}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniquePlayers.push({ ...player, id: player.id || player.userId || key });
+                }
+            });
+            this.players = uniquePlayers;
+            console.log('🏗️ GameStateManager: Игроки обновлены:', uniquePlayers.map(p => ({
                 id: p.id,
                 username: p.username,
                 token: p.token,
                 isReady: p.isReady
             })));
         }
+        
+        const newPlayersKey = JSON.stringify((this.players || []).map(p => (p && (p.id || p.userId || p.username)) || null));
+        const playersChanged = oldPlayersKey !== newPlayersKey;
         
         // Обновляем активного игрока
         if (serverState.activePlayer) {
@@ -81,17 +98,17 @@ class GameStateManager {
             });
         }
         
-        if (Array.isArray(serverState.players) && serverState.players.length !== oldState.players.length && serverState.players.length > 0) {
-            console.log('🏗️ GameStateManager: Отправляем событие players:updated', serverState.players);
+        if (playersChanged) {
+            console.log('🏗️ GameStateManager: Отправляем событие players:updated', this.players);
             this.notifyListeners('players:updated', {
-                players: serverState.players,
-                added: serverState.players.length > oldState.players.length
+                players: this.players,
+                added: (this.players?.length || 0) > (oldState.players?.length || 0)
             });
             
             // Уведомляем о необходимости обновить фишки
-            console.log('🏗️ GameStateManager: Отправляем событие game:playersUpdated', serverState.players);
+            console.log('🏗️ GameStateManager: Отправляем событие game:playersUpdated', this.players);
             this.notifyListeners('game:playersUpdated', {
-                players: serverState.players
+                players: this.players
             });
         }
         
