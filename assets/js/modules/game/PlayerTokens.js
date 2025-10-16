@@ -265,6 +265,7 @@ class PlayerTokens {
         token.className = `player-token ${player.isInner ? 'inner' : 'outer'}`;
         token.dataset.playerId = player.id;
         token.dataset.playerName = player.username;
+        token.setAttribute('data-position', player.position || 0); // Добавляем атрибут позиции
         
         // Используем иконку фишки вместо текста
         const tokenIcon = this.getTokenIcon(player.token);
@@ -324,6 +325,25 @@ class PlayerTokens {
             return;
         }
         
+        // Получаем текущую позицию из атрибута data-position
+        const currentPosition = parseInt(token.getAttribute('data-position')) || 0;
+        
+        console.log(`🎯 PlayerTokens: Движение фишки ${playerId} с позиции ${currentPosition} на ${newPosition}`);
+        
+        // Если позиция не изменилась, ничего не делаем
+        if (currentPosition === newPosition) {
+            console.log('🎯 PlayerTokens: Позиция не изменилась, пропускаем движение');
+            return;
+        }
+        
+        // Выполняем пошаговое движение
+        this.moveTokenStepByStep(token, playerId, currentPosition, newPosition, isInner);
+    }
+    
+    /**
+     * Пошаговое движение фишки с задержкой
+     */
+    moveTokenStepByStep(token, playerId, fromPosition, toPosition, isInner) {
         const trackSelector = isInner ? this.innerTrackSelector : this.outerTrackSelector;
         const trackElement = document.querySelector(trackSelector);
         
@@ -332,27 +352,62 @@ class PlayerTokens {
             return;
         }
         
-        const cell = trackElement.querySelector(`[data-position="${newPosition}"]`);
-        if (!cell) {
-            console.warn('⚠️ PlayerTokens: Клетка не найдена для позиции:', newPosition);
-            return;
+        const maxPosition = isInner ? 23 : 43; // Максимальные позиции для треков
+        const steps = [];
+        
+        // Рассчитываем шаги движения
+        let currentPos = fromPosition;
+        while (currentPos !== toPosition) {
+            currentPos = (currentPos + 1) % (maxPosition + 1);
+            steps.push(currentPos);
         }
         
-        const cellRect = cell.getBoundingClientRect();
-        const trackRect = trackElement.getBoundingClientRect();
+        console.log(`🎯 PlayerTokens: Шаги движения для ${playerId}:`, steps);
         
-        // Рассчитываем новую позицию
-        const newX = cellRect.left - trackRect.left + cellRect.width / 2;
-        const newY = cellRect.top - trackRect.top + cellRect.height / 2;
+        // Выполняем каждый шаг с задержкой
+        let stepIndex = 0;
+        const moveToNextStep = () => {
+            if (stepIndex >= steps.length) {
+                console.log(`🎯 PlayerTokens: Движение фишки ${playerId} завершено`);
+                return;
+            }
+            
+            const stepPosition = steps[stepIndex];
+            const cell = trackElement.querySelector(`[data-position="${stepPosition}"]`);
+            
+            if (cell) {
+                const cellRect = cell.getBoundingClientRect();
+                const trackRect = trackElement.getBoundingClientRect();
+                
+                // Рассчитываем позицию
+                const newX = cellRect.left - trackRect.left + cellRect.width / 2 - 12;
+                const newY = cellRect.top - trackRect.top + cellRect.height / 2 - 12;
+                
+                // Получаем текущую позицию фишки
+                const currentX = parseFloat(token.style.left) || 0;
+                const currentY = parseFloat(token.style.top) || 0;
+                
+                // Анимируем движение к следующей клетке
+                this.animateTokenMovement(token, currentX, currentY, newX, newY);
+                
+                // Обновляем атрибут позиции
+                token.setAttribute('data-position', stepPosition);
+                
+                console.log(`🎯 PlayerTokens: Шаг ${stepIndex + 1}/${steps.length}: позиция ${stepPosition}`);
+                
+                stepIndex++;
+                
+                // Переходим к следующему шагу через 500мс
+                setTimeout(moveToNextStep, 500);
+            } else {
+                console.warn('⚠️ PlayerTokens: Клетка не найдена для позиции:', stepPosition);
+                stepIndex++;
+                setTimeout(moveToNextStep, 100);
+            }
+        };
         
-        // Получаем текущую позицию фишки
-        const currentX = parseFloat(token.style.left) || 0;
-        const currentY = parseFloat(token.style.top) || 0;
-        
-        // Анимируем движение
-        this.animateTokenMovement(token, currentX, currentY, newX - 12, newY - 12);
-        
-        console.log(`🎯 PlayerTokens: Фишка ${playerId} перемещена на позицию ${newPosition}`);
+        // Начинаем движение
+        moveToNextStep();
     }
     
     /**

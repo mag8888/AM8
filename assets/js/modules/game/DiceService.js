@@ -199,6 +199,22 @@ class DiceService {
     }
     
     /**
+     * Установить последний бросок (для синхронизации с сервером)
+     * @param {Object} rollResult - Результат броска с сервера
+     */
+    setLastRoll(rollResult) {
+        if (rollResult && rollResult.value) {
+            this.currentRoll = {
+                results: [rollResult.value],
+                total: rollResult.value,
+                isDouble: false,
+                timestamp: Date.now()
+            };
+            console.log('🎲 DiceService: Установлен последний бросок с сервера:', this.currentRoll);
+        }
+    }
+    
+    /**
      * Сброс состояния
      */
     reset() {

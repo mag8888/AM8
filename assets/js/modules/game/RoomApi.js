@@ -229,6 +229,39 @@ class RoomApi {
             method: 'GET'
         });
     }
+    
+    /**
+     * Бросок кубика
+     * @param {string} roomId - ID комнаты
+     * @returns {Promise<Object>} Результат броска
+     */
+    async rollDice(roomId) {
+        const endpoint = `/${roomId}/roll`;
+        
+        console.log(`🎲 RoomApi: Бросок кубика в комнате ${roomId}`);
+        
+        return await this.request(endpoint, {
+            method: 'POST',
+            body: JSON.stringify({})
+        });
+    }
+    
+    /**
+     * Движение фишки
+     * @param {string} roomId - ID комнаты
+     * @param {number} steps - Количество шагов
+     * @returns {Promise<Object>} Результат движения
+     */
+    async movePlayer(roomId, steps) {
+        const endpoint = `/${roomId}/move`;
+        
+        console.log(`🚶 RoomApi: Движение фишки в комнате ${roomId} на ${steps} шагов`);
+        
+        return await this.request(endpoint, {
+            method: 'POST',
+            body: JSON.stringify({ steps })
+        });
+    }
 }
 
 // Экспорт для использования в других модулях

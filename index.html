@@ -504,21 +504,81 @@
                                     // Добавляем обработчик для кнопки броска кубика
                                     const rollDiceBtn = document.getElementById('roll-dice-btn');
                                     if (rollDiceBtn) {
-                                        rollDiceBtn.addEventListener('click', () => {
-                                            const diceService = window.app?.getModule('diceService');
-                                            if (diceService) {
-                                                const rollResult = diceService.roll();
-                                                console.log('🎲 Бросок кубика:', rollResult);
+                                        rollDiceBtn.addEventListener('click', async () => {
+                                            try {
+                                                console.log('🎲 Начинаем бросок кубика...');
                                                 
-                                                // Обновляем состояние кнопки
+                                                // Отключаем кнопку
                                                 rollDiceBtn.disabled = true;
                                                 rollDiceBtn.innerHTML = '<span class="dice-btn-text">Бросаем...</span><span class="dice-btn-icon">🎲</span>';
                                                 
-                                                // Включаем кнопку через 2 секунды
-                                                setTimeout(() => {
-                                                    rollDiceBtn.disabled = false;
-                                                    rollDiceBtn.innerHTML = '<span class="dice-btn-text">Бросить</span><span class="dice-btn-icon">🎲</span>';
-                                                }, 2000);
+                                                // Отправляем запрос на сервер
+                                                const api = new window.RoomApi();
+                                                const rollResult = await api.rollDice(roomId);
+                                                
+                                                console.log('🎲 Результат броска с сервера:', rollResult);
+                                                
+                                                if (rollResult && rollResult.success) {
+                                                    // Обновляем локальное состояние
+                                                    const diceService = window.app?.getModule('diceService');
+                                                    if (diceService) {
+                                                        diceService.setLastRoll(rollResult.diceResult);
+                                                    }
+                                                    
+                                                    // Обновляем отображение кубика
+                                                    const diceIcon = document.getElementById('dice-center-icon');
+                                                    if (diceIcon) {
+                                                        diceIcon.textContent = rollResult.diceResult.value;
+                                                        diceIcon.classList.add('rolled');
+                                                        
+                                                        // Возвращаем иконку через 3 секунды
+                                                        setTimeout(() => {
+                                                            diceIcon.textContent = '🎲';
+                                                            diceIcon.classList.remove('rolled');
+                                                        }, 3000);
+                                                    }
+                                                    
+                                                    // Автоматически двигаем фишку через 1 секунду
+                                                    setTimeout(async () => {
+                                                        try {
+                                                            console.log('🚶 Двигаем фишку на', rollResult.diceResult.value, 'шагов');
+                                                            const moveResult = await api.movePlayer(roomId, rollResult.diceResult.value);
+                                                            console.log('🚶 Результат движения:', moveResult);
+                                                            
+                                                            if (moveResult && moveResult.success) {
+                                                                // Обновляем позицию фишки в PlayerTokens
+                                                                const playerTokens = window.app?.getModule('playerTokens');
+                                                                if (playerTokens && moveResult.state && moveResult.state.players) {
+                                                                    const activePlayer = moveResult.state.activePlayer;
+                                                                    if (activePlayer) {
+                                                                        console.log('🎯 Обновляем позицию фишки:', activePlayer);
+                                                                        playerTokens.updateTokenPosition(
+                                                                            activePlayer.id, 
+                                                                            activePlayer.position, 
+                                                                            activePlayer.isInner
+                                                                        );
+                                                                    }
+                                                                }
+                                                            }
+                                                        } catch (moveError) {
+                                                            console.error('❌ Ошибка движения фишки:', moveError);
+                                                        }
+                                                    }, 1000);
+                                                    
+                                                    // Включаем кнопку через 2 секунды
+                                                    setTimeout(() => {
+                                                        rollDiceBtn.disabled = false;
+                                                        rollDiceBtn.innerHTML = '<span class="dice-btn-text">Бросить</span><span class="dice-btn-icon">🎲</span>';
+                                                    }, 2000);
+                                                } else {
+                                                    throw new Error('Ошибка броска кубика');
+                                                }
+                                            } catch (error) {
+                                                console.error('❌ Ошибка броска кубика:', error);
+                                                
+                                                // Включаем кнопку при ошибке
+                                                rollDiceBtn.disabled = false;
+                                                rollDiceBtn.innerHTML = '<span class="dice-btn-text">Бросить</span><span class="dice-btn-icon">🎲</span>';
                                             }
                                         });
                                         console.log('🎲 Обработчик кнопки броска кубика добавлен');
