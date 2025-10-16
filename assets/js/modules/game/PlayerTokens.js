@@ -247,7 +247,6 @@ class PlayerTokens {
         }
         
         const cellRect = cell.getBoundingClientRect();
-        const trackRect = trackElement.getBoundingClientRect();
         
         // Рассчитываем базовую позицию (центр клетки)
         const baseX = cellRect.left - trackRect.left + cellRect.width / 2;
