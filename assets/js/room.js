@@ -1462,7 +1462,11 @@ async function confirmStartGame() {
         }
         
         try {
-            await roomService.startGame(currentRoom.id, userId);
+            const startResult = await roomService.startGame(currentRoom.id, userId);
+            
+            if (!startResult.success) {
+                throw new Error(startResult.message || 'Ошибка запуска игры');
+            }
             
             // Отправляем уведомление всем игрокам о начале игры
             await sendPushNotification('game_started', {
@@ -1499,6 +1503,25 @@ async function confirmStartGame() {
                 setTimeout(() => {
                     const roomId = currentRoom.id;
                     console.log('🎮 Room: Переход к игровой доске (игра уже запущена):', roomId);
+                    
+                    // Сохраняем данные пользователя для передачи на игровую доску
+                    const userData = {
+                        ...currentUser,
+                        roomId: roomId,
+                        fromRoom: true
+                    };
+                    localStorage.setItem('currentUser', JSON.stringify(userData));
+                    
+                    navigateToGameBoard(roomId);
+                }, 2000);
+            } else if (error.message && error.message.includes('Application failed to respond')) {
+                // Ошибка 502 - сервер не отвечает, но игра может быть запущена
+                console.warn('⚠️ Room: Сервер не отвечает, но продолжаем с игрой');
+                showNotification('Сервер не отвечает, но игра может быть запущена. Переходим к игровому полю...', 'warning');
+                
+                setTimeout(() => {
+                    const roomId = currentRoom.id;
+                    console.log('🎮 Room: Переход к игровой доске (сервер не отвечает):', roomId);
                     
                     // Сохраняем данные пользователя для передачи на игровую доску
                     const userData = {

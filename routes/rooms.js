@@ -975,9 +975,11 @@ router.post('/:id/start', async (req, res, next) => {
         const { id } = req.params;
         const { userId } = req.body;
 
+        console.log('🎮 POST /:id/start - Запуск игры:', { id, userId });
+
         const db = getDatabase();
         if (!db) {
-            console.log('⚠️ База данных недоступна');
+            console.error('❌ База данных недоступна');
             return res.status(503).json({
                 success: false,
                 message: 'База данных недоступна'
@@ -995,7 +997,11 @@ router.post('/:id/start', async (req, res, next) => {
         db.get(roomQuery, [id], (err, room) => {
             if (err) {
                 console.error('❌ Ошибка получения комнаты:', err);
-                return next(err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Ошибка базы данных',
+                    error: err.message
+                });
             }
 
             if (!room) {
@@ -1027,7 +1033,11 @@ router.post('/:id/start', async (req, res, next) => {
                 db.get(playersQuery, [id, id], (err, counts) => {
                     if (err) {
                         console.error('❌ Ошибка подсчета игроков:', err);
-                        return next(err);
+                        return res.status(500).json({
+                            success: false,
+                            message: 'Ошибка подсчета игроков',
+                            error: err.message
+                        });
                     }
 
                     // Разрешаем старт при наличии хотя бы 1 готового игрока (тестовый режим)
@@ -1048,7 +1058,11 @@ router.post('/:id/start', async (req, res, next) => {
                     db.run(updateQuery, [id], function(err) {
                         if (err) {
                             console.error('❌ Ошибка запуска игры:', err);
-                            return next(err);
+                            return res.status(500).json({
+                                success: false,
+                                message: 'Ошибка запуска игры',
+                                error: err.message
+                            });
                         }
 
                         console.log('🎮 Игра запущена в комнате:', id);
@@ -1100,7 +1114,11 @@ router.post('/:id/start', async (req, res, next) => {
 
     } catch (error) {
         console.error('❌ Ошибка запуска игры:', error);
-        next(error);
+        return res.status(500).json({
+            success: false,
+            message: 'Внутренняя ошибка сервера',
+            error: error.message
+        });
     }
 });
 
