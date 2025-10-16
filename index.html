@@ -549,9 +549,28 @@
                                                                 // Обновляем позицию фишки в PlayerTokens
                                                                 const playerTokens = window.app?.getModule('playerTokens');
                                                                 if (playerTokens && moveResult.state && moveResult.state.players) {
+                                                                    console.log('🎯 Обновляем позиции всех фишек после движения');
+                                                                    console.log('🎯 Состояние игры:', moveResult.state);
+                                                                    
+                                                                    // Обновляем позиции всех игроков
+                                                                    moveResult.state.players.forEach(player => {
+                                                                        console.log(`🎯 Обновляем фишку ${player.username}:`, {
+                                                                            id: player.id,
+                                                                            position: player.position,
+                                                                            isInner: player.isInner
+                                                                        });
+                                                                        
+                                                                        playerTokens.updateTokenPosition(
+                                                                            player.id, 
+                                                                            player.position, 
+                                                                            player.isInner
+                                                                        );
+                                                                    });
+                                                                    
+                                                                    // Также обновляем активного игрока, если есть
                                                                     const activePlayer = moveResult.state.activePlayer;
                                                                     if (activePlayer) {
-                                                                        console.log('🎯 Обновляем позицию фишки:', activePlayer);
+                                                                        console.log('🎯 Обновляем активного игрока:', activePlayer);
                                                                         playerTokens.updateTokenPosition(
                                                                             activePlayer.id, 
                                                                             activePlayer.position, 
@@ -630,7 +649,7 @@
                                     syncWithServer();
                                     
                                     // Периодическая синхронизация каждые 5 секунд
-                                    const syncInterval = setInterval(syncWithServer, 5000);
+                                    const syncInterval = setInterval(syncWithServer, 10000);
                                     
                                     // Очищаем интервал при закрытии страницы
                                     window.addEventListener('beforeunload', () => {

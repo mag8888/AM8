@@ -382,14 +382,50 @@ class PlayerTokens {
         
         console.log(`🎯 PlayerTokens: Движение фишки ${playerId} с позиции ${currentPosition} на ${newPosition}`);
         
-        // Если позиция не изменилась, ничего не делаем
+        // Если позиция не изменилась, все равно обновляем позицию фишки
+        // чтобы исправить возможную рассинхронизацию
         if (currentPosition === newPosition) {
-            console.log('🎯 PlayerTokens: Позиция не изменилась, пропускаем движение');
+            console.log('🎯 PlayerTokens: Позиция не изменилась, но обновляем позицию фишки для синхронизации');
+            // Просто перемещаем фишку на правильную позицию без анимации
+            this.moveTokenToPosition(token, playerId, newPosition, isInner);
             return;
         }
         
         // Выполняем пошаговое движение
         this.moveTokenStepByStep(token, playerId, currentPosition, newPosition, isInner);
+    }
+    
+    /**
+     * Мгновенное перемещение фишки на позицию (без анимации)
+     */
+    moveTokenToPosition(token, playerId, position, isInner) {
+        const trackSelector = isInner ? this.innerTrackSelector : this.outerTrackSelector;
+        const trackElement = document.querySelector(trackSelector);
+        
+        if (!trackElement) {
+            console.warn('⚠️ PlayerTokens: Трек не найден:', trackSelector);
+            return;
+        }
+        
+        const cell = trackElement.querySelector(`[data-position="${position}"]`);
+        if (!cell) {
+            console.warn('⚠️ PlayerTokens: Клетка не найдена для позиции:', position);
+            return;
+        }
+        
+        const cellRect = cell.getBoundingClientRect();
+        const trackRect = trackElement.getBoundingClientRect();
+        
+        // Рассчитываем позицию
+        const newX = cellRect.left - trackRect.left + cellRect.width / 2 - 16;
+        const newY = cellRect.top - trackRect.top + cellRect.height / 2 - 16;
+        
+        // Перемещаем фишку
+        token.style.left = newX + 'px';
+        token.style.top = newY + 'px';
+        token.setAttribute('data-position', position);
+        
+        console.log(`🎯 PlayerTokens: Фишка ${playerId} мгновенно перемещена на позицию ${position}`);
     }
     
     /**
