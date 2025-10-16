@@ -433,7 +433,7 @@ class PlayersPanel {
                     this._showRollingAnimation();
                 });
                 turnService.on('roll:success', (response) => {
-                    const serverValue = response && response.diceResult && response.diceResult.value;
+                    const serverValue = response && (response.serverValue ?? response.diceResult?.value);
                     const localValue = response && response.localRoll && (response.localRoll.value || response.localRoll.total);
                     const value = serverValue ?? localValue ?? null;
                     if (value != null) this.updateDiceResult(value);

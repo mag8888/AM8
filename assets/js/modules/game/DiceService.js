@@ -203,15 +203,42 @@ class DiceService {
      * @param {Object} rollResult - Результат броска с сервера
      */
     setLastRoll(rollResult) {
-        if (rollResult && rollResult.value) {
-            this.currentRoll = {
-                results: [rollResult.value],
-                total: rollResult.value,
-                isDouble: false,
-                timestamp: Date.now()
-            };
-            console.log('🎲 DiceService: Установлен последний бросок с сервера:', this.currentRoll);
+        const rawValue = rollResult && (rollResult.value ?? rollResult.total ?? rollResult);
+        const value = Number(rawValue);
+        if (!Number.isFinite(value) || value <= 0) {
+            console.warn('⚠️ DiceService: Некорректное значение броска при синхронизации:', rollResult);
+            return;
         }
+        
+        const providedResults = Array.isArray(rollResult?.results) && rollResult.results.length
+            ? rollResult.results.map(Number)
+            : null;
+        const results = providedResults || [value];
+        const diceCount = Math.max(1, Number(rollResult?.diceCount) || results.length);
+        const isDouble = Boolean(rollResult?.isDouble && diceCount === 2);
+        
+        // Обновляем счетчик дублей на основании данных сервера (если есть)
+        if (typeof rollResult?.consecutiveDoubles === 'number') {
+            this.consecutiveDoubles = rollResult.consecutiveDoubles;
+        } else {
+            this.consecutiveDoubles = isDouble ? this.consecutiveDoubles + 1 : 0;
+        }
+        
+        this.currentRoll = {
+            id: this.generateRollId(),
+            timestamp: Date.now(),
+            diceCount,
+            results,
+            total: value,
+            isDouble,
+            consecutiveDoubles: this.consecutiveDoubles,
+            source: 'server'
+        };
+        
+        this.addToHistory(this.currentRoll);
+        this.emitRollEvent(this.currentRoll);
+        
+        console.log('🎲 DiceService: Установлен последний бросок с сервера:', this.currentRoll);
     }
     
     /**

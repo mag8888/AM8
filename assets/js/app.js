@@ -547,12 +547,14 @@ class App {
                     this.modules.set('roomApi', roomApi);
                 }
                 if (gameState) {
+                    const diceService = this.modules.get('diceService');
                     const turnService = new window.TurnService({
                         // Некоторые реализации ожидают свойство state, добавляем алиас
                         state: gameState,
                         gameState: gameState,
                         roomApi: roomApi,
-                        eventBus: this.getEventBus()
+                        eventBus: this.getEventBus(),
+                        diceService
                     });
                     this.modules.set('turnService', turnService);
                     console.log('🎯 TurnService: Инициализирован');
@@ -606,9 +608,17 @@ class App {
             try {
                 if (!this.getModule('turnService') && window.TurnService && this.getModule('gameState')) {
                     console.log('🔄 App: Доинициализация TurnService (retry)');
+                    let roomApi = this.modules.get('roomApi');
+                    if (!roomApi && window.RoomApi) {
+                        roomApi = new window.RoomApi();
+                        this.modules.set('roomApi', roomApi);
+                    }
                     const turnService = new window.TurnService({
                         gameState: this.getModule('gameState'),
-                        eventBus: this.getEventBus()
+                        state: this.getModule('gameState'),
+                        eventBus: this.getEventBus(),
+                        roomApi,
+                        diceService: this.modules.get('diceService') || null
                     });
                     this.modules.set('turnService', turnService);
                 }

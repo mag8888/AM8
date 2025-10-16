@@ -193,8 +193,22 @@ class GameState {
      * @param {Object} serverState - Состояние от сервера
      */
     applyState(serverState) {
+        const previousPositions = new Map();
+        if (Array.isArray(this.players)) {
+            this.players.forEach(player => {
+                const id = player?.id || player?.userId;
+                if (!id) return;
+                previousPositions.set(id, {
+                    position: Number(player.position) || 0,
+                    isInner: Boolean(player.isInner)
+                });
+            });
+        }
+        
+        let syncedPlayers = null;
         if (serverState.players) {
             this.players = serverState.players;
+            syncedPlayers = serverState.players;
         }
         
         if (serverState.currentPlayerIndex !== undefined) {
@@ -235,10 +249,33 @@ class GameState {
             this.gameState.lastDiceResult = serverState.lastDiceResult;
         }
         
+        const positionChanges = [];
+        const playersForDiff = Array.isArray(syncedPlayers) ? syncedPlayers : null;
+        if (playersForDiff) {
+            playersForDiff.forEach(player => {
+                const id = player?.id || player?.userId;
+                if (!id) return;
+                const prev = previousPositions.get(id);
+                const currentPosition = Number(player.position) || 0;
+                const currentIsInner = Boolean(player.isInner);
+                if (!prev || prev.position !== currentPosition || prev.isInner !== currentIsInner) {
+                    positionChanges.push({
+                        playerId: id,
+                        position: currentPosition,
+                        isInner: currentIsInner,
+                        player
+                    });
+                }
+            });
+        }
+        
         console.log('🔄 GameState: Состояние обновлено от сервера');
         
         // Эмитим событие обновления
         if (this.eventBus) {
+            positionChanges.forEach(change => {
+                this.eventBus.emit('player:positionUpdated', change);
+            });
             this.eventBus.emit('game:stateUpdated', this.getState());
         }
     }
@@ -673,4 +710,3 @@ class GameState {
 }
 
 window.GameState = GameState;
-

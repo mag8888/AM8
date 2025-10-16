@@ -21,6 +21,7 @@ class TurnService extends EventTarget {
         this.diceService = diceService;
         this.movementService = movementService;
         this.listeners = new Map();
+        this.lastRollValue = null;
         
         console.log('🎮 TurnService: Инициализирован');
     }
@@ -39,64 +40,48 @@ class TurnService extends EventTarget {
         if (!roomId) {
             throw new Error('TurnService.roll: roomId is missing');
         }
-        
+
+        let response;
         try {
             // Эмит начала броска
             this.emit('roll:start', { diceChoice, isReroll });
-            
-            // Используем DiceService для локального броска
-            if (this.diceService) {
-                const rollOptions = {
-                    forceSingle: diceChoice === 'single',
-                    forceDouble: diceChoice === 'double'
-                };
-                
-                const rollResult = this.diceService.roll(rollOptions);
-                
-                // Вызываем API для синхронизации с сервером
-                const response = await this.roomApi.rollDice(roomId, diceChoice, isReroll);
-                
-                // Применяем состояние от сервера
-                if (response.state && this.state.applyState) {
-                    this.state.applyState(response.state);
-                }
-                
-                // Автоматически двигаем фишку после броска
-                if (rollResult.total > 0) {
-                    try {
-                        console.log('🎲 TurnService: Автоматическое движение фишки на', rollResult.total, 'шагов');
-                        const moveResponse = await this.roomApi.move(roomId, rollResult.total);
-                        
-                        // Применяем обновленное состояние от сервера
-                        if (moveResponse.state && this.state.applyState) {
-                            this.state.applyState(moveResponse.state);
-                        }
-                        
-                        console.log('🎲 TurnService: Фишка перемещена успешно');
-                    } catch (moveError) {
-                        console.error('❌ TurnService: Ошибка автоматического движения фишки:', moveError);
-                    }
-                }
-                
-                // Эмит успешного результата
-                this.emit('roll:success', { ...response, localRoll: rollResult });
-                
-                console.log('🎮 TurnService: Кубик брошен успешно');
-                return { ...response, localRoll: rollResult };
-            } else {
-                // Fallback к API без DiceService
-                const response = await this.roomApi.rollDice(roomId, diceChoice, isReroll);
-                
-                if (response.state && this.state.applyState) {
-                    this.state.applyState(response.state);
-                }
-                
-                this.emit('roll:success', response);
-                
-                console.log('🎮 TurnService: Кубик брошен успешно');
-                return response;
+            response = await this.roomApi.rollDice(roomId, diceChoice, isReroll);
+
+            // Применяем состояние от сервера
+            if (response.state && this.state.applyState) {
+                this.state.applyState(response.state);
             }
-            
+
+            const serverValue = Number(response?.diceResult?.value);
+            if (Number.isFinite(serverValue)) {
+                this.lastRollValue = serverValue;
+                if (this.diceService && typeof this.diceService.setLastRoll === 'function') {
+                    this.diceService.setLastRoll({
+                        value: serverValue,
+                        diceCount: response?.diceResult?.diceCount || 1
+                    });
+                }
+            } else {
+                this.lastRollValue = null;
+            }
+
+            // Эмит успешного результата
+            const payload = { ...response, serverValue: this.lastRollValue };
+            this.emit('roll:success', payload);
+
+            console.log('🎮 TurnService: Кубик брошен успешно, значение =', this.lastRollValue);
+
+            const autoMoveValue = this.lastRollValue;
+            const shouldAutoMove = options.autoMove !== false && Number.isFinite(autoMoveValue) && payload?.state?.canMove !== false;
+            if (shouldAutoMove) {
+                try {
+                    await this.move(autoMoveValue);
+                } catch (moveError) {
+                    console.error('⚠️ TurnService: Автоматическое перемещение не удалось:', moveError);
+                }
+            }
+
+            return payload;
         } catch (error) {
             // Эмит ошибки
             this.emit('roll:error', error);
@@ -120,17 +105,21 @@ class TurnService extends EventTarget {
             throw new Error('TurnService.move: roomId is missing');
         }
         
+        const targetSteps = Number.isFinite(Number(steps)) && Number(steps) > 0
+            ? Number(steps)
+            : this.lastRollValue;
+        
         // Валидация steps
-        if (!Number.isFinite(steps) || steps <= 0) {
+        if (!Number.isFinite(targetSteps) || targetSteps <= 0) {
             throw new Error('TurnService.move: invalid steps value');
         }
         
         try {
             // Эмит начала перемещения
-            this.emit('move:start', { steps });
+            this.emit('move:start', { steps: targetSteps });
             
             // Вызов API
-            const response = await this.roomApi.move(roomId, steps);
+            const response = await this.roomApi.move(roomId, targetSteps);
             
             // Применение состояния от сервера
             if (response.state && this.state.applyState) {
@@ -139,14 +128,15 @@ class TurnService extends EventTarget {
             
             // Эмит успешного результата
             this.emit('move:success', response);
-            console.log('✅ move:success', { roomId, steps, server: true, moveResult: response.moveResult });
-            console.log(`🎮 TurnService: Игрок перемещен на ${steps} шагов`);
+            console.log('✅ move:success', { roomId, steps: targetSteps, server: true, moveResult: response.moveResult });
+            console.log(`🎮 TurnService: Игрок перемещен на ${targetSteps} шагов`);
+            this.lastRollValue = null;
             return response;
             
         } catch (error) {
             // Эмит ошибки
             this.emit('move:error', error);
-            console.error('❌ move:error', { roomId, steps, error });
+            console.error('❌ move:error', { roomId, steps: targetSteps, error });
             console.error('❌ TurnService: Ошибка перемещения:', error);
             
             // Локальный fallback движения, чтобы не блокировать UX
@@ -158,7 +148,7 @@ class TurnService extends EventTarget {
                     // Предпочтительно задействовать MovementService, если он есть
                     if (this.movementService && typeof this.movementService.movePlayer === 'function') {
                         try {
-                            this.movementService.movePlayer(activePlayer.id || activePlayer.userId, steps);
+                            this.movementService.movePlayer(activePlayer.id || activePlayer.userId, targetSteps);
                         } catch (e) {
                             console.warn('⚠️ Fallback MovementService.movePlayer error, continue with simple applyState:', e);
                         }
@@ -169,7 +159,7 @@ class TurnService extends EventTarget {
                     const nextPlayers = players.map(p => {
                         if ((p.id || p.userId) === (activePlayer.id || activePlayer.userId)) {
                             const prev = Number(p.position) || 0;
-                            const next = (prev + Number(steps)) % maxInner;
+                            const next = (prev + Number(targetSteps)) % maxInner;
                             return { ...p, position: next };
                         }
                         return p;
@@ -187,9 +177,10 @@ class TurnService extends EventTarget {
                         this.state.applyState(fallbackState);
                     }
                     
-                    const fallbackResponse = { success: true, moveResult: { steps: Number(steps) || 0 }, state: fallbackState, fallback: true };
+                    const fallbackResponse = { success: true, moveResult: { steps: Number(targetSteps) || 0 }, state: fallbackState, fallback: true };
                     this.emit('move:success', fallbackResponse);
-                    console.log('✅ move:success', { roomId, steps, server: false, fallback: true });
+                    console.log('✅ move:success', { roomId, steps: targetSteps, server: false, fallback: true });
+                    this.lastRollValue = null;
                     return fallbackResponse;
                 }
             } catch (fallbackError) {

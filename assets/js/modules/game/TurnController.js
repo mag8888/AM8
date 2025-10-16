@@ -904,7 +904,7 @@ class TurnController {
         const moveActions = this.ui.querySelector('#move-actions');
         
         // Универсально достаём значение броска: сервер или локальный
-        const serverValue = response && response.diceResult && response.diceResult.value;
+        const serverValue = response && (response.serverValue ?? response.diceResult?.value);
         const localValue = response && response.localRoll && (response.localRoll.value || response.localRoll.total);
         const value = serverValue ?? localValue ?? null;
 
@@ -915,7 +915,7 @@ class TurnController {
         diceNumberEl.textContent = value != null ? String(value) : '?';
         
         // Показываем кнопки перемещения
-        moveActions.style.display = 'block';
+        moveActions.style.display = response?.state?.canMove ? 'block' : 'none';
         
         this.updateStatus(`Выпало: ${value != null ? value : '?'}`);
     }
@@ -949,6 +949,10 @@ class TurnController {
     onMoveSuccess(response) {
         const endTurnBtn = this.ui.querySelector('#end-turn-btn');
         endTurnBtn.style.display = 'block';
+        const moveActions = this.ui.querySelector('#move-actions');
+        if (moveActions) {
+            moveActions.style.display = 'none';
+        }
         
         this.updateStatus(`Перемещены на ${response.moveResult.steps} шагов`);
     }

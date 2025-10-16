@@ -112,8 +112,11 @@ router.post('/:id/roll', (req, res, next) => {
     const { id } = req.params;
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
+        if (state.canRoll === false) {
+            return res.status(400).json({ success:false, message:'Бросок кубика сейчас недоступен', state });
+        }
         const value = Math.floor(Math.random()*6)+1;
-        state.lastDiceResult = { value };
+        state.lastDiceResult = { value, at: Date.now() };
         state.canRoll = false;
         state.canMove = true;
         state.canEndTurn = false;
@@ -137,21 +140,33 @@ router.post('/:id/move', (req, res, next) => {
         if (err) return next(err);
         const current = state.players[state.currentPlayerIndex];
         if (!current) return res.json({ success:true, moveResult:{ steps:0 }, state });
+        if (state.canMove === false) {
+            return res.status(400).json({ success:false, message:'Перемещение сейчас недоступно', state });
+        }
+        const diceValue = Number(state?.lastDiceResult?.value);
+        const requestedSteps = Number(steps);
+        const moveSteps = Number.isFinite(diceValue) && diceValue > 0
+            ? diceValue
+            : (Number.isFinite(requestedSteps) && requestedSteps > 0 ? requestedSteps : null);
+        if (!Number.isFinite(moveSteps) || moveSteps <= 0) {
+            return res.status(400).json({ success:false, message:'Некорректное количество шагов для перемещения', state });
+        }
         const maxInner = 12;
-        current.position = (current.position + (Number(steps)||0)) % maxInner;
+        current.position = (current.position + moveSteps) % maxInner;
         state.canRoll = false;
         state.canMove = false;
         state.canEndTurn = true;
+        state.lastMove = { steps: moveSteps, at: Date.now() };
         
         // Отправляем push-уведомление о движении
         pushService.broadcastPush('player_moved', { 
             roomId: id, 
             activePlayer: state.activePlayer,
-            steps: Number(steps)||0,
+            steps: moveSteps,
             newPosition: current.position
         }).catch(err => console.error('❌ Ошибка отправки push о движении:', err));
         
-        res.json({ success:true, moveResult:{ steps:Number(steps)||0 }, state });
+        res.json({ success:true, moveResult:{ steps: moveSteps }, state });
     });
 });
 
@@ -160,11 +175,16 @@ router.post('/:id/end-turn', (req, res, next) => {
     const { id } = req.params;
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
+        if (state.canEndTurn === false) {
+            return res.status(400).json({ success:false, message:'Завершение хода сейчас недоступно', state });
+        }
         state.currentPlayerIndex = (state.currentPlayerIndex + 1) % (state.players.length || 1);
         state.activePlayer = state.players[state.currentPlayerIndex] || null;
         state.canRoll = true;
         state.canMove = false;
         state.canEndTurn = false;
+        state.lastDiceResult = null;
+        state.lastMove = null;
         // Отправляем push-уведомление о смене хода
         pushService.broadcastPush('turn_changed', { 
             roomId: id, 
