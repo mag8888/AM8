@@ -799,10 +799,36 @@ router.post('/:id/join', async (req, res, next) => {
 
         const db = getDatabase();
         if (!db) {
-            return res.status(503).json({
-                success: false,
-                message: 'База данных временно недоступна'
-            });
+            // Mongo-first path (Railway): добавляем игрока в комнату в Mongo
+            try {
+                const repo = new RoomRepository();
+                let room = await repo.getById(id);
+                if (!room) {
+                    // создаём комнату минимально, если её нет
+                    room = { id, name: 'Комната', players: [], maxPlayers: 4, status: 'waiting' };
+                }
+                const players = Array.isArray(room.players) ? room.players.slice() : [];
+                const exists = players.some(p => p.username === player.username || p.id === player.userId);
+                if (exists) {
+                    return res.status(409).json({ success: false, message: 'Вы уже в этой комнате', code: 'ALREADY_JOINED' });
+                }
+                players.push({
+                    id: player.userId || uuidv4(),
+                    userId: player.userId,
+                    username: player.username,
+                    name: player.name || player.username,
+                    avatar: player.avatar || '',
+                    isHost: false,
+                    isReady: !!player.isReady,
+                    token: player.token || '',
+                    dream: player.dream || null
+                });
+                await repo.updatePlayers(id, players);
+                return res.status(201).json({ success: true, message: 'Вы присоединились к комнате', data: { roomId: id } });
+            } catch (e) {
+                console.error('❌ Mongo join error:', e);
+                return res.status(503).json({ success: false, message: 'Сервис временно недоступен' });
+            }
         }
 
         // Проверяем существование комнаты

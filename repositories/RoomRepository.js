@@ -61,7 +61,11 @@ class RoomRepository {
 
     async updatePlayers(id, players) {
         const db = await this.ensureDb();
-        await db.collection('rooms').updateOne({ id }, { $set: { players, updatedAt: new Date().toISOString() } });
+        await db.collection('rooms').updateOne(
+            { id },
+            { $set: { players, playerCount: Array.isArray(players) ? players.length : 0, updatedAt: new Date().toISOString() } },
+            { upsert: true }
+        );
         return this.getById(id);
     }
 }
