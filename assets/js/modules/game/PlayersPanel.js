@@ -383,10 +383,17 @@ class PlayersPanel {
         const rollDiceBtn = document.getElementById('roll-dice');
         if (rollDiceBtn) {
             rollDiceBtn.addEventListener('click', () => {
-                // Мгновенный локальный результат 1-6 для поля "Кубик:"
-                const instantValue = Math.floor(Math.random() * 6) + 1;
-                this.updateDiceResult(instantValue);
-                // Параллельно запускаем полноценный бросок через сервис/сервер
+                // Блокируем повторные клики
+                rollDiceBtn.disabled = true;
+                // Показываем анимацию броска
+                this._showRollingAnimation();
+                // Публичное превью значения (по желанию UI может слушать это событие)
+                const preview = Math.floor(Math.random() * 6) + 1;
+                if (this.eventBus && typeof this.eventBus.emit === 'function') {
+                    this.eventBus.emit('ui:dice:preview', { value: preview });
+                }
+                this.updateDiceResult(preview);
+                // Запускаем бросок через сервис/сервер
                 this.rollDice();
             });
         }
@@ -398,19 +405,46 @@ class PlayersPanel {
             });
         }
         
-        // Подписываемся на подтверждение броска, чтобы отобразить точное значение
+        // Подписываемся на события TurnService
         try {
             const app = window.app;
             const turnService = app && app.getModule ? app.getModule('turnService') : null;
             if (turnService && typeof turnService.on === 'function') {
+                turnService.on('roll:start', () => {
+                    this._showRollingAnimation();
+                });
                 turnService.on('roll:success', (response) => {
                     const serverValue = response && response.diceResult && response.diceResult.value;
                     const localValue = response && response.localRoll && (response.localRoll.value || response.localRoll.total);
                     const value = serverValue ?? localValue ?? null;
                     if (value != null) this.updateDiceResult(value);
                 });
+                turnService.on('roll:finish', () => {
+                    this._hideRollingAnimation();
+                    const btn = document.getElementById('roll-dice');
+                    if (btn) btn.disabled = false;
+                });
             }
         } catch (_) {}
+    }
+
+    // Псевдо-анимация броска в текстовом поле "Кубик:"
+    _showRollingAnimation() {
+        const el = document.getElementById('dice-result');
+        if (!el) return;
+        const seq = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+        let i = 0;
+        this._rollingTimer && clearInterval(this._rollingTimer);
+        this._rollingTimer = setInterval(() => {
+            el.textContent = seq[i % seq.length];
+            i++;
+        }, 90);
+    }
+    _hideRollingAnimation() {
+        if (this._rollingTimer) {
+            clearInterval(this._rollingTimer);
+            this._rollingTimer = null;
+        }
     }
     
     /**
