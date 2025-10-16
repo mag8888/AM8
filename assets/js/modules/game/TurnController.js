@@ -703,23 +703,43 @@ class TurnController {
         if (turnInfo) {
             const currentUserId = this.getCurrentUserId();
             const isMyTurn = state.activePlayer && (state.activePlayer.id === currentUserId);
+            const playerToken = this.getPlayerToken(state.activePlayer);
             if (isMyTurn) {
-                turnInfo.textContent = 'Ваш ход';
+                turnInfo.innerHTML = `${playerToken} Ваш ход`;
                 turnInfo.classList.add('my-turn');
                 const rollBtn = this.ui.querySelector('.btn-dice');
                 if (rollBtn) rollBtn.classList.add('my-turn');
             } else if (state.activePlayer) {
-                turnInfo.textContent = `Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
+                turnInfo.innerHTML = `${playerToken} Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
                 turnInfo.classList.remove('my-turn');
                 const rollBtn = this.ui.querySelector('.btn-dice');
                 if (rollBtn) rollBtn.classList.remove('my-turn');
             } else {
-                turnInfo.textContent = 'Ожидание';
+                turnInfo.innerHTML = 'Ожидание';
                 turnInfo.classList.remove('my-turn');
                 const rollBtn = this.ui.querySelector('.btn-dice');
                 if (rollBtn) rollBtn.classList.remove('my-turn');
             }
         }
+    }
+
+    /**
+     * Получение токена игрока (эмодзи фишки)
+     * @param {Object} player - Игрок
+     * @returns {string} Эмодзи токена
+     */
+    getPlayerToken(player) {
+        if (!player) return '🎯';
+        
+        // Маппинг токенов по username (как на игровом поле)
+        const tokenMap = {
+            'test': '🦊',
+            'roman': '🦅',
+            'admin': '👑',
+            'user': '👤'
+        };
+        
+        return tokenMap[player.username] || '🎯';
     }
     
     /**
