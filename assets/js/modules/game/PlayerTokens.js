@@ -39,9 +39,11 @@ class PlayerTokens {
                 this.updateTokenPosition(data.playerId, data.position, data.player.isInner);
             });
             
-            this.eventBus.on('game:playersUpdated', (data) => {
-                this.clearTokens();
-                this.renderTokens(data.players);
+            this.eventBus.on('game:started', () => {
+                // При старте игры рендерим фишки всех игроков
+                if (this.gameState && this.gameState.players) {
+                    this.renderTokens(this.gameState.players);
+                }
             });
         }
     }
@@ -142,10 +144,24 @@ class PlayerTokens {
     }
     
     /**
+     * Получение игроков из GameStateManager
+     */
+    getPlayers() {
+        if (this.gameState && this.gameState.players) {
+            return this.gameState.players;
+        }
+        return [];
+    }
+    
+    /**
      * Рендер фишек для всех игроков
      */
     renderTokens(players) {
-        if (!players || players.length === 0) return;
+        if (!players || players.length === 0) {
+            // Пытаемся получить игроков из GameState
+            players = this.getPlayers();
+            if (!players || players.length === 0) return;
+        }
         
         console.log('🎯 PlayerTokens: Рендер фишек для', players.length, 'игроков');
         
@@ -386,6 +402,14 @@ class PlayerTokens {
     updateTokens(players) {
         this.clearTokens();
         this.renderTokens(players);
+    }
+    
+    /**
+     * Принудительное обновление фишек из GameState
+     */
+    forceUpdate() {
+        const players = this.getPlayers();
+        this.updateTokens(players);
     }
 }
 

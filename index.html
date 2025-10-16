@@ -175,6 +175,54 @@
             line-height: 16px !important;
         }
         
+        /* Стили для кнопки броска кубика */
+        .dice-roll-btn {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border: 2px solid #d97706;
+            border-radius: 12px;
+            color: #1e293b;
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            min-width: 120px;
+            justify-content: center;
+        }
+        
+        .dice-roll-btn:hover {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .dice-roll-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .dice-roll-btn:disabled {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            border-color: #374151;
+            color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .dice-btn-icon {
+            font-size: 1.2rem;
+        }
+        
+        .dice-btn-text {
+            font-family: 'Courier New', monospace;
+        }
+        
         /* Стили для кнопок */
         .btn {
             display: inline-block;
@@ -292,7 +340,11 @@
                             <!-- Центральная область с кубиком -->
                             <div class="center-area">
                                 <div class="dice-center">
-                                    <div class="dice-icon" id="dice-center-icon">💰</div>
+                                    <div class="dice-icon" id="dice-center-icon">🎲</div>
+                                    <button id="roll-dice-btn" class="dice-roll-btn" title="Бросить кубик">
+                                        <span class="dice-btn-text">Бросить</span>
+                                        <span class="dice-btn-icon">🎲</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -356,6 +408,7 @@
     <script src="assets/js/modules/game/BalanceManager.js"></script>
     <script src="assets/js/modules/game/PlayersPanel.js"></script>
     <script src="assets/js/modules/game/PlayerTokens.js"></script>
+    <script src="assets/js/modules/game/DiceDisplay.js"></script>
     <script src="assets/js/modules/game/CellPopup.js"></script>
     <script src="assets/js/modules/game/PushClient.js"></script>
     
@@ -437,6 +490,29 @@
                                 setTimeout(() => {
                                     if (window.app && window.app._initializeGameModules) {
                                         window.app._initializeGameModules(roomId);
+                                    }
+                                    
+                                    // Добавляем обработчик для кнопки броска кубика
+                                    const rollDiceBtn = document.getElementById('roll-dice-btn');
+                                    if (rollDiceBtn) {
+                                        rollDiceBtn.addEventListener('click', () => {
+                                            const diceService = window.app?.getModule('diceService');
+                                            if (diceService) {
+                                                const rollResult = diceService.roll();
+                                                console.log('🎲 Бросок кубика:', rollResult);
+                                                
+                                                // Обновляем состояние кнопки
+                                                rollDiceBtn.disabled = true;
+                                                rollDiceBtn.innerHTML = '<span class="dice-btn-text">Бросаем...</span><span class="dice-btn-icon">🎲</span>';
+                                                
+                                                // Включаем кнопку через 2 секунды
+                                                setTimeout(() => {
+                                                    rollDiceBtn.disabled = false;
+                                                    rollDiceBtn.innerHTML = '<span class="dice-btn-text">Бросить</span><span class="dice-btn-icon">🎲</span>';
+                                                }, 2000);
+                                            }
+                                        });
+                                        console.log('🎲 Обработчик кнопки броска кубика добавлен');
                                     }
                                 }, 100);
                                 

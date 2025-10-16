@@ -86,6 +86,11 @@ class GameStateManager {
                 players: serverState.players,
                 added: serverState.players.length > oldState.players.length
             });
+            
+            // Уведомляем о необходимости обновить фишки
+            this.notifyListeners('game:playersUpdated', {
+                players: serverState.players
+            });
         }
         
         console.log('🏗️ GameStateManager: Состояние обновлено от сервера');

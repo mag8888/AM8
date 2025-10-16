@@ -450,6 +450,38 @@ class App {
             console.log('🎯 BoardLayout: Инициализирован');
         }
         
+        // Инициализируем PlayerTokens для отображения фишек игроков
+        if (window.PlayerTokens) {
+            const playerTokens = new window.PlayerTokens({
+                gameState: this.getModule('gameState'),
+                eventBus: this.getEventBus(),
+                outerTrackSelector: '#outer-track',
+                innerTrackSelector: '#inner-track'
+            });
+            this.modules.set('playerTokens', playerTokens);
+            console.log('🎯 PlayerTokens: Инициализирован');
+        }
+        
+        // Инициализируем DiceService для бросков кубика
+        if (window.DiceService) {
+            const diceService = new window.DiceService({
+                gameState: this.getModule('gameState'),
+                eventBus: this.getEventBus()
+            });
+            this.modules.set('diceService', diceService);
+            console.log('🎲 DiceService: Инициализирован');
+        }
+        
+        // Инициализируем DiceDisplay для отображения результата броска
+        if (window.DiceDisplay) {
+            const diceDisplay = new window.DiceDisplay({
+                eventBus: this.getEventBus(),
+                diceService: this.modules.get('diceService')
+            });
+            this.modules.set('diceDisplay', diceDisplay);
+            console.log('🎲 DiceDisplay: Инициализирован');
+        }
+        
         // Инициализируем PlayersPanel с GameStateManager
         if (window.PlayersPanel) {
             const playersPanel = new window.PlayersPanel({
