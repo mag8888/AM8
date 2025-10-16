@@ -423,10 +423,12 @@
                                 if (window.app && window.app._showPage) {
                                     window.app._showPage('game-page');
                                 }
-                                // Инициализируем игровые модули с GameStateManager
-                                if (window.app && window.app._initializeGameModules) {
-                                    window.app._initializeGameModules(roomId);
-                                }
+                                // Инициализируем игровые модули с GameStateManager после загрузки DOM
+                                setTimeout(() => {
+                                    if (window.app && window.app._initializeGameModules) {
+                                        window.app._initializeGameModules(roomId);
+                                    }
+                                }, 100);
                                 
                                 // Получаем серверное состояние и синхронизируем с GameStateManager
                                 try {

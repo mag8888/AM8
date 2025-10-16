@@ -440,7 +440,7 @@ class App {
             const playersPanel = new window.PlayersPanel({
                 gameStateManager: gameStateManager,
                 eventBus: this.getEventBus(),
-                containerId: 'game-control-panel'
+                containerId: 'players-panel'
             });
             this.modules.set('playersPanel', playersPanel);
         }

@@ -562,12 +562,12 @@ class TurnController {
         document.head.appendChild(style);
         
         // Добавляем в DOM
-        const controlPanel = document.getElementById('game-control-panel');
+        const controlPanel = document.getElementById('players-panel');
         if (controlPanel) {
             controlPanel.appendChild(turnMenu);
             this.ui = turnMenu;
         } else {
-            console.error('❌ TurnController: Контейнер game-control-panel не найден');
+            console.error('❌ TurnController: Контейнер players-panel не найден');
             document.body.appendChild(turnMenu);
             this.ui = turnMenu;
         }
