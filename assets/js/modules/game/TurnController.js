@@ -223,6 +223,33 @@ class TurnController {
             .overview-row span:first-child {
                 color: #d1d5db;
             }
+
+            /* Бейдж хода */
+            .turn-info {
+                padding: 0.25rem 0.6rem;
+                border-radius: 999px;
+                background: rgba(255,255,255,0.08);
+                border: 1px solid rgba(255,255,255,0.12);
+                color: #e5e7eb;
+                font-weight: 700;
+                letter-spacing: 0.2px;
+            }
+            .turn-info.my-turn {
+                background: linear-gradient(135deg, #22c55e, #16a34a);
+                border-color: rgba(34,197,94,0.6);
+                color: #0b1b10;
+                box-shadow: 0 0 0 2px rgba(34,197,94,0.25), 0 8px 20px rgba(34,197,94,0.35);
+            }
+
+            /* Подсветка кнопки броска на своём ходу */
+            .btn-dice.my-turn {
+                box-shadow: 0 0 0 2px rgba(34,197,94,0.35), 0 10px 22px rgba(34,197,94,0.45);
+                animation: breathe 1.8s ease-in-out infinite;
+            }
+            @keyframes breathe {
+                0%,100% { transform: translateY(0); filter: brightness(1); }
+                50% { transform: translateY(-1px); filter: brightness(1.08); }
+            }
             
             /* Секция игроков */
             .players-section {
@@ -678,10 +705,19 @@ class TurnController {
             const isMyTurn = state.activePlayer && (state.activePlayer.id === currentUserId);
             if (isMyTurn) {
                 turnInfo.textContent = 'Ваш ход';
+                turnInfo.classList.add('my-turn');
+                const rollBtn = this.ui.querySelector('.btn-dice');
+                if (rollBtn) rollBtn.classList.add('my-turn');
             } else if (state.activePlayer) {
                 turnInfo.textContent = `Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
+                turnInfo.classList.remove('my-turn');
+                const rollBtn = this.ui.querySelector('.btn-dice');
+                if (rollBtn) rollBtn.classList.remove('my-turn');
             } else {
                 turnInfo.textContent = 'Ожидание';
+                turnInfo.classList.remove('my-turn');
+                const rollBtn = this.ui.querySelector('.btn-dice');
+                if (rollBtn) rollBtn.classList.remove('my-turn');
             }
         }
     }
