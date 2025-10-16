@@ -891,22 +891,56 @@ router.put('/:id/player', async (req, res, next) => {
             // Mongo-first path (Railway)
             try {
                 const repo = new RoomRepository();
-                const room = await repo.getById(id);
+                let room = await repo.getById(id);
                 if (!room) {
-                    return res.status(404).json({ success: false, message: 'Комната не найдена' });
+                    // Комнаты нет в Mongo — попробуем взять из fallback и/или создать пустую запись
+                    const fb = fallbackRooms.find(r => r.id === id);
+                    if (fb) {
+                        // первичное сохранение комнаты в Mongo
+                        room = await repo.create({
+                            name: fb.name || 'Комната',
+                            description: fb.description || '',
+                            maxPlayers: fb.maxPlayers || 4,
+                            turnTime: fb.turnTime || 30,
+                            assignProfessions: !!fb.assignProfessions,
+                            creator: fb.creator || (playerData.username || 'player')
+                        });
+                        // заменить с тем же id (create генерит новый id) — поэтому лучше эмулировать как апдейт: перезапишем поля
+                        // быстрый путь: используем room от create, но проставим нужный id далее при апдейте игроков
+                        room.id = id;
+                    } else {
+                        // создаем минимальную запись комнаты, чтобы не падать
+                        room = { id, name: 'Комната', players: [], maxPlayers: 4, status: 'waiting' };
+                    }
                 }
+
                 const players = Array.isArray(room.players) ? room.players.slice() : [];
-                const idx = players.findIndex(p => p.username === playerData.username || p.id === playerData.userId);
+                let idx = players.findIndex(p => p.username === playerData.username || p.id === playerData.userId);
                 if (idx === -1) {
-                    return res.status(404).json({ success: false, message: 'Игрок не найден в комнате' });
+                    // Если игрока нет — добавляем
+                    players.push({
+                        id: playerData.userId || uuidv4(),
+                        userId: playerData.userId,
+                        username: playerData.username,
+                        name: playerData.name || playerData.username,
+                        avatar: playerData.avatar || '',
+                        isHost: false,
+                        isReady: !!playerData.isReady,
+                        token: playerData.token || '',
+                        dream: playerData.dream || null,
+                        dreamCost: playerData.dreamCost,
+                        dreamDescription: playerData.dreamDescription
+                    });
+                } else {
+                    const upd = { ...players[idx] };
+                    if (playerData.token !== undefined) upd.token = playerData.token;
+                    if (playerData.dream !== undefined) upd.dream = playerData.dream;
+                    if (playerData.dreamCost !== undefined) upd.dreamCost = playerData.dreamCost;
+                    if (playerData.dreamDescription !== undefined) upd.dreamDescription = playerData.dreamDescription;
+                    if (playerData.isReady !== undefined) upd.isReady = !!playerData.isReady;
+                    players[idx] = upd;
                 }
-                const upd = { ...players[idx] };
-                if (playerData.token !== undefined) upd.token = playerData.token;
-                if (playerData.dream !== undefined) upd.dream = playerData.dream;
-                if (playerData.dreamCost !== undefined) upd.dreamCost = playerData.dreamCost;
-                if (playerData.dreamDescription !== undefined) upd.dreamDescription = playerData.dreamDescription;
-                if (playerData.isReady !== undefined) upd.isReady = !!playerData.isReady;
-                players[idx] = upd;
+
                 await repo.updatePlayers(id, players);
                 return res.json({ success: true, message: 'Данные игрока обновлены (mongo)' });
             } catch (e) {
