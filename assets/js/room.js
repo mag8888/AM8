@@ -1267,8 +1267,14 @@ async function toggleReadyStatus() {
 function buildPlayerBundle({ user, dream, token, isReady }) {
     console.log('🔍 Room: buildPlayerBundle - входные данные:', { user, dream, token, isReady });
     
-    const userId = user?.id || user?.userId || null;
+    let userId = user?.id || user?.userId || null;
     const username = user?.username || user?.name || '';
+    
+    // Если userId отсутствует, генерируем его на основе username
+    if (!userId && username) {
+        userId = `user_${username}_${Date.now()}`;
+        console.log('🔧 Room: buildPlayerBundle - сгенерирован userId:', userId);
+    }
     
     console.log('🔍 Room: buildPlayerBundle - извлеченные данные:', { userId, username });
     
