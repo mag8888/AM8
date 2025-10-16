@@ -288,18 +288,13 @@ function setupEventListeners() {
     // Кнопка "Я готов к игре!"
     const readyButton = document.getElementById('ready-button');
     if (readyButton) {
-        readyButton.addEventListener('click', toggleReadyStatus);
-        console.log('✅ Room: Обработчик клика добавлен к кнопке готовности');
-        
-        // Альтернативный способ - делегирование событий
-        document.addEventListener('click', (event) => {
-            if (event.target && event.target.id === 'ready-button') {
-                console.log('🎯 Room: Клик по кнопке готовности через делегирование');
-                event.preventDefault();
-                event.stopPropagation();
-                toggleReadyStatus();
-            }
+        readyButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            console.log('🎯 Room: Прямой клик по кнопке готовности');
+            toggleReadyStatus();
         });
+        console.log('✅ Room: Обработчик клика добавлен к кнопке готовности');
         
         // Дополнительная отладка для Chrome
         readyButton.addEventListener('mousedown', () => {
@@ -1140,6 +1135,7 @@ async function toggleReadyStatus() {
         
         if (!currentRoom || !currentUser || !selectedToken) {
             console.warn('⚠️ Room: Недостаточно данных для переключения готовности');
+            window._toggleReadyStatusInProgress = false;
             return;
         }
         
@@ -1147,6 +1143,7 @@ async function toggleReadyStatus() {
         const isDreamComplete = isDreamSelected && dreamData.description && dreamData.cost > 0;
         if (!isDreamComplete) {
             showNotification('Сначала выберите и заполните данные о мечте', 'warning');
+            window._toggleReadyStatusInProgress = false;
             return;
         }
         
@@ -1154,6 +1151,7 @@ async function toggleReadyStatus() {
         const isTokenUnique = await checkTokenUniqueness(selectedToken);
         if (!isTokenUnique) {
             showNotification('Эта фишка уже выбрана другим игроком', 'error');
+            window._toggleReadyStatusInProgress = false;
             return;
         }
         
@@ -1161,6 +1159,12 @@ async function toggleReadyStatus() {
         const currentPlayer = currentRoom.players.find(p => p.userId === currentUser.id || p.username === currentUser.username);
         const isCurrentlyReady = currentPlayer ? currentPlayer.isReady : false;
         const newReadyState = !isCurrentlyReady;
+        
+        console.log('🔍 Room: Состояние игрока:', {
+            currentPlayer: currentPlayer ? { id: currentPlayer.id, username: currentPlayer.username, isReady: currentPlayer.isReady } : null,
+            isCurrentlyReady,
+            newReadyState
+        });
         
         // Формируем пакет игрока (PlayerBundle)
         const playerData = buildPlayerBundle({
@@ -1173,11 +1177,16 @@ async function toggleReadyStatus() {
         const validation = validatePlayerBundle(playerData);
         if (!validation.isValid) {
             showNotification(validation.message || 'Проверьте данные игрока', 'error');
+            window._toggleReadyStatusInProgress = false;
             return;
         }
         
+        console.log('🔍 Room: Данные игрока для обновления:', playerData);
+        
         // Обновляем игрока в комнате
+        console.log('🔄 Room: Обновляем игрока в комнате...');
         await roomService.updatePlayerInRoom(currentRoom.id, playerData);
+        console.log('✅ Room: Игрок обновлен в комнате');
         
         // Показываем соответствующее уведомление
         if (newReadyState) {
@@ -1195,10 +1204,16 @@ async function toggleReadyStatus() {
         }
         
         // Обновляем информацию о комнате
+        console.log('🔄 Room: Обновляем информацию о комнате...');
         await refreshRoomData();
+        console.log('✅ Room: Информация о комнате обновлена');
         
         // Принудительно обновляем кнопку готовности
+        console.log('🔄 Room: Обновляем кнопку готовности...');
         updateReadyStatus();
+        console.log('✅ Room: Кнопка готовности обновлена');
+        
+        console.log('🎉 Room: toggleReadyStatus завершена успешно!');
         
     } catch (error) {
         console.error('❌ Room: Ошибка обновления статуса готовности:', error);
