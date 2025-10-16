@@ -167,13 +167,11 @@ class App {
             this.logger?.debug('BoardLayout модуль загружен', null, 'App');
         }
         
-        // Инициализируем PushClient для real-time синхронизации
+        // Инициализируем PushClient для push-уведомлений
         if (window.PushClient) {
-            const gameStateManager = this.getGameStateManager();
-            const pushClient = new window.PushClient(gameStateManager, {
-                enableLogging: true,
-                reconnectInterval: 5000,
-                maxReconnectAttempts: 10
+            const pushClient = new window.PushClient({
+                serverUrl: window.location.origin,
+                enableLogging: true
             });
             this.services.set('pushClient', pushClient);
             this.logger?.debug('PushClient сервис загружен', null, 'App');
@@ -432,7 +430,12 @@ class App {
         }
         
         if (pushClient) {
-            pushClient.connect(roomId);
+            // Подписываемся на push-уведомления для этой комнаты
+            pushClient.subscribe().then(() => {
+                console.log('🔔 PushClient: Подписка на push-уведомления активирована');
+            }).catch(error => {
+                console.warn('⚠️ PushClient: Ошибка подписки на push-уведомления:', error);
+            });
         }
         
         // Инициализируем BoardLayout для отображения игрового поля

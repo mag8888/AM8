@@ -130,6 +130,20 @@ router.post('/:id/end-turn', (req, res, next) => {
             previousPlayer: state.players[state.currentPlayerIndex - 1] || state.players[state.players.length - 1]
         }).catch(err => console.error('❌ Ошибка отправки push о смене хода:', err));
         
+        // Отправляем реальное push-уведомление о смене хода
+        pushService.sendRealPushNotification(
+            '🔄 Ваш ход!',
+            `Ход игрока ${state.activePlayer.username || 'Игрок'}. Бросайте кубик!`,
+            {
+                data: { roomId: id, action: 'turn_changed', playerId: state.activePlayer.id },
+                actions: [
+                    { action: 'open_game', title: 'Открыть игру' }
+                ],
+                tag: 'turn_changed',
+                requireInteraction: false
+            }
+        ).catch(err => console.error('❌ Ошибка отправки реального push о смене хода:', err));
+        
         res.json({ success:true, state, event: { type: 'turn_changed', activePlayer: state.activePlayer } });
     });
 });
@@ -1045,6 +1059,20 @@ router.post('/:id/start', async (req, res, next) => {
                             players: players,
                             activePlayer: players[0] // Первый игрок начинает
                         }).catch(err => console.error('❌ Ошибка отправки push о начале игры:', err));
+                        
+                        // Отправляем реальное push-уведомление
+                        pushService.sendRealPushNotification(
+                            '🎮 Игра началась!',
+                            `Игра в комнате "${room.name}" началась. Ваш ход!`,
+                            {
+                                data: { roomId: id, action: 'game_started' },
+                                actions: [
+                                    { action: 'open_game', title: 'Открыть игру' }
+                                ],
+                                tag: 'game_started',
+                                requireInteraction: true
+                            }
+                        ).catch(err => console.error('❌ Ошибка отправки реального push о начале игры:', err));
 
                         res.json({
                             success: true,
@@ -1078,16 +1106,18 @@ router.post('/:id/start', async (req, res, next) => {
 
 // Endpoint для регистрации клиентов в PushService
 router.post('/push/register', (req, res) => {
-    const { clientId, userInfo } = req.body;
+    const { subscription, userInfo } = req.body;
     
-    if (!clientId) {
+    if (!subscription) {
         return res.status(400).json({
             success: false,
-            message: 'clientId обязателен'
+            message: 'subscription обязательна'
         });
     }
     
-    pushService.registerClient(clientId, userInfo);
+    const clientId = userInfo?.userId || `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    pushService.registerClient(clientId, subscription, userInfo);
     
     res.json({
         success: true,
@@ -1113,6 +1143,36 @@ router.post('/push/unregister', (req, res) => {
         success: true,
         message: 'Клиент отключен от push-уведомлений'
     });
+});
+
+// Endpoint для отправки push-уведомлений
+router.post('/push/send', async (req, res) => {
+    try {
+        const { title, message, options = {}, excludeClientId } = req.body;
+        
+        if (!title || !message) {
+            return res.status(400).json({
+                success: false,
+                message: 'title и message обязательны'
+            });
+        }
+        
+        const result = await pushService.sendRealPushNotification(title, message, options, excludeClientId);
+        
+        res.json({
+            success: result.success,
+            data: result,
+            message: result.success ? 'Push-уведомление отправлено' : 'Ошибка отправки push-уведомления'
+        });
+        
+    } catch (error) {
+        console.error('❌ Push API: Ошибка отправки push-уведомления:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Внутренняя ошибка сервера',
+            error: error.message
+        });
+    }
 });
 
 // Endpoint для получения статистики PushService
