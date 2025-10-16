@@ -784,12 +784,11 @@ function displayUserInfo() {
             const username = currentUser.username || currentUser.name || currentUser.email || 'User';
             const firstLetter = username.charAt(0).toUpperCase();
             userAvatar.textContent = firstLetter;
-                
-                // Устанавливаем имя пользователя
-                userName.textContent = username || 'Пользователь';
-                
-                console.log('✅ Room: Информация о пользователе отображена:', currentUser.username || currentUser.name);
-            }
+            
+            // Устанавливаем имя пользователя
+            userName.textContent = username || 'Пользователь';
+            
+            console.log('✅ Room: Информация о пользователе отображена:', currentUser.username || currentUser.name);
         } else {
             console.log('⚠️ Room: Пользователь не авторизован');
             showAuthRequired();
