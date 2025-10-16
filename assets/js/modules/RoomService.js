@@ -985,9 +985,14 @@ class RoomService {
     isHost(userId, room = null) {
         const targetRoom = room || this.state.currentRoom;
         if (!targetRoom || !targetRoom.players) return false;
-        
+        // 1) Прямой флаг isHost
         const hostPlayer = targetRoom.players.find(p => p.isHost);
-        return hostPlayer && hostPlayer.userId === userId;
+        if (hostPlayer && hostPlayer.userId === userId) return true;
+        // 2) Если флагов нет — считаем хостом создателя комнаты
+        const me = targetRoom.players.find(p => p.userId === userId);
+        if (!me) return false;
+        if (targetRoom.creator && me.username && targetRoom.creator === me.username) return true;
+        return false;
     }
 
     getPlayer(userId, room = null) {
