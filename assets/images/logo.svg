@@ -31,15 +31,15 @@
     </radialGradient>
 
     <linearGradient id="monogramStroke" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fff9dc"/>
-      <stop offset="45%" stop-color="#f3d588"/>
-      <stop offset="100%" stop-color="#c88d39"/>
+      <stop offset="0%" stop-color="#f5f5dc"/>
+      <stop offset="45%" stop-color="#f0e68c"/>
+      <stop offset="100%" stop-color="#daa520"/>
     </linearGradient>
 
     <radialGradient id="sparkle" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
-      <stop offset="70%" stop-color="#ffffff" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#f5f5dc" stop-opacity="0.9"/>
+      <stop offset="70%" stop-color="#f5f5dc" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#f5f5dc" stop-opacity="0"/>
     </radialGradient>
 
     <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
@@ -83,7 +83,7 @@
   <!-- Core coin -->
   <g filter="url(#deepShadow)">
     <circle cx="300" cy="300" r="118" fill="url(#coinCore)"/>
-    <circle cx="300" cy="300" r="110" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="6"/>
+    <circle cx="300" cy="300" r="110" fill="none" stroke="rgba(245,245,220,0.4)" stroke-width="6"/>
     <circle cx="270" cy="260" r="38" fill="url(#sparkle)" opacity="0.6"/>
   </g>
 
@@ -94,7 +94,7 @@
   </g>
 
   <!-- Title text -->
-  <g fill="#f8e8c1" font-family="'Cinzel', 'Trajan Pro', 'Times New Roman', serif" letter-spacing="10">
+  <g fill="#f5f5dc" font-family="'Cinzel', 'Trajan Pro', 'Times New Roman', serif" letter-spacing="10">
     <text font-size="32">
       <textPath href="#upperArc" startOffset="50%" text-anchor="middle">ENERGY</textPath>
     </text>

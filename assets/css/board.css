@@ -202,7 +202,7 @@
 .logo-img {
     width: 210px;
     height: 210px;
-    filter: drop-shadow(0 0 40px rgba(255, 255, 255, 0.9));
+    filter: drop-shadow(0 0 40px rgba(245, 245, 220, 0.9));
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     user-select: none;
@@ -212,7 +212,7 @@
 
 .logo-img:hover {
     transform: scale(1.1);
-    filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.8));
+    filter: drop-shadow(0 0 30px rgba(245, 245, 220, 1));
 }
 
 .dice-icon {
@@ -467,6 +467,7 @@
     .logo-img {
         width: 140px;
         height: 140px;
+        filter: drop-shadow(0 0 30px rgba(245, 245, 220, 0.9));
     }
     
     .dice-roll-btn {
