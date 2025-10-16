@@ -488,8 +488,17 @@
                                 }
                                 // Инициализируем игровые модули с GameStateManager после загрузки DOM
                                 setTimeout(() => {
+                                    console.log('🎮 Index: Проверяем доступность модулей:', {
+                                        PlayerTokens: !!window.PlayerTokens,
+                                        DiceService: !!window.DiceService,
+                                        DiceDisplay: !!window.DiceDisplay,
+                                        BoardLayout: !!window.BoardLayout
+                                    });
+                                    
                                     if (window.app && window.app._initializeGameModules) {
                                         window.app._initializeGameModules(roomId);
+                                    } else {
+                                        console.error('❌ Index: App или _initializeGameModules не найден');
                                     }
                                     
                                     // Добавляем обработчик для кнопки броска кубика
