@@ -383,9 +383,24 @@ class PlayersPanel {
      * Бросок кубика
      */
     rollDice() {
-        // Эмитим событие для TurnService
-        if (this.eventBus) {
-            this.eventBus.emit('dice:roll', {});
+        try {
+            // Пытаемся вызвать реальный TurnService напрямую
+            const app = window.app;
+            const turnService = app && app.getModule ? app.getModule('turnService') : null;
+            if (turnService && typeof turnService.roll === 'function') {
+                console.log('🎲 PlayersPanel: rollDice → TurnService.roll()');
+                turnService.roll({ diceChoice: 'single' }).catch(err => console.error('❌ PlayersPanel: Ошибка броска через TurnService', err));
+                return;
+            }
+            // Fallback: эмит в EventBus для обратной совместимости
+            if (this.eventBus && typeof this.eventBus.emit === 'function') {
+                console.log('🎲 PlayersPanel: rollDice → eventBus.emit("dice:roll")');
+                this.eventBus.emit('dice:roll', {});
+            } else {
+                console.warn('⚠️ PlayersPanel: TurnService и EventBus недоступны — действие проигнорировано');
+            }
+        } catch (e) {
+            console.error('❌ PlayersPanel: rollDice ошибка', e);
         }
     }
 
@@ -393,9 +408,22 @@ class PlayersPanel {
      * Передача хода
      */
     passTurn() {
-        // Эмитим событие для TurnService
-        if (this.eventBus) {
-            this.eventBus.emit('turn:pass', {});
+        try {
+            const app = window.app;
+            const turnService = app && app.getModule ? app.getModule('turnService') : null;
+            if (turnService && typeof turnService.endTurn === 'function') {
+                console.log('➡️ PlayersPanel: passTurn → TurnService.endTurn()');
+                turnService.endTurn().catch(err => console.error('❌ PlayersPanel: Ошибка завершения хода', err));
+                return;
+            }
+            if (this.eventBus && typeof this.eventBus.emit === 'function') {
+                console.log('➡️ PlayersPanel: passTurn → eventBus.emit("turn:pass")');
+                this.eventBus.emit('turn:pass', {});
+            } else {
+                console.warn('⚠️ PlayersPanel: TurnService и EventBus недоступны — действие проигнорировано');
+            }
+        } catch (e) {
+            console.error('❌ PlayersPanel: passTurn ошибка', e);
         }
     }
     
