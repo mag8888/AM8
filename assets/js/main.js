@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * Настройка обработчиков UI
+ * Примечание: Управление ходами теперь через TurnController и TurnService
  */
 function setupUIHandlers(gameState, boardLayout, eventBus) {
     const startButton = document.getElementById('start-game');
@@ -37,36 +38,27 @@ function setupUIHandlers(gameState, boardLayout, eventBus) {
     const diceElement = document.getElementById('dice-result');
 
     // Кнопка начала игры
-    startButton.addEventListener('click', () => {
-        gameState.startGame([
-            { name: 'Игрок 1', position: 0, isInner: false, money: 1000 }
-        ]);
-        
-        boardLayout.renderTracks();
-        
-        startButton.disabled = true;
-        rollButton.disabled = false;
-        
-        addLogEntry('Игра начата! Бросайте кубик.', 'success');
-    });
+    if (startButton) {
+        startButton.addEventListener('click', () => {
+            gameState.startGame([
+                { name: 'Игрок 1', position: 0, isInner: false, money: 1000 }
+            ]);
+            
+            boardLayout.renderTracks();
+            
+            startButton.disabled = true;
+            if (rollButton) rollButton.disabled = false;
+            
+            addLogEntry('Игра начата! Бросайте кубик.', 'success');
+        });
+    }
 
-    // Кнопка броска кубика
-    rollButton.addEventListener('click', () => {
-        const roll = gameState.rollDice();
-        
-        // Анимация кубика
-        diceElement.classList.add('rolling');
-        diceElement.textContent = '🎲';
-        
-        setTimeout(() => {
-            diceElement.classList.remove('rolling');
-            diceElement.textContent = roll;
-            
-            gameState.moveCurrentPlayer(roll);
-            
-            addLogEntry(`Выпало ${roll}!`, 'success');
-        }, 500);
-    });
+    // Примечание: Бросок кубика теперь управляется через TurnController
+    // Старая реализация удалена для избежания дублирования кода
+    if (rollButton) {
+        console.log('ℹ️ main.js: Кнопка roll-dice найдена, но управление через TurnController');
+        // Обработчик не добавляем - используется TurnController
+    }
 }
 
 /**

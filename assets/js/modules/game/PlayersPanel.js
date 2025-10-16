@@ -404,38 +404,14 @@ class PlayersPanel {
     
     /**
      * Настройка элементов управления
+     * Примечание: PlayersPanel теперь только отображает UI, управление ходами через TurnController
      */
     setupControls() {
-        const rollDiceBtn = document.getElementById('roll-dice');
-        if (rollDiceBtn) {
-            rollDiceBtn.addEventListener('click', () => {
-                // Блокируем повторные клики
-                rollDiceBtn.disabled = true;
-                // Показываем анимацию броска
-                this._showRollingAnimation();
-                // Публичное превью значения (по желанию UI может слушать это событие)
-                const preview = Math.floor(Math.random() * 6) + 1;
-                if (this.eventBus && typeof this.eventBus.emit === 'function') {
-                    this.eventBus.emit('ui:dice:preview', { value: preview });
-                }
-                this.updateDiceResult(preview);
-                // Запускаем бросок через сервис/сервер
-                this.rollDice();
-            });
-        }
-
-        const passTurnBtn = document.getElementById('pass-turn');
-        if (passTurnBtn) {
-            passTurnBtn.addEventListener('click', (e) => {
-                // На всякий случай предотвращаем любое дефолтное поведение и всплытие
-                try { e.preventDefault && e.preventDefault(); } catch (_) {}
-                try { e.stopPropagation && e.stopPropagation(); } catch (_) {}
-                this.passTurn();
-                return false;
-            }, { passive: false });
-        }
+        // PlayersPanel больше не управляет броском кубика и ходами
+        // Эта функциональность полностью делегирована TurnController
+        console.log('ℹ️ PlayersPanel: UI контроллеры не настраиваются - используется TurnController');
         
-        // Подписываемся на события TurnService
+        // Подписываемся на события TurnService для обновления UI
         try {
             const app = window.app;
             const turnService = app && app.getModule ? app.getModule('turnService') : null;
@@ -451,11 +427,11 @@ class PlayersPanel {
                 });
                 turnService.on('roll:finish', () => {
                     this._hideRollingAnimation();
-                    const btn = document.getElementById('roll-dice');
-                    if (btn) btn.disabled = false;
                 });
             }
-        } catch (_) {}
+        } catch (e) {
+            console.warn('⚠️ PlayersPanel: Не удалось подписаться на события TurnService', e);
+        }
     }
 
     // Псевдо-анимация броска в текстовом поле "Кубик:"
@@ -470,58 +446,11 @@ class PlayersPanel {
             i++;
         }, 90);
     }
+    
     _hideRollingAnimation() {
         if (this._rollingTimer) {
             clearInterval(this._rollingTimer);
             this._rollingTimer = null;
-        }
-    }
-    
-    /**
-     * Бросок кубика
-     */
-    rollDice() {
-        try {
-            // Пытаемся вызвать реальный TurnService напрямую
-            const app = window.app;
-            const turnService = app && app.getModule ? app.getModule('turnService') : null;
-            if (turnService && typeof turnService.roll === 'function') {
-                console.log('🎲 PlayersPanel: rollDice → TurnService.roll()');
-                turnService.roll({ diceChoice: 'single' }).catch(err => console.error('❌ PlayersPanel: Ошибка броска через TurnService', err));
-                return;
-            }
-            // Fallback: эмит в EventBus для обратной совместимости
-            if (this.eventBus && typeof this.eventBus.emit === 'function') {
-                console.log('🎲 PlayersPanel: rollDice → eventBus.emit("dice:roll")');
-                this.eventBus.emit('dice:roll', {});
-            } else {
-                console.warn('⚠️ PlayersPanel: TurnService и EventBus недоступны — действие проигнорировано');
-            }
-        } catch (e) {
-            console.error('❌ PlayersPanel: rollDice ошибка', e);
-        }
-    }
-
-    /**
-     * Передача хода
-     */
-    passTurn() {
-        try {
-            const app = window.app;
-            const turnService = app && app.getModule ? app.getModule('turnService') : null;
-            if (turnService && typeof turnService.endTurn === 'function') {
-                console.log('➡️ PlayersPanel: passTurn → TurnService.endTurn()');
-                turnService.endTurn().catch(err => console.error('❌ PlayersPanel: Ошибка завершения хода', err));
-                return;
-            }
-            if (this.eventBus && typeof this.eventBus.emit === 'function') {
-                console.log('➡️ PlayersPanel: passTurn → eventBus.emit("turn:pass")');
-                this.eventBus.emit('turn:pass', {});
-            } else {
-                console.warn('⚠️ PlayersPanel: TurnService и EventBus недоступны — действие проигнорировано');
-            }
-        } catch (e) {
-            console.error('❌ PlayersPanel: passTurn ошибка', e);
         }
     }
     

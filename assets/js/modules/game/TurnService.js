@@ -41,6 +41,12 @@ class TurnService extends EventTarget {
         if (!roomId) {
             throw new Error('TurnService.roll: roomId is missing');
         }
+        
+        // Проверяем, что это ход текущего пользователя
+        if (!this.isMyTurn()) {
+            console.warn('⚠️ TurnService: Не ваш ход, бросок кубика заблокирован');
+            throw new Error('Not your turn');
+        }
 
         let response;
         try {
@@ -100,6 +106,12 @@ class TurnService extends EventTarget {
         
         if (!roomId) {
             throw new Error('TurnService.move: roomId is missing');
+        }
+        
+        // Проверяем, что это ход текущего пользователя
+        if (!this.isMyTurn()) {
+            console.warn('⚠️ TurnService: Не ваш ход, перемещение заблокировано');
+            throw new Error('Not your turn');
         }
         
         const targetSteps = Number.isFinite(Number(steps)) && Number(steps) > 0
@@ -315,6 +327,88 @@ class TurnService extends EventTarget {
     canEndTurn() {
         const state = this.getState();
         return state && state.canEndTurn === true;
+    }
+    
+    /**
+     * Проверка, является ли текущий игрок активным (его ход)
+     * @returns {boolean} Мой ли это ход
+     */
+    isMyTurn() {
+        try {
+            const state = this.getState();
+            if (!state || !state.activePlayer) {
+                console.warn('⚠️ TurnService.isMyTurn: Нет активного игрока');
+                return false;
+            }
+            
+            // Получаем ID текущего пользователя
+            const currentUserId = this._getCurrentUserId();
+            const currentUsername = this._getCurrentUsername();
+            
+            // Сравниваем с активным игроком
+            const activePlayer = state.activePlayer;
+            const isMyTurn = 
+                activePlayer.id === currentUserId ||
+                activePlayer.userId === currentUserId ||
+                (activePlayer.username && currentUsername && activePlayer.username === currentUsername);
+            
+            console.log('🎯 TurnService.isMyTurn:', isMyTurn, { 
+                activePlayer: activePlayer.username || activePlayer.id, 
+                currentUser: currentUsername || currentUserId 
+            });
+            
+            return isMyTurn;
+        } catch (error) {
+            console.error('❌ TurnService.isMyTurn: Ошибка проверки хода:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Получение ID текущего пользователя
+     * @returns {string|null} ID пользователя
+     * @private
+     */
+    _getCurrentUserId() {
+        try {
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                return bundle?.currentUser?.id;
+            }
+            
+            const userRaw = localStorage.getItem('aura_money_user');
+            if (userRaw) {
+                const user = JSON.parse(userRaw);
+                return user?.id;
+            }
+        } catch (error) {
+            console.error('❌ TurnService: Ошибка получения ID пользователя:', error);
+        }
+        return null;
+    }
+    
+    /**
+     * Получение username текущего пользователя
+     * @returns {string|null} Username пользователя
+     * @private
+     */
+    _getCurrentUsername() {
+        try {
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                return bundle?.currentUser?.username || bundle?.currentUser?.name || null;
+            }
+            const userRaw = localStorage.getItem('aura_money_user');
+            if (userRaw) {
+                const user = JSON.parse(userRaw);
+                return user?.username || user?.name || null;
+            }
+        } catch (error) {
+            console.error('❌ TurnService: Ошибка получения username пользователя:', error);
+        }
+        return null;
     }
     
     /**
