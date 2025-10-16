@@ -14,8 +14,8 @@ class PushService {
         
         // VAPID ключи для push-уведомлений
         this.vapidKeys = {
-            publicKey: 'BEl62iUYgUivxIkv69yViEuiBIa40HI8QyVgQmc0e2OmjQH_s0xXgJXJN3Hk1N7vKzdaT0HfQ7UG1qZJ0u7g2c',
-            privateKey: 'your-private-key-here' // В реальном приложении должно быть в переменных окружения
+            publicKey: 'BPg1aJO5Pg7_EPKPWWofjMaqb5L5gVeaT5qwBQfAUxIAZ8FWdnbs810bZqJ6WoC5hzH3t9NwV7Y3J42ZqfDKUDM',
+            privateKey: '5FbGEeMbew86V730bUI0kdL7rOCx6oMBXfjs3WyGUiI'
         };
         
         console.log('📡 PushService: Инициализация...');
@@ -41,7 +41,9 @@ class PushService {
             console.log('✅ PushService: Инициализация завершена');
         } catch (error) {
             console.error('❌ PushService: Ошибка инициализации:', error);
-            throw error;
+            console.warn('⚠️ PushService: Push-уведомления будут отключены');
+            this.isInitialized = false;
+            // Не выбрасываем ошибку, чтобы сервер продолжал работать
         }
     }
 
@@ -190,6 +192,11 @@ class PushService {
      * @param {string} excludeClientId - ID клиента для исключения
      */
     async sendRealPushNotification(title, message, options = {}, excludeClientId = null) {
+        if (!this.isInitialized) {
+            console.warn('⚠️ PushService: Сервис не инициализирован, push-уведомления отключены');
+            return { success: false, error: 'Push service not initialized' };
+        }
+        
         try {
             const notificationPayload = JSON.stringify({
                 title,

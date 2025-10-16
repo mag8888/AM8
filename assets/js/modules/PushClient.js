@@ -198,7 +198,7 @@ class PushClient {
     
     getVapidPublicKey() {
         // В реальном приложении это должно быть в конфигурации
-        return 'BEl62iUYgUivxIkv69yViEuiBIa40HI8QyVgQmc0e2OmjQH_s0xXgJXJN3Hk1N7vKzdaT0HfQ7UG1qZJ0u7g2c';
+        return 'BPg1aJO5Pg7_EPKPWWofjMaqb5L5gVeaT5qwBQfAUxIAZ8FWdnbs810bZqJ6WoC5hzH3t9NwV7Y3J42ZqfDKUDM';
     }
     
     urlBase64ToUint8Array(base64String) {
