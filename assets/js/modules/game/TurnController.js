@@ -1055,26 +1055,41 @@ class TurnController {
     }
     
     onRollSuccess(response) {
-        const diceResultEl = this.ui.querySelector('#dice-result');
-        const diceValueEl = this.ui.querySelector('.dice-value');
-        const diceNumberEl = this.ui.querySelector('.dice-number');
         const moveActions = this.ui.querySelector('#move-actions');
+        const endTurnBtn = this.ui.querySelector('#end-turn-btn');
         
         // Универсально достаём значение броска: сервер или локальный
         const serverValue = response && (response.serverValue ?? response.diceResult?.value);
         const localValue = response && response.localRoll && (response.localRoll.value || response.localRoll.total);
         const value = serverValue ?? localValue ?? null;
 
-        // Показываем результат броска (если значение неизвестно — ставим ?)
-        diceResultEl.style.display = 'block';
-        const valueEmoji = this.getDiceEmoji(Math.max(1, Math.min(6, Number(value) || 1)));
-        diceValueEl.textContent = valueEmoji;
-        diceNumberEl.textContent = value != null ? String(value) : '?';
+        // Обновляем отображение кубика в нижней панели (PlayersPanel)
+        this.updateDiceInBottomPanel(value);
         
         // Показываем кнопки перемещения
         moveActions.style.display = response?.state?.canMove ? 'block' : 'none';
         
+        // Показываем кнопку "Передать ход" после броска кубика
+        if (endTurnBtn) {
+            endTurnBtn.style.display = 'block';
+            endTurnBtn.disabled = !this.turnService.canEndTurn();
+        }
+        
         this.updateStatus(`Выпало: ${value != null ? value : '?'}`);
+    }
+    
+    /**
+     * Обновление отображения кубика в нижней панели
+     */
+    updateDiceInBottomPanel(value) {
+        const bottomDiceElement = document.getElementById('dice-result');
+        if (bottomDiceElement) {
+            const valueEmoji = this.getDiceEmoji(Math.max(1, Math.min(6, Number(value) || 1)));
+            bottomDiceElement.textContent = valueEmoji;
+            console.log(`🎲 TurnController: Обновлен кубик в нижней панели: ${valueEmoji} (${value})`);
+        } else {
+            console.warn('⚠️ TurnController: Элемент dice-result в нижней панели не найден');
+        }
     }
     
     onRollError(error) {

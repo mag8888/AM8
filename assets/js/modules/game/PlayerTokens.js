@@ -46,6 +46,13 @@ class PlayerTokens {
             
             this.eventBus.on('player:positionUpdated', (data) => {
                 console.log('🎯 PlayerTokens: Получено событие player:positionUpdated', data);
+                
+                // Проверяем, не анимируется ли эта фишка
+                if (this.animatingTokens.has(data.playerId)) {
+                    console.log(`🎯 PlayerTokens: Фишка ${data.playerId} анимируется, пропускаем player:positionUpdated`);
+                    return;
+                }
+                
                 this.updateTokenPosition(data.playerId, data.position, data.player.isInner);
             });
             
@@ -275,6 +282,8 @@ class PlayerTokens {
      * Обновление позиции фишки с анимацией
      */
     updateTokenPosition(playerId, newPosition, isInner) {
+        console.log(`🎯 PlayerTokens: updateTokenPosition вызван для ${playerId}, позиция ${newPosition}, анимируется: ${this.animatingTokens.has(playerId)}`);
+        
         const token = this.tokens.get(playerId);
         if (!token) {
             console.warn('⚠️ PlayerTokens: Фишка не найдена для игрока:', playerId);
