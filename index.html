@@ -343,7 +343,7 @@
                             <div class="center-area">
                                 <div class="dice-center">
                                     <div class="logo-center" id="logo-center">
-                                        <img src="assets/images/logo.svg" alt="Aura Money" class="logo-img">
+                                        <img src="assets/images/logo.svg?v=2" alt="Aura Money" class="logo-img" id="center-logo">
                                     </div>
                                     <button id="roll-dice-btn" class="dice-roll-btn" title="Бросить кубик">
                                         <span class="dice-btn-text">Бросить</span>
@@ -491,6 +491,14 @@
                                 if (window.app && window.app._showPage) {
                                     window.app._showPage('game-page');
                                 }
+                                
+                                // Принудительно обновляем логотип
+                                const centerLogo = document.getElementById('center-logo');
+                                if (centerLogo) {
+                                    centerLogo.src = 'assets/images/logo.svg?v=' + Date.now();
+                                    console.log('🎨 Логотип обновлен с версией:', Date.now());
+                                }
+                                
                                 // Инициализируем игровые модули с GameStateManager после загрузки DOM
                                 setTimeout(() => {
                                     console.log('🎮 Index: Проверяем доступность модулей:', {
