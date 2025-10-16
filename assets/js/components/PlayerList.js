@@ -59,13 +59,13 @@ class PlayerList {
                 player.id === currentUserId || 
                 player.userId === currentUserId ||
                 player.username === currentUserId ||
-                // Дополнительная проверка для случаев, когда ID могут отличаться
-                (player.username && currentUserId.includes(player.username)) ||
-                (player.name && currentUserId.includes(player.name))
+                player.id === currentUserId ||
+                player.id === currentUserId
             );
             
             console.log('🔍 PlayerList: Проверка текущего пользователя:', {
-                player: { id: player.id, userId: player.userId, username: player.username, name: player.name },
+                playerId: player.id,
+                playerUsername: player.username,
                 currentUserId,
                 isCurrentUser
             });

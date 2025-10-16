@@ -261,7 +261,7 @@ class PlayersPanel {
      */
     getCurrentUserId() {
         if (this.currentUser) {
-            return this.currentUser.id;
+            return this.currentUser.id || this.currentUser.userId || this.currentUser.username;
         }
         
         try {
@@ -270,14 +270,14 @@ class PlayersPanel {
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
                 this.currentUser = bundle.currentUser;
-                return this.currentUser?.id;
+                return this.currentUser?.id || this.currentUser?.userId || this.currentUser?.username;
             }
             
             // Fallback к localStorage
             const userRaw = localStorage.getItem('aura_money_user');
             if (userRaw) {
                 this.currentUser = JSON.parse(userRaw);
-                return this.currentUser?.id;
+                return this.currentUser?.id || this.currentUser?.userId || this.currentUser?.username;
             }
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка получения ID пользователя:', error);
@@ -301,8 +301,7 @@ class PlayersPanel {
             
             if (currentUser) {
                 const tokenEmoji = PlayerStatusUtils.getPlayerToken(currentUser);
-                // Всегда показываем эмодзи токен, даже если это дефолтный 🎯
-                const avatarHtml = tokenEmoji;
+                const avatarHtml = tokenEmoji; // Всегда используем эмодзи токен
                 
                 currentPlayerInfoContainer.innerHTML = `
                     <div class="current-user-card">
@@ -783,7 +782,7 @@ class PlayersPanel {
         console.log('📊 PlayersPanel: Показ статистики');
         // Здесь можно добавить логику показа статистики
     }
-    
+
     /**
      * Уничтожение компонента
      */
@@ -798,7 +797,7 @@ class PlayersPanel {
 
 // Экспорт для использования в других модулях
 if (typeof window !== 'undefined') {
-    window.PlayersPanel = PlayersPanel;
+window.PlayersPanel = PlayersPanel;
 }
 
 if (typeof module !== 'undefined' && module.exports) {

@@ -329,9 +329,6 @@
     font-size: 0.9rem;
     white-space: nowrap;
     min-width: fit-content;
-    flex-shrink: 0;
-    margin-left: auto;
-    padding-left: 0.5rem;
 }
 
 .money-icon {

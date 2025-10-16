@@ -217,15 +217,31 @@ function navigateToGameBoard(roomId) {
                 avatar: currentUser?.avatar || ''
             },
             player: buildPlayerBundle({ user: currentUser, dream: dreamData, token: selectedToken, isReady: true }),
-            players: (currentRoom?.players || []).map((p, index) => ({
-                id: p.userId || p.id || `player${index+1}`,
-                username: p.username || p.name || `Игрок ${index+1}`,
-                token: p.token || (p.username === currentUser?.username ? selectedToken : (p.token || '🎯')),
-                dream: p.dream || null,
-                isReady: !!p.isReady,
-                position: 0,
-                isInner: true
-            }))
+            players: (currentRoom?.players || []).map((p, index) => {
+                // Определяем токен игрока
+                let playerToken = p.token;
+                if (!playerToken) {
+                    // Если это текущий пользователь, используем выбранный токен
+                    if (p.username === currentUser?.username || p.userId === currentUser?.id) {
+                        playerToken = selectedToken;
+                    } else {
+                        // Для других игроков используем fallback токены
+                        const fallbackTokens = ['🦁', '🦅', '🦊', '🐻', '🐅', '🐺', '🐘', '🦈', '🦉', '🐬'];
+                        playerToken = fallbackTokens[index % fallbackTokens.length];
+                    }
+                }
+                
+                return {
+                    id: p.userId || p.id || `player${index+1}`,
+                    username: p.username || p.name || `Игрок ${index+1}`,
+                    token: playerToken,
+                    dream: p.dream || null,
+                    isReady: !!p.isReady,
+                    position: 0,
+                    isInner: true,
+                    money: p.money || 5000
+                };
+            })
         };
         sessionStorage.setItem('am_player_bundle', JSON.stringify(bundle));
         // Переходим на игровую доску SPA
