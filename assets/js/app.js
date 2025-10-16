@@ -522,6 +522,13 @@ class App {
         // Инициализируем TurnService
         if (window.TurnService) {
             console.log('🎯 App: Инициализируем TurnService...');
+            const gameState = this.getModule('gameState');
+            if (!gameState) {
+                console.warn('⚠️ App: GameState не найден, создаем новый...');
+                const newGameState = new window.GameState();
+                this.modules.set('gameState', newGameState);
+            }
+            
             const turnService = new window.TurnService({
                 gameState: this.getModule('gameState'),
                 eventBus: this.getEventBus()
