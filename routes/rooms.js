@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const PushService = require('../services/PushService');
+const RoomRepository = require('../repositories/RoomRepository');
 
 const router = express.Router();
 // Простое серверное состояние игры (на одном инстансе). Для прод-реализации заменить на Redis/БД/вебсокеты
@@ -234,13 +235,19 @@ router.get('/', async (req, res, next) => {
         
         // Если база данных недоступна, используем fallback данные
         if (!db) {
-            console.log('🔄 Используем fallback данные для комнат');
-            return res.json({
-                success: true,
-                data: fallbackRooms,
-                count: fallbackRooms.length,
-                fallback: true
-            });
+            try {
+                const repo = new RoomRepository();
+                const rooms = await repo.list();
+                return res.json({ success: true, data: rooms, count: rooms.length, mongo: true });
+            } catch (e) {
+                console.log('🔄 Используем fallback данные для комнат');
+                return res.json({
+                    success: true,
+                    data: fallbackRooms,
+                    count: fallbackRooms.length,
+                    fallback: true
+                });
+            }
         }
 
         const query = `
@@ -414,6 +421,11 @@ router.get('/:id', async (req, res, next) => {
 
         const db = getDatabase();
         if (!db) {
+            try {
+                const repo = new RoomRepository();
+                const room = await repo.getById(id);
+                if (room) return res.json({ success: true, data: room, mongo: true });
+            } catch (e) {}
             console.log('⚠️ База данных недоступна, возвращаем fallback данные');
             const fallbackRoom = fallbackRooms.find(r => r.id === id);
             if (fallbackRoom) {
@@ -524,52 +536,41 @@ router.post('/', async (req, res, next) => {
 
         const db = getDatabase();
         if (!db) {
-            // Fallback: создаем комнату в памяти, чтобы поддержать прод без локальной БД
-            console.log('🧰 Fallback create room (in-memory)');
-            const roomId = uuidv4();
-            const creatorId = uuidv4();
-            const createdAt = new Date().toISOString();
-
-            const room = {
-                id: roomId,
-                name,
-                description,
-                maxPlayers,
-                playerCount: 1,
-                status: 'waiting',
-                isStarted: false,
-                isFull: false,
-                creator: creator,
-                creatorId,
-                turnTime,
-                assignProfessions,
-                minPlayers: 2,
-                players: [
-                    {
-                        id: creatorId,
-                        username: creator,
-                        name: creator,
-                        isHost: true,
-                        isReady: false
-                    }
-                ],
-                createdAt,
-                updatedAt: createdAt
-            };
-
-            // добавляем/обновляем в fallbackRooms
+            // Railway/Mongo-first path
             try {
-                const idx = fallbackRooms.findIndex(r => r.id === roomId);
-                if (idx === -1) fallbackRooms.unshift(room);
-                else fallbackRooms[idx] = room;
-            } catch (_) { /* ignore */ }
-
-            return res.status(201).json({
-                success: true,
-                message: `Комната "${name}" создана (fallback)`,
-                data: room,
-                fallback: true
-            });
+                const repo = new RoomRepository();
+                const room = await repo.create({ name, description, maxPlayers, turnTime, assignProfessions, creator });
+                return res.status(201).json({ success: true, message: `Комната "${name}" создана`, data: room, mongo: true });
+            } catch (e) {
+                // Fallback: создать в памяти
+                console.log('🧰 Fallback create room (in-memory)');
+                const roomId = uuidv4();
+                const creatorId = uuidv4();
+                const createdAt = new Date().toISOString();
+                const room = {
+                    id: roomId,
+                    name,
+                    description,
+                    maxPlayers,
+                    playerCount: 1,
+                    status: 'waiting',
+                    isStarted: false,
+                    isFull: false,
+                    creator: creator,
+                    creatorId,
+                    turnTime,
+                    assignProfessions,
+                    minPlayers: 2,
+                    players: [ { id: creatorId, username: creator, name: creator, isHost: true, isReady: false } ],
+                    createdAt,
+                    updatedAt: createdAt
+                };
+                try {
+                    const idx = fallbackRooms.findIndex(r => r.id === roomId);
+                    if (idx === -1) fallbackRooms.unshift(room); else fallbackRooms[idx] = room;
+                } catch (_) {}
+                return res.status(201).json({ success: true, message: `Комната "${name}" создана (fallback)`, data: room, fallback: true });
+            }
         }
 
         // Проверяем, существует ли пользователь
