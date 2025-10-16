@@ -232,6 +232,28 @@
     transform: scale(1.05);
 }
 
+/* Логотип в центре */
+.logo-center {
+    margin-bottom: 8px; /* Отступ */
+    display: block;
+    z-index: 2;
+    position: relative;
+}
+
+.logo-img {
+    width: 60px;
+    height: 60px;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    user-select: none;
+}
+
+.logo-img:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.8));
+}
+
 .dice-icon {
     font-size: 3.5rem;
     color: #ffffff;
@@ -491,6 +513,11 @@
     
     .dice-icon {
         font-size: 2.5rem;
+    }
+    
+    .logo-img {
+        width: 40px;
+        height: 40px;
     }
     
     .dice-roll-btn {

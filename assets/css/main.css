@@ -407,6 +407,15 @@ a {
     
     .nav-logo {
         font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .nav-logo .logo-img {
+        width: 32px;
+        height: 32px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
     }
     
     .player-info {
@@ -442,6 +451,11 @@ a {
     
     .nav-logo {
         font-size: 1rem;
+    }
+    
+    .nav-logo .logo-img {
+        width: 24px;
+        height: 24px;
     }
     
     .nav-menu {
