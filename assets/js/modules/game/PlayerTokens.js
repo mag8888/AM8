@@ -13,6 +13,7 @@ class PlayerTokens {
         this.innerTrackSelector = config.innerTrackSelector || '#inner-track';
         
         this.tokens = new Map(); // Хранение DOM элементов фишек
+        this.animatingTokens = new Set(); // Фишки, которые сейчас анимируются
         
         console.log('🎯 PlayerTokens: Инициализация');
         this.init();
@@ -54,6 +55,12 @@ class PlayerTokens {
                 if (data.changes && Array.isArray(data.changes)) {
                     data.changes.forEach(change => {
                         if (change.playerId && change.position !== undefined) {
+                            // Проверяем, не анимируется ли эта фишка
+                            if (this.animatingTokens.has(change.playerId)) {
+                                console.log(`🎯 PlayerTokens: Фишка ${change.playerId} анимируется, пропускаем обновление`);
+                                return;
+                            }
+                            
                             const player = data.players.find(p => p.id === change.playerId);
                             if (player) {
                                 this.updateTokenPosition(change.playerId, change.position, player.isInner);
@@ -275,7 +282,7 @@ class PlayerTokens {
         }
         
         // Проверяем, не выполняется ли уже анимация для этой фишки
-        if (token.classList.contains('moving')) {
+        if (this.animatingTokens.has(playerId)) {
             console.log('🎯 PlayerTokens: Фишка уже движется, пропускаем дублирующий вызов');
             return;
         }
@@ -285,6 +292,16 @@ class PlayerTokens {
         
         // Если позиция не изменилась, просто синхронизируем координаты
         if (currentPosition === newPosition) {
+            this.moveTokenToPosition(token, playerId, newPosition, isInner);
+            return;
+        }
+        
+        // Проверяем, что разница в позициях не слишком большая (максимум 6 шагов)
+        const positionDiff = Math.abs(newPosition - currentPosition);
+        const maxDiff = 6;
+        
+        if (positionDiff > maxDiff) {
+            console.log(`🎯 PlayerTokens: Слишком большое изменение позиции (${positionDiff}), мгновенное перемещение`);
             this.moveTokenToPosition(token, playerId, newPosition, isInner);
             return;
         }
@@ -331,25 +348,42 @@ class PlayerTokens {
      */
     moveTokenStepByStep(token, playerId, fromPosition, toPosition, isInner) {
         // Проверяем, не выполняется ли уже анимация для этой фишки
-        if (token.classList.contains('moving')) {
+        if (this.animatingTokens.has(playerId)) {
             console.log('🎯 PlayerTokens: Фишка уже движется, отменяем предыдущую анимацию');
             return;
         }
+        
+        // Добавляем фишку в список анимирующихся
+        this.animatingTokens.add(playerId);
         
         const trackSelector = isInner ? this.innerTrackSelector : this.outerTrackSelector;
         const trackElement = document.querySelector(trackSelector);
         
         if (!trackElement) {
             console.warn('⚠️ PlayerTokens: Трек не найден:', trackSelector);
+            this.animatingTokens.delete(playerId);
             return;
         }
         
         const maxPosition = isInner ? 23 : 43; // Максимальные позиции для треков
         const steps = [];
         
+        // Рассчитываем количество шагов для движения
+        let stepsToMove = toPosition - fromPosition;
+        if (stepsToMove < 0) {
+            // Если движение через 0 (например, с 40 на 2)
+            stepsToMove = (maxPosition + 1) - fromPosition + toPosition;
+        }
+        
+        // Ограничиваем максимальное количество шагов (1-6)
+        const maxSteps = 6;
+        const actualSteps = Math.min(stepsToMove, maxSteps);
+        
+        console.log(`🎯 PlayerTokens: Движение с ${fromPosition} на ${toPosition}, шагов: ${actualSteps}`);
+        
         // Рассчитываем шаги движения
         let currentPos = fromPosition;
-        while (currentPos !== toPosition) {
+        for (let i = 0; i < actualSteps; i++) {
             currentPos = (currentPos + 1) % (maxPosition + 1);
             steps.push(currentPos);
         }
@@ -361,6 +395,8 @@ class PlayerTokens {
         const moveToNextStep = () => {
             if (stepIndex >= steps.length) {
                 console.log(`🎯 PlayerTokens: Движение фишки ${playerId} завершено`);
+                // Убираем фишку из списка анимирующихся
+                this.animatingTokens.delete(playerId);
                 return;
             }
             
