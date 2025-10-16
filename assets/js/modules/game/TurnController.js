@@ -86,6 +86,10 @@ class TurnController {
                     <span class="btn-icon">🎲</span>
                     <span class="btn-text">Бросить кубик</span>
                 </button>
+                <button id="end-turn-btn" class="action-btn btn-end" style="display: none;">
+                    <span class="btn-icon">➡️</span>
+                    <span class="btn-text">Завершить ход</span>
+                </button>
             </div>
             
             <!-- Карточки в горизонтальном расположении -->
@@ -139,11 +143,6 @@ class TurnController {
                                 <button class="move-btn" data-steps="6">6</button>
                             </div>
                         </div>
-                        
-                        <button id="end-turn-btn" class="action-btn btn-end" style="display: none;">
-                            <span class="btn-icon">➡️</span>
-                            <span class="btn-text">Завершить ход</span>
-                        </button>
                     </div>
                 </div>
                 
@@ -174,6 +173,7 @@ class TurnController {
                 width: 100%;
                 display: flex;
                 justify-content: center;
+                gap: 0.75rem;
                 margin-bottom: 1rem;
             }
 
