@@ -197,6 +197,8 @@ function setupEventListeners() {
     const refreshBtn = document.getElementById('refresh-rooms');
     const backBtn = document.getElementById('back-to-auth');
     const createRoomBtn = document.getElementById('create-room-btn');
+    const quickCreateBtn = document.getElementById('quick-create-room');
+    const quickRefreshBtn = document.getElementById('quick-refresh');
     const logoutBtn = document.getElementById('logout-btn');
     
     if (refreshBtn) {
@@ -212,6 +214,20 @@ function setupEventListeners() {
     
     if (createRoomBtn) {
         createRoomBtn.addEventListener('click', showCreateRoomModal);
+    }
+    
+    if (quickCreateBtn) {
+        quickCreateBtn.addEventListener('click', showCreateRoomModal);
+        console.log('✅ Обработчик для quick-create-room добавлен');
+    } else {
+        console.warn('⚠️ Кнопка quick-create-room не найдена');
+    }
+    
+    if (quickRefreshBtn) {
+        quickRefreshBtn.addEventListener('click', refreshRoomsWithAnimation);
+        console.log('✅ Обработчик для quick-refresh добавлен');
+    } else {
+        console.warn('⚠️ Кнопка quick-refresh не найдена');
     }
     
     if (logoutBtn) {
