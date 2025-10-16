@@ -271,10 +271,12 @@ class GameState {
         
         console.log('🔄 GameState: Состояние обновлено от сервера');
         
-        // Эмитим событие обновления
-        if (this.eventBus) {
-            positionChanges.forEach(change => {
-                this.eventBus.emit('player:positionUpdated', change);
+        // Эмитим событие обновления (только если есть изменения)
+        if (this.eventBus && positionChanges.length > 0) {
+            // Эмитим только одно событие для всех изменений позиций
+            this.eventBus.emit('players:positionsUpdated', {
+                changes: positionChanges,
+                players: this.players
             });
             this.eventBus.emit('game:stateUpdated', this.getState());
         }
@@ -423,13 +425,8 @@ class GameState {
             player.position = position;
             console.log(`📍 GameState: Позиция игрока ${playerId} обновлена на ${position}`);
             
-            if (this.eventBus) {
-                this.eventBus.emit('player:positionUpdated', {
-                    playerId,
-                    position,
-                    player
-                });
-            }
+            // Событие будет эмитировано через updateFromServerState
+            // чтобы избежать дублирования
         }
     }
     
@@ -585,12 +582,8 @@ class GameState {
                 isInner
             });
 
-            // Также эмитируем событие обновления позиции для PlayerTokens
-            this.eventBus.emit('player:positionUpdated', {
-                playerId,
-                position: newPosition,
-                player
-            });
+            // Событие обновления позиции будет эмитировано через updateFromServerState
+            // чтобы избежать дублирования анимации
         }
     }
 

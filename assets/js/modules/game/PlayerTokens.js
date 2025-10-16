@@ -48,6 +48,21 @@ class PlayerTokens {
                 this.updateTokenPosition(data.playerId, data.position, data.player.isInner);
             });
             
+            // Новое событие для массового обновления позиций
+            this.eventBus.on('players:positionsUpdated', (data) => {
+                console.log('🎯 PlayerTokens: Получено событие players:positionsUpdated', data);
+                if (data.changes && Array.isArray(data.changes)) {
+                    data.changes.forEach(change => {
+                        if (change.playerId && change.position !== undefined) {
+                            const player = data.players.find(p => p.id === change.playerId);
+                            if (player) {
+                                this.updateTokenPosition(change.playerId, change.position, player.isInner);
+                            }
+                        }
+                    });
+                }
+            });
+            
             this.eventBus.on('game:started', () => {
                 console.log('🎯 PlayerTokens: Получено событие game:started');
                 // При старте игры рендерим фишки всех игроков
@@ -259,6 +274,12 @@ class PlayerTokens {
             return;
         }
         
+        // Проверяем, не выполняется ли уже анимация для этой фишки
+        if (token.classList.contains('moving')) {
+            console.log('🎯 PlayerTokens: Фишка уже движется, пропускаем дублирующий вызов');
+            return;
+        }
+        
         // Получаем текущую позицию из атрибута data-position
         const currentPosition = parseInt(token.getAttribute('data-position')) || 0;
         
@@ -268,6 +289,7 @@ class PlayerTokens {
             return;
         }
         
+        console.log(`🎯 PlayerTokens: Начинаем движение фишки ${playerId} с ${currentPosition} на ${newPosition}`);
         this.moveTokenStepByStep(token, playerId, currentPosition, newPosition, isInner);
     }
     
@@ -308,6 +330,12 @@ class PlayerTokens {
      * Пошаговое движение фишки с задержкой
      */
     moveTokenStepByStep(token, playerId, fromPosition, toPosition, isInner) {
+        // Проверяем, не выполняется ли уже анимация для этой фишки
+        if (token.classList.contains('moving')) {
+            console.log('🎯 PlayerTokens: Фишка уже движется, отменяем предыдущую анимацию');
+            return;
+        }
+        
         const trackSelector = isInner ? this.innerTrackSelector : this.outerTrackSelector;
         const trackElement = document.querySelector(trackSelector);
         
