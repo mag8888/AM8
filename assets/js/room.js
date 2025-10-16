@@ -1168,13 +1168,14 @@ async function toggleReadyStatus() {
         
         // Формируем пакет игрока (PlayerBundle)
         console.log('🔍 Room: Формируем пакет игрока...');
+        console.log('🔍 Room: currentUser для пакета:', currentUser);
         const playerData = buildPlayerBundle({
             user: currentUser,
             dream: dreamData,
             token: selectedToken,
             isReady: newReadyState
         });
-        console.log('✅ Room: Пакет игрока сформирован');
+        console.log('✅ Room: Пакет игрока сформирован:', playerData);
 
         console.log('🔍 Room: Валидируем пакет игрока...');
         const validation = validatePlayerBundle(playerData);
@@ -1240,9 +1241,16 @@ async function toggleReadyStatus() {
  * Построение пакета данных игрока для сервера
  */
 function buildPlayerBundle({ user, dream, token, isReady }) {
+    console.log('🔍 Room: buildPlayerBundle - входные данные:', { user, dream, token, isReady });
+    
+    const userId = user?.id || user?.userId || null;
+    const username = user?.username || user?.name || '';
+    
+    console.log('🔍 Room: buildPlayerBundle - извлеченные данные:', { userId, username });
+    
     return {
-        userId: user?.id || user?.userId || null,
-        username: user?.username || user?.name || '',
+        userId: userId,
+        username: username,
         avatar: user?.avatar || '',
         token: token || '',
         dream: dream?.id ? {
@@ -1259,15 +1267,25 @@ function buildPlayerBundle({ user, dream, token, isReady }) {
  * Валидация пакета PlayerBundle
  */
 function validatePlayerBundle(bundle) {
+    console.log('🔍 Room: validatePlayerBundle - проверяем пакет:', bundle);
+    
     if (!bundle?.userId || !bundle?.username) {
+        console.log('❌ Room: validatePlayerBundle - отсутствует userId или username:', {
+            userId: bundle?.userId,
+            username: bundle?.username
+        });
         return { isValid: false, message: 'Не удалось определить пользователя' };
     }
     if (!bundle?.token) {
+        console.log('❌ Room: validatePlayerBundle - отсутствует token');
         return { isValid: false, message: 'Выберите фишку' };
     }
     if (!bundle?.dream || !bundle.dream.id || !bundle.dream.title || !bundle.dream.cost) {
+        console.log('❌ Room: validatePlayerBundle - неполная мечта:', bundle?.dream);
         return { isValid: false, message: 'Заполните мечту полностью' };
     }
+    
+    console.log('✅ Room: validatePlayerBundle - пакет валиден');
     return { isValid: true };
 }
 
