@@ -1147,8 +1147,8 @@ function updateReadyStatus() {
     
     // Если игрок не найден в комнате, считаем что он не готов
     const playerExists = currentPlayer !== null;
-    // actualReadyState должно быть true только если игрок действительно готов
-    const actualReadyState = playerExists ? isCurrentlyReady : false;
+    // actualReadyState должно быть true только если игрок действительно готов И может быть готов
+    const actualReadyState = playerExists && canBeReady ? isCurrentlyReady : false;
     
     // Отладочная информация
     console.log('🔍 Room: Обновление кнопки готовности:', {
@@ -1178,7 +1178,17 @@ function updateReadyStatus() {
             isReady: p.isReady,
             userId: p.userId,
             id: p.id
-        })) : []
+        })) : [],
+        // Дополнительная отладка для понимания логики
+        debug: {
+            playerExists: playerExists,
+            canBeReady: canBeReady,
+            isCurrentlyReady: isCurrentlyReady,
+            actualReadyState: actualReadyState,
+            shouldShowNotReady: actualReadyState === true,
+            shouldShowReady: actualReadyState === false && canBeReady === true,
+            shouldShowSelectDream: canBeReady === false
+        }
     });
     
     // Активируем кнопку только если можно быть готовым
