@@ -506,19 +506,51 @@ class App {
             this.modules.set('playersPanel', playersPanel);
         }
         
+        // Инициализируем PlayerTokenRenderer
+        if (window.PlayerTokenRenderer) {
+            console.log('🎯 App: Инициализируем PlayerTokenRenderer...');
+            const playerTokenRenderer = new window.PlayerTokenRenderer({
+                gameState: this.getModule('gameState'),
+                eventBus: this.getEventBus()
+            });
+            this.modules.set('playerTokenRenderer', playerTokenRenderer);
+            console.log('🎯 PlayerTokenRenderer: Инициализирован');
+        } else {
+            console.warn('⚠️ App: PlayerTokenRenderer не найден в window');
+        }
+        
+        // Инициализируем TurnService
+        if (window.TurnService) {
+            console.log('🎯 App: Инициализируем TurnService...');
+            const turnService = new window.TurnService({
+                gameState: this.getModule('gameState'),
+                eventBus: this.getEventBus()
+            });
+            this.modules.set('turnService', turnService);
+            console.log('🎯 TurnService: Инициализирован');
+        } else {
+            console.warn('⚠️ App: TurnService не найден в window');
+        }
+        
         // Инициализируем TurnController с GameStateManager
-        if (window.TurnController && window.TurnService) {
+        if (window.TurnController) {
             const turnService = this.modules.get('turnService');
             const playerTokenRenderer = this.modules.get('playerTokenRenderer');
             
-            if (turnService && playerTokenRenderer) {
+            if (turnService) {
+                console.log('🎯 App: Инициализируем TurnController...');
                 const turnController = new window.TurnController(
                     turnService,
                     playerTokenRenderer,
                     gameStateManager
                 );
                 this.modules.set('turnController', turnController);
+                console.log('🎯 TurnController: Инициализирован');
+            } else {
+                console.warn('⚠️ App: TurnService не найден для TurnController');
             }
+        } else {
+            console.warn('⚠️ App: TurnController не найден в window');
         }
         
         this.logger?.info('Игровые модули инициализированы', null, 'App');
