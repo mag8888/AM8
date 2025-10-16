@@ -301,7 +301,8 @@ class PlayersPanel {
             
             if (currentUser) {
                 const tokenEmoji = PlayerStatusUtils.getPlayerToken(currentUser);
-                const avatarHtml = tokenEmoji !== '🎯' ? tokenEmoji : (currentUser.username ? currentUser.username.charAt(0).toUpperCase() : 'U');
+                // Всегда показываем эмодзи токен, даже если это дефолтный 🎯
+                const avatarHtml = tokenEmoji;
                 
                 currentPlayerInfoContainer.innerHTML = `
                     <div class="current-user-card">

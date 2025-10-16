@@ -48,9 +48,9 @@
 }
 
 .players-panel-container {
-    width: 300px;
-    min-width: 300px;
-    max-width: 350px;
+    width: 320px;
+    min-width: 320px;
+    max-width: 380px;
     height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
