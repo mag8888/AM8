@@ -26,6 +26,37 @@
 .game-board-only #game-page {
     margin: 0;
     padding: 0;
+    display: flex !important;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.game-page {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    width: 100%;
+}
+
+.game-board-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0; /* Позволяет контейнеру сжиматься */
+}
+
+.players-panel-container {
+    width: 300px;
+    min-width: 300px;
+    max-width: 350px;
+    height: 100vh;
+    overflow-y: auto;
+    background: rgba(15, 23, 42, 0.9);
+    border-left: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 1rem;
+    box-sizing: border-box;
 }
 :root {
     --page-bg-start: #030712;

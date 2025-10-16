@@ -40,6 +40,12 @@ class GameStateManager {
         // Обновляем игроков
         if (serverState.players) {
             this.players = serverState.players;
+            console.log('🏗️ GameStateManager: Игроки обновлены:', serverState.players.map(p => ({
+                id: p.id,
+                username: p.username,
+                token: p.token,
+                isReady: p.isReady
+            })));
         }
         
         // Обновляем активного игрока

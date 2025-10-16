@@ -435,6 +435,18 @@ class App {
             pushClient.connect(roomId);
         }
         
+        // Инициализируем BoardLayout для отображения игрового поля
+        if (window.BoardLayout) {
+            const boardLayout = new window.BoardLayout({
+                outerTrackSelector: '#outer-track',
+                innerTrackSelector: '#inner-track',
+                gameState: this.getModule('gameState'),
+                eventBus: this.getEventBus()
+            });
+            this.modules.set('boardLayout', boardLayout);
+            console.log('🎯 BoardLayout: Инициализирован');
+        }
+        
         // Инициализируем PlayersPanel с GameStateManager
         if (window.PlayersPanel) {
             const playersPanel = new window.PlayersPanel({
