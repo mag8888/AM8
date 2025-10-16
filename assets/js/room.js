@@ -289,6 +289,9 @@ function setupEventListeners() {
     const readyButton = document.getElementById('ready-button');
     if (readyButton) {
         readyButton.addEventListener('click', toggleReadyStatus);
+        console.log('✅ Room: Обработчик клика добавлен к кнопке готовности');
+    } else {
+        console.error('❌ Room: Кнопка ready-button не найдена!');
     }
     
     // Кнопки авторизации
@@ -1009,7 +1012,7 @@ function updateReadyStatus() {
     
     // Проверяем текущее состояние игрока
     const currentPlayer = currentRoom ? currentRoom.players.find(p => p.userId === currentUser?.id || p.username === currentUser?.username) : null;
-    const isCurrentlyReady = currentPlayer ? currentPlayer.isReady : false;
+    const isCurrentlyReady = currentPlayer ? Boolean(currentPlayer.isReady) : false;
     
     // Если игрок не найден в комнате, считаем что он не готов
     const playerExists = currentPlayer !== null;
@@ -1021,6 +1024,8 @@ function updateReadyStatus() {
         isTokenSelected,
         canBeReady,
         isCurrentlyReady,
+        actualReadyState,
+        playerExists,
         dreamData: dreamData,
         selectedToken: selectedToken,
         currentPlayer: currentPlayer ? { name: currentPlayer.name, isReady: currentPlayer.isReady } : null,
@@ -1029,6 +1034,13 @@ function updateReadyStatus() {
     
     // Активируем кнопку только если можно быть готовым
     readyButton.disabled = !canBeReady;
+    
+    console.log('🔍 Room: Состояние кнопки готовности:', {
+        disabled: readyButton.disabled,
+        canBeReady: canBeReady,
+        buttonText: readyButton.innerHTML,
+        buttonClass: readyButton.className
+    });
     
     // Обновляем текст кнопки в зависимости от состояния
     if (canBeReady) {
@@ -1069,6 +1081,7 @@ function updateReadyStatus() {
  */
 async function toggleReadyStatus() {
     try {
+        console.log('🎮 Room: КЛИК ПО КНОПКЕ ГОТОВНОСТИ!');
         console.log('🎮 Room: Попытка переключения готовности:', {
             currentRoom: !!currentRoom,
             currentUser: !!currentUser,
