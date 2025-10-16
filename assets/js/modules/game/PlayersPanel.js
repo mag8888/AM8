@@ -65,6 +65,13 @@ class PlayersPanel {
                     this.gameStateManager?.updateFromServer({ activePlayer: data.activePlayer });
                 }
             });
+            
+            // Обработчик для обновления кубика
+            this.eventBus.on('dice:rolled', (data) => {
+                if (data && data.value !== undefined) {
+                    this.updateDiceResult(data.value);
+                }
+            });
         }
 
         // Подписываемся на обновления состояния игры

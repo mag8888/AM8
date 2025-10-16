@@ -1082,13 +1082,21 @@ class TurnController {
      * Обновление отображения кубика в нижней панели
      */
     updateDiceInBottomPanel(value) {
-        const bottomDiceElement = document.getElementById('dice-result');
-        if (bottomDiceElement) {
-            const valueEmoji = this.getDiceEmoji(Math.max(1, Math.min(6, Number(value) || 1)));
-            bottomDiceElement.textContent = valueEmoji;
-            console.log(`🎲 TurnController: Обновлен кубик в нижней панели: ${valueEmoji} (${value})`);
+        // Обновляем через PlayersPanel
+        const playersPanel = window.app?.getModule?.('playersPanel');
+        if (playersPanel && typeof playersPanel.updateDiceResult === 'function') {
+            playersPanel.updateDiceResult(value);
+            console.log(`🎲 TurnController: Обновлен кубик через PlayersPanel: ${value}`);
         } else {
-            console.warn('⚠️ TurnController: Элемент dice-result в нижней панели не найден');
+            // Fallback: прямое обновление элемента
+            const bottomDiceElement = document.getElementById('dice-result');
+            if (bottomDiceElement) {
+                const valueEmoji = this.getDiceEmoji(Math.max(1, Math.min(6, Number(value) || 1)));
+                bottomDiceElement.textContent = `${valueEmoji} ${value}`;
+                console.log(`🎲 TurnController: Обновлен кубик напрямую: ${valueEmoji} ${value}`);
+            } else {
+                console.warn('⚠️ TurnController: Элемент dice-result в нижней панели не найден');
+            }
         }
     }
     

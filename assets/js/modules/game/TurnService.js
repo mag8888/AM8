@@ -71,6 +71,11 @@ class TurnService extends EventTarget {
             // Эмит успешного результата
             const payload = { ...response, serverValue: this.lastRollValue };
             this.emit('roll:success', payload);
+            
+            // Эмит события для обновления кубика в нижней панели
+            if (this.lastRollValue !== null) {
+                this.emit('dice:rolled', { value: this.lastRollValue });
+            }
 
             console.log('🎮 TurnService: Кубик брошен успешно, значение =', this.lastRollValue);
 
