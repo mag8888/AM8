@@ -226,11 +226,19 @@ class TurnSyncService {
         try {
             if (!this.roomId) return;
             
+            // Проверяем, что roomApi имеет нужный метод
+            if (!this.roomApi || typeof this.roomApi.getRoomState !== 'function') {
+                console.warn('⚠️ TurnSyncService: roomApi.getRoomState недоступен');
+                return;
+            }
+            
             // Получаем актуальное состояние с сервера
-            const roomData = await this.roomApi.getRoom(this.roomId);
+            const roomData = await this.roomApi.getRoomState(this.roomId);
             if (roomData && roomData.state) {
                 // Обновляем локальное состояние
-                this.turnService._applyServerState(roomData.state);
+                if (this.turnService && typeof this.turnService._applyServerState === 'function') {
+                    this.turnService._applyServerState(roomData.state);
+                }
                 
                 console.log('🔄 TurnSyncService: Состояние синхронизировано');
             }
@@ -375,18 +383,42 @@ class TurnSyncService {
      */
     _getCurrentUserId() {
         try {
+            // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
-                return bundle?.currentUser?.id;
+                const userId = bundle?.currentUser?.id || bundle?.currentUser?.userId;
+                if (userId) {
+                    console.log('🔍 TurnSyncService: ID пользователя из bundle:', userId);
+                    return userId;
+                }
             }
             
+            // Пытаемся получить из localStorage
             const userRaw = localStorage.getItem('aura_money_user');
             if (userRaw) {
                 const user = JSON.parse(userRaw);
-                return user?.id;
+                const userId = user?.id || user?.userId;
+                if (userId) {
+                    console.log('🔍 TurnSyncService: ID пользователя из localStorage:', userId);
+                    return userId;
+                }
             }
             
+            // Пытаемся получить из глобального объекта app
+            if (window.app && window.app.getModule) {
+                const userModel = window.app.getModule('userModel');
+                if (userModel && userModel.getCurrentUser) {
+                    const currentUser = userModel.getCurrentUser();
+                    if (currentUser && (currentUser.id || currentUser.userId)) {
+                        const userId = currentUser.id || currentUser.userId;
+                        console.log('🔍 TurnSyncService: ID пользователя из userModel:', userId);
+                        return userId;
+                    }
+                }
+            }
+            
+            console.warn('⚠️ TurnSyncService: ID пользователя не найден');
             return null;
         } catch (error) {
             console.error('❌ TurnSyncService: Ошибка получения userId:', error);

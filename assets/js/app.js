@@ -581,8 +581,8 @@ class App {
             console.warn('⚠️ App: TurnController не найден в window');
         }
         
-        // Инициализируем TurnSyncService для синхронизации ходов
-        if (window.TurnSyncService) {
+        // Инициализируем TurnSyncService для синхронизации ходов (временно отключен)
+        if (false && window.TurnSyncService) {
             const turnService = this.modules.get('turnService');
             const roomApi = this.modules.get('roomApi');
             if (turnService && roomApi) {
@@ -602,7 +602,7 @@ class App {
                 console.warn('⚠️ App: Пропускаем TurnSyncService — нет turnService или roomApi');
             }
         } else {
-            console.warn('⚠️ App: TurnSyncService не найден в window');
+            console.log('ℹ️ App: TurnSyncService временно отключен');
         }
         
         this.logger?.info('Игровые модули инициализированы', null, 'App');

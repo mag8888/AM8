@@ -453,21 +453,47 @@ class TurnService extends EventTarget {
      */
     _getCurrentUserId() {
         try {
+            // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
-                return bundle?.currentUser?.id;
+                const userId = bundle?.currentUser?.id || bundle?.currentUser?.userId;
+                if (userId) {
+                    console.log('🔍 TurnService: ID пользователя из bundle:', userId);
+                    return userId;
+                }
             }
             
+            // Пытаемся получить из localStorage
             const userRaw = localStorage.getItem('aura_money_user');
             if (userRaw) {
                 const user = JSON.parse(userRaw);
-                return user?.id;
+                const userId = user?.id || user?.userId;
+                if (userId) {
+                    console.log('🔍 TurnService: ID пользователя из localStorage:', userId);
+                    return userId;
+                }
             }
+            
+            // Пытаемся получить из глобального объекта app
+            if (window.app && window.app.getModule) {
+                const userModel = window.app.getModule('userModel');
+                if (userModel && userModel.getCurrentUser) {
+                    const currentUser = userModel.getCurrentUser();
+                    if (currentUser && (currentUser.id || currentUser.userId)) {
+                        const userId = currentUser.id || currentUser.userId;
+                        console.log('🔍 TurnService: ID пользователя из userModel:', userId);
+                        return userId;
+                    }
+                }
+            }
+            
+            console.warn('⚠️ TurnService: ID пользователя не найден');
+            return null;
         } catch (error) {
             console.error('❌ TurnService: Ошибка получения ID пользователя:', error);
+            return null;
         }
-        return null;
     }
     
     /**
@@ -477,20 +503,47 @@ class TurnService extends EventTarget {
      */
     _getCurrentUsername() {
         try {
+            // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
-                return bundle?.currentUser?.username || bundle?.currentUser?.name || null;
+                const username = bundle?.currentUser?.username || bundle?.currentUser?.name;
+                if (username) {
+                    console.log('🔍 TurnService: Username из bundle:', username);
+                    return username;
+                }
             }
+            
+            // Пытаемся получить из localStorage
             const userRaw = localStorage.getItem('aura_money_user');
             if (userRaw) {
                 const user = JSON.parse(userRaw);
-                return user?.username || user?.name || null;
+                const username = user?.username || user?.name;
+                if (username) {
+                    console.log('🔍 TurnService: Username из localStorage:', username);
+                    return username;
+                }
             }
+            
+            // Пытаемся получить из глобального объекта app
+            if (window.app && window.app.getModule) {
+                const userModel = window.app.getModule('userModel');
+                if (userModel && userModel.getCurrentUser) {
+                    const currentUser = userModel.getCurrentUser();
+                    if (currentUser && (currentUser.username || currentUser.name)) {
+                        const username = currentUser.username || currentUser.name;
+                        console.log('🔍 TurnService: Username из userModel:', username);
+                        return username;
+                    }
+                }
+            }
+            
+            console.warn('⚠️ TurnService: Username пользователя не найден');
+            return null;
         } catch (error) {
             console.error('❌ TurnService: Ошибка получения username пользователя:', error);
+            return null;
         }
-        return null;
     }
     
     /**
