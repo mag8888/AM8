@@ -233,26 +233,28 @@ class RoomApi {
     /**
      * Бросок кубика
      * @param {string} roomId - ID комнаты
+     * @param {string} [diceChoice] - 'single' | 'double'
+     * @param {boolean} [isReroll] - повторный бросок
      * @returns {Promise<Object>} Результат броска
      */
-    async rollDice(roomId) {
+    async rollDice(roomId, diceChoice, isReroll) {
         const endpoint = `/${roomId}/roll`;
         
-        console.log(`🎲 RoomApi: Бросок кубика в комнате ${roomId}`);
+        console.log(`🎲 RoomApi: Бросок кубика в комнате ${roomId}`, { diceChoice, isReroll });
         
         return await this.request(endpoint, {
             method: 'POST',
-            body: JSON.stringify({})
+            body: JSON.stringify({ diceChoice, isReroll })
         });
     }
     
     /**
-     * Движение фишки
+     * Движение фишки (совместимо с TurnService.move)
      * @param {string} roomId - ID комнаты
      * @param {number} steps - Количество шагов
      * @returns {Promise<Object>} Результат движения
      */
-    async movePlayer(roomId, steps) {
+    async move(roomId, steps) {
         const endpoint = `/${roomId}/move`;
         
         console.log(`🚶 RoomApi: Движение фишки в комнате ${roomId} на ${steps} шагов`);
@@ -261,6 +263,11 @@ class RoomApi {
             method: 'POST',
             body: JSON.stringify({ steps })
         });
+    }
+
+    // Обратная совместимость (если где-то вызывается movePlayer)
+    async movePlayer(roomId, steps) {
+        return this.move(roomId, steps);
     }
 }
 
