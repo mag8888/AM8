@@ -170,8 +170,8 @@ class App {
         // Инициализируем PushClient для push-уведомлений
         if (window.PushClient) {
             const pushClient = new window.PushClient({
-                serverUrl: window.location.origin,
-                enableLogging: true
+                gameState: this.getModule('gameState'),
+                eventBus: this.getEventBus()
             });
             this.services.set('pushClient', pushClient);
             this.logger?.debug('PushClient сервис загружен', null, 'App');
@@ -517,19 +517,6 @@ class App {
             this.modules.set('playersPanel', playersPanel);
         }
         
-        // Инициализируем PlayerTokenRenderer
-        if (window.PlayerTokenRenderer) {
-            console.log('🎯 App: Инициализируем PlayerTokenRenderer...');
-            const playerTokenRenderer = new window.PlayerTokenRenderer({
-                gameState: this.getModule('gameState'),
-                eventBus: this.getEventBus()
-            });
-            this.modules.set('playerTokenRenderer', playerTokenRenderer);
-            console.log('🎯 PlayerTokenRenderer: Инициализирован');
-        } else {
-            console.warn('⚠️ App: PlayerTokenRenderer не найден в window');
-        }
-        
         // Инициализируем TurnService (с защитой от отсутствия GameState)
         if (window.TurnService) {
             try {
@@ -573,13 +560,13 @@ class App {
         // Инициализируем TurnController с GameStateManager (безопасно)
         if (window.TurnController) {
             const turnService = this.modules.get('turnService');
-            const playerTokenRenderer = this.modules.get('playerTokenRenderer');
+            const playerTokensModule = this.modules.get('playerTokens');
             if (turnService && gameStateManager) {
                 try {
                     console.log('🎯 App: Инициализируем TurnController...');
                     const turnController = new window.TurnController(
                         turnService,
-                        playerTokenRenderer,
+                        playerTokensModule,
                         gameStateManager
                     );
                     this.modules.set('turnController', turnController);
@@ -629,7 +616,7 @@ class App {
                     console.log('🔄 App: Доинициализация TurnController (retry)');
                     const turnController = new window.TurnController(
                         this.getModule('turnService'),
-                        this.getModule('playerTokenRenderer'),
+                        this.getModule('playerTokens'),
                         this.getGameStateManager()
                     );
                     this.modules.set('turnController', turnController);

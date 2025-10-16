@@ -277,7 +277,7 @@ function getDatabase() {
             return null; // отключаем локальную SQLite, чтобы не нарушать правило
         }
         if (process.env.USE_SQLITE === 'true') {
-            return require('../database/init').getDatabase();
+        return require('../database/init').getDatabase();
         }
         console.warn('⚠️ DB: Локальная SQLite отключена. Для Mongo используйте отдельный сервис.');
         return null;
@@ -301,13 +301,13 @@ router.get('/', async (req, res, next) => {
                 const rooms = await repo.list();
                 return res.json({ success: true, data: rooms, count: rooms.length, mongo: true });
             } catch (e) {
-                console.log('🔄 Используем fallback данные для комнат');
-                return res.json({
-                    success: true,
-                    data: fallbackRooms,
-                    count: fallbackRooms.length,
-                    fallback: true
-                });
+            console.log('🔄 Используем fallback данные для комнат');
+            return res.json({
+                success: true,
+                data: fallbackRooms,
+                count: fallbackRooms.length,
+                fallback: true
+            });
             }
         }
 
@@ -827,7 +827,7 @@ function proceedWithJoin(userId, player, roomId, res, next) {
                                 dream: player.dream || ''
                             }
                         }).catch(err => console.error('❌ Ошибка отправки push о присоединении:', err));
-                        
+
                         res.status(201).json({
                             success: true,
                             message: 'Вы присоединились к комнате',
@@ -920,37 +920,37 @@ router.post('/:id/join', async (req, res, next) => {
             //     });
             // }
 
-        // Проверяем, существует ли пользователь
-        db.get('SELECT id FROM users WHERE username = ?', [player.username], (err, user) => {
-            if (err) {
-                return next(err);
-            }
+            // Проверяем, существует ли пользователь
+            db.get('SELECT id FROM users WHERE username = ?', [player.username], (err, user) => {
+                if (err) {
+                    return next(err);
+                }
 
-            if (!user) {
-                console.log('⚠️ Пользователь не найден, создаем нового:', player.username);
-                // Fallback: создаем пользователя если его нет
-                const userId = uuidv4();
-                db.run('INSERT INTO users (id, username, created_at) VALUES (?, ?, ?)', 
-                       [userId, player.username, new Date().toISOString()], (insertErr) => {
-                    if (insertErr) {
-                        console.error('❌ Ошибка создания пользователя:', insertErr);
-                        return res.status(500).json({
-                            success: false,
-                            message: 'Ошибка создания пользователя'
-                        });
-                    }
-                    console.log('✅ Пользователь создан:', player.username);
-                    
-                    // Продолжаем с созданным пользователем
-                    proceedWithJoin(userId, player, id, res, next);
-                });
-                return;
-            }
-            
-            // Пользователь найден, продолжаем
+                if (!user) {
+                    console.log('⚠️ Пользователь не найден, создаем нового:', player.username);
+                    // Fallback: создаем пользователя если его нет
+                    const userId = uuidv4();
+                    db.run('INSERT INTO users (id, username, created_at) VALUES (?, ?, ?)', 
+                           [userId, player.username, new Date().toISOString()], (insertErr) => {
+                        if (insertErr) {
+                            console.error('❌ Ошибка создания пользователя:', insertErr);
+                            return res.status(500).json({
+                                success: false,
+                                message: 'Ошибка создания пользователя'
+                            });
+                        }
+                        console.log('✅ Пользователь создан:', player.username);
+                        
+                        // Продолжаем с созданным пользователем
+                        proceedWithJoin(userId, player, id, res, next);
+                    });
+                    return;
+                }
+                
+                // Пользователь найден, продолжаем
             console.log('✅ Пользователь найден в БД:', user.id, player.username);
-            proceedWithJoin(user.id, player, id, res, next);
-        });
+                proceedWithJoin(user.id, player, id, res, next);
+            });
         });
 
     } catch (error) {
@@ -1243,17 +1243,17 @@ router.post('/:id/start', async (req, res, next) => {
             // В тестовом режиме: разрешаем старт не только создателю,
             // но любому игроку, который находится в комнате
             const ensureMemberThenStart = () => {
-                // Проверяем количество готовых игроков
-                const playersQuery = `
-                    SELECT COUNT(*) as ready_count, 
-                           (SELECT COUNT(*) FROM room_players WHERE room_id = ?) as total_count
-                    FROM room_players 
-                    WHERE room_id = ? AND is_ready = 1
-                `;
+            // Проверяем количество готовых игроков
+            const playersQuery = `
+                SELECT COUNT(*) as ready_count, 
+                       (SELECT COUNT(*) FROM room_players WHERE room_id = ?) as total_count
+                FROM room_players 
+                WHERE room_id = ? AND is_ready = 1
+            `;
 
-                db.get(playersQuery, [id, id], (err, counts) => {
-                    if (err) {
-                        console.error('❌ Ошибка подсчета игроков:', err);
+            db.get(playersQuery, [id, id], (err, counts) => {
+                if (err) {
+                    console.error('❌ Ошибка подсчета игроков:', err);
                         return res.status(500).json({
                             success: false,
                             message: 'Ошибка подсчета игроков',
@@ -1263,30 +1263,30 @@ router.post('/:id/start', async (req, res, next) => {
 
                     // Разрешаем старт при наличии хотя бы 1 готового игрока (тестовый режим)
                     if (counts.ready_count < 1) {
-                        return res.status(400).json({
-                            success: false,
+                    return res.status(400).json({
+                        success: false,
                             message: 'Для запуска игры нужен хотя бы 1 готовый игрок'
-                        });
-                    }
+                    });
+                }
 
-                    // Запускаем игру
-                    const updateQuery = `
-                        UPDATE rooms 
-                        SET is_started = 1, status = 'playing', updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?
-                    `;
+                // Запускаем игру
+                const updateQuery = `
+                    UPDATE rooms 
+                    SET is_started = 1, status = 'playing', updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                `;
 
-                    db.run(updateQuery, [id], function(err) {
-                        if (err) {
-                            console.error('❌ Ошибка запуска игры:', err);
+                db.run(updateQuery, [id], function(err) {
+                    if (err) {
+                        console.error('❌ Ошибка запуска игры:', err);
                             return res.status(500).json({
                                 success: false,
                                 message: 'Ошибка запуска игры',
                                 error: err.message
                             });
-                        }
+                    }
 
-                        console.log('🎮 Игра запущена в комнате:', id);
+                    console.log('🎮 Игра запущена в комнате:', id);
 
                         // Формируем игроков из текущего server-state (если есть)
                         let startPlayers = [];
@@ -1318,17 +1318,17 @@ router.post('/:id/start', async (req, res, next) => {
                             }
                         ).catch(err => console.error('❌ Ошибка отправки реального push о начале игры:', err));
 
-                        res.json({
-                            success: true,
-                            message: 'Игра успешно запущена',
-                            data: {
-                                roomId: id,
-                                isStarted: true,
-                                status: 'playing'
-                            }
-                        });
+                    res.json({
+                        success: true,
+                        message: 'Игра успешно запущена',
+                        data: {
+                            roomId: id,
+                            isStarted: true,
+                            status: 'playing'
+                        }
                     });
                 });
+            });
             };
 
             if (room.creator_id !== userId) {

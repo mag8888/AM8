@@ -610,82 +610,59 @@
                                     const gameStateManager = window.app.getGameStateManager();
                                     const gameStateModule = window.app.getModule?.('gameState');
                                     
-                                    // Переменная для отслеживания последнего состояния
-                                    let lastSyncState = null;
-                                    
-                                    // Функция синхронизации с сервером
+                                    let isSyncing = false;
+                                    let pendingSync = false;
                                     const syncWithServer = () => {
-                                        // Получаем состояние игры
-                                        api.getGameState(roomId).then(gs => {
-                                            if (gs && gs.state) {
-                                                if (gameStateModule && typeof gameStateModule.applyState === 'function') {
-                                                    gameStateModule.applyState(gs.state);
-                                                }
-                                                if (gameStateManager) {
-                                                    gameStateManager.updateFromServer(gs.state);
-                                                }
-                                            }
-                                        }).catch(err => console.warn('⚠️ Ошибка получения состояния игры:', err));
+                                        if (isSyncing) {
+                                            pendingSync = true;
+                                            return;
+                                        }
+                                        isSyncing = true;
                                         
-                                        // Получаем список игроков
-                                        api.getPlayers(roomId).then(pl => {
-                                            if (gameStateManager && pl && Array.isArray(pl.data)) {
-                                                const managerState = gameStateManager.getState?.() || { players: [] };
-                                                const positionById = new Map(
-                                                    (managerState.players || [])
-                                                        .map(player => {
-                                                            const key = player?.id || player?.userId || player?.username;
-                                                            if (!key) return null;
-                                                            return [key, player];
-                                                        })
-                                                        .filter(Boolean)
-                                                );
-                                                const srvPlayers = pl.data.map((p, idx) => {
-                                                    const id = p.userId || p.id || `player${idx+1}`;
-                                                    const stateInfo = positionById.get(id) || {};
-                                                    return {
-                                                        id,
-                                                        username: p.username || stateInfo.username || `Игрок ${idx+1}`,
-                                                        position: Number(stateInfo.position) || 0,
-                                                        isInner: stateInfo.isInner ?? true,
-                                                        money: stateInfo.money ?? p.money ?? 5000,
-                                                        token: p.token || stateInfo.token || '🎯',
-                                                        isReady: p.isReady !== undefined ? p.isReady : (stateInfo.isReady ?? true)
-                                                    };
-                                                });
-                                                const uniqueSrvPlayers = [];
-                                                const seenPlayers = new Set();
-                                                srvPlayers.forEach(player => {
-                                                    const key = player.id || player.username;
-                                                    if (!seenPlayers.has(key)) {
-                                                        seenPlayers.add(key);
-                                                        uniqueSrvPlayers.push(player);
-                                                    }
-                                                });
-                                                
-                                                // Проверяем, изменились ли игроки
-                                                const serializedState = JSON.stringify(uniqueSrvPlayers);
-                                                if (lastSyncState !== serializedState) {
+                                        api.getGameState(roomId)
+                                            .then(gs => {
+                                                if (gs && gs.state) {
                                                     if (gameStateModule && typeof gameStateModule.applyState === 'function') {
-                                                        gameStateModule.applyState({ players: uniqueSrvPlayers });
+                                                        gameStateModule.applyState(gs.state);
                                                     }
-                                                    gameStateManager.updateFromServer({ players: uniqueSrvPlayers });
-                                                    lastSyncState = serializedState;
-                                                    console.log('🔄 Синхронизация: Обновлены игроки');
+                                                    if (gameStateManager) {
+                                                        gameStateManager.updateFromServer(gs.state);
+                                                    }
                                                 }
-                                            }
-                                        }).catch(err => console.warn('⚠️ Ошибка получения списка игроков:', err));
+                                            })
+                                            .catch(err => console.warn('⚠️ Ошибка получения состояния игры:', err))
+                                            .finally(() => {
+                                                isSyncing = false;
+                                                if (pendingSync) {
+                                                    pendingSync = false;
+                                                    syncWithServer();
+                                                }
+                                            });
                                     };
                                     
-                                    // Первоначальная синхронизация
+                                    window.requestRoomSync = syncWithServer;
+                                    
                                     syncWithServer();
+                                    const syncInterval = setInterval(syncWithServer, 2000);
                                     
-                                    // Периодическая синхронизация каждые 5 секунд
-                                    const syncInterval = setInterval(syncWithServer, 10000);
+                                    const handleVisibility = () => {
+                                        if (!document.hidden) {
+                                            syncWithServer();
+                                        }
+                                    };
                                     
-                                    // Очищаем интервал при закрытии страницы
+                                    window.addEventListener('focus', syncWithServer, { passive: true });
+                                    document.addEventListener('visibilitychange', handleVisibility, { passive: true });
+                                    const eventBus = window.app.getEventBus?.();
+                                    const handlePushStats = () => syncWithServer();
+                                    eventBus?.on('push:stats_updated', handlePushStats);
+                                    
                                     window.addEventListener('beforeunload', () => {
                                         clearInterval(syncInterval);
+                                        window.requestRoomSync = null;
+                                        window.removeEventListener('focus', syncWithServer);
+                                        document.removeEventListener('visibilitychange', handleVisibility);
+                                        eventBus?.off?.('push:stats_updated', handlePushStats);
                                     });
                                     
                                 } catch(error) {

@@ -181,132 +181,18 @@ class PlayerTokens {
      * Рендер фишек для всех игроков
      */
     renderTokens(players) {
-        console.log('🎯 PlayerTokens: renderTokens вызван с игроками:', players);
-        
-        if (!players || players.length === 0) {
-            // Пытаемся получить игроков из GameState
-            players = this.getPlayers();
-            console.log('🎯 PlayerTokens: Получены игроки из GameState:', players);
-            if (!players || players.length === 0) {
-                console.warn('⚠️ PlayerTokens: Нет игроков для отображения');
-                return;
-            }
-        }
-        
-        console.log('🎯 PlayerTokens: Рендер фишек для', players.length, 'игроков');
-        
-        // Группируем игроков по позиции для смещения
-        const positionGroups = new Map();
-        
-        players.forEach((player, index) => {
-            const position = player.position || 0;
-            const isInner = player.isInner || false;
-            
-            if (!positionGroups.has(`${position}-${isInner}`)) {
-                positionGroups.set(`${position}-${isInner}`, []);
-            }
-            positionGroups.get(`${position}-${isInner}`).push(player);
-        });
-        
-        // Создаем фишки для каждой группы
-        positionGroups.forEach((playersAtPosition, positionKey) => {
-            const [position, isInner] = positionKey.split('-');
-            this.createTokensAtPosition(playersAtPosition, parseInt(position), isInner === 'true');
-        });
-    }
-    
-    /**
-     * Создание фишек на определенной позиции
-     */
-    createTokensAtPosition(players, position, isInner) {
-        console.log('🎯 PlayerTokens: createTokensAtPosition', { players, position, isInner });
-        
-        const trackSelector = isInner ? this.innerTrackSelector : this.outerTrackSelector;
-        const trackElement = document.querySelector(trackSelector);
-        
-        if (!trackElement) {
-            console.warn('⚠️ PlayerTokens: Трек не найден:', trackSelector);
+        const normalized = this.normalizePlayers(players?.length ? players : this.getPlayers());
+        if (!normalized.length) {
+            this.clearTokens();
             return;
         }
-        
-        // Проверяем размеры трека
-        const trackRect = trackElement.getBoundingClientRect();
-        console.log('🎯 PlayerTokens: Трек найден:', {
-            element: trackElement,
-            selector: trackSelector,
-            width: trackRect.width,
-            height: trackRect.height,
-            x: trackRect.x,
-            y: trackRect.y,
-            isVisible: trackRect.width > 0 && trackRect.height > 0
-        });
-        
-        // Находим клетку по позиции
-        const cell = trackElement.querySelector(`[data-position="${position}"]`);
-        if (!cell) {
-            console.warn('⚠️ PlayerTokens: Клетка не найдена для позиции:', position);
-            return;
-        }
-        
-        const cellRect = cell.getBoundingClientRect();
-        
-        // Рассчитываем базовую позицию (центр клетки)
-        const baseX = cellRect.left - trackRect.left + cellRect.width / 2;
-        const baseY = cellRect.top - trackRect.top + cellRect.height / 2;
-        
-        // Создаем фишки со смещением
-        players.forEach((player, index) => {
-            const token = this.createPlayerToken(player, index, players.length);
-            
-            // Рассчитываем смещение для множественных фишек
-            const offset = this.calculateOffset(index, players.length);
-            
-            token.style.left = `${baseX + offset.x - 16}px`; // -16 для центрирования (32px/2)
-            token.style.top = `${baseY + offset.y - 16}px`;
-            
-            trackElement.appendChild(token);
-            this.tokens.set(player.id, token);
-            
-            // Запускаем анимацию появления
-            this.animateTokenAppearance(token);
-            
-            // Проверяем видимость фишки
-            setTimeout(() => {
-                const rect = token.getBoundingClientRect();
-                const computedStyle = window.getComputedStyle(token);
-                console.log(`🎯 PlayerTokens: Проверка видимости фишки ${player.username}:`, {
-                    isVisible: rect.width > 0 && rect.height > 0,
-                    display: computedStyle.display,
-                    visibility: computedStyle.visibility,
-                    opacity: computedStyle.opacity,
-                    position: computedStyle.position,
-                    left: computedStyle.left,
-                    top: computedStyle.top,
-                    zIndex: computedStyle.zIndex,
-                    rect: {
-                        width: rect.width,
-                        height: rect.height,
-                        x: rect.x,
-                        y: rect.y
-                    }
-                });
-            }, 100);
-            
-            console.log(`🎯 PlayerTokens: Фишка ${player.username} создана на позиции ${position}`);
-        });
+        this.updateTokens(normalized);
     }
     
     /**
      * Создание DOM элемента фишки
      */
     createPlayerToken(player, index, totalPlayers) {
-        console.log(`🎯 PlayerTokens: createPlayerToken для ${player.username}:`, {
-            player: player,
-            token: player.token,
-            position: player.position,
-            isInner: player.isInner
-        });
-        
         const token = document.createElement('div');
         token.className = `player-token ${player.isInner ? 'inner' : 'outer'}`;
         token.dataset.playerId = player.id;
@@ -320,12 +206,6 @@ class PlayerTokens {
         
         // Добавляем информацию о игроке в title
         token.title = `${player.username} - $${player.money || 0}`;
-        
-        console.log(`🎯 PlayerTokens: Создана фишка для ${player.username}:`, {
-            className: token.className,
-            textContent: token.textContent,
-            dataPosition: token.getAttribute('data-position')
-        });
         
         return token;
     }
@@ -348,7 +228,6 @@ class PlayerTokens {
         };
         
         const icon = tokenIcons[tokenId] || '🎯';
-        console.log(`🎯 PlayerTokens: getTokenIcon(${tokenId}) = ${icon}`);
         return icon;
     }
     
@@ -383,18 +262,12 @@ class PlayerTokens {
         // Получаем текущую позицию из атрибута data-position
         const currentPosition = parseInt(token.getAttribute('data-position')) || 0;
         
-        console.log(`🎯 PlayerTokens: Движение фишки ${playerId} с позиции ${currentPosition} на ${newPosition}`);
-        
-        // Если позиция не изменилась, все равно обновляем позицию фишки
-        // чтобы исправить возможную рассинхронизацию
+        // Если позиция не изменилась, просто синхронизируем координаты
         if (currentPosition === newPosition) {
-            console.log('🎯 PlayerTokens: Позиция не изменилась, но обновляем позицию фишки для синхронизации');
-            // Просто перемещаем фишку на правильную позицию без анимации
             this.moveTokenToPosition(token, playerId, newPosition, isInner);
             return;
         }
         
-        // Выполняем пошаговое движение
         this.moveTokenStepByStep(token, playerId, currentPosition, newPosition, isInner);
     }
     
@@ -572,8 +445,46 @@ class PlayerTokens {
      * Обновление всех фишек
      */
     updateTokens(players) {
-        this.clearTokens();
-        this.renderTokens(players);
+        const normalized = this.normalizePlayers(players);
+        if (!normalized.length) {
+            this.clearTokens();
+            return;
+        }
+        
+        const grouped = this.groupPlayersByPosition(normalized);
+        const processed = new Set();
+        
+        grouped.forEach(({ position, isInner, players: playersAtPosition }) => {
+            const trackSelector = isInner ? this.innerTrackSelector : this.outerTrackSelector;
+            const trackElement = document.querySelector(trackSelector);
+            if (!trackElement) return;
+            
+            const cell = trackElement.querySelector(`[data-position="${position}"]`);
+            if (!cell) return;
+            
+            const trackRect = trackElement.getBoundingClientRect();
+            const cellRect = cell.getBoundingClientRect();
+            const baseCoords = {
+                x: cellRect.left - trackRect.left + cellRect.width / 2,
+                y: cellRect.top - trackRect.top + cellRect.height / 2
+            };
+            
+            playersAtPosition.forEach((player, index) => {
+                const token = this.ensureToken(player, index, playersAtPosition.length, trackElement);
+                const offset = this.calculateOffset(index, playersAtPosition.length);
+                this.positionTokenElement(token, baseCoords, offset);
+                processed.add(player.id);
+            });
+        });
+        
+        this.tokens.forEach((token, playerId) => {
+            if (!processed.has(playerId)) {
+                if (token.parentNode) {
+                    token.parentNode.removeChild(token);
+                }
+                this.tokens.delete(playerId);
+            }
+        });
     }
     
     /**
@@ -582,6 +493,84 @@ class PlayerTokens {
     forceUpdate() {
         const players = this.getPlayers();
         this.updateTokens(players);
+    }
+
+    /**
+     * Нормализация списка игроков (уникальные идентификаторы, позиции)
+     */
+    normalizePlayers(players = []) {
+        const result = [];
+        const seen = new Set();
+        const source = Array.isArray(players) ? players : [];
+        
+        source.forEach((player, idx) => {
+            if (!player) {
+                return;
+            }
+            const key = player.id || player.userId || player.username || `player_${idx}`;
+            if (seen.has(key)) {
+                return;
+            }
+            seen.add(key);
+            result.push({
+                ...player,
+                id: player.id || player.userId || key,
+                position: Number(player.position) || 0,
+                isInner: Boolean(player.isInner)
+            });
+        });
+        
+        return result;
+    }
+
+    /**
+     * Группировка игроков по позиции и треку
+     */
+    groupPlayersByPosition(players) {
+        const groups = new Map();
+        players.forEach(player => {
+            const groupKey = `${player.position}|${player.isInner ? 'inner' : 'outer'}`;
+            if (!groups.has(groupKey)) {
+                groups.set(groupKey, {
+                    position: player.position,
+                    isInner: player.isInner,
+                    players: []
+                });
+            }
+            groups.get(groupKey).players.push(player);
+        });
+        return groups;
+    }
+
+    /**
+     * Создает или обновляет фишку игрока и возвращает DOM-элемент
+     */
+    ensureToken(player, index, totalPlayers, trackElement) {
+        let token = this.tokens.get(player.id);
+        if (!token) {
+            token = this.createPlayerToken(player, index, totalPlayers);
+            trackElement.appendChild(token);
+            this.tokens.set(player.id, token);
+            this.animateTokenAppearance(token);
+        } else {
+            token.dataset.position = player.position;
+            token.dataset.playerName = player.username;
+            token.classList.toggle('inner', !!player.isInner);
+            token.classList.toggle('outer', !player.isInner);
+            token.textContent = this.getTokenIcon(player.token);
+            token.title = `${player.username} - $${player.money || 0}`;
+        }
+        return token;
+    }
+
+    /**
+     * Позиционирование фишки с учётом смещения
+     */
+    positionTokenElement(token, baseCoords, offset) {
+        if (!token) return;
+        const halfSize = 16; // половина ширины/высоты токена
+        token.style.left = `${baseCoords.x + offset.x - halfSize}px`;
+        token.style.top = `${baseCoords.y + offset.y - halfSize}px`;
     }
 }
 
