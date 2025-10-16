@@ -709,9 +709,11 @@
                 const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
                 if (currentUser && currentUser.isLoggedIn) {
                     console.log('👤 Пользователь авторизован, перенаправляем в комнаты');
-                    setTimeout(() => {
-                        window.location.href = 'pages/rooms.html';
-                    }, 1000);
+                    setTimeout(() => { window.location.href = 'pages/rooms.html'; }, 300);
+                } else {
+                    console.log('🔒 Не авторизован: перенаправление на страницу входа');
+                    // Мгновенный редирект на страницу авторизации при первом входе
+                    setTimeout(() => { window.location.href = 'pages/auth.html'; }, 100);
                 }
             });
         }
