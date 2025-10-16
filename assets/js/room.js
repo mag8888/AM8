@@ -595,6 +595,24 @@ async function joinRoomIfNeeded() {
             showNotification('Вы присоединились к комнате', 'success');
         } else {
             console.log('ℹ️ Room: Пользователь уже в комнате, обновляем данные');
+            
+            // Сбрасываем состояние готовности при входе в комнату
+            // чтобы игрок не видел "Не готов" сразу
+            console.log('🔄 Room: Сбрасываем состояние готовности при входе в комнату');
+            const resetData = {
+                userId: currentUser.id || currentUser.userId,
+                username: currentUser.username || currentUser.name,
+                name: currentUser.username || currentUser.name,
+                avatar: currentUser.avatar || '',
+                isReady: false,
+                dream: null,
+                token: null
+            };
+            console.log('🔄 Room: Данные для сброса готовности:', resetData);
+            
+            const resetResult = await roomService.updatePlayerInRoom(currentRoom.id, resetData);
+            console.log('🔄 Room: Результат сброса готовности:', resetResult);
+            
             showNotification('Добро пожаловать обратно в комнату!', 'info');
         }
     } catch (error) {
