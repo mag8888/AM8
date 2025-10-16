@@ -99,19 +99,27 @@ class TurnService extends EventTarget {
     /**
      * Перемещение игрока
      * @param {number} steps - Количество шагов (1-12)
+     * @param {Object} options - Опции перемещения
+     * @param {Object} options.player - Игрок для перемещения (опционально)
      * @returns {Promise<Object>} Результат перемещения
      */
-    async move(steps) {
+    async move(steps, options = {}) {
         const roomId = this.state.getRoomId();
         
         if (!roomId) {
             throw new Error('TurnService.move: roomId is missing');
         }
         
-        // Проверяем, что это ход текущего пользователя
-        if (!this.isMyTurn()) {
-            console.warn('⚠️ TurnService: Не ваш ход, перемещение заблокировано');
-            throw new Error('Not your turn');
+        // Проверяем права на выполнение действия
+        const permissionCheck = this.canPerformAction({
+            player: options.player,
+            requireMyTurn: true,
+            requireMyToken: !!options.player
+        });
+        
+        if (!permissionCheck.canPerform) {
+            console.warn('⚠️ TurnService: Действие заблокировано:', permissionCheck.reason);
+            throw new Error(permissionCheck.reason);
         }
         
         const targetSteps = Number.isFinite(Number(steps)) && Number(steps) > 0
@@ -362,6 +370,80 @@ class TurnService extends EventTarget {
             console.error('❌ TurnService.isMyTurn: Ошибка проверки хода:', error);
             return false;
         }
+    }
+    
+    /**
+     * Проверка, является ли указанный игрок текущим пользователем
+     * @param {Object} player - Игрок для проверки
+     * @returns {boolean} Мой ли это игрок
+     */
+    isMyToken(player) {
+        try {
+            if (!player) {
+                console.warn('⚠️ TurnService.isMyToken: Игрок не указан');
+                return false;
+            }
+            
+            const currentUserId = this._getCurrentUserId();
+            const currentUsername = this._getCurrentUsername();
+            
+            const isMyToken = 
+                player.id === currentUserId ||
+                player.userId === currentUserId ||
+                (player.username && currentUsername && player.username === currentUsername);
+            
+            console.log('🎯 TurnService.isMyToken:', isMyToken, { 
+                player: player.username || player.id, 
+                currentUser: currentUsername || currentUserId 
+            });
+            
+            return isMyToken;
+        } catch (error) {
+            console.error('❌ TurnService.isMyToken: Ошибка проверки токена:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * Проверка, может ли текущий пользователь выполнить действие
+     * @param {Object} options - Опции проверки
+     * @param {Object} options.player - Игрок (для проверки токена)
+     * @param {boolean} options.requireMyTurn - Требуется ли мой ход
+     * @param {boolean} options.requireMyToken - Требуется ли мой токен
+     * @returns {Object} Результат проверки
+     */
+    canPerformAction(options = {}) {
+        const { player = null, requireMyTurn = true, requireMyToken = false } = options;
+        
+        const result = {
+            canPerform: true,
+            reason: null,
+            checks: {
+                myTurn: true,
+                myToken: true
+            }
+        };
+        
+        // Проверяем ход
+        if (requireMyTurn) {
+            result.checks.myTurn = this.isMyTurn();
+            if (!result.checks.myTurn) {
+                result.canPerform = false;
+                result.reason = 'Not your turn';
+            }
+        }
+        
+        // Проверяем токен
+        if (requireMyToken && player) {
+            result.checks.myToken = this.isMyToken(player);
+            if (!result.checks.myToken) {
+                result.canPerform = false;
+                result.reason = 'Not your token';
+            }
+        }
+        
+        console.log('🔍 TurnService.canPerformAction:', result);
+        return result;
     }
     
     /**

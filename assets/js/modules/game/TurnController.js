@@ -708,23 +708,94 @@ class TurnController {
                 (state.activePlayer.username && currentUsername && state.activePlayer.username === currentUsername)
             );
             const playerToken = this.getPlayerToken(state.activePlayer);
+            
+            // Обновляем информацию о ходе
             if (isMyTurn) {
-                turnInfo.innerHTML = `${playerToken} Ваш ход`;
+                turnInfo.innerHTML = `${playerToken} 🎯 ВАШ ХОД`;
                 turnInfo.classList.add('my-turn');
+                turnInfo.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+                turnInfo.style.animation = 'pulse 2s infinite';
+                
+                // Подсвечиваем кнопку броска
                 const rollBtn = this.ui.querySelector('.btn-dice');
-                if (rollBtn) rollBtn.classList.add('my-turn');
+                if (rollBtn) {
+                    rollBtn.classList.add('my-turn');
+                    rollBtn.style.boxShadow = '0 0 0 2px rgba(34,197,94,0.35), 0 10px 22px rgba(34,197,94,0.45)';
+                }
             } else if (state.activePlayer) {
                 turnInfo.innerHTML = `${playerToken} Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
                 turnInfo.classList.remove('my-turn');
+                turnInfo.style.background = 'rgba(255,255,255,0.08)';
+                turnInfo.style.animation = 'none';
+                
+                // Убираем подсветку кнопки
                 const rollBtn = this.ui.querySelector('.btn-dice');
-                if (rollBtn) rollBtn.classList.remove('my-turn');
+                if (rollBtn) {
+                    rollBtn.classList.remove('my-turn');
+                    rollBtn.style.boxShadow = '';
+                }
             } else {
-                turnInfo.innerHTML = 'Ожидание';
+                turnInfo.innerHTML = '⏳ Ожидание...';
                 turnInfo.classList.remove('my-turn');
+                turnInfo.style.background = 'rgba(255,255,255,0.08)';
+                turnInfo.style.animation = 'none';
+                
                 const rollBtn = this.ui.querySelector('.btn-dice');
-                if (rollBtn) rollBtn.classList.remove('my-turn');
+                if (rollBtn) {
+                    rollBtn.classList.remove('my-turn');
+                    rollBtn.style.boxShadow = '';
+                }
             }
         }
+        
+        // Обновляем визуальную индикацию в списке игроков
+        this.updatePlayersTurnIndicators(state);
+    }
+    
+    /**
+     * Обновление индикаторов хода в списке игроков
+     * @param {Object} state - Состояние игры
+     */
+    updatePlayersTurnIndicators(state) {
+        if (!this.playerList) return;
+        
+        const currentUserId = this.getCurrentUserId();
+        const currentUsername = this.getCurrentUsername();
+        
+        // Обновляем все элементы игроков
+        const playerItems = this.ui.querySelectorAll('.player-item');
+        playerItems.forEach(item => {
+            const playerName = item.querySelector('.player-name');
+            if (!playerName) return;
+            
+            // Убираем все индикаторы
+            item.classList.remove('active', 'my-turn', 'other-turn');
+            
+            // Проверяем, это ли активный игрок
+            const isActivePlayer = state.activePlayer && (
+                playerName.textContent.includes(state.activePlayer.username || state.activePlayer.name) ||
+                playerName.textContent.includes(PlayerStatusUtils.getPlayerDisplayName(state.activePlayer))
+            );
+            
+            // Проверяем, это ли текущий пользователь
+            const isCurrentUser = playerName.textContent.includes(currentUsername || 'current user');
+            
+            if (isActivePlayer) {
+                item.classList.add('active');
+                if (isCurrentUser) {
+                    item.classList.add('my-turn');
+                    item.style.borderLeft = '3px solid #22c55e';
+                    item.style.background = 'rgba(34, 197, 94, 0.1)';
+                } else {
+                    item.classList.add('other-turn');
+                    item.style.borderLeft = '3px solid #f59e0b';
+                    item.style.background = 'rgba(245, 158, 11, 0.1)';
+                }
+            } else {
+                item.style.borderLeft = '3px solid transparent';
+                item.style.background = '';
+            }
+        });
     }
 
     /**
@@ -850,11 +921,79 @@ class TurnController {
      */
     async handleRollDice() {
         if (this.isRolling) return;
+        
+        // Проверяем права на бросок кубика
+        const permissionCheck = this.turnService.canPerformAction({
+            requireMyTurn: true
+        });
+        
+        if (!permissionCheck.canPerform) {
+            console.warn('⚠️ TurnController: Бросок кубика заблокирован:', permissionCheck.reason);
+            this.showNotification(`❌ ${permissionCheck.reason === 'Not your turn' ? 'Не ваш ход!' : 'Действие заблокировано!'}`, 'error');
+            return;
+        }
+        
         console.log('🎲 TurnController: click roll, canRoll =', this.turnService ? this.turnService.canRoll() : 'n/a');
         try {
             await this.turnService.roll({ diceChoice: 'single' });
         } catch (error) {
             console.error('❌ TurnController: Ошибка броска кубика:', error);
+            this.showNotification('❌ Ошибка броска кубика', 'error');
+        }
+    }
+    
+    /**
+     * Показать уведомление
+     * @param {string} message - Сообщение
+     * @param {string} type - Тип уведомления
+     */
+    showNotification(message, type = 'info') {
+        // Пытаемся использовать глобальный сервис уведомлений
+        if (window.notificationService && typeof window.notificationService.show === 'function') {
+            window.notificationService.show(message, type);
+        } else {
+            // Fallback - показываем в консоли и создаем временное уведомление
+            console.log(`📢 ${type.toUpperCase()}: ${message}`);
+            
+            // Создаем временное уведомление
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#17a2b8'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 5px;
+                z-index: 10000;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s ease-out;
+            `;
+            notification.textContent = message;
+            
+            // Добавляем анимацию
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(notification);
+            
+            // Удаляем через 3 секунды
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+                if (style.parentNode) {
+                    style.parentNode.removeChild(style);
+                }
+            }, 3000);
         }
     }
     
@@ -862,12 +1001,30 @@ class TurnController {
      * Обработка перемещения
      */
     async handleMove(steps) {
-        if (this.isMoving || !this.turnService.canMove()) return;
+        if (this.isMoving) return;
+        
+        // Проверяем права на перемещение
+        const permissionCheck = this.turnService.canPerformAction({
+            requireMyTurn: true
+        });
+        
+        if (!permissionCheck.canPerform) {
+            console.warn('⚠️ TurnController: Перемещение заблокировано:', permissionCheck.reason);
+            this.showNotification(`❌ ${permissionCheck.reason === 'Not your turn' ? 'Не ваш ход!' : 'Действие заблокировано!'}`, 'error');
+            return;
+        }
+        
+        if (!this.turnService.canMove()) {
+            console.warn('⚠️ TurnController: Перемещение недоступно');
+            this.showNotification('❌ Перемещение недоступно', 'error');
+            return;
+        }
         
         try {
             await this.turnService.move(steps);
         } catch (error) {
             console.error('❌ TurnController: Ошибка перемещения:', error);
+            this.showNotification('❌ Ошибка перемещения', 'error');
         }
     }
     

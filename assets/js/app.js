@@ -581,6 +581,30 @@ class App {
             console.warn('⚠️ App: TurnController не найден в window');
         }
         
+        // Инициализируем TurnSyncService для синхронизации ходов
+        if (window.TurnSyncService) {
+            const turnService = this.modules.get('turnService');
+            const roomApi = this.modules.get('roomApi');
+            if (turnService && roomApi) {
+                try {
+                    console.log('🔄 App: Инициализируем TurnSyncService...');
+                    const turnSyncService = new window.TurnSyncService({
+                        turnService: turnService,
+                        roomApi: roomApi,
+                        eventBus: this.getEventBus()
+                    });
+                    this.modules.set('turnSyncService', turnSyncService);
+                    console.log('🔄 TurnSyncService: Инициализирован');
+                } catch (e) {
+                    console.error('❌ App: Ошибка инициализации TurnSyncService', e);
+                }
+            } else {
+                console.warn('⚠️ App: Пропускаем TurnSyncService — нет turnService или roomApi');
+            }
+        } else {
+            console.warn('⚠️ App: TurnSyncService не найден в window');
+        }
+        
         this.logger?.info('Игровые модули инициализированы', null, 'App');
         
         // Принудительно обновляем фишки игроков после инициализации
