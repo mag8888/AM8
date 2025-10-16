@@ -17,7 +17,7 @@
 
 .game-board-only #outer-track,
 .game-board-only #inner-track,
-.game-board-only #game-control-panel,
+.game-board-only #players-panel,
 .game-board-only #game-page,
 .game-board-only .board-container {
     display: block !important;
