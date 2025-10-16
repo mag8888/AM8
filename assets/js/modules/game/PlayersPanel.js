@@ -30,6 +30,13 @@ class PlayersPanel {
         
         this.setupEventListeners();
         this.render();
+        // Инициализируем отображение из текущего состояния игры
+        if (this.gameStateManager && typeof this.gameStateManager.getState === 'function') {
+            try {
+                const state = this.gameStateManager.getState();
+                this.updateFromGameState(state || {});
+            } catch (_) {}
+        }
         
         console.log('✅ PlayersPanel v2.0: Инициализирован');
     }
@@ -57,6 +64,16 @@ class PlayersPanel {
                 if (data && data.activePlayer) {
                     this.gameStateManager?.updateFromServer({ activePlayer: data.activePlayer });
                 }
+            });
+        }
+
+        // Подписываемся на обновления состояния игры
+        if (this.gameStateManager && typeof this.gameStateManager.on === 'function') {
+            this.gameStateManager.on('state:updated', (state) => {
+                this.updateFromGameState(state || {});
+            });
+            this.gameStateManager.on('turn:changed', (data) => {
+                this.handleTurnChanged(data || {});
             });
         }
     }
