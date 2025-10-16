@@ -74,6 +74,11 @@ class PlayerTokens {
                             }
                         }
                     });
+                    
+                    // Обновляем все позиции с учетом коллизий после обработки изменений
+                    setTimeout(() => {
+                        this.updateAllTokenPositions();
+                    }, 100);
                 }
             });
             
@@ -268,14 +273,34 @@ class PlayerTokens {
             return { x: 0, y: 0 };
         }
         
-        // Располагаем фишки по кругу
-        const angle = (index * 2 * Math.PI) / totalPlayers;
-        const radius = 12; // Радиус смещения в пикселях (увеличен для больших токенов)
-        
-        return {
-            x: Math.cos(angle) * radius,
-            y: Math.sin(angle) * radius
+        // Конфигурация сдвига для разного количества фишек
+        const offsetConfigs = {
+            2: [
+                { x: -8, y: 0 },
+                { x: 8, y: 0 }
+            ],
+            3: [
+                { x: -12, y: -6 },
+                { x: 0, y: 6 },
+                { x: 12, y: -6 }
+            ],
+            4: [
+                { x: -12, y: -8 },
+                { x: 12, y: -8 },
+                { x: -12, y: 8 },
+                { x: 12, y: 8 }
+            ]
         };
+        
+        const config = offsetConfigs[totalPlayers] || offsetConfigs[4];
+        const offset = config[index] || { x: 0, y: 0 };
+        
+        // Добавляем визуальную индикацию для множественных фишек
+        if (totalPlayers > 1) {
+            console.log(`🎯 PlayerTokens: Фишка ${index + 1}/${totalPlayers} сдвинута на (${offset.x}, ${offset.y})`);
+        }
+        
+        return offset;
     }
     
     /**
@@ -337,19 +362,148 @@ class PlayerTokens {
             return;
         }
         
+        // Проверяем коллизии и сдвигаем фишки
+        this.handleTokenCollisions(position, isInner);
+        
         const cellRect = cell.getBoundingClientRect();
         const trackRect = trackElement.getBoundingClientRect();
         
-        // Рассчитываем позицию
-        const newX = cellRect.left - trackRect.left + cellRect.width / 2 - 16;
-        const newY = cellRect.top - trackRect.top + cellRect.height / 2 - 16;
+        // Рассчитываем позицию с учетом сдвига
+        const offset = this.getTokenOffset(playerId, position, isInner);
+        const newX = cellRect.left - trackRect.left + cellRect.width / 2 - 16 + offset.x;
+        const newY = cellRect.top - trackRect.top + cellRect.height / 2 - 16 + offset.y;
         
         // Перемещаем фишку
         token.style.left = newX + 'px';
         token.style.top = newY + 'px';
         token.setAttribute('data-position', position);
         
-        console.log(`🎯 PlayerTokens: Фишка ${playerId} мгновенно перемещена на позицию ${position}`);
+        console.log(`🎯 PlayerTokens: Фишка ${playerId} мгновенно перемещена на позицию ${position} со сдвигом (${offset.x}, ${offset.y})`);
+    }
+    
+    /**
+     * Обработка коллизий фишек на одной клетке
+     */
+    handleTokenCollisions(position, isInner) {
+        const trackSelector = isInner ? this.innerTrackSelector : this.outerTrackSelector;
+        const trackElement = document.querySelector(trackSelector);
+        
+        if (!trackElement) return;
+        
+        // Находим все фишки на данной позиции
+        const tokensOnPosition = [];
+        this.tokens.forEach((token, playerId) => {
+            const tokenPosition = parseInt(token.getAttribute('data-position')) || 0;
+            const tokenIsInner = token.classList.contains('inner-track');
+            
+            if (tokenPosition === position && tokenIsInner === isInner) {
+                tokensOnPosition.push({ token, playerId });
+            }
+        });
+        
+        // Если на позиции больше одной фишки, сдвигаем их
+        if (tokensOnPosition.length > 1) {
+            console.log(`🎯 PlayerTokens: Обнаружено ${tokensOnPosition.length} фишек на позиции ${position}, сдвигаем...`);
+            this.arrangeTokensOnPosition(tokensOnPosition, position, isInner);
+        }
+    }
+    
+    /**
+     * Расстановка фишек на одной позиции с сдвигом
+     */
+    arrangeTokensOnPosition(tokensOnPosition, position, isInner) {
+        const cell = document.querySelector(`${isInner ? this.innerTrackSelector : this.outerTrackSelector} [data-position="${position}"]`);
+        if (!cell) return;
+        
+        const cellRect = cell.getBoundingClientRect();
+        const trackRect = document.querySelector(isInner ? this.innerTrackSelector : this.outerTrackSelector).getBoundingClientRect();
+        
+        // Конфигурация сдвига для разного количества фишек
+        const offsetConfigs = {
+            2: [
+                { x: -8, y: 0 },
+                { x: 8, y: 0 }
+            ],
+            3: [
+                { x: -12, y: -6 },
+                { x: 0, y: 6 },
+                { x: 12, y: -6 }
+            ],
+            4: [
+                { x: -12, y: -8 },
+                { x: 12, y: -8 },
+                { x: -12, y: 8 },
+                { x: 12, y: 8 }
+            ]
+        };
+        
+        const config = offsetConfigs[tokensOnPosition.length] || offsetConfigs[4];
+        
+        tokensOnPosition.forEach(({ token, playerId }, index) => {
+            const offset = config[index] || { x: 0, y: 0 };
+            
+            // Применяем сдвиг
+            const newX = cellRect.left - trackRect.left + cellRect.width / 2 - 16 + offset.x;
+            const newY = cellRect.top - trackRect.top + cellRect.height / 2 - 16 + offset.y;
+            
+            token.style.left = newX + 'px';
+            token.style.top = newY + 'px';
+            
+            // Добавляем визуальную индикацию сдвига
+            token.style.zIndex = 10 + index;
+            token.style.boxShadow = '0 0 10px rgba(255, 255, 255, 0.3)';
+            
+            console.log(`🎯 PlayerTokens: Фишка ${playerId} сдвинута на (${offset.x}, ${offset.y})`);
+        });
+    }
+    
+    /**
+     * Получение сдвига для фишки
+     */
+    getTokenOffset(playerId, position, isInner) {
+        // Находим все фишки на данной позиции
+        const tokensOnPosition = [];
+        this.tokens.forEach((token, id) => {
+            const tokenPosition = parseInt(token.getAttribute('data-position')) || 0;
+            const tokenIsInner = token.classList.contains('inner-track');
+            
+            if (tokenPosition === position && tokenIsInner === isInner) {
+                tokensOnPosition.push({ token, playerId: id });
+            }
+        });
+        
+        // Если фишка одна, сдвиг не нужен
+        if (tokensOnPosition.length <= 1) {
+            return { x: 0, y: 0 };
+        }
+        
+        // Находим индекс текущей фишки
+        const currentIndex = tokensOnPosition.findIndex(t => t.playerId === playerId);
+        if (currentIndex === -1) {
+            return { x: 0, y: 0 };
+        }
+        
+        // Конфигурация сдвига
+        const offsetConfigs = {
+            2: [
+                { x: -8, y: 0 },
+                { x: 8, y: 0 }
+            ],
+            3: [
+                { x: -12, y: -6 },
+                { x: 0, y: 6 },
+                { x: 12, y: -6 }
+            ],
+            4: [
+                { x: -12, y: -8 },
+                { x: 12, y: -8 },
+                { x: -12, y: 8 },
+                { x: 12, y: 8 }
+            ]
+        };
+        
+        const config = offsetConfigs[tokensOnPosition.length] || offsetConfigs[4];
+        return config[currentIndex] || { x: 0, y: 0 };
     }
     
     /**
@@ -416,9 +570,13 @@ class PlayerTokens {
                 const cellRect = cell.getBoundingClientRect();
                 const trackRect = trackElement.getBoundingClientRect();
                 
-                // Рассчитываем позицию
-                const newX = cellRect.left - trackRect.left + cellRect.width / 2 - 12;
-                const newY = cellRect.top - trackRect.top + cellRect.height / 2 - 12;
+                // Проверяем коллизии и сдвигаем фишки
+                this.handleTokenCollisions(stepPosition, isInner);
+                
+                // Рассчитываем позицию с учетом сдвига
+                const offset = this.getTokenOffset(playerId, stepPosition, isInner);
+                const newX = cellRect.left - trackRect.left + cellRect.width / 2 - 12 + offset.x;
+                const newY = cellRect.top - trackRect.top + cellRect.height / 2 - 12 + offset.y;
                 
                 // Получаем текущую позицию фишки
                 const currentX = parseFloat(token.style.left) || 0;
@@ -430,7 +588,7 @@ class PlayerTokens {
                 // Обновляем атрибут позиции
                 token.setAttribute('data-position', stepPosition);
                 
-                console.log(`🎯 PlayerTokens: Шаг ${stepIndex + 1}/${steps.length}: позиция ${stepPosition}`);
+                console.log(`🎯 PlayerTokens: Шаг ${stepIndex + 1}/${steps.length}: позиция ${stepPosition} со сдвигом (${offset.x}, ${offset.y})`);
                 
                 stepIndex++;
                 
@@ -545,7 +703,7 @@ class PlayerTokens {
             playersAtPosition.forEach((player, index) => {
                 const token = this.ensureToken(player, index, playersAtPosition.length, trackElement);
                 const offset = this.calculateOffset(index, playersAtPosition.length);
-                this.positionTokenElement(token, baseCoords, offset);
+                this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
                 processed.add(player.id);
             });
         });
@@ -566,6 +724,36 @@ class PlayerTokens {
     forceUpdate() {
         const players = this.getPlayers();
         this.updateTokens(players);
+    }
+    
+    /**
+     * Обновление позиций всех фишек с учетом коллизий
+     */
+    updateAllTokenPositions() {
+        console.log('🎯 PlayerTokens: Обновление всех позиций фишек с учетом коллизий');
+        
+        // Группируем фишки по позициям
+        const positionGroups = new Map();
+        
+        this.tokens.forEach((token, playerId) => {
+            const position = parseInt(token.getAttribute('data-position')) || 0;
+            const isInner = token.classList.contains('inner-track');
+            const key = `${position}-${isInner}`;
+            
+            if (!positionGroups.has(key)) {
+                positionGroups.set(key, { position, isInner, tokens: [] });
+            }
+            
+            positionGroups.get(key).tokens.push({ token, playerId });
+        });
+        
+        // Обновляем позиции для каждой группы
+        positionGroups.forEach(({ position, isInner, tokens }) => {
+            if (tokens.length > 1) {
+                console.log(`🎯 PlayerTokens: Обновляем ${tokens.length} фишек на позиции ${position}`);
+                this.arrangeTokensOnPosition(tokens, position, isInner);
+            }
+        });
     }
 
     /**
@@ -639,11 +827,22 @@ class PlayerTokens {
     /**
      * Позиционирование фишки с учётом смещения
      */
-    positionTokenElement(token, baseCoords, offset) {
+    positionTokenElement(token, baseCoords, offset, totalPlayers = 1) {
         if (!token) return;
         const halfSize = 16; // половина ширины/высоты токена
         token.style.left = `${baseCoords.x + offset.x - halfSize}px`;
         token.style.top = `${baseCoords.y + offset.y - halfSize}px`;
+        
+        // Добавляем визуальную индикацию для множественных фишек
+        if (totalPlayers > 1) {
+            token.style.zIndex = 10 + (offset.x + offset.y); // Уникальный z-index
+            token.style.boxShadow = '0 0 8px rgba(255, 255, 255, 0.4)';
+            token.style.border = '2px solid rgba(255, 255, 255, 0.6)';
+        } else {
+            token.style.zIndex = '';
+            token.style.boxShadow = '';
+            token.style.border = '';
+        }
     }
 }
 
