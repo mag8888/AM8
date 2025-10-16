@@ -540,11 +540,18 @@ class App {
                     gameState = new window.GameState(this.getEventBus());
                     this.modules.set('gameState', gameState);
                 }
+                // Гарантируем наличие RoomApi
+                let roomApi = this.modules.get('roomApi');
+                if (!roomApi && window.RoomApi) {
+                    roomApi = new window.RoomApi();
+                    this.modules.set('roomApi', roomApi);
+                }
                 if (gameState) {
                     const turnService = new window.TurnService({
                         // Некоторые реализации ожидают свойство state, добавляем алиас
                         state: gameState,
                         gameState: gameState,
+                        roomApi: roomApi,
                         eventBus: this.getEventBus()
                     });
                     this.modules.set('turnService', turnService);
