@@ -702,7 +702,11 @@ class TurnController {
         const turnInfo = this.ui.querySelector('.turn-info');
         if (turnInfo) {
             const currentUserId = this.getCurrentUserId();
-            const isMyTurn = state.activePlayer && (state.activePlayer.id === currentUserId);
+            const currentUsername = this.getCurrentUsername();
+            const isMyTurn = state.activePlayer && (
+                state.activePlayer.id === currentUserId ||
+                (state.activePlayer.username && currentUsername && state.activePlayer.username === currentUsername)
+            );
             const playerToken = this.getPlayerToken(state.activePlayer);
             if (isMyTurn) {
                 turnInfo.innerHTML = `${playerToken} Ваш ход`;
@@ -817,6 +821,27 @@ class TurnController {
             console.error('❌ TurnController: Ошибка получения ID пользователя:', error);
         }
         
+        return null;
+    }
+
+    /**
+     * Получение username текущего пользователя (fallback для сравнения активного хода)
+     */
+    getCurrentUsername() {
+        try {
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                return bundle?.currentUser?.username || bundle?.currentUser?.name || null;
+            }
+            const userRaw = localStorage.getItem('aura_money_user');
+            if (userRaw) {
+                const user = JSON.parse(userRaw);
+                return user?.username || user?.name || null;
+            }
+        } catch (error) {
+            console.error('❌ TurnController: Ошибка получения username пользователя:', error);
+        }
         return null;
     }
     
