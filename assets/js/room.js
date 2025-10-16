@@ -207,6 +207,15 @@ document.addEventListener('DOMContentLoaded', function() {
 // Единая функция перехода к игровому полю без обратного редиректа в комнату
 function navigateToGameBoard(roomId) {
     try {
+        console.log('🎮 Room: navigateToGameBoard вызвана с roomId:', roomId);
+        console.log('🎮 Room: Данные перед переходом:', {
+            currentUser: currentUser,
+            currentRoom: currentRoom,
+            dreamData: dreamData,
+            selectedToken: selectedToken,
+            players: currentRoom?.players
+        });
+        
         // Формируем и сохраняем пакет игрока и комнаты для игрового поля
         const bundle = {
             roomId,
@@ -243,7 +252,11 @@ function navigateToGameBoard(roomId) {
                 };
             })
         };
+        
+        console.log('🎮 Room: Сохраняем bundle в sessionStorage:', bundle);
         sessionStorage.setItem('am_player_bundle', JSON.stringify(bundle));
+        
+        console.log('🎮 Room: Переходим к игровому полю...');
         // Переходим на игровую доску SPA
         window.location.href = `../index.html#game?roomId=${roomId}`;
     } catch (e) {
