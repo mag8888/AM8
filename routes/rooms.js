@@ -524,10 +524,51 @@ router.post('/', async (req, res, next) => {
 
         const db = getDatabase();
         if (!db) {
-            console.log('⚠️ База данных недоступна, возвращаем fallback ответ');
-            return res.status(503).json({
-                success: false,
-                message: 'База данных временно недоступна. Попробуйте позже.'
+            // Fallback: создаем комнату в памяти, чтобы поддержать прод без локальной БД
+            console.log('🧰 Fallback create room (in-memory)');
+            const roomId = uuidv4();
+            const creatorId = uuidv4();
+            const createdAt = new Date().toISOString();
+
+            const room = {
+                id: roomId,
+                name,
+                description,
+                maxPlayers,
+                playerCount: 1,
+                status: 'waiting',
+                isStarted: false,
+                isFull: false,
+                creator: creator,
+                creatorId,
+                turnTime,
+                assignProfessions,
+                minPlayers: 2,
+                players: [
+                    {
+                        id: creatorId,
+                        username: creator,
+                        name: creator,
+                        isHost: true,
+                        isReady: false
+                    }
+                ],
+                createdAt,
+                updatedAt: createdAt
+            };
+
+            // добавляем/обновляем в fallbackRooms
+            try {
+                const idx = fallbackRooms.findIndex(r => r.id === roomId);
+                if (idx === -1) fallbackRooms.unshift(room);
+                else fallbackRooms[idx] = room;
+            } catch (_) { /* ignore */ }
+
+            return res.status(201).json({
+                success: true,
+                message: `Комната "${name}" создана (fallback)`,
+                data: room,
+                fallback: true
             });
         }
 
