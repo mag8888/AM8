@@ -422,6 +422,17 @@ class App {
     _initializeGameModules(roomId) {
         this.logger?.info('Инициализация игровых модулей для комнаты', { roomId }, 'App');
         
+        // Гарантируем наличие GameState до инициализации зависимых модулей
+        if (!this.getModule('gameState') && window.GameState) {
+            try {
+                const gs = new window.GameState(this.getEventBus());
+                this.modules.set('gameState', gs);
+                console.log('🎮 App: GameState создан (guard)');
+            } catch (e) {
+                console.warn('⚠️ App: Не удалось создать GameState на старте _initializeGameModules', e);
+            }
+        }
+
         const gameStateManager = this.getGameStateManager();
         const pushClient = this.getPushClient();
         
@@ -519,42 +530,52 @@ class App {
             console.warn('⚠️ App: PlayerTokenRenderer не найден в window');
         }
         
-        // Инициализируем TurnService
+        // Инициализируем TurnService (с защитой от отсутствия GameState)
         if (window.TurnService) {
-            console.log('🎯 App: Инициализируем TurnService...');
-            const gameState = this.getModule('gameState');
-            if (!gameState) {
-                console.warn('⚠️ App: GameState не найден, создаем новый...');
-                const newGameState = new window.GameState();
-                this.modules.set('gameState', newGameState);
+            try {
+                console.log('🎯 App: Инициализируем TurnService...');
+                let gameState = this.getModule('gameState');
+                if (!gameState && window.GameState) {
+                    console.warn('⚠️ App: GameState не найден, создаем новый (late)...');
+                    gameState = new window.GameState(this.getEventBus());
+                    this.modules.set('gameState', gameState);
+                }
+                if (gameState) {
+                    const turnService = new window.TurnService({
+                        gameState,
+                        eventBus: this.getEventBus()
+                    });
+                    this.modules.set('turnService', turnService);
+                    console.log('🎯 TurnService: Инициализирован');
+                } else {
+                    console.warn('⚠️ App: Пропускаем TurnService — GameState недоступен');
+                }
+            } catch (e) {
+                console.error('❌ App: Ошибка инициализации TurnService', e);
             }
-            
-            const turnService = new window.TurnService({
-                gameState: this.getModule('gameState'),
-                eventBus: this.getEventBus()
-            });
-            this.modules.set('turnService', turnService);
-            console.log('🎯 TurnService: Инициализирован');
         } else {
             console.warn('⚠️ App: TurnService не найден в window');
         }
         
-        // Инициализируем TurnController с GameStateManager
+        // Инициализируем TurnController с GameStateManager (безопасно)
         if (window.TurnController) {
             const turnService = this.modules.get('turnService');
             const playerTokenRenderer = this.modules.get('playerTokenRenderer');
-            
-            if (turnService) {
-                console.log('🎯 App: Инициализируем TurnController...');
-                const turnController = new window.TurnController(
-                    turnService,
-                    playerTokenRenderer,
-                    gameStateManager
-                );
-                this.modules.set('turnController', turnController);
-                console.log('🎯 TurnController: Инициализирован');
+            if (turnService && gameStateManager) {
+                try {
+                    console.log('🎯 App: Инициализируем TurnController...');
+                    const turnController = new window.TurnController(
+                        turnService,
+                        playerTokenRenderer,
+                        gameStateManager
+                    );
+                    this.modules.set('turnController', turnController);
+                    console.log('🎯 TurnController: Инициализирован');
+                } catch (e) {
+                    console.error('❌ App: Ошибка инициализации TurnController', e);
+                }
             } else {
-                console.warn('⚠️ App: TurnService не найден для TurnController');
+                console.warn('⚠️ App: Пропускаем TurnController — нет turnService или gameStateManager');
             }
         } else {
             console.warn('⚠️ App: TurnController не найден в window');
@@ -570,6 +591,31 @@ class App {
                 playerTokens.forceUpdate();
             }
         }, 2000);
+
+        // Отложенная проверка и доинициализация недостающих модулей
+        setTimeout(() => {
+            try {
+                if (!this.getModule('turnService') && window.TurnService && this.getModule('gameState')) {
+                    console.log('🔄 App: Доинициализация TurnService (retry)');
+                    const turnService = new window.TurnService({
+                        gameState: this.getModule('gameState'),
+                        eventBus: this.getEventBus()
+                    });
+                    this.modules.set('turnService', turnService);
+                }
+                if (!this.getModule('turnController') && window.TurnController && this.getModule('turnService')) {
+                    console.log('🔄 App: Доинициализация TurnController (retry)');
+                    const turnController = new window.TurnController(
+                        this.getModule('turnService'),
+                        this.getModule('playerTokenRenderer'),
+                        this.getGameStateManager()
+                    );
+                    this.modules.set('turnController', turnController);
+                }
+            } catch (e) {
+                console.warn('⚠️ App: Ошибка в отложенной доинициализации модулей', e);
+            }
+        }, 800);
     }
 
     /**
