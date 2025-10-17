@@ -168,6 +168,10 @@ class PushClient {
                 if (result.stats) {
                     this.eventBus.emit('push:stats_updated', result.stats);
                 }
+                // Сообщения очереди (если backend вернул messages)
+                if (Array.isArray(result.messages)) {
+                    result.messages.forEach(m => this.handlePushNotification(m));
+                }
             }
         } catch (error) {
             throw error;
@@ -329,6 +333,18 @@ class PushClient {
         
         // Обрабатываем конкретные типы уведомлений
         switch (pushData.type) {
+            case 'deal_card_revealed': {
+                const dm = window.app?.getModule?.('dealModule');
+                if (dm && pushData.data?.deckId && pushData.data?.card) {
+                    dm.showCardAndDecide(pushData.data.deckId, pushData.data.card);
+                }
+                break;
+            }
+            case 'deal_rights_transferred': {
+                // Можем подсветить кому передали право
+                this.eventBus.emit('deal:rights_transferred', pushData.data);
+                break;
+            }
             case 'room_created':
                 this.handleRoomCreated(pushData.data);
                 break;

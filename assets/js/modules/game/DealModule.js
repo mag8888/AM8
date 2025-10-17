@@ -106,6 +106,8 @@
 
         async showCardAndDecide(deckId, card){
             if(!card) return { action:'none' };
+            // Показать всем игрокам через push (если доступно)
+            try{ await fetch('/api/push/broadcast', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'deal_card_revealed', data:{ deckId, card } })}); }catch(_){ }
             return new Promise((resolve)=>{
                 const overlay = document.createElement('div');
                 overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:4100;display:flex;align-items:center;justify-content:center;';
@@ -117,13 +119,36 @@
                     <div style="margin-bottom:16px">Цена: $${(price||0).toLocaleString()}</div>
                     <div style="display:flex;gap:12px;justify-content:flex-end">
                         <button id="deal_cancel" class="btn">Отбой</button>
+                        <button id="deal_pass" class="btn">Передать право</button>
                         <button id="deal_buy" class="btn btn-primary">Купить</button>
                     </div>`;
                 overlay.appendChild(box);
                 document.body.appendChild(overlay);
                 const cleanup=()=>{ try{document.body.removeChild(overlay);}catch(_){} };
+                // Кнопки активны только у активного игрока
+                const isMyTurn = window.app?.getModule?.('turnService')?.isMyTurn?.() || false;
+                const buyBtn = overlay.querySelector('#deal_buy');
+                const passBtn = overlay.querySelector('#deal_pass');
+                if(!isMyTurn){ buyBtn.disabled = true; passBtn.disabled = true; buyBtn.title='Не ваш ход'; passBtn.title='Не ваш ход'; }
                 overlay.querySelector('#deal_cancel').onclick=()=>{ cleanup(); this.discard(deckId, card); resolve({ action:'discard' }); };
-                overlay.querySelector('#deal_buy').onclick=()=>{ cleanup(); this.acquire(card); resolve({ action:'buy', card }); };
+                buyBtn.onclick=()=>{ cleanup(); this.acquire(card); resolve({ action:'buy', card }); };
+                passBtn.onclick=()=>{
+                    const players = (window.app?.getModule?.('gameState')?.players)||[];
+                    const list = document.createElement('div');
+                    list.style.cssText = 'margin-top:12px;display:flex;flex-direction:column;gap:6px;';
+                    players.forEach(p=>{
+                        const b=document.createElement('button');
+                        b.className='btn';
+                        b.textContent = `Передать: ${p.username||p.name||p.id}`;
+                        b.onclick = async ()=>{
+                            try{ await fetch('/api/push/broadcast', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'deal_rights_transferred', data:{ to:p.id, card } })}); }catch(_){ }
+                            cleanup();
+                            resolve({ action:'pass', to:p.id, card });
+                        };
+                        list.appendChild(b);
+                    });
+                    box.appendChild(list);
+                };
             });
         }
     }
