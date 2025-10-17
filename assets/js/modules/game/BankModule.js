@@ -1512,6 +1512,7 @@ class BankModule {
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
                 currentUserId = bundle.userId || bundle.id || bundle.username || bundle.currentUser?.id || bundle.currentUser?.username;
+                console.log('🔍 BankModule: ID из sessionStorage:', currentUserId, bundle);
             }
         } catch (e) {
             console.warn('⚠️ BankModule: Ошибка чтения sessionStorage:', e);
@@ -1544,8 +1545,21 @@ class BankModule {
         
         if (!currentUserId) {
             console.warn('⚠️ BankModule: Не удалось определить ID текущего пользователя');
+            // Попробуем использовать активного игрока как fallback
+            const activePlayer = this.gameState.getActivePlayer();
+            if (activePlayer) {
+                console.log('🔍 BankModule: Используем активного игрока как fallback:', activePlayer.username);
+                return activePlayer;
+            }
             return null;
         }
+        
+        console.log('🔍 BankModule: Поиск игрока с ID:', currentUserId);
+        console.log('🔍 BankModule: Доступные игроки:', this.gameState.getPlayers().map(p => ({
+            id: p.id,
+            username: p.username,
+            userId: p.userId
+        })));
         
         // Находим игрока по ID (проверяем все возможные поля)
         let player = this.gameState.getPlayers().find(p => 
@@ -1554,6 +1568,8 @@ class BankModule {
             p.userId === currentUserId
         );
         
+        console.log('🔍 BankModule: Результат поиска по ID:', player ? 'найден' : 'не найден');
+        
         // Если не найден по ID, пытаемся найти по username из sessionStorage
         if (!player) {
             try {
@@ -1561,12 +1577,23 @@ class BankModule {
                 if (bundleRaw) {
                     const bundle = JSON.parse(bundleRaw);
                     const username = bundle.username || bundle.currentUser?.username;
+                    console.log('🔍 BankModule: Поиск по username из sessionStorage:', username);
                     if (username) {
                         player = this.gameState.getPlayers().find(p => p.username === username);
+                        console.log('🔍 BankModule: Результат поиска по username:', player ? 'найден' : 'не найден');
                     }
                 }
             } catch (e) {
                 console.warn('⚠️ BankModule: Ошибка поиска по username:', e);
+            }
+        }
+        
+        // Если все еще не найден, пытаемся найти по активному игроку
+        if (!player) {
+            const activePlayer = this.gameState.getActivePlayer();
+            if (activePlayer) {
+                console.log('🔍 BankModule: Пробуем использовать активного игрока:', activePlayer.username);
+                player = activePlayer;
             }
         }
         
