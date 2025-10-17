@@ -127,7 +127,6 @@
             align-items: center;
             min-height: 100vh; /* Полная высота экрана */
             padding: 0.5rem; /* Минимальные отступы */
-            overflow: auto; /* Добавляем скролл при необходимости */
         }
 
         /* Контейнер для панели игроков */
@@ -249,46 +248,34 @@
         @media (max-width: 768px) {
             .app-content {
                 padding: 0;
-                overflow: hidden; /* Предотвращаем скролл всего контента */
             }
 
             .game-page {
                 padding: 0.25rem; /* Минимальные отступы */
                 grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr auto;
+                grid-template-rows: auto auto auto;
                 grid-template-areas: 
                     "card-decks"
                     "game-board"
                     "players-panel";
                 gap: 0.5rem; /* Уменьшенный отступ */
-                height: 100vh; /* Полная высота экрана */
-                overflow: hidden; /* Предотвращаем скролл страницы */
             }
 
             .card-decks-container {
                 flex-direction: column;
                 justify-content: flex-start;
                 overflow-y: auto;
-                max-height: 200px; /* Ограничиваем высоту карточек */
+                max-height: 500px;
                 padding: 0.5rem;
-            }
-            
-            .game-board-container {
-                overflow: auto; /* Скролл для игрового поля */
-                min-height: auto; /* Убираем фиксированную высоту */
-                max-height: calc(100vh - 300px); /* Ограничиваем высоту */
             }
             
             .players-panel-container {
                 max-width: 100%;
-                max-height: 100px; /* Ограничиваем высоту панели игроков */
-                overflow-y: auto; /* Скролл для панели игроков */
             }
             
             .game-page .board-wrapper {
-                width: min(95vmin, 600px) !important; /* Увеличиваем размер для мобилки */
-                height: min(95vmin, 600px) !important;
-                margin: 1rem; /* Добавляем отступы */
+                width: min(88vmin, 520px) !important; /* Уменьшаем размер */
+                height: min(88vmin, 520px) !important;
             }
         }
         
@@ -297,48 +284,9 @@
                 padding: 0.1rem; /* Минимальные отступы */
             }
             
-            .card-decks-container {
-                max-height: 150px; /* Еще меньше для очень маленьких экранов */
-            }
-            
-            .game-board-container {
-                max-height: calc(100vh - 250px); /* Больше места для игрового поля */
-            }
-            
-            .players-panel-container {
-                max-height: 80px; /* Меньше для панели игроков */
-            }
-            
             .game-page .board-wrapper {
-                width: min(90vmin, 450px) !important; /* Оптимальный размер */
-                height: min(90vmin, 450px) !important;
-                margin: 0.5rem; /* Меньше отступы */
-            }
-        }
-        
-        /* Стили для touch-устройств (мобилки) */
-        @media (max-width: 768px) {
-            .game-board-container {
-                -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
-                scroll-behavior: smooth;
-            }
-            
-            .card-decks-container {
-                -webkit-overflow-scrolling: touch;
-                scroll-behavior: smooth;
-            }
-            
-            .players-panel-container {
-                -webkit-overflow-scrolling: touch;
-                scroll-behavior: smooth;
-            }
-            
-            /* Убираем выделение текста при скролле */
-            .game-page * {
-                -webkit-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
+                width: min(85vmin, 400px) !important; /* Уменьшаем размер */
+                height: min(85vmin, 400px) !important;
             }
         }
     </style>
