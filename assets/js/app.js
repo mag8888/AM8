@@ -450,15 +450,26 @@ class App {
         }
         
         // Инициализируем BoardLayout для отображения игрового поля
+        console.log('🎯 App: Проверяем window.BoardLayout:', !!window.BoardLayout);
+        console.log('🎯 App: Проверяем window.BoardConfig:', !!window.BoardConfig);
+        console.log('🎯 App: Проверяем window.BIG_CIRCLE_CELLS:', !!window.BIG_CIRCLE_CELLS);
+        console.log('🎯 App: Проверяем window.SMALL_CIRCLE_CELLS:', !!window.SMALL_CIRCLE_CELLS);
+        
         if (window.BoardLayout) {
-            const boardLayout = new window.BoardLayout({
-                outerTrackSelector: '#outer-track',
-                innerTrackSelector: '#inner-track',
-                gameState: this.getModule('gameState'),
-                eventBus: this.getEventBus()
-            });
-            this.modules.set('boardLayout', boardLayout);
-            console.log('🎯 BoardLayout: Инициализирован');
+            try {
+                const boardLayout = new window.BoardLayout({
+                    outerTrackSelector: '#outer-track',
+                    innerTrackSelector: '#inner-track',
+                    gameState: this.getModule('gameState'),
+                    eventBus: this.getEventBus()
+                });
+                this.modules.set('boardLayout', boardLayout);
+                console.log('🎯 BoardLayout: Инициализирован успешно');
+            } catch (error) {
+                console.error('❌ BoardLayout: Ошибка инициализации:', error);
+            }
+        } else {
+            console.error('❌ App: BoardLayout не найден в window');
         }
 
         if (window.CardDeckPanel) {
@@ -470,6 +481,16 @@ class App {
             console.log('🃏 CardDeckPanel: Инициализирован');
         } else {
             console.warn('⚠️ App: CardDeckPanel не найден в window');
+        }
+        
+        // Инициализируем DealModule (микромодуль сделок)
+        if (window.DealModule) {
+            const dealModule = new window.DealModule({
+                eventBus: this.getEventBus(),
+                roomId
+            });
+            this.modules.set('dealModule', dealModule);
+            console.log('🧩 DealModule: Инициализирован');
         }
         
         // Инициализируем PlayerTokens для отображения фишек игроков

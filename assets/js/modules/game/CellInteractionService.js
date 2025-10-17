@@ -41,6 +41,21 @@ class CellInteractionService {
             this.eventBus.on('movement:landed', this.handleCellLanding.bind(this));
             this.eventBus.on('cell:clicked', this.handleCellClick.bind(this));
             this.eventBus.on('game:reset', this.reset.bind(this));
+            // Триггер выбора сделки на зелёной возможности малого круга
+            this.eventBus.on('movement:landed', (e) => {
+                try {
+                    if (e?.position?.track === 'inner' && (e?.cellData?.type === 'chance')) {
+                        const app = window.app; const dm = app?.getModule?.('dealModule');
+                        if (dm) {
+                            dm.chooseAndDrawSmallOrBig().then(async ({ deckId, card }) => {
+                                if (!card) return;
+                                const res = await dm.showCardAndDecide(deckId, card);
+                                // Если отмена — карта уже улетает в отбой внутри showCardAndDecide
+                            });
+                        }
+                    }
+                } catch(_) {}
+            });
         }
     }
     
