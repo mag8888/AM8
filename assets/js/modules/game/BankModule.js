@@ -979,7 +979,7 @@ class BankModule {
     /**
      * Закрытие банк модуля
      */
-    close() {
+    async close() {
         if (this.ui) {
             this.ui.style.display = 'none';
             this.isOpen = false;
@@ -1310,7 +1310,7 @@ class BankModule {
     /**
      * Погашение кредита
      */
-    payOffLoan(loanType) {
+    async payOffLoan(loanType) {
         if (!this.professionSystem || !this.gameState) {
             this.showNotification('Система профессий недоступна', 'error');
             return;
@@ -1359,7 +1359,7 @@ class BankModule {
     /**
      * Добавление ребенка
      */
-    addChild() {
+    async addChild() {
         if (!this.professionSystem || !this.gameState) {
             this.showNotification('Система профессий недоступна', 'error');
             return;
