@@ -10,36 +10,7 @@ const router = express.Router();
 const PushService = require('../services/PushService');
 const { getRoomGameState, updateRoomGameState } = require('./rooms');
 
-// Простой RoomService для банковских операций
-const SimpleRoomService = {
-    async getRoomState(roomId) {
-        // Получаем состояние из основного хранилища игры
-        const state = getRoomGameState(roomId);
-        
-        // Если нет состояния, создаем базовое
-        if (!state) {
-            const defaultState = {
-                players: [],
-                currentPlayerIndex: 0,
-                activePlayer: null,
-                lastDiceResult: null,
-                gameStarted: false,
-                canRoll: true,
-                canMove: false,
-                canEndTurn: false
-            };
-            updateRoomGameState(roomId, defaultState);
-            return defaultState;
-        }
-        
-        return state;
-    },
-    
-    async updateRoomState(roomId, state) {
-        updateRoomGameState(roomId, state);
-        return true;
-    }
-};
+// Используем прямые вызовы функций из routes/rooms.js для работы с состоянием игры
 
 // Глобальное хранилище банковских операций (временное решение)
 const bankTransactions = new Map(); // roomId -> transactions[]
@@ -54,7 +25,7 @@ router.get('/balance/:roomId/:playerId', async (req, res) => {
         const { roomId, playerId } = req.params;
         
         // Получаем баланс из игры
-        const roomData = await SimpleRoomService.getRoomState(roomId);
+        const roomData = getRoomGameState(roomId);
         if (!roomData) {
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
         }
@@ -115,7 +86,7 @@ router.post('/transfer', async (req, res) => {
         
         // Получаем состояние комнаты
         console.log('🏦 Bank API: Получение состояния комнаты:', roomId);
-        const roomData = await SimpleRoomService.getRoomState(roomId);
+        const roomData = getRoomGameState(roomId);
         if (!roomData) {
             console.log('❌ Bank API: Комната не найдена:', roomId);
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
@@ -182,7 +153,7 @@ router.post('/transfer', async (req, res) => {
         
         // Обновляем состояние комнаты
         console.log('🏦 Bank API: Обновление состояния комнаты');
-        await SimpleRoomService.updateRoomState(roomId, roomData);
+        updateRoomGameState(roomId, roomData);
         
         // Отправляем push-уведомления всем игрокам
         const pushData = {
@@ -276,7 +247,7 @@ router.post('/update-balance', async (req, res) => {
         }
         
         // Получаем состояние комнаты
-        const roomData = await SimpleRoomService.getRoomState(roomId);
+        const roomData = getRoomGameState(roomId);
         if (!roomData) {
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
         }
@@ -308,7 +279,7 @@ router.post('/update-balance', async (req, res) => {
         bankTransactions.get(roomId).push(transaction);
         
         // Обновляем состояние комнаты
-        await SimpleRoomService.updateRoomState(roomId, roomData);
+        updateRoomGameState(roomId, roomData);
         
         // Отправляем push-уведомления
         const pushData = {
@@ -353,8 +324,11 @@ router.get('/room-balances/:roomId', async (req, res) => {
     try {
         const { roomId } = req.params;
         
-        const roomData = await SimpleRoomService.getRoomState(roomId);
+        console.log('🏦 Bank API: Получение балансов комнаты:', roomId);
+        
+        const roomData = getRoomGameState(roomId);
         if (!roomData) {
+            console.log('❌ Bank API: Комната не найдена:', roomId);
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
         }
         
@@ -364,6 +338,8 @@ router.get('/room-balances/:roomId', async (req, res) => {
             balance: player.money || 0,
             lastUpdated: new Date().toISOString()
         })) || [];
+        
+        console.log('✅ Bank API: Найдено балансов:', balances.length);
         
         res.json({
             success: true,
