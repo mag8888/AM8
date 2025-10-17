@@ -257,8 +257,35 @@ class GameStateManager {
         console.log('🔍 GameStateManager: this.players в getState():', this.players);
         console.log('🔍 GameStateManager: this.players.length в getState():', this.players?.length);
         
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно восстанавливаем игроков если они потеряны
+        if (!this.players || this.players.length === 0) {
+            console.log('🚨 GameStateManager: КРИТИЧЕСКАЯ ОШИБКА - игроки потеряны в getState()!');
+            
+            // Пытаемся восстановить из кэша или принудительно загрузить
+            const roomId = window.location.hash.split('roomId=')[1];
+            if (roomId) {
+                console.log('🔧 GameStateManager: Принудительно загружаем игроков для комнаты:', roomId);
+                fetch(`/api/rooms/${roomId}/game-state`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.state && data.state.players && data.state.players.length > 0) {
+                            console.log('🔧 GameStateManager: Восстановили игроков:', data.state.players.length);
+                            this.players = [...data.state.players];
+                            
+                            // Принудительно обновляем PlayersPanel
+                            const playersPanel = window.app?.modules?.get('playersPanel');
+                            if (playersPanel && typeof playersPanel.updatePlayersList === 'function') {
+                                playersPanel.updatePlayersList(this.players);
+                                console.log('✅ GameStateManager: PlayersPanel обновлен после восстановления');
+                            }
+                        }
+                    })
+                    .catch(err => console.error('❌ GameStateManager: Ошибка восстановления игроков:', err));
+            }
+        }
+        
         const state = {
-            players: this.players,
+            players: this.players || [],
             activePlayer: this.activePlayer,
             roomId: this.roomId,
             gameState: this.gameState,
