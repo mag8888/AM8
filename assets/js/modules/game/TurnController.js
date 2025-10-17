@@ -607,26 +607,58 @@ class TurnController {
         `;
         document.head.appendChild(style);
         
-        // Добавляем в DOM
-        const controlPanel = document.getElementById('players-panel');
-        if (controlPanel) {
-            controlPanel.appendChild(turnMenu);
-            this.ui = turnMenu;
-        } else {
-            console.error('❌ TurnController: Контейнер players-panel не найден');
-            document.body.appendChild(turnMenu);
-            this.ui = turnMenu;
-        }
+        // Сохраняем UI элемент
+        this.ui = turnMenu;
+        
+        // Добавляем в DOM с задержкой, если контейнер еще не готов
+        this.addUIToDOM();
         
         console.log('🎮 TurnController v2.0: UI создан и добавлен в DOM');
+    }
+    
+    /**
+     * Добавление UI в DOM с повторными попытками
+     */
+    addUIToDOM() {
+        if (!this.ui) {
+            console.warn('⚠️ TurnController: UI элемент не создан');
+            return;
+        }
+        
+        // Если UI уже в DOM, не добавляем повторно
+        if (document.contains(this.ui)) {
+            console.log('🎮 TurnController: UI уже в DOM');
+            return;
+        }
+        
+        // Пытаемся найти подходящий контейнер
+        const containers = [
+            document.getElementById('players-panel'),
+            document.querySelector('main'),
+            document.querySelector('#game-container'),
+            document.body
+        ].filter(Boolean);
+        
+        if (containers.length > 0) {
+            const container = containers[0];
+            container.appendChild(this.ui);
+            console.log('🎮 TurnController: UI добавлен в контейнер:', container.tagName, container.id || container.className);
+        } else {
+            // Если контейнеры не найдены, ждем и пробуем снова
+            console.log('🎮 TurnController: Контейнеры не найдены, повторная попытка через 100ms');
+            setTimeout(() => this.addUIToDOM(), 100);
+        }
     }
     
     /**
      * Настройка обработчиков событий
      */
     setupEventListeners() {
+        // Убеждаемся, что UI в DOM
+        this.addUIToDOM();
+        
         // Бросок кубика
-        const rollBtn = this.ui.querySelector('#roll-dice-btn');
+        const rollBtn = this.ui?.querySelector('#roll-dice-btn');
         rollBtn.addEventListener('click', () => this.handleRollDice());
         
         // Кнопки перемещения
