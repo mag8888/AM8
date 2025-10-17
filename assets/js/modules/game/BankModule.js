@@ -875,7 +875,11 @@ class BankModule {
         if (res?.success) {
             player.currentLoan = res.newLoan;
             player.otherMonthlyAdjustments = (player.otherMonthlyAdjustments||0) + (amount/1000)*100;
+            // Деньги зачисляются на баланс игрока
+            player.money = (player.money || 0) + amount;
             this.addTransaction('Кредит', `Взят кредит $${this.formatNumber(amount)}`, amount, 'completed');
+            // Уведомим слушателей об изменении баланса
+            this.eventBus?.emit('bank:balanceUpdated', { userId: player.id, delta: amount });
             this.updateBankData();
         }
     }
@@ -888,9 +892,18 @@ class BankModule {
         const ps = this.professionSystem;
         const res = ps?.repayLoan?.(profId, player, amount);
         if (res?.success) {
+            // Проверим достаточно ли средств на балансе
+            const available = player.money || 0;
+            if (available < amount) {
+                this.addTransaction('Погашение кредита', 'Недостаточно средств', 0, 'failed');
+                return;
+            }
             player.currentLoan = res.newLoan;
             player.otherMonthlyAdjustments = Math.max(0, (player.otherMonthlyAdjustments||0) - (amount/1000)*100);
+            // Списываем деньги
+            player.money = available - amount;
             this.addTransaction('Погашение кредита', `Погашено $${this.formatNumber(amount)}`, -amount, 'completed');
+            this.eventBus?.emit('bank:balanceUpdated', { userId: player.id, delta: -amount });
             this.updateBankData();
         }
     }
