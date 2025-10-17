@@ -330,6 +330,33 @@ class GameStateManager {
             });
         } else {
             console.warn(`⚠️ GameStateManager: Нет слушателей для события ${event}`);
+            
+            // Автоматически переподписываем компоненты, если нет слушателей
+            if (event === 'state:updated' && listenersCount === 0) {
+                console.log('🔄 GameStateManager: Автоматическая переподписка компонентов');
+                this.autoResubscribeComponents();
+            }
+        }
+    }
+    
+    /**
+     * Автоматическая переподписка компонентов
+     */
+    autoResubscribeComponents() {
+        // Проверяем, есть ли глобальный объект app
+        if (window.app && window.app.modules) {
+            const turnController = window.app.modules.get('turnController');
+            const playersPanel = window.app.modules.get('playersPanel');
+            
+            if (turnController && typeof turnController.setupEventListeners === 'function') {
+                console.log('🔄 GameStateManager: Переподписываем TurnController');
+                turnController.setupEventListeners();
+            }
+            
+            if (playersPanel && typeof playersPanel.setupEventListeners === 'function') {
+                console.log('🔄 GameStateManager: Переподписываем PlayersPanel');
+                playersPanel.setupEventListeners();
+            }
         }
     }
     

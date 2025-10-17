@@ -517,6 +517,24 @@
                                                     }
                                                     if (gameStateManager) {
                                                         gameStateManager.updateFromServer(gs.state);
+                                                        
+                                                        // Принудительно переподписываем компоненты после обновления
+                                                        setTimeout(() => {
+                                                            if (window.app && window.app.modules) {
+                                                                const turnController = window.app.modules.get('turnController');
+                                                                const playersPanel = window.app.modules.get('playersPanel');
+                                                                
+                                                                if (turnController && typeof turnController.setupEventListeners === 'function') {
+                                                                    turnController.setupEventListeners();
+                                                                    console.log('🔄 syncWithServer: Переподписан TurnController');
+                                                                }
+                                                                
+                                                                if (playersPanel && typeof playersPanel.setupEventListeners === 'function') {
+                                                                    playersPanel.setupEventListeners();
+                                                                    console.log('🔄 syncWithServer: Переподписан PlayersPanel');
+                                                                }
+                                                            }
+                                                        }, 100);
                                                     }
                                                 } else {
                                                     console.log('🔄 syncWithServer: Нет данных состояния от сервера');
