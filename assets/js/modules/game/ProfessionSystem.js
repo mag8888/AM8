@@ -255,6 +255,68 @@ class ProfessionSystem {
             newTotalExpenses: newExpenses.total
         };
     }
+
+    /**
+     * Взять кредит (шаг 1000, -100$ ДП на каждую 1000)
+     */
+    takeLoan(professionId, playerData = {}, amount) {
+        const details = this.getProfessionDetails(professionId, playerData);
+        if (!details) return { success: false, message: 'Нет профессии' };
+        const step = 1000;
+        const normalized = Math.max(0, Math.floor((amount || 0) / step) * step);
+        const maxLoan = details.loan.maxLoan;
+        if (normalized <= 0) return { success: false, message: 'Сумма должна быть кратна 1000' };
+        if (normalized > maxLoan) return { success: false, message: 'Превышен лимит кредита' };
+        const newLoan = (playerData.currentLoan || 0) + normalized;
+        const addedMonthlyExpense = (normalized / 1000) * 100; // 100$ за каждую 1000
+        const newExpenses = this.calculateExpenses(professionId, {
+            ...playerData,
+            currentLoan: newLoan,
+            otherMonthlyAdjustments: (playerData.otherMonthlyAdjustments || 0) + addedMonthlyExpense
+        });
+        const newNet = this.calculateNetIncome(professionId, {
+            ...playerData,
+            currentLoan: newLoan,
+            otherMonthlyAdjustments: (playerData.otherMonthlyAdjustments || 0) + addedMonthlyExpense
+        });
+        return {
+            success: true,
+            amount: normalized,
+            newLoan,
+            newMonthlyExpenses: newExpenses.total,
+            newMonthlyNetIncome: newNet.netIncome
+        };
+    }
+
+    /**
+     * Погашение кредита (шаг 1000, +100$ ДП на каждую 1000)
+     */
+    repayLoan(professionId, playerData = {}, amount) {
+        const step = 1000;
+        const normalized = Math.max(0, Math.floor((amount || 0) / step) * step);
+        const currentLoan = playerData.currentLoan || 0;
+        if (normalized <= 0) return { success: false, message: 'Сумма должна быть кратна 1000' };
+        if (normalized > currentLoan) return { success: false, message: 'Больше остатка' };
+        const newLoan = currentLoan - normalized;
+        const decreasedMonthlyExpense = (normalized / 1000) * 100;
+        const newExpenses = this.calculateExpenses(professionId, {
+            ...playerData,
+            currentLoan: newLoan,
+            otherMonthlyAdjustments: Math.max(0, (playerData.otherMonthlyAdjustments || 0) - decreasedMonthlyExpense)
+        });
+        const newNet = this.calculateNetIncome(professionId, {
+            ...playerData,
+            currentLoan: newLoan,
+            otherMonthlyAdjustments: Math.max(0, (playerData.otherMonthlyAdjustments || 0) - decreasedMonthlyExpense)
+        });
+        return {
+            success: true,
+            amount: normalized,
+            newLoan,
+            newMonthlyExpenses: newExpenses.total,
+            newMonthlyNetIncome: newNet.netIncome
+        };
+    }
     
     /**
      * Получение детальной информации о профессии
@@ -273,6 +335,12 @@ class ProfessionSystem {
             income: income,
             expenses: expenses,
             netIncome: netIncome,
+            // Кредит: вычисляем максимум и текущее
+            loan: {
+                maxLoan: Math.max(0, Math.floor((netIncome.netIncome) * 10 / 1000) * 1000), // кратно 1000
+                monthlyPerThousand: 100,
+                currentLoan: playerData.currentLoan || 0
+            },
             children: childrenInfo,
             summary: {
                 monthlyIncome: income.total,

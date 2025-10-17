@@ -305,7 +305,7 @@ class CellInteractionService {
             if (dm) {
                 this.showModal({
                     title: name,
-                    content: description + '\n\nВыберите тип сделки: Малая или Большая.',
+                    content: description + '\n\nВыберите тип сделки: Малая/Большая или оформите кредит.',
                     type: 'chance',
                     actions: [
                         {
@@ -324,6 +324,14 @@ class CellInteractionService {
                                 this.closeModal();
                                 const { deckId, card } = dm.drawFrom('big');
                                 if (card) await dm.showCardAndDecide(deckId, card);
+                            }
+                        },
+                        {
+                            text: 'Кредит',
+                            type: 'primary',
+                            action: () => {
+                                this.closeModal();
+                                this.openLoanDialog();
                             }
                         }
                     ]
@@ -449,6 +457,57 @@ class CellInteractionService {
                 }
             ]
         });
+    }
+
+    /**
+     * Диалог кредита: шаг 1000, лимит = ДП*10
+     */
+    openLoanDialog() {
+        try {
+            const app = window.app;
+            const gameState = app?.getModule?.('gameState');
+            const ps = window.ProfessionSystem;
+            const player = gameState?.getCurrentUser?.() || gameState?.activePlayer;
+            const profId = player?.professionId || 'entrepreneur';
+            const details = ps?.getProfessionDetails?.(profId, player) || null;
+            const maxLoan = details?.loan?.maxLoan || 0;
+            const step = 1000;
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:4200;display:flex;align-items:center;justify-content:center;';
+            const box = document.createElement('div');
+            box.style.cssText = 'background:#0b1220;color:#fff;padding:20px;border-radius:12px;min-width:360px;max-width:480px;box-shadow:0 10px 40px rgba(0,0,0,.5)';
+            box.innerHTML = `<div style="font-size:18px;margin-bottom:8px">Кредит</div>
+                <div style="opacity:.85;margin-bottom:12px">Максимум: $${maxLoan.toLocaleString()} (шаг 1000)</div>
+                <input id="loan_amount" type="number" min="0" step="1000" value="${Math.min(1000,maxLoan)}" style="width:100%;padding:8px;border-radius:8px;background:#101827;color:#fff;border:1px solid #334155;margin-bottom:12px"/>
+                <div style="display:flex;gap:12px;justify-content:flex-end">
+                    <button id="loan_cancel" class="btn">Отмена</button>
+                    <button id="loan_take" class="btn btn-primary">Взять</button>
+                    <button id="loan_repay" class="btn">Погасить</button>
+                </div>`;
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+            const cleanup = ()=>{ try{document.body.removeChild(overlay);}catch(_){} };
+            document.getElementById('loan_cancel').onclick = cleanup;
+            const apply = async (mode)=>{
+                const amount = Math.max(0, Math.floor((parseInt(document.getElementById('loan_amount').value)||0)/step)*step);
+                if (amount<=0) { cleanup(); return; }
+                if (mode==='take' && amount>maxLoan) { cleanup(); return; }
+                const fn = mode==='take' ? ps.takeLoan.bind(ps) : ps.repayLoan.bind(ps);
+                const res = fn(profId, player, amount);
+                if (res?.success) {
+                    // Обновляем игрока локально: currentLoan и сдвиг расходов
+                    player.currentLoan = res.newLoan;
+                    player.otherMonthlyAdjustments = (player.otherMonthlyAdjustments||0) + (mode==='take' ? (amount/1000)*100 : -(amount/1000)*100);
+                    // Обновим Bank/панель
+                    this.eventBus?.emit('loan:updated', { playerId: player.id, amount, mode });
+                }
+                cleanup();
+            };
+            document.getElementById('loan_take').onclick = ()=> apply('take');
+            document.getElementById('loan_repay').onclick = ()=> apply('repay');
+        } catch (e) {
+            console.warn('⚠️ Loan dialog error', e);
+        }
     }
 
     /**
