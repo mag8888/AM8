@@ -208,6 +208,17 @@ class PlayersPanel {
                             </button>
                         </div>
                     </section>
+                    
+                    <!-- Секция игроков -->
+                    <section class="players-section">
+                        <div class="players-header">
+                            <h3 class="players-title">👥 Игроки в комнате</h3>
+                            <span class="players-count" id="players-count">0/4</span>
+                        </div>
+                        <div class="players-list" id="players-list">
+                            <!-- Игроки будут добавлены динамически -->
+                        </div>
+                    </section>
                 </div>
             </div>
         `;
@@ -253,6 +264,11 @@ class PlayersPanel {
                 : state.lastDiceResult;
             this.updateDiceResult(diceResultValue);
         }
+        
+        // Обновляем список игроков
+        if (state.players && Array.isArray(state.players)) {
+            this.updatePlayersList(state.players);
+        }
     }
     
     /**
@@ -264,6 +280,59 @@ class PlayersPanel {
         
         // Обновляем информацию об активном игроке
         this.updateActivePlayerInfo(data.activePlayer);
+    }
+    
+    /**
+     * Обновление списка игроков
+     * @param {Array} players - Массив игроков
+     */
+    updatePlayersList(players = []) {
+        const playersList = document.getElementById('players-list');
+        const playersCount = document.getElementById('players-count');
+        
+        if (!playersList || !playersCount) return;
+        
+        // Обновляем счетчик игроков
+        playersCount.textContent = `${players.length}/4`;
+        
+        // Очищаем список
+        playersList.innerHTML = '';
+        
+        // Добавляем каждого игрока
+        players.forEach((player, index) => {
+            const playerElement = this.createPlayerElement(player, index);
+            playersList.appendChild(playerElement);
+        });
+        
+        console.log('👥 PlayersPanel: Обновлен список игроков', players.length);
+    }
+    
+    /**
+     * Создание элемента игрока
+     * @param {Object} player - Данные игрока
+     * @param {number} index - Индекс игрока
+     * @returns {HTMLElement} Элемент игрока
+     */
+    createPlayerElement(player, index) {
+        const playerDiv = document.createElement('div');
+        playerDiv.className = 'player-item';
+        playerDiv.innerHTML = `
+            <div class="player-avatar">
+                <span class="player-icon">🎯</span>
+            </div>
+            <div class="player-info">
+                <div class="player-name">${player.username || 'Игрок ' + (index + 1)}</div>
+                <div class="player-status ${player.isActive ? 'active' : 'inactive'}">
+                    ${player.isActive ? 'Активен' : 'Ожидание'}
+                </div>
+                <div class="player-balance">$${player.balance || 0}</div>
+            </div>
+            <div class="player-token">
+                <span class="token-icon">🎲</span>
+            </div>
+        `;
+        
+        return playerDiv;
     }
     
     /**
@@ -676,6 +745,118 @@ class PlayersPanel {
             
             .btn-bank:active {
                 transform: translateY(0);
+            }
+            
+            /* Стили для списка игроков */
+            .players-section {
+                margin-top: 1.5rem;
+                padding-top: 1.5rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .players-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+            }
+            
+            .players-title {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: #ffffff;
+                margin: 0;
+            }
+            
+            .players-count {
+                background: rgba(99, 102, 241, 0.2);
+                color: #6366f1;
+                padding: 0.25rem 0.75rem;
+                border-radius: 1rem;
+                font-size: 0.875rem;
+                font-weight: 500;
+                border: 1px solid rgba(99, 102, 241, 0.3);
+            }
+            
+            .players-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .player-item {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 0.75rem;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                transition: all 0.3s ease;
+            }
+            
+            .player-item:hover {
+                background: rgba(255, 255, 255, 0.08);
+                border-color: rgba(255, 255, 255, 0.2);
+            }
+            
+            .player-avatar {
+                width: 2.5rem;
+                height: 2.5rem;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            
+            .player-icon {
+                font-size: 1.25rem;
+            }
+            
+            .player-info {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .player-name {
+                font-weight: 600;
+                color: #ffffff;
+                font-size: 0.875rem;
+                margin-bottom: 0.25rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .player-status {
+                font-size: 0.75rem;
+                font-weight: 500;
+                margin-bottom: 0.25rem;
+            }
+            
+            .player-status.active {
+                color: #10b981;
+            }
+            
+            .player-status.inactive {
+                color: #6b7280;
+            }
+            
+            .player-balance {
+                font-size: 0.75rem;
+                color: #fbbf24;
+                font-weight: 600;
+            }
+            
+            .player-token {
+                flex-shrink: 0;
+            }
+            
+            .token-icon {
+                font-size: 1rem;
+                opacity: 0.7;
             }
         `;
         
