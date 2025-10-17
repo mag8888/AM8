@@ -11,7 +11,8 @@ const helmet = require('helmet');
 const path = require('path');
 
 // Импорт конфигурации базы данных
-const databaseConfig = require('./config/database');
+const DatabaseConfig = require('./config/database');
+const databaseConfig = new DatabaseConfig();
 
 // Импорт маршрутов
 const authRoutes = require('./routes/auth');
