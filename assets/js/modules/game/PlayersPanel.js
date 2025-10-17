@@ -503,6 +503,12 @@ class PlayersPanel {
                 flex-direction: row;
             }
 
+            /* Увеличенный кубик в верхнем блоке */
+            .dice-display #dice-result {
+                font-size: 9rem;
+                line-height: 1;
+            }
+
             .dice-controls .btn {
                 flex: 1;
                 min-width: 140px;
@@ -541,6 +547,13 @@ class PlayersPanel {
                 color: #ffffff;
                 font-weight: 600;
                 font-size: 0.9rem;
+            }
+
+            /* Увеличенный кубик в нижней панели "Кубик:" */
+            .turn-info .player-info .value#dice-result {
+                font-size: 3rem;
+                font-weight: 800;
+                color: #22c55e;
             }
             
             
