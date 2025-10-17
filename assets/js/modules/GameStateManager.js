@@ -50,12 +50,17 @@ class GameStateManager {
             console.log('🔍 GameStateManager: Обрабатываем массив игроков, длина:', serverState.players.length);
             
             // Простое решение: напрямую присваиваем игроков
-            this.players = serverState.players;
+            this.players = [...serverState.players];
             
             console.log('🏗️ GameStateManager: Игроки обновлены, итого:', this.players.length);
             console.log('🏗️ GameStateManager: this.players после обновления:', this.players);
             console.log('🏗️ GameStateManager: this.players === serverState.players:', this.players === serverState.players);
             console.log('🏗️ GameStateManager: this.players[0]:', this.players[0]);
+            
+            // Принудительно обновляем состояние
+            console.log('🔍 GameStateManager: Принудительно обновляем состояние...');
+            console.log('🔍 GameStateManager: this.players перед emit:', this.players);
+            console.log('🔍 GameStateManager: this.players.length перед emit:', this.players?.length);
         } else {
             console.log('🔍 GameStateManager: serverState.players не является массивом или пустой:', serverState.players);
         }
@@ -106,8 +111,13 @@ class GameStateManager {
         
         // Уведомляем подписчиков только если состояние действительно изменилось
         if (playersChanged || this.hasGameStateChanged(oldState)) {
+            console.log('🔍 GameStateManager: Отправляем событие state:updated');
             this.notifyListeners('state:updated', this.getState());
         }
+        
+        // Принудительно обновляем состояние в любом случае
+        console.log('🔍 GameStateManager: Принудительно отправляем событие state:updated');
+        this.notifyListeners('state:updated', this.getState());
         
         // Специальные события
         if (serverState.activePlayer && (!oldState.activePlayer || oldState.activePlayer.id !== serverState.activePlayer.id)) {
