@@ -1580,21 +1580,18 @@ class BankModule {
         
         // 1. Попробуем получить из GameStateManager
         if (this.gameStateManager) {
-            // Принудительно обновляем данные из сервера
-            try {
-                const response = await fetch(`/api/rooms/${this.gameState.getRoomId()}/state`);
-                if (response.ok) {
-                    const serverState = await response.json();
-                    this.gameStateManager.updateFromServer(serverState);
-                    console.log('🔍 BankModule: Принудительно обновили GameStateManager');
-                }
-            } catch (error) {
-                console.warn('⚠️ BankModule: Ошибка принудительного обновления GameStateManager:', error);
-            }
-            
             const state = this.gameStateManager.getState();
             players = state.players || [];
             console.log('🔍 BankModule: Игроки из GameStateManager:', players);
+            
+            // Если игроки пустые, ждем немного и пробуем еще раз
+            if (players.length === 0) {
+                console.log('🔍 BankModule: Игроки пустые, ждем обновления...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const updatedState = this.gameStateManager.getState();
+                players = updatedState.players || [];
+                console.log('🔍 BankModule: Игроки после ожидания:', players);
+            }
         }
         
         // 2. Если игроки пустые, попробуем получить из GameState
