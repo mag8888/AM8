@@ -41,8 +41,56 @@ class MovementService {
      */
     handleDiceRoll(rollResult) {
         if (this.gameState && this.gameState.activePlayer) {
+            // ВАЖНО: Проверяем, что это ход текущего пользователя
+            const currentUserId = this._getCurrentUserId();
+            const activePlayer = this.gameState.activePlayer;
+            
+            const isMyTurn = 
+                activePlayer.id === currentUserId ||
+                activePlayer.userId === currentUserId ||
+                (activePlayer.username && currentUserId && activePlayer.username === currentUserId);
+            
+            if (!isMyTurn) {
+                console.warn('⚠️ MovementService: Автоматическое движение заблокировано - не ваш ход');
+                return;
+            }
+            
+            console.log('🎯 MovementService: Выполняем автоматическое движение для текущего пользователя');
             this.movePlayer(this.gameState.activePlayer.id, rollResult.total);
         }
+    }
+    
+    /**
+     * Получение ID текущего пользователя
+     */
+    _getCurrentUserId() {
+        try {
+            // Из sessionStorage
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                return bundle.userId || bundle.id || bundle.username || bundle.currentUser?.id || bundle.currentUser?.username;
+            }
+            
+            // Из localStorage
+            const userData = localStorage.getItem('aura_money_user');
+            if (userData) {
+                const user = JSON.parse(userData);
+                return user.id || user.userId || user.username;
+            }
+            
+            // Из window.app
+            if (window.app) {
+                const userModel = window.app.getModule('userModel');
+                if (userModel) {
+                    return userModel.getId() || userModel.getUsername();
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ MovementService: Ошибка получения ID пользователя:', error);
+        }
+        
+        return null;
     }
     
     /**

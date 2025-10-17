@@ -117,7 +117,14 @@ class TurnService extends EventTarget {
             const shouldAutoMove = options.autoMove !== false && Number.isFinite(autoMoveValue) && payload?.state?.canMove !== false;
             if (shouldAutoMove) {
                 try {
-                    await this.move(autoMoveValue);
+                    // ВАЖНО: Проверяем, что это действительно ход текущего пользователя перед автоматическим движением
+                    if (!this.isMyTurn()) {
+                        console.warn('⚠️ TurnService: Автоматическое движение заблокировано - не ваш ход');
+                        return payload;
+                    }
+                    
+                    console.log('🎯 TurnService: Выполняем автоматическое движение для текущего пользователя');
+                    await this.move(autoMoveValue, { requireMyTurn: true });
                 } catch (moveError) {
                     console.error('⚠️ TurnService: Автоматическое перемещение не удалось:', moveError);
                 }
