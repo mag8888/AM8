@@ -965,6 +965,9 @@ class BankModule {
         // Сохраняем детали профессии для использования в других методах
         this.currentProfessionDetails = professionDetails;
         
+        // Загружаем сохраненные транзакции
+        this.loadTransactions();
+        
         console.log('🏦 BankModule: Данные обновлены с учетом профессии');
     }
     
@@ -1091,6 +1094,10 @@ class BankModule {
                 this.loadPlayers();
                 
                 const recipient = this.gameState.getPlayers().find(p => p.id === recipientId);
+                console.log('🏦 BankModule: Добавляем транзакцию перевода:', {
+                    recipient: recipient?.username || recipientId,
+                    amount: -amount
+                });
                 this.addTransaction(
                     `Перевод игроку ${recipient?.username || recipientId}`,
                     `Переведено $${this.formatNumber(amount)}`,
@@ -1282,8 +1289,18 @@ class BankModule {
      * Добавление транзакции в историю
      */
     addTransaction(title, details, amount, status = 'completed') {
+        console.log('🏦 BankModule: Добавляем транзакцию:', { title, details, amount, status });
+        
+        if (!this.ui) {
+            console.warn('⚠️ BankModule: UI не найден для добавления транзакции');
+            return;
+        }
+        
         const transactionsList = this.ui.querySelector('#transactions-list');
-        if (!transactionsList) return;
+        if (!transactionsList) {
+            console.warn('⚠️ BankModule: Список транзакций не найден');
+            return;
+        }
         
         const transactionItem = document.createElement('div');
         transactionItem.className = 'transaction-item';
@@ -1311,12 +1328,83 @@ class BankModule {
         // Добавляем в начало списка
         transactionsList.insertBefore(transactionItem, transactionsList.firstChild);
         
+        // Сохраняем транзакцию в состоянии
+        this.bankState.transactions.unshift({
+            title,
+            details,
+            amount,
+            status,
+            timestamp: new Date().toISOString()
+        });
+        
+        // Ограничиваем количество транзакций (последние 50)
+        if (this.bankState.transactions.length > 50) {
+            this.bankState.transactions = this.bankState.transactions.slice(0, 50);
+        }
+        
         // Обновляем счетчик новых транзакций
         const newBadge = this.ui.querySelector('#new-transactions');
         if (newBadge) {
             const currentCount = parseInt(newBadge.textContent) || 0;
             newBadge.textContent = currentCount + 1;
         }
+        
+        console.log('✅ BankModule: Транзакция добавлена в UI и состояние');
+    }
+    
+    /**
+     * Загрузка сохраненных транзакций
+     */
+    loadTransactions() {
+        if (!this.ui) return;
+        
+        const transactionsList = this.ui.querySelector('#transactions-list');
+        if (!transactionsList) return;
+        
+        // Очищаем существующие транзакции (кроме начальной)
+        const existingTransactions = transactionsList.querySelectorAll('.transaction-item');
+        existingTransactions.forEach((item, index) => {
+            // Пропускаем первую транзакцию (начальный баланс)
+            if (index > 0) {
+                item.remove();
+            }
+        });
+        
+        // Добавляем сохраненные транзакции
+        this.bankState.transactions.forEach(transaction => {
+            const transactionItem = document.createElement('div');
+            transactionItem.className = 'transaction-item';
+            
+            const date = new Date(transaction.timestamp);
+            const timeString = date.toLocaleString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            transactionItem.innerHTML = `
+                <div class="transaction-info">
+                    <div class="transaction-title">${transaction.title}</div>
+                    <div class="transaction-details">${transaction.details}</div>
+                    <div class="transaction-time">${timeString}</div>
+                </div>
+                <div class="transaction-amount ${transaction.amount > 0 ? 'positive' : 'negative'}">${transaction.amount > 0 ? '+' : ''}$${this.formatNumber(transaction.amount)}</div>
+                <div class="transaction-status ${transaction.status}">${transaction.status === 'completed' ? 'Завершено' : transaction.status}</div>
+            `;
+            
+            // Добавляем после первой транзакции (начальный баланс)
+            const firstTransaction = transactionsList.querySelector('.transaction-item');
+            if (firstTransaction) {
+                firstTransaction.insertAdjacentElement('afterend', transactionItem);
+            } else {
+                transactionsList.appendChild(transactionItem);
+            }
+        });
+        
+        console.log('🏦 BankModule: Загружено транзакций:', this.bankState.transactions.length);
     }
     
     /**
