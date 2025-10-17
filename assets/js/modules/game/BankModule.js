@@ -974,24 +974,32 @@ class BankModule {
             
             // Если не найден, пытаемся исправить currentUserId
             if (!currentPlayer) {
-                console.log('🔧 BankModule: Пытаемся исправить currentUserId...');
+                console.log('🔧 BankModule: getCurrentUserPlayer вернул null, пробуем fallback...');
                 
                 const gameStateManager = window.app?.services?.get('gameStateManager');
                 const state = gameStateManager?.getState();
                 const players = state?.players || [];
+                
+                console.log('🔧 BankModule: Игроки в игре:', players.map(p => ({ id: p.id, username: p.username })));
                 
                 // Ищем по username из localStorage
                 try {
                     const userData = localStorage.getItem('currentUser');
                     if (userData) {
                         const user = JSON.parse(userData);
+                        console.log('🔧 BankModule: Пользователь из localStorage:', user);
+                        
                         const player = players.find(p => p.username === user.username);
                         if (player) {
                             console.log('🔧 BankModule: Исправляем currentUserId с', this.currentUserId, 'на', player.id);
                             this.currentUserId = player.id;
                             currentPlayer = player;
                             console.log('✅ BankModule: currentPlayer найден через fallback:', currentPlayer.username);
+                        } else {
+                            console.warn('⚠️ BankModule: Игрок с username', user.username, 'не найден в списке игроков');
                         }
+                    } else {
+                        console.warn('⚠️ BankModule: currentUser не найден в localStorage');
                     }
                 } catch (e) {
                     console.warn('⚠️ BankModule: Ошибка исправления currentUserId:', e);
