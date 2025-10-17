@@ -103,7 +103,7 @@
             margin: 0 auto;
             min-height: 100vh; /* Полная высота экрана */
             display: grid;
-            grid-template-columns: 260px 1fr 400px; /* Колоды + игровое поле + панель игроков */
+            grid-template-columns: 320px 1fr 400px; /* Увеличено для 2 колонок карт */
             grid-template-rows: 1fr;
             grid-template-areas: "card-decks game-board players-panel";
             gap: 1rem; /* Уменьшенный отступ */
@@ -113,8 +113,9 @@
         /* Колоды карточек */
         .card-decks-container {
             grid-area: card-decks;
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
             gap: 1rem;
             min-height: 100%;
         }
@@ -262,8 +263,8 @@
             }
 
             .card-decks-container {
-                flex-direction: row;
-                flex-wrap: wrap;
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(2, 1fr);
                 justify-content: center;
             }
             
