@@ -842,7 +842,7 @@ class BankModule {
         
         // Кредиты
         const creditTake = this.ui.querySelector('#credit-take');
-        creditTake.addEventListener('click', () => this.takeCredit());
+        if (creditTake) creditTake.addEventListener('click', () => this.takeCredit());
         const loanTake = this.ui.querySelector('#loan-take');
         const loanRepay = this.ui.querySelector('#loan-repay');
         if (loanTake) loanTake.addEventListener('click', () => this.takeCreditInline());
