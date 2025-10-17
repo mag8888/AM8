@@ -920,7 +920,7 @@ class BankModule {
         }
     }
 
-    repayCreditInline() {
+    async repayCreditInline() {
         const amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
         if (amount <= 0) return;
         const player = this.getCurrentUserPlayer();
