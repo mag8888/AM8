@@ -10,9 +10,8 @@ class BankModule {
         this.eventBus = config.eventBus || null;
         this.roomApi = config.roomApi || null;
         this.professionSystem = config.professionSystem || null;
-        this.bankApi = config.bankApi || null;
         this.currentUserId = null;
-        this.currentRoomId = null;
+        this.currentRoomId = this._getCurrentRoomId();
         
         // Состояние банка
         this.bankState = {
@@ -1036,12 +1035,6 @@ class BankModule {
             return;
         }
         
-        // Проверяем, что игрок не переводит самому себе
-        if (recipientId === this.currentUserId) {
-            this.showNotification('Нельзя переводить средства самому себе', 'error');
-            return;
-        }
-        
         if (!this.gameState) {
             this.showNotification('Ошибка: GameState недоступен', 'error');
             return;
@@ -1053,26 +1046,50 @@ class BankModule {
             return;
         }
         
+        // Проверяем, что не переводим себе
+        if (currentPlayer.id === recipientId) {
+            this.showNotification('Нельзя переводить самому себе', 'error');
+            return;
+        }
+        
         if (currentPlayer.money < amount) {
             this.showNotification('Недостаточно средств', 'error');
             return;
         }
         
+        // Показываем загрузку
+        const transferBtn = this.ui.querySelector('#transfer-execute');
+        const originalText = transferBtn.textContent;
+        transferBtn.disabled = true;
+        transferBtn.textContent = 'Выполняется...';
+        
         try {
-            // Выполняем перевод
+            // Выполняем перевод через сервер
             const success = await this.performTransfer(recipientId, amount);
             
             if (success) {
                 this.showNotification(`Перевод $${this.formatNumber(amount)} выполнен`, 'success');
                 this.resetTransferForm();
                 this.updateBankData();
-                this.addTransaction('Перевод игроку', `Игрок → ${recipientId}`, amount, 'completed');
+                this.loadPlayers();
+                
+                const recipient = this.gameState.getPlayers().find(p => p.id === recipientId);
+                this.addTransaction(
+                    `Перевод игроку ${recipient?.username || recipientId}`,
+                    `Переведено $${this.formatNumber(amount)}`,
+                    -amount,
+                    'completed'
+                );
             } else {
                 this.showNotification('Ошибка выполнения перевода', 'error');
             }
         } catch (error) {
             console.error('❌ BankModule: Ошибка перевода:', error);
             this.showNotification('Ошибка выполнения перевода', 'error');
+        } finally {
+            // Восстанавливаем кнопку
+            transferBtn.disabled = false;
+            transferBtn.textContent = originalText;
         }
     }
     
@@ -1080,67 +1097,55 @@ class BankModule {
      * Выполнение перевода через серверный API
      */
     async performTransfer(recipientId, amount) {
-        if (!this.bankApi || !this.currentRoomId) {
-            // Fallback на локальное обновление если API недоступен
-            return this.performTransferLocal(recipientId, amount);
-        }
-        
-        try {
-            const response = await this.bankApi.transferMoney(
-                this.currentUserId,
-                recipientId,
-                amount,
-                this.currentRoomId
-            );
-            
-            if (response.success) {
-                // Эмитим событие обновления для синхронизации
-                if (this.eventBus) {
-                    this.eventBus.emit('bank:transfer', {
-                        from: this.currentUserId,
-                        to: recipientId,
-                        amount: amount,
-                        serverResponse: response
-                    });
-                }
-                return true;
-            } else {
-                console.error('❌ BankModule: Сервер отклонил перевод:', response.message);
-                return false;
-            }
-        } catch (error) {
-            console.error('❌ BankModule: Ошибка серверного перевода:', error);
-            // Fallback на локальное обновление
-            return this.performTransferLocal(recipientId, amount);
-        }
-    }
-    
-    /**
-     * Локальное выполнение перевода (fallback)
-     */
-    async performTransferLocal(recipientId, amount) {
-        if (!this.gameState) return false;
+        if (!this.gameState || !this.currentRoomId) return false;
         
         const currentPlayer = this.gameState.getCurrentPlayer();
-        const players = this.gameState.getPlayers();
-        const recipient = players.find(p => p.id === recipientId);
+        const recipient = this.gameState.getPlayers().find(p => p.id === recipientId);
         
         if (!recipient) return false;
         
-        // Обновляем балансы
-        currentPlayer.money -= amount;
-        recipient.money += amount;
-        
-        // Эмитим событие обновления
-        if (this.eventBus) {
-            this.eventBus.emit('bank:transfer', {
-                from: currentPlayer.id,
-                to: recipientId,
-                amount: amount
+        try {
+            // Выполняем запрос к серверу
+            const response = await fetch('/api/bank/transfer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    roomId: this.currentRoomId,
+                    fromPlayerId: currentPlayer.id,
+                    toPlayerId: recipientId,
+                    amount: amount,
+                    description: `Перевод от ${currentPlayer.username} к ${recipient.username}`
+                })
             });
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Ошибка выполнения перевода');
+            }
+            
+            // Обновляем локальные данные с серверными
+            currentPlayer.money = result.data.fromPlayerBalance;
+            recipient.money = result.data.toPlayerBalance;
+            
+            // Уведомляем другие модули об обновлении
+            if (this.eventBus) {
+                this.eventBus.emit('bank:transferCompleted', {
+                    fromPlayer: currentPlayer,
+                    toPlayer: recipient,
+                    amount: amount,
+                    transaction: result.data.transaction
+                });
+            }
+            
+            return true;
+            
+        } catch (error) {
+            console.error('❌ BankModule: Ошибка API перевода:', error);
+            throw error;
         }
-        
-        return true;
     }
     
     /**
@@ -1294,6 +1299,31 @@ class BankModule {
         if (newBadge) {
             const currentCount = parseInt(newBadge.textContent) || 0;
             newBadge.textContent = currentCount + 1;
+        }
+    }
+    
+    /**
+     * Получение ID текущей комнаты
+     */
+    _getCurrentRoomId() {
+        try {
+            // Пытаемся получить из URL
+            const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+            const roomId = urlParams.get('roomId');
+            if (roomId) return roomId;
+            
+            // Пытаемся получить из sessionStorage
+            const roomData = sessionStorage.getItem('am_current_room');
+            if (roomData) {
+                const parsed = JSON.parse(roomData);
+                return parsed.id || parsed.roomId;
+            }
+            
+            console.warn('⚠️ BankModule: ID комнаты не найден');
+            return null;
+        } catch (error) {
+            console.error('❌ BankModule: Ошибка получения ID комнаты:', error);
+            return null;
         }
     }
     

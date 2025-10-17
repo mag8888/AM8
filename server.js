@@ -11,6 +11,7 @@ const roomsRoutes = require('./routes/rooms'); // v1.1.0 - добавлен endp
 const usersRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
 const statsRoutes = require('./routes/stats');
+const bankRoutes = require('./routes/bank'); // v1.0.0 - банковские операции
 
 // Импортируем middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -105,6 +106,7 @@ app.use('/api/rooms', roomsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/bank', bankRoutes);
 
 // Единая страница авторизации/регистрации
 app.get(['/auth', '/auth/*', '/login', '/signin', '/pages/login', '/auth.html'], (req, res) => {
