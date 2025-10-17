@@ -46,38 +46,22 @@ class GameStateManager {
         console.log('🔍 GameStateManager: serverState.players constructor:', serverState.players?.constructor?.name);
 
         // Обновляем игроков (с фильтрацией дубликатов)
-        if (Array.isArray(serverState.players)) {
+        if (Array.isArray(serverState.players) && serverState.players.length > 0) {
             console.log('🔍 GameStateManager: Обрабатываем массив игроков, длина:', serverState.players.length);
-            const uniquePlayers = [];
-            const seen = new Set();
             
-            for (let idx = 0; idx < serverState.players.length; idx++) {
-                const player = serverState.players[idx];
-                console.log(`🔍 GameStateManager: Обрабатываем игрока ${idx}:`, player);
-                
-                if (!player) {
-                    console.log(`🔍 GameStateManager: Игрок ${idx} пустой, пропускаем`);
-                    continue;
-                }
-                
-                const key = player.id || player.userId || player.username || `idx_${idx}`;
-                console.log(`🔍 GameStateManager: Ключ игрока ${idx}:`, key);
-                
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    const processedPlayer = { ...player, id: player.id || player.userId || key };
-                    uniquePlayers.push(processedPlayer);
-                    console.log(`🔍 GameStateManager: Добавлен игрок ${idx}:`, processedPlayer);
-                } else {
-                    console.log(`🔍 GameStateManager: Игрок ${idx} уже существует, пропускаем`);
-                }
-            }
+            // Простое решение: напрямую копируем игроков
+            this.players = serverState.players.map((player, idx) => {
+                if (!player) return null;
+                return {
+                    ...player,
+                    id: player.id || player.userId || `player_${idx}`
+                };
+            }).filter(player => player !== null);
             
-            this.players = uniquePlayers;
-            console.log('🏗️ GameStateManager: Игроки обновлены, итого:', uniquePlayers.length);
+            console.log('🏗️ GameStateManager: Игроки обновлены, итого:', this.players.length);
             console.log('🏗️ GameStateManager: this.players после обновления:', this.players);
         } else {
-            console.log('🔍 GameStateManager: serverState.players не является массивом:', serverState.players);
+            console.log('🔍 GameStateManager: serverState.players не является массивом или пустой:', serverState.players);
         }
         
         const newPlayersKey = JSON.stringify((this.players || []).map(p => (p && (p.id || p.userId || p.username)) || null));
