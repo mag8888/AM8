@@ -7,6 +7,21 @@ const router = express.Router();
 // Простое серверное состояние игры (на одном инстансе). Для прод-реализации заменить на Redis/БД/вебсокеты
 const gameStateByRoomId = new Map();
 
+// Функция для получения состояния комнаты (для банк API)
+function getRoomGameState(roomId) {
+    return gameStateByRoomId.get(roomId) || null;
+}
+
+// Функция для обновления состояния комнаты (для банк API)
+function updateRoomGameState(roomId, state) {
+    gameStateByRoomId.set(roomId, state);
+    return true;
+}
+
+// Экспортируем функции для использования в других модулях
+module.exports.getRoomGameState = getRoomGameState;
+module.exports.updateRoomGameState = updateRoomGameState;
+
 // Инициализируем PushService для уведомлений
 const pushService = new PushService();
 
