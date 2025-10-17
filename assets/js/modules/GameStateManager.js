@@ -49,17 +49,24 @@ class GameStateManager {
         if (Array.isArray(serverState.players) && serverState.players.length > 0) {
             console.log('🔍 GameStateManager: Обрабатываем массив игроков, длина:', serverState.players.length);
             
-            // Простое решение: напрямую копируем игроков
-            this.players = serverState.players.map((player, idx) => {
-                if (!player) return null;
-                return {
-                    ...player,
-                    id: player.id || player.userId || `player_${idx}`
-                };
-            }).filter(player => player !== null);
-            
-            console.log('🏗️ GameStateManager: Игроки обновлены, итого:', this.players.length);
-            console.log('🏗️ GameStateManager: this.players после обновления:', this.players);
+            try {
+                // Простое решение: напрямую копируем игроков
+                this.players = serverState.players.map((player, idx) => {
+                    if (!player) return null;
+                    return {
+                        ...player,
+                        id: player.id || player.userId || `player_${idx}`
+                    };
+                }).filter(player => player !== null);
+                
+                console.log('🏗️ GameStateManager: Игроки обновлены, итого:', this.players.length);
+                console.log('🏗️ GameStateManager: this.players после обновления:', this.players);
+            } catch (error) {
+                console.error('❌ GameStateManager: Ошибка при обработке игроков:', error);
+                // Fallback: простое копирование
+                this.players = [...serverState.players];
+                console.log('🏗️ GameStateManager: Fallback - скопировали игроков напрямую:', this.players.length);
+            }
         } else {
             console.log('🔍 GameStateManager: serverState.players не является массивом или пустой:', serverState.players);
         }
