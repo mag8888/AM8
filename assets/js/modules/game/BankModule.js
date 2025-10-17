@@ -1401,32 +1401,6 @@ class BankModule {
             return;
         }
         
-        const transactionItem = document.createElement('div');
-        transactionItem.className = 'transaction-item';
-        
-        const now = new Date();
-        const timeString = now.toLocaleString('ru-RU', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-        
-        transactionItem.innerHTML = `
-            <div class="transaction-info">
-                <div class="transaction-title">${title}</div>
-                <div class="transaction-details">${details}</div>
-                <div class="transaction-time">${timeString}</div>
-            </div>
-            <div class="transaction-amount ${amount > 0 ? 'positive' : 'negative'}">${amount > 0 ? '+' : ''}$${this.formatNumber(amount)}</div>
-            <div class="transaction-status ${status}">${status === 'completed' ? 'Завершено' : status}</div>
-        `;
-        
-        // Добавляем в начало списка
-        transactionsList.insertBefore(transactionItem, transactionsList.firstChild);
-        
         // Сохраняем транзакцию в состоянии
         this.bankState.transactions.unshift({
             title,
@@ -1444,9 +1418,11 @@ class BankModule {
         // Обновляем счетчик новых транзакций
         const newBadge = this.ui.querySelector('#new-transactions');
         if (newBadge) {
-            const currentCount = parseInt(newBadge.textContent) || 0;
-            newBadge.textContent = currentCount + 1;
+            newBadge.textContent = String(this.bankState.transactions.length);
         }
+        
+        // Перерисовываем список из состояния (во избежание дублей)
+        this.loadTransactions();
         
         console.log('✅ BankModule: Транзакция добавлена в UI и состояние');
     }
@@ -1460,14 +1436,9 @@ class BankModule {
         const transactionsList = this.ui.querySelector('#transactions-list');
         if (!transactionsList) return;
         
-        // Очищаем существующие транзакции (кроме начальной)
+        // Очищаем существующие транзакции полностью
         const existingTransactions = transactionsList.querySelectorAll('.transaction-item');
-        existingTransactions.forEach((item, index) => {
-            // Пропускаем первую транзакцию (начальный баланс)
-            if (index > 0) {
-                item.remove();
-            }
-        });
+        existingTransactions.forEach((item) => item.remove());
         
         // Добавляем сохраненные транзакции
         this.bankState.transactions.forEach(transaction => {
