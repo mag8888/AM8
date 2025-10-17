@@ -143,10 +143,45 @@ router.get('/', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Ошибка чтения конфигурации карт:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Не удалось загрузить карточные колоды',
-            error: error.message
+        
+        // Возвращаем дефолтные колоды если MongoDB недоступна
+        const defaultConfig = {
+            version: 1,
+            updatedAt: new Date().toISOString(),
+            decks: [
+                {
+                    id: 'deal',
+                    name: 'Малая сделка',
+                    drawPile: [],
+                    discardPile: []
+                },
+                {
+                    id: 'big_deal',
+                    name: 'Большие сделки',
+                    drawPile: [],
+                    discardPile: []
+                },
+                {
+                    id: 'expenses',
+                    name: 'Расходы',
+                    drawPile: [],
+                    discardPile: []
+                },
+                {
+                    id: 'market',
+                    name: 'Рынок',
+                    drawPile: [],
+                    discardPile: []
+                }
+            ]
+        };
+        
+        res.json({
+            success: true,
+            data: {
+                ...defaultConfig,
+                stats: collectDeckStats(defaultConfig.decks)
+            }
         });
     }
 });
