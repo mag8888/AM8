@@ -14,6 +14,7 @@ class TurnController {
         this.isRolling = false;
         this.isMoving = false;
         this.isMobile = window.innerWidth <= 768;
+        this._lastStateKey = null;
         
         // Создаем PlayerList для отображения игроков
         this.playerList = null;
@@ -664,6 +665,21 @@ class TurnController {
      */
     updateFromGameState(state) {
         if (!this.playerList) return;
+        
+        // Throttling: обновляем только если состояние действительно изменилось
+        const stateKey = JSON.stringify({
+            players: state.players?.length || 0,
+            activePlayer: state.activePlayer?.id,
+            canRoll: state.canRoll,
+            canMove: state.canMove,
+            canEndTurn: state.canEndTurn,
+            lastDiceResult: state.lastDiceResult?.total
+        });
+        
+        if (this._lastStateKey === stateKey) {
+            return; // Состояние не изменилось, пропускаем обновление
+        }
+        this._lastStateKey = stateKey;
         
         // Обновляем список игроков
         this.playerList.updatePlayers(

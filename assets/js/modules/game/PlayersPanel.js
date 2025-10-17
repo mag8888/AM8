@@ -13,6 +13,7 @@ class PlayersPanel {
         // Создаем PlayerList для отображения игроков
         this.playerList = null;
         this.currentUser = null;
+        this._lastStateKey = null;
         
         console.log('👥 PlayersPanel v2.0: Инициализация');
         this.init();
@@ -158,6 +159,20 @@ class PlayersPanel {
      * @param {Object} state - Состояние игры
      */
     updateFromGameState(state) {
+        // Throttling: обновляем только если состояние действительно изменилось
+        const stateKey = JSON.stringify({
+            activePlayer: state.activePlayer?.id,
+            canRoll: state.canRoll,
+            canMove: state.canMove,
+            canEndTurn: state.canEndTurn,
+            lastDiceResult: state.lastDiceResult?.total
+        });
+        
+        if (this._lastStateKey === stateKey) {
+            return; // Состояние не изменилось, пропускаем обновление
+        }
+        this._lastStateKey = stateKey;
+        
         // Обновляем информацию об активном игроке
         this.updateActivePlayerInfo(state.activePlayer);
         

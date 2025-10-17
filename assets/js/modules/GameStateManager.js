@@ -87,8 +87,10 @@ class GameStateManager {
             this.gameState.gameStarted = serverState.gameStarted;
         }
         
-        // Уведомляем подписчиков
-        this.notifyListeners('state:updated', this.getState());
+        // Уведомляем подписчиков только если состояние действительно изменилось
+        if (playersChanged || this.hasGameStateChanged(oldState)) {
+            this.notifyListeners('state:updated', this.getState());
+        }
         
         // Специальные события
         if (serverState.activePlayer && (!oldState.activePlayer || oldState.activePlayer.id !== serverState.activePlayer.id)) {
@@ -116,6 +118,23 @@ class GameStateManager {
     }
     
     /**
+     * Проверка изменения игрового состояния
+     * @param {Object} oldState - Предыдущее состояние
+     * @returns {boolean} - Изменилось ли состояние
+     */
+    hasGameStateChanged(oldState) {
+        const oldGameState = oldState.gameState || {};
+        const newGameState = this.gameState || {};
+        
+        return oldGameState.canRoll !== newGameState.canRoll ||
+               oldGameState.canMove !== newGameState.canMove ||
+               oldGameState.canEndTurn !== newGameState.canEndTurn ||
+               oldGameState.gameStarted !== newGameState.gameStarted ||
+               JSON.stringify(oldGameState.lastDiceResult) !== JSON.stringify(newGameState.lastDiceResult) ||
+               (oldState.activePlayer && this.activePlayer && oldState.activePlayer.id !== this.activePlayer.id);
+    }
+    
+    /**
      * Добавление игрока
      * @param {Object} player - Данные игрока
      */
@@ -128,7 +147,7 @@ class GameStateManager {
         }
         
         this.notifyListeners('player:added', { player });
-        this.notifyListeners('state:updated', this.getState());
+        // state:updated будет отправлен автоматически через updateFromServer
         
         console.log('🏗️ GameStateManager: Игрок добавлен:', player.username);
     }
@@ -142,7 +161,7 @@ class GameStateManager {
         if (index >= 0) {
             this.players[index] = { ...this.players[index], ...player };
             this.notifyListeners('player:updated', { player: this.players[index] });
-            this.notifyListeners('state:updated', this.getState());
+            // state:updated будет отправлен автоматически через updateFromServer
             
             console.log('🏗️ GameStateManager: Игрок обновлен:', player.username);
         }
@@ -159,7 +178,7 @@ class GameStateManager {
             this.players.splice(index, 1);
             
             this.notifyListeners('player:removed', { player });
-            this.notifyListeners('state:updated', this.getState());
+            // state:updated будет отправлен автоматически через updateFromServer
             
             console.log('🏗️ GameStateManager: Игрок удален:', player.username);
         }
@@ -172,7 +191,7 @@ class GameStateManager {
     updateDiceResult(diceResult) {
         this.gameState.lastDiceResult = diceResult;
         this.notifyListeners('dice:rolled', { diceResult });
-        this.notifyListeners('state:updated', this.getState());
+        // state:updated будет отправлен автоматически через updateFromServer
         
         console.log('🏗️ GameStateManager: Результат кубика обновлен:', diceResult);
     }

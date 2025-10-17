@@ -26,6 +26,9 @@ class TurnService extends EventTarget {
         this._isRolling = false;
         this._isMoving = false;
         this._isEnding = false;
+        this._lastIsMyTurnLog = null;
+        this._cachedUserId = null;
+        this._cachedUsername = null;
         
         console.log('🎮 TurnService: Инициализирован');
     }
@@ -420,10 +423,14 @@ class TurnService extends EventTarget {
                 activePlayer.userId === currentUserId ||
                 (activePlayer.username && currentUsername && activePlayer.username === currentUsername);
             
-            console.log('🎯 TurnService.isMyTurn:', isMyTurn, { 
-                activePlayer: activePlayer.username || activePlayer.id, 
-                currentUser: currentUsername || currentUserId 
-            });
+            // Убираем избыточное логирование для предотвращения спама
+            if (this._lastIsMyTurnLog !== isMyTurn) {
+                console.log('🎯 TurnService.isMyTurn:', isMyTurn, { 
+                    activePlayer: activePlayer.username || activePlayer.id, 
+                    currentUser: currentUsername || currentUserId 
+                });
+                this._lastIsMyTurnLog = isMyTurn;
+            }
             
             return isMyTurn;
         } catch (error) {
@@ -513,12 +520,18 @@ class TurnService extends EventTarget {
      */
     _getCurrentUserId() {
         try {
+            // Кэшируем результат для предотвращения спама
+            if (this._cachedUserId) {
+                return this._cachedUserId;
+            }
+            
             // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
                 const userId = bundle?.currentUser?.id || bundle?.currentUser?.userId;
                 if (userId) {
+                    this._cachedUserId = userId;
                     console.log('🔍 TurnService: ID пользователя из bundle:', userId);
                     return userId;
                 }
@@ -530,6 +543,7 @@ class TurnService extends EventTarget {
                 const user = JSON.parse(userRaw);
                 const userId = user?.id || user?.userId;
                 if (userId) {
+                    this._cachedUserId = userId;
                     console.log('🔍 TurnService: ID пользователя из localStorage:', userId);
                     return userId;
                 }
@@ -542,6 +556,7 @@ class TurnService extends EventTarget {
                     const currentUser = userModel.getCurrentUser();
                     if (currentUser && (currentUser.id || currentUser.userId)) {
                         const userId = currentUser.id || currentUser.userId;
+                        this._cachedUserId = userId;
                         console.log('🔍 TurnService: ID пользователя из userModel:', userId);
                         return userId;
                     }
@@ -563,12 +578,18 @@ class TurnService extends EventTarget {
      */
     _getCurrentUsername() {
         try {
+            // Кэшируем результат для предотвращения спама
+            if (this._cachedUsername) {
+                return this._cachedUsername;
+            }
+            
             // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
                 const username = bundle?.currentUser?.username || bundle?.currentUser?.name;
                 if (username) {
+                    this._cachedUsername = username;
                     console.log('🔍 TurnService: Username из bundle:', username);
                     return username;
                 }
@@ -580,6 +601,7 @@ class TurnService extends EventTarget {
                 const user = JSON.parse(userRaw);
                 const username = user?.username || user?.name;
                 if (username) {
+                    this._cachedUsername = username;
                     console.log('🔍 TurnService: Username из localStorage:', username);
                     return username;
                 }
@@ -592,6 +614,7 @@ class TurnService extends EventTarget {
                     const currentUser = userModel.getCurrentUser();
                     if (currentUser && (currentUser.username || currentUser.name)) {
                         const username = currentUser.username || currentUser.name;
+                        this._cachedUsername = username;
                         console.log('🔍 TurnService: Username из userModel:', username);
                         return username;
                     }
