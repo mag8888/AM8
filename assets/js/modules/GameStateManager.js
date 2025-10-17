@@ -315,7 +315,8 @@ class GameStateManager {
      * @param {*} data - Данные события
      */
     notifyListeners(event, data) {
-        console.log(`🏗️ GameStateManager: notifyListeners(${event})`, { listenersCount: this.listeners.has(event) ? this.listeners.get(event).length : 0, data });
+        const listenersCount = this.listeners.has(event) ? this.listeners.get(event).size : 0;
+        console.log(`🏗️ GameStateManager: notifyListeners(${event})`, { listenersCount, data });
         
         if (this.listeners.has(event)) {
             this.listeners.get(event).forEach(callback => {
