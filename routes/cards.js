@@ -62,8 +62,9 @@ async function saveCardsConfig(decks) {
             decks: decks.map(d => ({ id: d.id, name: d.name }))
         });
         
-        // Удаляем все существующие колоды
+        // Удаляем все существующие колоды и карточки
         await Deck.deleteMany({});
+        await Card.deleteMany({});
         
         // Создаем новые колоды
         const savedDecks = await Promise.all(decks.map(async (deckData) => {
