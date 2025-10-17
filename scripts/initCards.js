@@ -4,6 +4,7 @@
 
 const mongoose = require('mongoose');
 const { Deck, Card } = require('../models/CardModel');
+const DatabaseConfig = require('../auth/server/config/database');
 
 // Дефолтные колоды
 const DEFAULT_DECKS = [
@@ -37,9 +38,9 @@ async function initializeCards() {
     try {
         console.log('🃏 Инициализация карточных колод в MongoDB...');
         
-        // Подключаемся к MongoDB
-        const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/aura_money';
-        await mongoose.connect(mongoUri);
+        // Подключаемся к MongoDB через существующую конфигурацию
+        const dbConfig = new DatabaseConfig();
+        await dbConfig.connect();
         console.log('✅ Подключение к MongoDB установлено');
         
         // Проверяем, есть ли уже колоды
@@ -62,8 +63,8 @@ async function initializeCards() {
         console.error('❌ Ошибка инициализации карточных колод:', error);
         throw error;
     } finally {
-        await mongoose.disconnect();
-        console.log('✅ Отключение от MongoDB');
+        // Не отключаемся от MongoDB, так как сервер продолжает работать
+        console.log('✅ Инициализация карточных колод завершена');
     }
 }
 

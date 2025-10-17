@@ -179,13 +179,18 @@ async function startServer() {
             console.log('⚠️ Продолжаем без базы данных (fallback режим)');
         }
 
-        // Инициализируем карточные колоды
+        // Подключаемся к MongoDB и инициализируем карточные колоды
         try {
+            const DatabaseConfig = require('./auth/server/config/database');
+            const dbConfig = new DatabaseConfig();
+            await dbConfig.connect();
+            console.log('✅ MongoDB подключена');
+
             const { initializeCards } = require('./scripts/initCards');
             await initializeCards();
             console.log('✅ Карточные колоды инициализированы');
         } catch (cardsError) {
-            console.error('❌ Ошибка инициализации карточных колод:', cardsError);
+            console.error('❌ Ошибка подключения к MongoDB или инициализации карточных колод:', cardsError);
             console.log('⚠️ Продолжаем без карточных колод');
         }
 
