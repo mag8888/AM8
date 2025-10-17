@@ -41,7 +41,7 @@ function setupUIHandlers(gameState, boardLayout, eventBus) {
     if (startButton) {
         startButton.addEventListener('click', () => {
             gameState.startGame([
-                { name: 'Игрок 1', position: 0, isInner: false, money: 1000 }
+                { name: 'Игрок 1', position: 0, isInner: false, money: 5000 }
             ]);
             
             boardLayout.renderTracks();

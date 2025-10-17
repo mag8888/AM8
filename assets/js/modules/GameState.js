@@ -489,7 +489,7 @@ class GameState {
                 token: 'fox',
                 position: 0,
                 isInner: true, // Начинаем с малого круга
-                money: 3000,
+                money: 5000, // Одинаковый стартовый баланс
                 salary: 4000,
                 totalIncome: 0,
                 monthlyExpenses: 1500,
