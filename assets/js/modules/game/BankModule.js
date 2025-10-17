@@ -868,7 +868,7 @@ class BankModule {
 
     async takeCreditInline() {
         let amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
-        const player = this.getCurrentUserPlayer();
+        const player = await this.getCurrentUserPlayer();
         const profId = player?.profession || 'entrepreneur';
         const ps = this.professionSystem;
         // Ограничение: не больше доступного лимита (maxLoan - currentLoan)
@@ -923,7 +923,7 @@ class BankModule {
     async repayCreditInline() {
         const amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
         if (amount <= 0) return;
-        const player = this.getCurrentUserPlayer();
+        const player = await this.getCurrentUserPlayer();
         const profId = player?.profession || 'entrepreneur';
         const ps = this.professionSystem;
         // Серверный вызов
@@ -958,10 +958,10 @@ class BankModule {
     /**
      * Открытие банк модуля
      */
-    open() {
+    async open() {
         if (this.ui) {
             // Проверяем, что текущий пользователь найден
-            const currentPlayer = this.getCurrentUserPlayer();
+            const currentPlayer = await this.getCurrentUserPlayer();
             if (!currentPlayer) {
                 console.warn('⚠️ BankModule: Нельзя открыть банк - текущий пользователь не найден');
                 return;
@@ -985,7 +985,7 @@ class BankModule {
             console.log('🏦 BankModule: Закрыт');
             // При закрытии убеждаемся, что локальные изменения кредита/баланса зафиксированы в GameState
             try {
-                const player = this.getCurrentUserPlayer();
+                const player = await this.getCurrentUserPlayer();
                 if (player && this.gameState && typeof this.gameState.updatePlayer === 'function') {
                     this.gameState.updatePlayer(player.id, player);
                 }
@@ -996,11 +996,11 @@ class BankModule {
     /**
      * Обновление данных банка
      */
-    updateBankData() {
+    async updateBankData() {
         if (!this.gameState) return;
         
         // Получаем текущего пользователя браузера, а не активного игрока
-        const currentPlayer = this.getCurrentUserPlayer();
+        const currentPlayer = await this.getCurrentUserPlayer();
         if (!currentPlayer) {
             console.warn('⚠️ BankModule: Текущий пользователь не найден - пропускаем обновление');
             return;
@@ -1179,7 +1179,7 @@ class BankModule {
             return;
         }
         
-        const currentPlayer = this.getCurrentUserPlayer();
+        const currentPlayer = await this.getCurrentUserPlayer();
         if (!currentPlayer) {
             this.showNotification('Ошибка: Текущий игрок не найден', 'error');
             return;
@@ -1242,7 +1242,7 @@ class BankModule {
     async performTransfer(recipientId, amount) {
         if (!this.gameState || !this.currentRoomId) return false;
         
-        const currentPlayer = this.getCurrentUserPlayer();
+        const currentPlayer = await this.getCurrentUserPlayer();
         const recipient = this.gameState.getPlayers().find(p => p.id === recipientId);
         
         if (!recipient) return false;
@@ -1315,7 +1315,7 @@ class BankModule {
             return;
         }
         
-        const currentPlayer = this.getCurrentUserPlayer();
+        const currentPlayer = await this.getCurrentUserPlayer();
         if (!currentPlayer) {
             this.showNotification('Текущий игрок не найден', 'error');
             return;
@@ -1364,7 +1364,7 @@ class BankModule {
             return;
         }
         
-        const currentPlayer = this.getCurrentUserPlayer();
+        const currentPlayer = await this.getCurrentUserPlayer();
         if (!currentPlayer) {
             this.showNotification('Текущий игрок не найден', 'error');
             return;
@@ -1500,7 +1500,7 @@ class BankModule {
     /**
      * Получение текущего пользователя браузера (не активного игрока)
      */
-    getCurrentUserPlayer() {
+    async getCurrentUserPlayer() {
         if (!this.gameState) return null;
         
         // Подписываемся на события GameStateManager для получения актуальных данных
@@ -1574,24 +1574,35 @@ class BankModule {
         
         console.log('🔍 BankModule: Поиск игрока с ID:', currentUserId);
         
-        // Получаем игроков из GameStateManager, а не из GameState
+        // Получаем игроков из различных источников
         let players = [];
+        
+        // 1. Попробуем получить из GameStateManager
         if (this.gameStateManager) {
             const state = this.gameStateManager.getState();
             players = state.players || [];
             console.log('🔍 BankModule: Игроки из GameStateManager:', players);
-            
-            // Если игроки пустые, попробуем принудительно обновить
-            if (players.length === 0) {
-                console.log('🔍 BankModule: Принудительно обновляем данные из GameStateManager...');
-                // Попробуем получить данные напрямую из внутреннего состояния
-                if (this.gameStateManager._players && this.gameStateManager._players.length > 0) {
-                    players = this.gameStateManager._players;
-                    console.log('🔍 BankModule: Найдены игроки в _players:', players);
-                }
-            }
-        } else {
+        }
+        
+        // 2. Если игроки пустые, попробуем получить из GameState
+        if (players.length === 0) {
             players = this.gameState.getPlayers();
+            console.log('🔍 BankModule: Игроки из GameState:', players);
+        }
+        
+        // 3. Если все еще пустые, попробуем получить напрямую от сервера
+        if (players.length === 0) {
+            console.log('🔍 BankModule: Запрашиваем данные напрямую от сервера...');
+            try {
+                const response = await fetch(`/api/rooms/${this.gameState.getRoomId()}/state`);
+                if (response.ok) {
+                    const serverState = await response.json();
+                    players = serverState.players || [];
+                    console.log('🔍 BankModule: Игроки получены от сервера:', players);
+                }
+            } catch (error) {
+                console.warn('⚠️ BankModule: Ошибка получения данных от сервера:', error);
+            }
         }
         
         console.log('🔍 BankModule: Доступные игроки:', players.map(p => ({
