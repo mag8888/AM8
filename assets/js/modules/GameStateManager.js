@@ -69,6 +69,12 @@ class GameStateManager {
         console.log('🔍 GameStateManager: this.players перед emit:', this.players);
         console.log('🔍 GameStateManager: this.players.length перед emit:', this.players?.length);
         
+        // Принудительно устанавливаем игроков
+        if (Array.isArray(serverState.players) && serverState.players.length > 0) {
+            this.players = [...serverState.players];
+            console.log('🔍 GameStateManager: Принудительно установили this.players:', this.players);
+        }
+        
         const newPlayersKey = JSON.stringify((this.players || []).map(p => (p && (p.id || p.userId || p.username)) || null));
         const playersChanged = oldPlayersKey !== newPlayersKey;
         
