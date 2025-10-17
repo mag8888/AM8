@@ -49,13 +49,21 @@ class GameStateManager {
         if (Array.isArray(serverState.players) && serverState.players.length > 0) {
             console.log('🔍 GameStateManager: Обрабатываем массив игроков, длина:', serverState.players.length);
             
-            // Простое решение: напрямую присваиваем игроков
-            this.players = [...serverState.players];
+            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно сохраняем игроков
+            this.players = [];
+            this.players.push(...serverState.players);
             
             console.log('🏗️ GameStateManager: Игроки обновлены, итого:', this.players.length);
             console.log('🏗️ GameStateManager: this.players после обновления:', this.players);
             console.log('🏗️ GameStateManager: this.players === serverState.players:', this.players === serverState.players);
             console.log('🏗️ GameStateManager: this.players[0]:', this.players[0]);
+            
+            // Дополнительная проверка - принудительно устанавливаем игроков
+            if (this.players.length === 0) {
+                console.log('🚨 GameStateManager: КРИТИЧЕСКАЯ ОШИБКА - игроки не сохранились!');
+                this.players = [...serverState.players];
+                console.log('🚨 GameStateManager: Принудительно восстановили игроков:', this.players.length);
+            }
             
             // Принудительно обновляем состояние
             console.log('🔍 GameStateManager: Принудительно обновляем состояние...');
@@ -125,6 +133,16 @@ class GameStateManager {
         // Принудительно обновляем состояние в любом случае
         console.log('🔍 GameStateManager: Принудительно отправляем событие state:updated');
         this.notifyListeners('state:updated', this.getState());
+        
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно обновляем PlayersPanel
+        if (this.players && this.players.length > 0) {
+            console.log('🔧 GameStateManager: Принудительно обновляем PlayersPanel с', this.players.length, 'игроками');
+            const playersPanel = window.app?.modules?.get('playersPanel');
+            if (playersPanel && typeof playersPanel.updatePlayersList === 'function') {
+                playersPanel.updatePlayersList(this.players);
+                console.log('✅ GameStateManager: PlayersPanel обновлен принудительно');
+            }
+        }
         
         // Специальные события
         if (serverState.activePlayer && (!oldState.activePlayer || oldState.activePlayer.id !== serverState.activePlayer.id)) {
