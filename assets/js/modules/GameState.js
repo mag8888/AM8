@@ -458,6 +458,21 @@ class GameState {
     getPlayers() {
         return this.players;
     }
+
+    /**
+     * Обновить данные игрока и известить слушателей
+     * @param {string} playerId
+     * @param {Object} updated
+     */
+    updatePlayer(playerId, updated) {
+        const idx = this.players.findIndex(p => p.id === playerId);
+        if (idx !== -1) {
+            this.players[idx] = { ...this.players[idx], ...updated };
+            if (this.eventBus) {
+                this.eventBus.emit('game:playersUpdated', { players: this.players });
+            }
+        }
+    }
     
     /**
      * Добавить тестовых игроков для демонстрации

@@ -897,6 +897,15 @@ class BankModule {
             this.addTransaction('Кредит', `Взят кредит $${this.formatNumber(amount)}`, amount, 'completed');
             // Уведомим слушателей об изменении баланса
             this.eventBus?.emit('bank:balanceUpdated', { userId: player.id, delta: amount });
+            // Синхронизируем в GameState и рассылаем обновление
+            try {
+                if (this.gameState && typeof this.gameState.updatePlayer === 'function') {
+                    this.gameState.updatePlayer(player.id, player);
+                }
+                if (this.eventBus) {
+                    this.eventBus.emit('game:playersUpdated', { players: this.gameState.getPlayers?.() || [] });
+                }
+            } catch (_) {}
             this.updateBankData();
         }
     }
@@ -921,6 +930,14 @@ class BankModule {
             player.money = available - amount;
             this.addTransaction('Погашение кредита', `Погашено $${this.formatNumber(amount)}`, -amount, 'completed');
             this.eventBus?.emit('bank:balanceUpdated', { userId: player.id, delta: -amount });
+            try {
+                if (this.gameState && typeof this.gameState.updatePlayer === 'function') {
+                    this.gameState.updatePlayer(player.id, player);
+                }
+                if (this.eventBus) {
+                    this.eventBus.emit('game:playersUpdated', { players: this.gameState.getPlayers?.() || [] });
+                }
+            } catch (_) {}
             this.updateBankData();
         }
     }
