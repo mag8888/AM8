@@ -1321,7 +1321,7 @@ class BankModule {
         // Получаем ID текущего пользователя из различных источников
         let currentUserId = null;
         
-        // 1. Из sessionStorage
+        // 1. Из sessionStorage (приоритетный источник)
         try {
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
@@ -1335,7 +1335,7 @@ class BankModule {
         // 2. Из localStorage
         if (!currentUserId) {
             try {
-                const userData = localStorage.getItem('currentUser');
+                const userData = localStorage.getItem('aura_money_user');
                 if (userData) {
                     const user = JSON.parse(userData);
                     currentUserId = user.id || user.userId || user.username;
@@ -1362,15 +1362,22 @@ class BankModule {
             return null;
         }
         
-        // Находим игрока по ID
+        // Находим игрока по ID (проверяем все возможные поля)
         const player = this.gameState.getPlayers().find(p => 
             p.id === currentUserId || 
             p.username === currentUserId ||
-            p.userId === currentUserId
+            p.userId === currentUserId ||
+            p.id === currentUserId ||
+            p.username === currentUserId
         );
         
         if (!player) {
             console.warn('⚠️ BankModule: Игрок с ID не найден:', currentUserId);
+            console.log('🔍 BankModule: Доступные игроки:', this.gameState.getPlayers().map(p => ({
+                id: p.id,
+                username: p.username,
+                userId: p.userId
+            })));
             return null;
         }
         
