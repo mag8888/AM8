@@ -99,14 +99,30 @@ class PlayerBalanceDisplay {
         let card = document.querySelector(`[data-player-id="${playerId}"]`);
         if (card) return card;
         
+        // Ищем по data-id
+        card = document.querySelector(`[data-id="${playerId}"]`);
+        if (card) return card;
+        
         // Ищем по классу и тексту
-        const playerCards = document.querySelectorAll('.player-card, .player-item');
+        const playerCards = document.querySelectorAll('.player-card, .player-item, .player-list-item');
         for (const card of playerCards) {
-            const usernameElement = card.querySelector('.player-name, .username');
+            const usernameElement = card.querySelector('.player-name, .username, .player-username');
             if (usernameElement) {
                 const username = usernameElement.textContent.trim();
                 if (this.isPlayerCard(playerId, username, card)) {
                     return card;
+                }
+            }
+        }
+        
+        // Если карточка не найдена, попробуем найти через PlayerList
+        if (window.PlayerList) {
+            const playerListContainers = document.querySelectorAll('[id*="player"], [id*="turn-controller"]');
+            for (const container of playerListContainers) {
+                const playerList = container.playerList || container._playerList;
+                if (playerList && typeof playerList.findPlayerCard === 'function') {
+                    const foundCard = playerList.findPlayerCard(playerId);
+                    if (foundCard) return foundCard;
                 }
             }
         }

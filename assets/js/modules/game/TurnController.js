@@ -657,8 +657,26 @@ class TurnController {
         this.turnService.on('end:success', (response) => this.onEndSuccess(response));
         this.turnService.on('end:error', (error) => this.onEndError(error));
         this.turnService.on('end:finish', () => this.onEndFinish());
+        
+        // Слушатели событий GameStateManager
+        if (this.gameStateManager) {
+            this.gameStateManager.on('state:updated', (state) => this.updateFromGameState(state));
+            this.gameStateManager.on('players:updated', (players) => this.onPlayersUpdated(players));
+            this.gameStateManager.on('game:playersUpdated', (players) => this.onPlayersUpdated(players));
+        }
     }
     
+    /**
+     * Обработка обновления игроков
+     * @param {Array} players - Список игроков
+     */
+    onPlayersUpdated(players) {
+        console.log('🎯 TurnController: Игроки обновлены', players);
+        if (this.playerList) {
+            this.playerList.updatePlayers(players);
+        }
+    }
+
     /**
      * Обновление от GameStateManager
      * @param {Object} state - Состояние игры

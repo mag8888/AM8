@@ -83,6 +83,12 @@ class PlayersPanel {
             this.gameStateManager.on('turn:changed', (data) => {
                 this.handleTurnChanged(data || {});
             });
+            this.gameStateManager.on('players:updated', (players) => {
+                this.onPlayersUpdated(players);
+            });
+            this.gameStateManager.on('game:playersUpdated', (players) => {
+                this.onPlayersUpdated(players);
+            });
         }
         
         // Подписываемся на push-уведомления для принудительного обновления
@@ -101,6 +107,17 @@ class PlayersPanel {
         }
     }
     
+    /**
+     * Обработка обновления игроков
+     * @param {Array} players - Список игроков
+     */
+    onPlayersUpdated(players) {
+        console.log('👥 PlayersPanel: Игроки обновлены', players);
+        if (this.playerList) {
+            this.playerList.updatePlayers(players);
+        }
+    }
+
     /**
      * Рендер компонента
      */
