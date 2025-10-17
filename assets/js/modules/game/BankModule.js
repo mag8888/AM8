@@ -165,10 +165,7 @@ class BankModule {
                                         <span class="credit-label">Макс. кредит:</span>
                                         <span class="credit-value max" id="bank-max-credit">$10 000</span>
                                     </div>
-                                    <div class="credit-actions">
-                                        <button class="credit-status-btn" id="credit-status">✓ Без кредитов</button>
-                                        <button class="credit-take-btn" id="credit-take">Взять</button>
-                                    </div>
+                                    <div class="credit-actions"><!-- скрыто --></div>
                                 </div>
                             </div>
                         </div>
@@ -203,7 +200,18 @@ class BankModule {
                                         </button>
                                         <button class="transfer-reset" id="transfer-reset">СБРОСИТЬ</button>
                                     </div>
-                <!-- inline loan controls убраны по просьбе -->
+                                    <div class="loan-inline" style="margin-top:12px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.1)">
+                                        <label for="loan-amount">Кредит (шаг 1000)</label>
+                                        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+                                            <input type="number" id="loan-amount" class="form-input" placeholder="0" min="0" step="1000">
+                                            <button class="transfer-btn" id="loan-take" style="min-width:120px">ВЗЯТЬ</button>
+                                            <button class="transfer-reset" id="loan-repay" style="min-width:120px">ПОГАСИТЬ</button>
+                                        </div>
+                                        <div style="margin-top:8px;opacity:.85;display:flex;gap:16px">
+                                            <div>Баланс: <span id="loan-balance">$0</span></div>
+                                            <div>Макс.: <span id="loan-max">$0</span></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -1002,6 +1010,12 @@ class BankModule {
             const maxLoan = professionDetails?.loan?.maxLoan || 0;
             maxCreditElement.textContent = `$${this.formatNumber(maxLoan)}`;
         }
+
+        // Обновляем мини-индикаторы в правом блоке кредита
+        const loanBalance = this.ui.querySelector('#loan-balance');
+        if (loanBalance) loanBalance.textContent = `$${this.formatNumber(currentPlayer.currentLoan || 0)}`;
+        const loanMax = this.ui.querySelector('#loan-max');
+        if (loanMax) loanMax.textContent = `$${this.formatNumber(professionDetails?.loan?.maxLoan || 0)}`;
         
         // Обновляем чистый доход
         const netIncomeElement = this.ui.querySelector('#bank-net-income');
