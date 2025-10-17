@@ -460,6 +460,17 @@ class App {
             this.modules.set('boardLayout', boardLayout);
             console.log('🎯 BoardLayout: Инициализирован');
         }
+
+        if (window.CardDeckPanel) {
+            const cardDeckPanel = new window.CardDeckPanel({
+                containerSelector: '#card-decks-panel',
+                eventBus: this.getEventBus()
+            });
+            this.modules.set('cardDeckPanel', cardDeckPanel);
+            console.log('🃏 CardDeckPanel: Инициализирован');
+        } else {
+            console.warn('⚠️ App: CardDeckPanel не найден в window');
+        }
         
         // Инициализируем PlayerTokens для отображения фишек игроков
         console.log('🎯 App: Проверяем window.PlayerTokens:', !!window.PlayerTokens);

@@ -31,6 +31,9 @@
             <button class="nav-btn active" data-section="cells">
                 📋 Клетки
             </button>
+            <button class="nav-btn" data-section="cards">
+                🃏 Карточки
+            </button>
             <button class="nav-btn" data-section="professions">
                 🎭 Профессии
             </button>
@@ -204,6 +207,21 @@
             </main>
             </div>
 
+            <!-- Секция карточек -->
+            <div id="cards-section" class="admin-section">
+                <div class="cards-layout">
+                    <aside class="cards-sidebar" id="cards-deck-list">
+                        <!-- Список колод загружается динамически -->
+                    </aside>
+                    <main class="cards-editor" id="cards-editor">
+                        <div class="empty-state">
+                            <div class="empty-icon">🃏</div>
+                            <p>Выберите колоду для редактирования или создайте новую карточку</p>
+                        </div>
+                    </main>
+                </div>
+            </div>
+
             <!-- Секция профессий -->
             <div id="professions-section" class="admin-section">
                 <div id="admin-content">
@@ -243,11 +261,13 @@
     <script src="../assets/js/modules/game/BoardConfig.js"></script>
     <script src="../assets/js/modules/ProfessionModule.js"></script>
     <script src="assets/js/AdminCellEditor.js"></script>
+    <script src="assets/js/CardEditor.js"></script>
     <script src="assets/js/ProfessionEditor.js"></script>
     <script>
         // Инициализация админ-панели
         const adminEditor = new AdminCellEditor();
         window.adminEditor = adminEditor;
+        let cardEditor = null;
 
         // Навигация по разделам
         document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -266,6 +286,13 @@
                 if (section === 'professions') {
                     if (!window.professionEditor) {
                         window.professionEditor = new ProfessionEditor();
+                    }
+                } else if (section === 'cards') {
+                    if (!cardEditor) {
+                        cardEditor = new CardEditor();
+                        window.cardEditor = cardEditor;
+                    } else {
+                        cardEditor.refresh();
                     }
                 }
             });

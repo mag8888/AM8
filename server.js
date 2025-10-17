@@ -12,6 +12,7 @@ const usersRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
 const statsRoutes = require('./routes/stats');
 const bankRoutes = require('./routes/bank'); // v1.0.0 - банковские операции
+const cardsRoutes = require('./routes/cards');
 
 // Импортируем middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -107,6 +108,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/bank', bankRoutes);
+app.use('/api/cards', cardsRoutes);
 
 // Единая страница авторизации/регистрации
 app.get(['/auth', '/auth/*', '/login', '/signin', '/pages/login', '/auth.html'], (req, res) => {

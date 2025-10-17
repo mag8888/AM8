@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "decks": [
+    {
+      "id": "deal",
+      "name": "Сделка",
+      "subtitle": "Малые возможности",
+      "drawDescription": "Карточки складываются на сервере через админку",
+      "discardDescription": "Сюда уходят карточки которые вернул игрок",
+      "drawPile": [],
+      "discardPile": []
+    },
+    {
+      "id": "big_deal",
+      "name": "Большие сделки",
+      "subtitle": "Премиум возможности",
+      "drawDescription": "Карточки складываются на сервере через админку",
+      "discardDescription": "Сюда уходят карточки которые вернул игрок",
+      "drawPile": [],
+      "discardPile": []
+    },
+    {
+      "id": "expenses",
+      "name": "Расходы",
+      "subtitle": "Обязательные платежи",
+      "drawDescription": "Карточки складываются на сервере через админку",
+      "discardDescription": "Сюда уходят карточки которые вернул игрок",
+      "drawPile": [],
+      "discardPile": []
+    },
+    {
+      "id": "market",
+      "name": "Рынок",
+      "subtitle": "Спец. предложения",
+      "drawDescription": "Карточки складываются на сервере через админку",
+      "discardDescription": "Сюда уходят карточки которые вернул игрок",
+      "drawPile": [],
+      "discardPile": []
+    }
+  ]
+}

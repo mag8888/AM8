@@ -1,0 +1,365 @@
+/**
+ * CardDeckPanel v1.0.0
+ * -----------------------------------------------------------------------------
+ * Отображает карточные колоды слева от игрового поля и синхронизируется с API.
+ * Позволяет обновлять данные вручную и автоматически.
+ */
+
+(function attachCardDeckPanel() {
+    const DEFAULT_DECKS = [
+        {
+            id: 'deal',
+            name: 'Сделка',
+            subtitle: 'Малые возможности',
+            drawDescription: 'Карточки складываются на сервере через админку',
+            discardDescription: 'Сюда уходят карточки которые вернул игрок'
+        },
+        {
+            id: 'big_deal',
+            name: 'Большие сделки',
+            subtitle: 'Премиум возможности',
+            drawDescription: 'Карточки складываются на сервере через админку',
+            discardDescription: 'Сюда уходят карточки которые вернул игрок'
+        },
+        {
+            id: 'expenses',
+            name: 'Расходы',
+            subtitle: 'Обязательные платежи',
+            drawDescription: 'Карточки складываются на сервере через админку',
+            discardDescription: 'Сюда уходят карточки которые вернул игрок'
+        },
+        {
+            id: 'market',
+            name: 'Рынок',
+            subtitle: 'Спец. предложения',
+            drawDescription: 'Карточки складываются на сервере через админку',
+            discardDescription: 'Сюда уходят карточки которые вернул игрок'
+        }
+    ];
+
+    class CardDeckPanel {
+        constructor(config = {}) {
+            this.containerSelector = config.containerSelector || '#card-decks-panel';
+            this.apiBaseUrl = config.apiBaseUrl || '/api/cards';
+            this.eventBus = config.eventBus || null;
+            this.refreshInterval = typeof config.refreshInterval === 'number'
+                ? config.refreshInterval
+                : 45000;
+
+            this.container = null;
+            this.abortController = null;
+            this.autoRefreshTimer = null;
+            this.latestUpdatedAt = null;
+
+            this.handleContainerClick = this.handleContainerClick.bind(this);
+
+            this.init();
+        }
+
+        /**
+         * Инициализация панели
+         */
+        init() {
+            this.container = document.querySelector(this.containerSelector);
+
+            if (!this.container) {
+                console.warn('⚠️ CardDeckPanel: Контейнер не найден:', this.containerSelector);
+                return;
+            }
+
+            this.renderLoading();
+            this.loadDecks().catch((error) => {
+                this.renderError(error);
+            });
+            this.setupEventListeners();
+            this.setupAutoRefresh();
+        }
+
+        /**
+         * Настройка слушателей событий
+         */
+        setupEventListeners() {
+            if (this.container) {
+                this.container.addEventListener('click', this.handleContainerClick);
+            }
+
+            if (this.eventBus && typeof this.eventBus.on === 'function') {
+                this.eventBus.on('cards:updated', () => {
+                    this.refresh();
+                });
+            }
+        }
+
+        /**
+         * Настройка автоматического обновления
+         */
+        setupAutoRefresh() {
+            if (!this.refreshInterval || this.refreshInterval <= 0) {
+                return;
+            }
+
+            this.clearAutoRefresh();
+            this.autoRefreshTimer = setInterval(() => {
+                this.refresh();
+            }, this.refreshInterval);
+        }
+
+        /**
+         * Останавливает автоматическое обновление
+         */
+        clearAutoRefresh() {
+            if (this.autoRefreshTimer) {
+                clearInterval(this.autoRefreshTimer);
+                this.autoRefreshTimer = null;
+            }
+        }
+
+        /**
+         * Обработчик кликов внутри панели
+         */
+        handleContainerClick(event) {
+            const refreshButton = event.target.closest('.card-deck-refresh');
+            if (refreshButton) {
+                event.preventDefault();
+                this.refresh();
+            }
+        }
+
+        /**
+         * Загружает данные колод с API
+         */
+        async loadDecks() {
+            this.cancelPendingRequest();
+            this.setLoadingState(true);
+
+            this.abortController = new AbortController();
+
+            const requestInit = {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                signal: this.abortController.signal
+            };
+
+            try {
+                const response = await fetch(this.apiBaseUrl, requestInit);
+                if (!response.ok) {
+                    throw new Error(`Не удалось загрузить карточные колоды (HTTP ${response.status})`);
+                }
+
+                const payload = await response.json();
+                if (!payload.success) {
+                    throw new Error(payload.message || 'Не удалось загрузить карточные колоды');
+                }
+
+                const decks = Array.isArray(payload.data?.decks) ? payload.data.decks : [];
+                const stats = Array.isArray(payload.data?.stats) ? payload.data.stats : [];
+                this.latestUpdatedAt = payload.data?.updatedAt || null;
+
+                const normalized = this.mergeWithDefaults(decks, stats);
+                this.renderDecks(normalized);
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return;
+                }
+                console.error('❌ CardDeckPanel: Ошибка загрузки данных колод:', error);
+                this.renderError(error);
+                throw error;
+            } finally {
+                this.setLoadingState(false);
+                this.abortController = null;
+            }
+        }
+
+        /**
+         * Обновляет данные вручную
+         */
+        refresh() {
+            this.loadDecks().catch((error) => {
+                console.warn('⚠️ CardDeckPanel: Ошибка обновления:', error);
+            });
+        }
+
+        /**
+         * Формирует итоговый список колод с учётом дефолтных значений
+         */
+        mergeWithDefaults(decks, stats) {
+            const deckMap = new Map();
+            decks.forEach((deck) => {
+                if (deck && deck.id) {
+                    deckMap.set(deck.id, deck);
+                }
+            });
+
+            const statsMap = new Map();
+            stats.forEach((stat) => {
+                if (stat && stat.id) {
+                    statsMap.set(stat.id, stat);
+                }
+            });
+
+            return DEFAULT_DECKS.map((template, index) => {
+                const deck = deckMap.get(template.id) || {};
+                const stat = statsMap.get(template.id) || {};
+                const drawPile = Array.isArray(deck.drawPile) ? deck.drawPile : [];
+                const discardPile = Array.isArray(deck.discardPile) ? deck.discardPile : [];
+
+                return {
+                    id: template.id,
+                    order: index + 1,
+                    name: deck.name || stat.name || template.name,
+                    subtitle: deck.subtitle || stat.subtitle || template.subtitle || '',
+                    drawDescription: deck.drawDescription || stat.drawDescription || template.drawDescription || '',
+                    discardDescription: deck.discardDescription || stat.discardDescription || template.discardDescription || '',
+                    drawCount: typeof stat.drawCount === 'number' ? stat.drawCount : drawPile.length,
+                    discardCount: typeof stat.discardCount === 'number' ? stat.discardCount : discardPile.length
+                };
+            });
+        }
+
+        /**
+         * Отображает состояние загрузки
+         */
+        renderLoading() {
+            if (!this.container) return;
+            this.container.innerHTML = `
+                <div class="card-decks-empty">Загружаем карточные колоды...</div>
+            `;
+        }
+
+        /**
+         * Устанавливает состояние загрузки для карточек
+         */
+        setLoadingState(isLoading) {
+            if (!this.container) return;
+            this.container.classList.toggle('is-loading', Boolean(isLoading));
+            this.container.querySelectorAll('.card-deck-card').forEach((card) => {
+                card.classList.toggle('loading', Boolean(isLoading));
+            });
+        }
+
+        /**
+         * Возвращает форматированную дату обновления
+         */
+        getFormattedTimestamp() {
+            if (!this.latestUpdatedAt) {
+                return '';
+            }
+
+            try {
+                const date = new Date(this.latestUpdatedAt);
+                if (Number.isNaN(date.getTime())) {
+                    return '';
+                }
+
+                return date.toLocaleString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (_) {
+                return '';
+            }
+        }
+
+        /**
+         * Рендер колод
+         */
+        renderDecks(decks = []) {
+            if (!this.container) return;
+
+            if (!Array.isArray(decks) || decks.length === 0) {
+                this.container.innerHTML = `
+                    <div class="card-decks-empty">Нет доступных колод. Добавьте карточки через админку.</div>
+                `;
+                return;
+            }
+
+            const timestamp = this.getFormattedTimestamp();
+            const timestampHtml = timestamp
+                ? `<span class="card-deck-timestamp">Обновлено: ${timestamp}</span>`
+                : '<span class="card-deck-timestamp">Обновление при старте</span>';
+
+            this.container.innerHTML = decks.map((deck) => {
+                const stateClass = deck.drawCount === 0 ? ' empty' : '';
+                return `
+                    <article class="card-deck-card${stateClass}" data-deck-id="${deck.id}">
+                        <header class="card-deck-header">
+                            <div class="card-deck-order">Колода ${deck.order.toString().padStart(2, '0')}</div>
+                            <div class="card-deck-title">${deck.name}</div>
+                            ${deck.subtitle ? `<div class="card-deck-subtitle">${deck.subtitle}</div>` : ''}
+                        </header>
+                        <div class="card-deck-body">
+                            <div class="deck-metrics">
+                                <div class="deck-metric deck-metric--draw">
+                                    <div class="deck-metric-value">${deck.drawCount}</div>
+                                    <div class="deck-metric-label">карт</div>
+                                </div>
+                                ${deck.drawDescription ? `<div class="deck-description">${deck.drawDescription}</div>` : ''}
+                                <div class="deck-divider"></div>
+                                <div class="deck-metric deck-metric--discard">
+                                    <div class="deck-metric-value">${deck.discardCount}</div>
+                                    <div class="deck-metric-label">отбой</div>
+                                </div>
+                                ${deck.discardDescription ? `<div class="deck-description deck-description--secondary">${deck.discardDescription}</div>` : ''}
+                            </div>
+                        </div>
+                        <footer class="card-deck-footer">
+                            ${timestampHtml}
+                            <button type="button" class="card-deck-refresh" data-action="refresh">
+                                <span class="icon">⟳</span>
+                                Обновить
+                            </button>
+                        </footer>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Вывод ошибки
+         */
+        renderError(error) {
+            if (!this.container) return;
+            const message = error?.message || 'Не удалось загрузить карточные колоды';
+            this.container.innerHTML = `
+                <div class="card-decks-error">
+                    <div>⚠️ ${message}</div>
+                    <div style="margin-top: 0.5rem;">
+                        <button type="button" class="card-deck-refresh" data-action="refresh">
+                            <span class="icon">⟳</span>
+                            Повторить попытку
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Отмена текущего запроса
+         */
+        cancelPendingRequest() {
+            if (this.abortController) {
+                this.abortController.abort();
+                this.abortController = null;
+            }
+        }
+
+        /**
+         * Очистка ресурсов
+         */
+        destroy() {
+            this.cancelPendingRequest();
+            this.clearAutoRefresh();
+            if (this.container) {
+                this.container.removeEventListener('click', this.handleContainerClick);
+            }
+        }
+    }
+
+    window.CardDeckPanel = CardDeckPanel;
+})();
