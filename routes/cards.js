@@ -5,12 +5,20 @@
 const express = require('express');
 const router = express.Router();
 const { Deck, Card } = require('../models/CardModel');
+const DatabaseConfig = require('../auth/server/config/database');
 
 /**
  * Получает все колоды карточек из MongoDB
  */
 async function getCardsConfig() {
     try {
+        // Проверяем подключение к MongoDB
+        const dbConfig = new DatabaseConfig();
+        if (!dbConfig.isConnected) {
+            console.log('🔍 Cards API: Подключаемся к MongoDB...');
+            await dbConfig.connect();
+        }
+
         const decks = await Deck.find({ isActive: true })
             .populate('drawPile', 'id title description type value')
             .populate('discardPile', 'id title description type value')
@@ -42,6 +50,13 @@ async function getCardsConfig() {
  */
 async function saveCardsConfig(decks) {
     try {
+        // Проверяем подключение к MongoDB
+        const dbConfig = new DatabaseConfig();
+        if (!dbConfig.isConnected) {
+            console.log('🔍 Cards API: Подключаемся к MongoDB...');
+            await dbConfig.connect();
+        }
+
         console.log('🔍 Cards API: Сохранение колод в MongoDB:', {
             decksCount: decks.length,
             decks: decks.map(d => ({ id: d.id, name: d.name }))
