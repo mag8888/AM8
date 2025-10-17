@@ -203,14 +203,7 @@ class BankModule {
                                         </button>
                                         <button class="transfer-reset" id="transfer-reset">СБРОСИТЬ</button>
                                     </div>
-                <div class="loan-inline" style="margin-top:12px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.1)">
-                    <label for="loan-amount">Кредит (шаг 1000)</label>
-                    <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-                        <input type="number" id="loan-amount" class="form-input" placeholder="0" min="0" step="1000">
-                        <button class="transfer-btn" id="loan-take" style="min-width:120px">ВЗЯТЬ</button>
-                        <button class="transfer-reset" id="loan-repay" style="min-width:120px">ПОГАСИТЬ</button>
-                    </div>
-                </div>
+                <!-- inline loan controls убраны по просьбе -->
                                 </div>
                             </div>
                             
@@ -959,13 +952,15 @@ class BankModule {
         });
         
         // Получаем данные профессии
-        const professionId = currentPlayer.profession || 'entrepreneur';
+            const professionId = currentPlayer.profession || 'entrepreneur';
         const professionDetails = this.professionSystem ? 
             this.professionSystem.getProfessionDetails(professionId, {
                 money: currentPlayer.money || 0,
                 children: currentPlayer.children || 0,
                 paidOffLoans: currentPlayer.paidOffLoans || {},
-                extraIncome: currentPlayer.extraIncome || 0
+                extraIncome: currentPlayer.extraIncome || 0,
+                currentLoan: currentPlayer.currentLoan || 0,
+                otherMonthlyAdjustments: currentPlayer.otherMonthlyAdjustments || 0
             }) : null;
         
         // Обновляем баланс
@@ -995,16 +990,17 @@ class BankModule {
             salaryElement.textContent = `$${this.formatNumber(salary)}/мес`;
         }
         
-        // Обновляем кредит
+        // Обновляем кредит (текущий остаток)
         const creditElement = this.ui.querySelector('#bank-credit');
         if (creditElement) {
-            creditElement.textContent = `$${this.formatNumber(currentPlayer.credit || 0)}`;
+            creditElement.textContent = `$${this.formatNumber(currentPlayer.currentLoan || 0)}`;
         }
         
         // Обновляем максимальный кредит
         const maxCreditElement = this.ui.querySelector('#bank-max-credit');
         if (maxCreditElement) {
-            maxCreditElement.textContent = `$${this.formatNumber(this.bankState.maxCredit)}`;
+            const maxLoan = professionDetails?.loan?.maxLoan || 0;
+            maxCreditElement.textContent = `$${this.formatNumber(maxLoan)}`;
         }
         
         // Обновляем чистый доход
