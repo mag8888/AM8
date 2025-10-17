@@ -8,9 +8,11 @@ const BoardConfig = {
     BIG_CIRCLE_CELLS: 44,
     SMALL_CIRCLE_CELLS: 24,
     
-    // Внешний трек (44 клетки)
-    BIG_CIRCLE: [
+    // Внешний трек (44 клетки, номера 25-68)
+    BIG_CIRCLE: [[
         {
+            "id": 25,
+            "id": 25,
             "name": "Паспортный доход",
             "description": "Вам выплачивается доход от ваших инвестиций",
             "icon": "💰",
@@ -25,9 +27,9 @@ const BoardConfig = {
             "purchasable": false,
             "special": true,
             "mandatoryStop": true,
-            "customData": {}
-        },
+            "customData": {},
         {
+            "id": 26,
             "name": "Построить дом мечты для семьи",
             "description": "Инвестиция в семейное счастье",
             "icon": "🏠",
@@ -41,9 +43,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 27,
             "name": "Кофейня в центре города",
             "description": "Прибыльный бизнес в оживленном месте",
             "icon": "☕",
@@ -57,9 +59,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 28,
             "name": "Аудит",
             "description": "Налоговая проверка - платите 50% наличных",
             "icon": "📋",
@@ -73,9 +75,9 @@ const BoardConfig = {
             "purchasable": false,
             "special": true,
             "mandatoryStop": true,
-            "customData": { "lossPercent": 0.5 }
-        },
+            "customData": { "lossPercent": 0.5 },
         {
+            "id": 29,
             "name": "Центр здоровья и спа",
             "description": "Премиум wellness-центр",
             "icon": "🧘",
@@ -89,9 +91,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 30,
             "name": "Посетить Антарктиду",
             "description": "Уникальное путешествие на край света",
             "icon": "🧊",
@@ -105,9 +107,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 31,
             "name": "Мобильное приложение (подписка)",
             "description": "Пассивный доход от подписчиков",
             "icon": "📱",
@@ -121,9 +123,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 32,
             "name": "Благотворительность",
             "description": "Помогите тем, кто в этом нуждается",
             "icon": "❤️",
@@ -137,9 +139,9 @@ const BoardConfig = {
             "purchasable": false,
             "special": true,
             "mandatoryStop": false,
-            "customData": {}
-        },
+            "customData": {},
         {
+            "id": 33,
             "name": "Агентство цифрового маркетинга",
             "description": "Современный маркетинг для бизнеса",
             "icon": "📊",
@@ -153,9 +155,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 34,
             "name": "Кража 100% наличных",
             "description": "Вы теряете все наличные деньги",
             "icon": "🚫",
@@ -169,9 +171,9 @@ const BoardConfig = {
             "purchasable": false,
             "special": true,
             "mandatoryStop": true,
-            "customData": { "lossPercent": 1 }
-        },
+            "customData": { "lossPercent": 1 },
         {
+            "id": 35,
             "name": "Мини-отель/бутик-гостиница",
             "description": "Уютная гостиница для путешественников",
             "icon": "🏨",
@@ -185,9 +187,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 36,
             "name": "Паспортный доход",
             "description": "Вам выплачивается доход от ваших инвестиций",
             "icon": "💰",
@@ -201,9 +203,9 @@ const BoardConfig = {
             "purchasable": false,
             "special": true,
             "mandatoryStop": true,
-            "customData": {}
-        },
+            "customData": {},
         {
+            "id": 37,
             "name": "Франшиза популярного ресторана",
             "description": "Проверенная бизнес-модель",
             "icon": "🍽️",
@@ -217,9 +219,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 38,
             "name": "Подняться на все высочайшие вершины мира",
             "description": "Покорите семь вершин мира",
             "icon": "🏔️",
@@ -233,9 +235,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 39,
             "name": "Мини-отель/бутик-гостиница",
             "description": "Второй отель для расширения бизнеса",
             "icon": "🏨",
@@ -249,9 +251,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 40,
             "name": "Стать автором книги-бестселлера",
             "description": "Издайте книгу, которая изменит мир",
             "icon": "📚",
@@ -265,9 +267,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 41,
             "name": "Йога- и медитационный центр",
             "description": "Центр для духовного развития",
             "icon": "🧘‍♀️",
@@ -281,9 +283,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 42,
             "name": "Развод",
             "description": "Делите имущество - теряете 50%",
             "icon": "💔",
@@ -297,9 +299,9 @@ const BoardConfig = {
             "purchasable": false,
             "special": true,
             "mandatoryStop": true,
-            "customData": { "lossPercent": 0.5 }
-        },
+            "customData": { "lossPercent": 0.5 },
         {
+            "id": 43,
             "name": "Сеть автомоек самообслуживания",
             "description": "Автоматизированный бизнес",
             "icon": "🚗",
@@ -313,9 +315,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 44,
             "name": "Жить год на яхте в Средиземном море",
             "description": "Роскошная жизнь на воде",
             "icon": "⛵",
@@ -329,9 +331,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 45,
             "name": "Салон красоты/барбершоп",
             "description": "Премиум салон красоты",
             "icon": "💄",
@@ -345,9 +347,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 46,
             "name": "Организовать мировой фестиваль",
             "description": "Создайте масштабное событие",
             "icon": "🎪",
@@ -361,9 +363,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 47,
             "name": "Паспортный доход",
             "description": "Вам выплачивается доход от ваших инвестиций",
             "icon": "💰",
@@ -377,9 +379,9 @@ const BoardConfig = {
             "purchasable": false,
             "special": true,
             "mandatoryStop": true,
-            "customData": {}
-        },
+            "customData": {},
         {
+            "id": 48,
             "name": "Онлайн-магазин одежды",
             "description": "Электронная коммерция",
             "icon": "🛒",
@@ -393,9 +395,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 49,
             "name": "Пожар (вы теряете бизнес с мин доходом)",
             "description": "Катастрофа уничтожает ваш самый дешевый бизнес",
             "icon": "🔥",
@@ -409,9 +411,9 @@ const BoardConfig = {
             "purchasable": false,
             "special": true,
             "mandatoryStop": true,
-            "customData": { "lossType": "minBusiness" }
-        },
+            "customData": { "lossType": "minBusiness" },
         {
+            "id": 50,
             "name": "Построить ретрит-центр",
             "description": "Центр для уединения и отдыха",
             "icon": "🏞️",
@@ -425,9 +427,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 51,
             "name": "Создать фонд поддержки талантов",
             "description": "Помогайте талантливым людям",
             "icon": "⭐",
@@ -441,9 +443,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 52,
             "name": "Кругосветное плавание на паруснике",
             "description": "Путешествие вокруг света",
             "icon": "⛵",
@@ -457,9 +459,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 53,
             "name": "Туристический комплекс (эко-ранчо)",
             "description": "Масштабный туристический проект",
             "icon": "🌿",
@@ -473,9 +475,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 54,
             "name": "Кругосветное плавание на паруснике",
             "description": "Еще одна возможность путешествия",
             "icon": "⛵",
@@ -489,9 +491,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 55,
             "name": "Биржа (500 000$ если выпало 5 или 6)",
             "description": "Рискованные инвестиции на бирже",
             "icon": "📈",
@@ -505,9 +507,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "business", "winAmount": 500000, "winNumbers": [5, 6] }
-        },
+            "customData": { "category": "business", "winAmount": 500000, "winNumbers": [5, 6] },
         {
+            "id": 56,
             "name": "Купить частный самолёт",
             "description": "Роскошь на высоте",
             "icon": "🛩️",
@@ -521,9 +523,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 57,
             "name": "NFT-платформа",
             "description": "Цифровое искусство и технологии",
             "icon": "🎨",
@@ -537,9 +539,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 58,
             "name": "Паспортный доход",
             "description": "Вам выплачивается доход от ваших инвестиций",
             "icon": "💰",
@@ -553,9 +555,9 @@ const BoardConfig = {
             "purchasable": false,
             "special": true,
             "mandatoryStop": true,
-            "customData": {}
-        },
+            "customData": {},
         {
+            "id": 59,
             "name": "Школа иностранных языков",
             "description": "Образовательный бизнес",
             "icon": "🌍",
@@ -569,9 +571,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 60,
             "name": "Купить коллекцию суперкаров",
             "description": "Коллекция элитных автомобилей",
             "icon": "🏎️",
@@ -585,9 +587,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 61,
             "name": "Создать школу будущего для детей",
             "description": "Инновационное образование",
             "icon": "🎓",
@@ -601,9 +603,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 62,
             "name": "Снять полнометражный фильм",
             "description": "Ваш фильм на больших экранах",
             "icon": "🎬",
@@ -617,9 +619,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 63,
             "name": "Рейдерский захват",
             "description": "Вы теряете бизнес с крупным доходом",
             "icon": "⚠️",
@@ -633,9 +635,9 @@ const BoardConfig = {
             "purchasable": false,
             "special": true,
             "mandatoryStop": true,
-            "customData": { "lossType": "maxBusiness" }
-        },
+            "customData": { "lossType": "maxBusiness" },
         {
+            "id": 64,
             "name": "Стать мировым лидером мнений",
             "description": "Влияние на миллионы людей",
             "icon": "🌟",
@@ -649,9 +651,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 65,
             "name": "Сеть автомоек самообслуживания",
             "description": "Расширение сети автомоек",
             "icon": "🚗",
@@ -665,9 +667,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 66,
             "name": "Белоснежная Яхта",
             "description": "Роскошная яхта вашей мечты",
             "icon": "🛥️",
@@ -681,9 +683,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": true,
             "mandatoryStop": false,
-            "customData": { "category": "dream" }
-        },
+            "customData": { "category": "dream" },
         {
+            "id": 67,
             "name": "Франшиза \"поток денег\"",
             "description": "Проверенная франшиза с высоким доходом",
             "icon": "💸",
@@ -697,9 +699,9 @@ const BoardConfig = {
             "purchasable": true,
             "special": false,
             "mandatoryStop": false,
-            "customData": { "category": "business" }
-        },
+            "customData": { "category": "business" },
         {
+            "id": 68,
             "name": "Полёт в космос",
             "description": "Путешествие за пределы Земли",
             "icon": "🚀",
@@ -714,36 +716,35 @@ const BoardConfig = {
             "special": true,
             "mandatoryStop": false,
             "customData": { "category": "dream" }
-        }
-    ],
+    ]],
     
     // Внутренний трек (24 клетки)
-    SMALL_CIRCLE: [
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "Розовые траты", "description": "Обязательные траты от $100 до $4000", "icon": "🛒", "color": "#ec4899", "type": "expense", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Заплатите за бытовые нужды (чайник, кофе, ТВ, прочее)", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "expenseRange": [100, 4000], "expenseType": "household" } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "Благотворительность", "description": "Пожертвуйте 10% от дохода для бросания 2 кубиков", "icon": "❤️", "color": "#f59e0b", "type": "charity", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Пожертвуйте 10% от дохода для получения возможности бросать 2 кубика", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "donationPercent": 10, "bonus": "double_dice" } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "PayDay", "description": "Получите зарплату", "icon": "💰", "color": "#fbbf24", "type": "money", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "income", "actionText": "Получите зарплату", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "salaryType": true } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "Рынок", "description": "Покупатели на разные активы", "icon": "🏪", "color": "#3b82f6", "type": "market", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "На рынке появились покупатели на ваши активы", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "marketType": "buyers" } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "Розовые траты", "description": "Обязательные траты от $100 до $4000", "icon": "🛒", "color": "#ec4899", "type": "expense", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Заплатите за бытовые нужды (чайник, кофе, ТВ, прочее)", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "expenseRange": [100, 4000], "expenseType": "household" } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "Ребенок", "description": "Родился ребенок, увеличиваются расходы", "icon": "👶", "color": "#8b5cf6", "type": "family", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Родился ребенок! Увеличиваются ежемесячные расходы", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "eventType": "child", "expenseIncrease": true } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "PayDay", "description": "Получите зарплату", "icon": "💰", "color": "#fbbf24", "type": "money", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "income", "actionText": "Получите зарплату", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "salaryType": true } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "Рынок", "description": "Покупатели на разные активы", "icon": "🏪", "color": "#3b82f6", "type": "market", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "На рынке появились покупатели на ваши активы", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "marketType": "buyers" } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "Розовые траты", "description": "Обязательные траты от $100 до $4000", "icon": "🛒", "color": "#ec4899", "type": "expense", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Заплатите за бытовые нужды (чайник, кофе, ТВ, прочее)", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "expenseRange": [100, 4000], "expenseType": "household" } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "Потеря", "description": "Увольнение - оплатите расходы или банкротство", "icon": "💸", "color": "#000000", "type": "loss", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Увольнение! Оплатите расходы один раз и пропустите 2 хода, или 3 раза без пропуска. Можно взять кредит или объявить банкротство", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "eventType": "job_loss", "options": ["pay_once_skip_2", "pay_3_times"], "consequences": ["credit", "bankruptcy"] } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "PayDay", "description": "Получите зарплату", "icon": "💰", "color": "#fbbf24", "type": "money", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "income", "actionText": "Получите зарплату", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "salaryType": true } },
-        { "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" } },
-        { "name": "Рынок", "description": "Покупатели на разные активы", "icon": "🏪", "color": "#3b82f6", "type": "market", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "На рынке появились покупатели на ваши активы", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "marketType": "buyers" } }
-    ]
+    SMALL_CIRCLE: [[
+        { "id": 1, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 2, "name": "Розовые траты", "description": "Обязательные траты от $100 до $4000", "icon": "🛒", "color": "#ec4899", "type": "expense", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Заплатите за бытовые нужды (чайник, кофе, ТВ, прочее)", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "expenseRange": [100, 4000], "expenseType": "household" },
+        { "id": 3, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 4, "name": "Благотворительность", "description": "Пожертвуйте 10% от дохода для бросания 2 кубиков", "icon": "❤️", "color": "#f59e0b", "type": "charity", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Пожертвуйте 10% от дохода для получения возможности бросать 2 кубика", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "donationPercent": 10, "bonus": "double_dice" },
+        { "id": 5, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 6, "name": "PayDay", "description": "Получите зарплату", "icon": "💰", "color": "#fbbf24", "type": "money", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "income", "actionText": "Получите зарплату", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "salaryType": true },
+        { "id": 7, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 8, "name": "Рынок", "description": "Покупатели на разные активы", "icon": "🏪", "color": "#3b82f6", "type": "market", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "На рынке появились покупатели на ваши активы", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "marketType": "buyers" },
+        { "id": 9, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 10, "name": "Розовые траты", "description": "Обязательные траты от $100 до $4000", "icon": "🛒", "color": "#ec4899", "type": "expense", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Заплатите за бытовые нужды (чайник, кофе, ТВ, прочее)", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "expenseRange": [100, 4000], "expenseType": "household" },
+        { "id": 11, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 12, "name": "Ребенок", "description": "Родился ребенок, увеличиваются расходы", "icon": "👶", "color": "#8b5cf6", "type": "family", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Родился ребенок! Увеличиваются ежемесячные расходы", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "eventType": "child", "expenseIncrease": true },
+        { "id": 13, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 14, "name": "PayDay", "description": "Получите зарплату", "icon": "💰", "color": "#fbbf24", "type": "money", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "income", "actionText": "Получите зарплату", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "salaryType": true },
+        { "id": 15, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 16, "name": "Рынок", "description": "Покупатели на разные активы", "icon": "🏪", "color": "#3b82f6", "type": "market", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "На рынке появились покупатели на ваши активы", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "marketType": "buyers" },
+        { "id": 17, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 18, "name": "Розовые траты", "description": "Обязательные траты от $100 до $4000", "icon": "🛒", "color": "#ec4899", "type": "expense", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Заплатите за бытовые нужды (чайник, кофе, ТВ, прочее)", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "expenseRange": [100, 4000], "expenseType": "household" },
+        { "id": 19, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 20, "name": "Потеря", "description": "Увольнение - оплатите расходы или банкротство", "icon": "💸", "color": "#000000", "type": "loss", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Увольнение! Оплатите расходы один раз и пропустите 2 хода, или 3 раза без пропуска. Можно взять кредит или объявить банкротство", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "eventType": "job_loss", "options": ["pay_once_skip_2", "pay_3_times"], "consequences": ["credit", "bankruptcy"] },
+        { "id": 21, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 22, "name": "PayDay", "description": "Получите зарплату", "icon": "💰", "color": "#fbbf24", "type": "money", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "income", "actionText": "Получите зарплату", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "salaryType": true },
+        { "id": 23, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
+        { "id": 24, "name": "Рынок", "description": "Покупатели на разные активы", "icon": "🏪", "color": "#3b82f6", "type": "market", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "На рынке появились покупатели на ваши активы", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "marketType": "buyers" }
+    ]]
 };
 
 // Экспорт для использования в других модулях
