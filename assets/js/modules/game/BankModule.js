@@ -1257,9 +1257,26 @@ class BankModule {
             return;
         }
         
+        // Получаем GameState с fallback логикой
         if (!this.gameState) {
-            this.showNotification('Ошибка: GameState недоступен', 'error');
-            return;
+            const gameStateManager = window.app?.services?.get('gameStateManager');
+            if (gameStateManager) {
+                console.log('🔧 BankModule: Используем GameStateManager как fallback для GameState');
+                // Создаем временный объект с методами GameState
+                this.gameState = {
+                    getPlayers: () => {
+                        const state = gameStateManager.getState();
+                        return state.players || [];
+                    },
+                    getRoomId: () => {
+                        const roomId = window.location.hash.split('roomId=')[1];
+                        return roomId;
+                    }
+                };
+            } else {
+                this.showNotification('Ошибка: GameState недоступен', 'error');
+                return;
+            }
         }
         
         // Получаем текущего игрока с fallback логикой
@@ -1328,7 +1345,35 @@ class BankModule {
      * Выполнение перевода через серверный API
      */
     async performTransfer(recipientId, amount) {
-        if (!this.gameState || !this.currentRoomId) return false;
+        // Получаем GameState с fallback логикой
+        if (!this.gameState) {
+            const gameStateManager = window.app?.services?.get('gameStateManager');
+            if (gameStateManager) {
+                console.log('🔧 BankModule: Используем GameStateManager как fallback для GameState в performTransfer');
+                this.gameState = {
+                    getPlayers: () => {
+                        const state = gameStateManager.getState();
+                        return state.players || [];
+                    },
+                    getRoomId: () => {
+                        const roomId = window.location.hash.split('roomId=')[1];
+                        return roomId;
+                    }
+                };
+            } else {
+                console.warn('⚠️ BankModule: GameState недоступен для performTransfer');
+                return false;
+            }
+        }
+        
+        if (!this.currentRoomId) {
+            this.currentRoomId = this.gameState.getRoomId();
+        }
+        
+        if (!this.currentRoomId) {
+            console.warn('⚠️ BankModule: RoomId недоступен для performTransfer');
+            return false;
+        }
         
         // Получаем текущего игрока с fallback логикой
         let currentPlayer = await this.getCurrentUserPlayer();
