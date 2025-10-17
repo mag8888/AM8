@@ -43,8 +43,15 @@ class TurnService extends EventTarget {
         }
         
         // Проверяем, что это ход текущего пользователя
-        if (!this.isMyTurn()) {
+        // Строгая проверка хода
+        const turnCheck = this.isMyTurn();
+        if (!turnCheck) {
             console.warn('⚠️ TurnService: Не ваш ход, бросок кубика заблокирован');
+            console.warn('⚠️ TurnService: Детали проверки хода:', {
+                activePlayer: this.getState()?.activePlayer,
+                currentUserId: this._getCurrentUserId(),
+                currentUsername: this._getCurrentUsername()
+            });
             throw new Error('Not your turn');
         }
 
@@ -458,6 +465,8 @@ class TurnService extends EventTarget {
      */
     _getCurrentUserId() {
         try {
+            console.log('🔍 TurnService: Поиск ID пользователя...');
+            
             // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
@@ -493,7 +502,28 @@ class TurnService extends EventTarget {
                 }
             }
             
-            console.warn('⚠️ TurnService: ID пользователя не найден');
+            // Дополнительные источники - проверяем все возможные ключи в localStorage
+            const possibleKeys = ['currentUserId', 'user_id', 'player_id', 'userId'];
+            for (const key of possibleKeys) {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    console.log(`🔍 TurnService: ID пользователя из ${key}:`, value);
+                    return value;
+                }
+            }
+            
+            // Проверяем sessionStorage на дополнительные ключи
+            for (const key of possibleKeys) {
+                const value = sessionStorage.getItem(key);
+                if (value) {
+                    console.log(`🔍 TurnService: ID пользователя из sessionStorage.${key}:`, value);
+                    return value;
+                }
+            }
+            
+            console.warn('⚠️ TurnService: ID пользователя не найден ни в одном источнике');
+            console.log('🔍 TurnService: Доступные ключи в localStorage:', Object.keys(localStorage));
+            console.log('🔍 TurnService: Доступные ключи в sessionStorage:', Object.keys(sessionStorage));
             return null;
         } catch (error) {
             console.error('❌ TurnService: Ошибка получения ID пользователя:', error);

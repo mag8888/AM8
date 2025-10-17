@@ -709,6 +709,16 @@ class TurnController {
             );
             const playerToken = this.getPlayerToken(state.activePlayer);
             
+            // Дополнительная отладка
+            console.log('🎯 TurnController.updateTurnInfo:', {
+                activePlayer: state.activePlayer?.username || state.activePlayer?.id,
+                activePlayerId: state.activePlayer?.id,
+                currentUserId,
+                currentUsername,
+                isMyTurn,
+                turnServiceIsMyTurn: this.turnService?.isMyTurn?.()
+            });
+            
             // Обновляем информацию о ходе
             if (isMyTurn) {
                 turnInfo.innerHTML = `${playerToken} 🎯 ВАШ ХОД`;
@@ -721,6 +731,7 @@ class TurnController {
                 if (rollBtn) {
                     rollBtn.classList.add('my-turn');
                     rollBtn.style.boxShadow = '0 0 0 2px rgba(34,197,94,0.35), 0 10px 22px rgba(34,197,94,0.45)';
+                    rollBtn.disabled = false;
                 }
             } else if (state.activePlayer) {
                 turnInfo.innerHTML = `${playerToken} Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
@@ -728,11 +739,14 @@ class TurnController {
                 turnInfo.style.background = 'rgba(255,255,255,0.08)';
                 turnInfo.style.animation = 'none';
                 
-                // Убираем подсветку кнопки
+                // Блокируем кнопку броска для других игроков
                 const rollBtn = this.ui.querySelector('.btn-dice');
                 if (rollBtn) {
                     rollBtn.classList.remove('my-turn');
-                    rollBtn.style.boxShadow = '';
+                    rollBtn.style.boxShadow = 'none';
+                    rollBtn.disabled = true;
+                    rollBtn.style.opacity = '0.5';
+                    rollBtn.style.cursor = 'not-allowed';
                 }
             } else {
                 turnInfo.innerHTML = '⏳ Ожидание...';
@@ -922,6 +936,16 @@ class TurnController {
     async handleRollDice() {
         if (this.isRolling) return;
         
+        // Дополнительная проверка - получаем текущего пользователя напрямую
+        const currentUserId = this._getCurrentUserId();
+        const activePlayer = this.turnService.getState()?.activePlayer;
+        
+        console.log('🎲 TurnController: Проверка прав на бросок кубика:', {
+            currentUserId,
+            activePlayer: activePlayer?.username || activePlayer?.id,
+            isMyTurn: this.turnService.isMyTurn()
+        });
+        
         // Проверяем права на бросок кубика
         const permissionCheck = this.turnService.canPerformAction({
             requireMyTurn: true
@@ -929,6 +953,12 @@ class TurnController {
         
         if (!permissionCheck.canPerform) {
             console.warn('⚠️ TurnController: Бросок кубика заблокирован:', permissionCheck.reason);
+            console.warn('⚠️ TurnController: Детали блокировки:', {
+                permissionCheck,
+                currentUserId,
+                activePlayer,
+                canPerformAction: this.turnService.canPerformAction({ requireMyTurn: true })
+            });
             this.showNotification(`❌ ${permissionCheck.reason === 'Not your turn' ? 'Не ваш ход!' : 'Действие заблокировано!'}`, 'error');
             return;
         }
@@ -939,6 +969,50 @@ class TurnController {
         } catch (error) {
             console.error('❌ TurnController: Ошибка броска кубика:', error);
             this.showNotification('❌ Ошибка броска кубика', 'error');
+        }
+    }
+    
+    /**
+     * Получение ID текущего пользователя (копия из TurnService)
+     * @returns {string|null} ID пользователя
+     * @private
+     */
+    _getCurrentUserId() {
+        try {
+            // Пытаемся получить из sessionStorage
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                const userId = bundle?.currentUser?.id || bundle?.currentUser?.userId;
+                if (userId) {
+                    return userId;
+                }
+            }
+            
+            // Пытаемся получить из localStorage
+            const userRaw = localStorage.getItem('aura_money_user');
+            if (userRaw) {
+                const user = JSON.parse(userRaw);
+                const userId = user?.id || user?.userId;
+                if (userId) {
+                    return userId;
+                }
+            }
+            
+            // Дополнительные источники
+            const possibleKeys = ['currentUserId', 'user_id', 'player_id', 'userId'];
+            for (const key of possibleKeys) {
+                const value = localStorage.getItem(key);
+                if (value) return value;
+                
+                const sessionValue = sessionStorage.getItem(key);
+                if (sessionValue) return sessionValue;
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('❌ TurnController: Ошибка получения ID пользователя:', error);
+            return null;
         }
     }
     
