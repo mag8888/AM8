@@ -84,10 +84,13 @@ router.get('/balance/:roomId/:playerId', async (req, res) => {
  */
 router.post('/transfer', async (req, res) => {
     try {
+        console.log('🏦 Bank API: Начало перевода:', req.body);
+        
         const { roomId, fromPlayerId, toPlayerId, amount, description } = req.body;
         
         // Валидация входных данных
         if (!roomId || !fromPlayerId || !toPlayerId || !amount) {
+            console.log('❌ Bank API: Неполные данные:', { roomId, fromPlayerId, toPlayerId, amount });
             return res.status(400).json({ 
                 success: false, 
                 message: 'Не все обязательные поля заполнены' 
@@ -95,6 +98,7 @@ router.post('/transfer', async (req, res) => {
         }
         
         if (amount <= 0) {
+            console.log('❌ Bank API: Неверная сумма:', amount);
             return res.status(400).json({ 
                 success: false, 
                 message: 'Сумма должна быть больше нуля' 
@@ -102,6 +106,7 @@ router.post('/transfer', async (req, res) => {
         }
         
         if (fromPlayerId === toPlayerId) {
+            console.log('❌ Bank API: Попытка перевода себе:', fromPlayerId);
             return res.status(400).json({ 
                 success: false, 
                 message: 'Нельзя переводить самому себе' 
@@ -109,20 +114,36 @@ router.post('/transfer', async (req, res) => {
         }
         
         // Получаем состояние комнаты
+        console.log('🏦 Bank API: Получение состояния комнаты:', roomId);
         const roomData = await SimpleRoomService.getRoomState(roomId);
         if (!roomData) {
+            console.log('❌ Bank API: Комната не найдена:', roomId);
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
         }
+        
+        console.log('🏦 Bank API: Состояние комнаты:', roomData);
         
         const fromPlayer = roomData.players?.find(p => p.id === fromPlayerId);
         const toPlayer = roomData.players?.find(p => p.id === toPlayerId);
         
         if (!fromPlayer || !toPlayer) {
+            console.log('❌ Bank API: Игрок не найден:', { fromPlayer: !!fromPlayer, toPlayer: !!toPlayer });
             return res.status(404).json({ success: false, message: 'Игрок не найден' });
         }
         
+        console.log('🏦 Bank API: Игроки найдены:', { 
+            fromPlayer: fromPlayer.username, 
+            fromBalance: fromPlayer.money,
+            toPlayer: toPlayer.username,
+            toBalance: toPlayer.money 
+        });
+        
         // Проверяем достаточность средств
         if (fromPlayer.money < amount) {
+            console.log('❌ Bank API: Недостаточно средств:', { 
+                current: fromPlayer.money, 
+                required: amount 
+            });
             return res.status(400).json({ 
                 success: false, 
                 message: 'Недостаточно средств для перевода' 
@@ -130,8 +151,16 @@ router.post('/transfer', async (req, res) => {
         }
         
         // Выполняем перевод
+        const oldFromBalance = fromPlayer.money;
+        const oldToBalance = toPlayer.money;
+        
         fromPlayer.money -= amount;
         toPlayer.money += amount;
+        
+        console.log('🏦 Bank API: Перевод выполнен:', {
+            fromBalance: `${oldFromBalance} -> ${fromPlayer.money}`,
+            toBalance: `${oldToBalance} -> ${toPlayer.money}`
+        });
         
         // Создаем транзакцию
         const transaction = {
@@ -152,6 +181,7 @@ router.post('/transfer', async (req, res) => {
         bankTransactions.get(roomId).push(transaction);
         
         // Обновляем состояние комнаты
+        console.log('🏦 Bank API: Обновление состояния комнаты');
         await SimpleRoomService.updateRoomState(roomId, roomData);
         
         // Отправляем push-уведомления всем игрокам
@@ -163,25 +193,36 @@ router.post('/transfer', async (req, res) => {
         };
         
         try {
-            await PushService.broadcastToRoom(roomId, pushData);
+            console.log('🏦 Bank API: Отправка push-уведомлений');
+            // Создаем экземпляр PushService и отправляем уведомления
+            const pushService = new PushService();
+            await pushService.broadcastPush('bank_transfer', pushData);
+            console.log('✅ Bank API: Push-уведомления отправлены');
         } catch (pushError) {
             console.warn('⚠️ Bank API: Ошибка push-уведомления:', pushError);
         }
         
-        res.json({
+        const responseData = {
             success: true,
             data: {
                 transaction: transaction,
                 fromPlayerBalance: fromPlayer.money,
                 toPlayerBalance: toPlayer.money
             }
-        });
+        };
         
-        console.log(`✅ Bank API: Перевод выполнен ${fromPlayerId} -> ${toPlayerId}: $${amount}`);
+        console.log('✅ Bank API: Перевод успешно завершен:', responseData);
+        
+        res.json(responseData);
         
     } catch (error) {
-        console.error('❌ Bank API: Ошибка выполнения перевода:', error);
-        res.status(500).json({ success: false, message: 'Ошибка сервера' });
+        console.error('❌ Bank API: Критическая ошибка выполнения перевода:', error);
+        console.error('❌ Bank API: Stack trace:', error.stack);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Ошибка сервера',
+            details: error.message 
+        });
     }
 });
 
@@ -280,7 +321,8 @@ router.post('/update-balance', async (req, res) => {
         };
         
         try {
-            await PushService.broadcastToRoom(roomId, pushData);
+            const pushService = new PushService();
+            await pushService.broadcastPush('bank_balanceUpdated', pushData);
         } catch (pushError) {
             console.warn('⚠️ Bank API: Ошибка push-уведомления:', pushError);
         }

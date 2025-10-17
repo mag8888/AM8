@@ -50,7 +50,7 @@ class PlayerBalanceDisplay {
         
         // Push-уведомления от сервера
         this.eventBus.on('push:message', (message) => {
-            if (message.type === 'bank:transfer' || message.type === 'bank:balanceUpdated') {
+            if (message.type === 'bank_transfer' || message.type === 'bank_balanceUpdated') {
                 this.handleServerUpdate(message);
             }
         });
@@ -185,7 +185,7 @@ class PlayerBalanceDisplay {
      * Обработка обновлений с сервера
      */
     handleServerUpdate(message) {
-        if (message.type === 'bank:transfer') {
+        if (message.type === 'bank_transfer') {
             // Обновляем балансы участников перевода
             const transaction = message.transaction;
             if (transaction) {
@@ -200,7 +200,7 @@ class PlayerBalanceDisplay {
                     this.updatePlayerBalance(toPlayer.id, toPlayer.money);
                 }
             }
-        } else if (message.type === 'bank:balanceUpdated') {
+        } else if (message.type === 'bank_balanceUpdated') {
             // Обновляем баланс конкретного игрока
             this.updatePlayerBalance(message.playerId, message.newBalance);
         }
