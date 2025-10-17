@@ -284,10 +284,10 @@ class BankModule {
                 border-radius: 20px;
                 border: 2px solid rgba(255, 255, 255, 0.1);
                 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-                width: 90%;
-                max-width: 1200px;
-                height: 80%;
-                max-height: 800px;
+                width: 96%;
+                max-width: 1400px;
+                height: 92%;
+                max-height: none;
                 overflow: hidden;
                 display: flex;
                 flex-direction: column;
@@ -907,6 +907,8 @@ class BankModule {
                 }
             } catch (_) {}
             this.updateBankData();
+            const input = this.ui.querySelector('#loan-amount');
+            if (input) input.value = '';
         }
     }
 
@@ -939,6 +941,8 @@ class BankModule {
                 }
             } catch (_) {}
             this.updateBankData();
+            const input = this.ui.querySelector('#loan-amount');
+            if (input) input.value = '';
         }
     }
     
