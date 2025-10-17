@@ -4,60 +4,100 @@
 
 const express = require('express');
 const router = express.Router();
-const fs = require('fs').promises;
-const path = require('path');
-
-const CARDS_CONFIG_PATH = path.join(__dirname, '../../config/cards.json');
-const CARDS_BACKUP_DIR = path.join(__dirname, '../../backups/cards');
+const { Deck, Card } = require('../models/CardModel');
 
 /**
- * Гарантирует наличие файла конфигурации и возвращает данные
+ * Получает все колоды карточек из MongoDB
  */
-async function readCardsConfig() {
+async function getCardsConfig() {
     try {
-        const content = await fs.readFile(CARDS_CONFIG_PATH, 'utf-8');
-        return JSON.parse(content);
+        const decks = await Deck.find({ isActive: true })
+            .populate('drawPile', 'id title description type value')
+            .populate('discardPile', 'id title description type value')
+            .lean();
+        
+        console.log('🔍 Cards API: Получены колоды из MongoDB:', {
+            decksCount: decks.length,
+            decks: decks.map(d => ({ id: d.id, name: d.name, drawCount: d.drawPile.length, discardCount: d.discardPile.length }))
+        });
+        
+        return {
+            version: 1,
+            updatedAt: new Date().toISOString(),
+            decks: decks.map(deck => ({
+                id: deck.id,
+                name: deck.name,
+                drawPile: deck.drawPile || [],
+                discardPile: deck.discardPile || []
+            }))
+        };
     } catch (error) {
-        if (error.code === 'ENOENT') {
-            const defaultConfig = {
-                version: 1,
-                updatedAt: new Date().toISOString(),
-                decks: []
-            };
-            await writeCardsConfig(defaultConfig, false);
-            return defaultConfig;
-        }
+        console.error('❌ Cards API: Ошибка получения колод из MongoDB:', error);
         throw error;
     }
 }
 
 /**
- * Сохраняет конфигурацию карточных колод
+ * Сохраняет колоды карточек в MongoDB
  */
-async function writeCardsConfig(config, refreshTimestamp = true) {
-    const data = {
-        ...config,
-        updatedAt: refreshTimestamp ? new Date().toISOString() : (config.updatedAt || new Date().toISOString())
-    };
-
-    await fs.mkdir(path.dirname(CARDS_CONFIG_PATH), { recursive: true });
-    await fs.writeFile(CARDS_CONFIG_PATH, JSON.stringify(data, null, 2), 'utf-8');
-    return data;
+async function saveCardsConfig(decks) {
+    try {
+        console.log('🔍 Cards API: Сохранение колод в MongoDB:', {
+            decksCount: decks.length,
+            decks: decks.map(d => ({ id: d.id, name: d.name }))
+        });
+        
+        // Удаляем все существующие колоды
+        await Deck.deleteMany({});
+        
+        // Создаем новые колоды
+        const savedDecks = await Promise.all(decks.map(async (deckData) => {
+            // Создаем карточки для drawPile
+            const drawCards = await Promise.all(
+                (deckData.drawPile || []).map(cardData => 
+                    new Card(cardData).save()
+                )
+            );
+            
+            // Создаем карточки для discardPile
+            const discardCards = await Promise.all(
+                (deckData.discardPile || []).map(cardData => 
+                    new Card(cardData).save()
+                )
+            );
+            
+            // Создаем колоду
+            const deck = new Deck({
+                id: deckData.id,
+                name: deckData.name,
+                drawPile: drawCards.map(card => card._id),
+                discardPile: discardCards.map(card => card._id)
+            });
+            
+            return await deck.save();
+        }));
+        
+        console.log('✅ Cards API: Колоды сохранены в MongoDB:', {
+            savedCount: savedDecks.length
+        });
+        
+        return {
+            version: 1,
+            updatedAt: new Date().toISOString(),
+            decks: savedDecks
+        };
+    } catch (error) {
+        console.error('❌ Cards API: Ошибка сохранения колод в MongoDB:', error);
+        throw error;
+    }
 }
 
 /**
- * Создание резервной копии
+ * Создание резервной копии (пока отключено для MongoDB)
  */
 async function createBackup() {
-    await fs.mkdir(CARDS_BACKUP_DIR, { recursive: true });
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupName = `cards-${timestamp}.json`;
-    const backupPath = path.join(CARDS_BACKUP_DIR, backupName);
-
-    const currentConfig = await readCardsConfig();
-    await fs.writeFile(backupPath, JSON.stringify(currentConfig, null, 2), 'utf-8');
-
-    return backupPath;
+    console.log('⚠️ Cards API: Резервное копирование отключено для MongoDB');
+    return null;
 }
 
 /**
@@ -67,9 +107,6 @@ function collectDeckStats(decks = []) {
     return decks.map((deck) => ({
         id: deck.id,
         name: deck.name,
-        subtitle: deck.subtitle || '',
-        drawDescription: deck.drawDescription || '',
-        discardDescription: deck.discardDescription || '',
         drawCount: Array.isArray(deck.drawPile) ? deck.drawPile.length : 0,
         discardCount: Array.isArray(deck.discardPile) ? deck.discardPile.length : 0
     }));
@@ -81,7 +118,7 @@ function collectDeckStats(decks = []) {
  */
 router.get('/', async (req, res) => {
     try {
-        const config = await readCardsConfig();
+        const config = await getCardsConfig();
         res.json({
             success: true,
             data: {
@@ -116,11 +153,7 @@ router.put('/', async (req, res) => {
 
         await createBackup();
 
-        const currentConfig = await readCardsConfig();
-        const newConfig = await writeCardsConfig({
-            version: version || currentConfig.version || 1,
-            decks
-        });
+        const newConfig = await saveCardsConfig(decks);
 
         res.json({
             success: true,
@@ -142,79 +175,25 @@ router.put('/', async (req, res) => {
 
 /**
  * GET /api/cards/backups
- * Возвращает список резервных копий
+ * Возвращает список резервных копий (отключено для MongoDB)
  */
 router.get('/backups', async (req, res) => {
-    try {
-        await fs.mkdir(CARDS_BACKUP_DIR, { recursive: true });
-        const files = await fs.readdir(CARDS_BACKUP_DIR);
-
-        const backups = [];
-        for (const file of files) {
-            if (!file.endsWith('.json')) continue;
-            const filePath = path.join(CARDS_BACKUP_DIR, file);
-            const stats = await fs.stat(filePath);
-            backups.push({
-                name: file,
-                size: stats.size,
-                created: stats.birthtime,
-                modified: stats.mtime
-            });
-        }
-
-        backups.sort((a, b) => b.created - a.created);
-
-        res.json({
-            success: true,
-            data: backups
-        });
-    } catch (error) {
-        console.error('❌ Ошибка получения резервных копий карт:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Не удалось получить список резервных копий',
-            error: error.message
-        });
-    }
+    res.json({
+        success: true,
+        message: 'Резервное копирование отключено для MongoDB',
+        data: []
+    });
 });
 
 /**
  * POST /api/cards/restore
- * Восстанавливает конфигурацию из резервной копии
+ * Восстанавливает конфигурацию из резервной копии (отключено для MongoDB)
  */
 router.post('/restore', async (req, res) => {
-    try {
-        const { backupName } = req.body;
-
-        if (!backupName) {
-            return res.status(400).json({
-                success: false,
-                message: 'Не указано имя резервной копии'
-            });
-        }
-
-        const backupPath = path.join(CARDS_BACKUP_DIR, backupName);
-        const backupContent = await fs.readFile(backupPath, 'utf-8');
-        const backupConfig = JSON.parse(backupContent);
-
-        const savedConfig = await writeCardsConfig(backupConfig);
-
-        res.json({
-            success: true,
-            message: 'Конфигурация восстановлена из резервной копии',
-            data: {
-                ...savedConfig,
-                stats: collectDeckStats(savedConfig.decks)
-            }
-        });
-    } catch (error) {
-        console.error('❌ Ошибка восстановления конфигурации карт:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Не удалось восстановить конфигурацию из резервной копии',
-            error: error.message
-        });
-    }
+    res.status(501).json({
+        success: false,
+        message: 'Восстановление из резервной копии отключено для MongoDB'
+    });
 });
 
 module.exports = router;
