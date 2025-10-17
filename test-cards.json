@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "decks": [
+    {
+      "id": "deal",
+      "name": "Малая сделка",
+      "subtitle": "",
+      "drawDescription": "",
+      "discardDescription": "",
+      "drawPile": [
+        {
+          "id": "deal_001",
+          "title": "Продать старый велосипед",
+          "description": "Нашел покупателя на старый велосипед",
+          "value": 150,
+          "type": "deal",
+          "category": "sale",
+          "priority": "low",
+          "metadata": {}
+        },
+        {
+          "id": "deal_002", 
+          "title": "Подработка на выходных",
+          "description": "Дополнительная работа в выходные",
+          "value": 200,
+          "type": "deal",
+          "category": "work",
+          "priority": "medium",
+          "metadata": {}
+        },
+        {
+          "id": "deal_003",
+          "title": "Продать ненужные книги",
+          "description": "Сдать книги в букинист",
+          "value": 50,
+          "type": "deal",
+          "category": "sale",
+          "priority": "low",
+          "metadata": {}
+        }
+      ],
+      "discardPile": []
+    },
+    {
+      "id": "big_deal",
+      "name": "Большие сделки",
+      "subtitle": "",
+      "drawDescription": "",
+      "discardDescription": "",
+      "drawPile": [
+        {
+          "id": "big_deal_001",
+          "title": "Инвестиции в акции",
+          "description": "Покупка акций перспективной компании",
+          "value": -5000,
+          "type": "big_deal",
+          "category": "stocks",
+          "priority": "high",
+          "metadata": {}
+        },
+        {
+          "id": "big_deal_002",
+          "title": "Недвижимость - квартира",
+          "description": "Покупка квартиры для сдачи в аренду",
+          "value": -150000,
+          "type": "big_deal",
+          "category": "real_estate",
+          "priority": "high",
+          "metadata": {}
+        }
+      ],
+      "discardPile": []
+    },
+    {
+      "id": "expenses",
+      "name": "Расходы",
+      "subtitle": "",
+      "drawDescription": "",
+      "discardDescription": "",
+      "drawPile": [
+        {
+          "id": "expense_001",
+          "title": "Счет за электричество",
+          "description": "Ежемесячный счет за электроэнергию",
+          "value": -80,
+          "type": "expense",
+          "category": "utilities",
+          "priority": "high",
+          "metadata": {}
+        },
+        {
+          "id": "expense_002",
+          "title": "Ремонт автомобиля",
+          "description": "Внезапная поломка требует ремонта",
+          "value": -300,
+          "type": "expense",
+          "category": "car",
+          "priority": "high",
+          "metadata": {}
+        },
+        {
+          "id": "expense_003",
+          "title": "Покупка продуктов",
+          "description": "Еженедельные продукты",
+          "value": -120,
+          "type": "expense",
+          "category": "food",
+          "priority": "medium",
+          "metadata": {}
+        }
+      ],
+      "discardPile": []
+    },
+    {
+      "id": "market",
+      "name": "Рынок",
+      "subtitle": "",
+      "drawDescription": "",
+      "discardDescription": "",
+      "drawPile": [
+        {
+          "id": "market_001",
+          "title": "Скидка на одежду",
+          "description": "Сезонная распродажа в магазине",
+          "value": -200,
+          "type": "market",
+          "category": "clothing",
+          "priority": "low",
+          "metadata": {}
+        },
+        {
+          "id": "market_002",
+          "title": "Курсы повышения квалификации",
+          "description": "Инвестиция в свои навыки",
+          "value": -500,
+          "type": "market",
+          "category": "skills",
+          "priority": "medium",
+          "metadata": {}
+        }
+      ],
+      "discardPile": []
+    }
+  ]
+}
