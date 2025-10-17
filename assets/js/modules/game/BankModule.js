@@ -828,15 +828,15 @@ class BankModule {
     setupEventListeners() {
         // Закрытие модуля
         const closeBtn = this.ui.querySelector('#bank-close');
-        closeBtn.addEventListener('click', () => this.close());
+        closeBtn.addEventListener('click', async () => await this.close());
         
         // Закрытие по клику на overlay
         const overlay = this.ui.querySelector('.bank-overlay');
-        overlay.addEventListener('click', () => this.close());
+        overlay.addEventListener('click', async () => await this.close());
         
         // Переводы
         const transferExecute = this.ui.querySelector('#transfer-execute');
-        transferExecute.addEventListener('click', () => this.executeTransfer());
+        transferExecute.addEventListener('click', async () => await this.executeTransfer());
         
         const transferReset = this.ui.querySelector('#transfer-reset');
         transferReset.addEventListener('click', () => this.resetTransferForm());
@@ -846,22 +846,22 @@ class BankModule {
         if (creditTake) creditTake.addEventListener('click', () => this.takeCredit());
         const loanTake = this.ui.querySelector('#loan-take');
         const loanRepay = this.ui.querySelector('#loan-repay');
-        if (loanTake) loanTake.addEventListener('click', () => this.takeCreditInline());
-        if (loanRepay) loanRepay.addEventListener('click', () => this.repayCreditInline());
+        if (loanTake) loanTake.addEventListener('click', async () => await this.takeCreditInline());
+        if (loanRepay) loanRepay.addEventListener('click', async () => await this.repayCreditInline());
         
         // Погашение кредитов
         const payoffButtons = this.ui.querySelectorAll('.payoff-btn');
         payoffButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 const loanType = e.target.dataset.loan;
-                this.payOffLoan(loanType);
+                await this.payOffLoan(loanType);
             });
         });
         
         // Добавление ребенка
         const addChildBtn = this.ui.querySelector('#add-child');
         if (addChildBtn) {
-            addChildBtn.addEventListener('click', () => this.addChild());
+            addChildBtn.addEventListener('click', async () => await this.addChild());
         }
         
         console.log('🏦 BankModule: Обработчики настроены');
