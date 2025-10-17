@@ -244,4 +244,5 @@ class DatabaseConfig {
 // Создаем глобальный экземпляр
 const databaseConfig = new DatabaseConfig();
 
-module.exports = databaseConfig;
+module.exports = DatabaseConfig;
+module.exports.default = databaseConfig;
