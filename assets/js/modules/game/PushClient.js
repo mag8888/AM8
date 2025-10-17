@@ -336,12 +336,14 @@ class PushClient {
             case 'deal_card_revealed': {
                 const dm = window.app?.getModule?.('dealModule');
                 if (dm && pushData.data?.deckId && pushData.data?.card) {
-                    dm.showCardAndDecide(pushData.data.deckId, pushData.data.card);
+                    dm.showCardAndDecide(pushData.data.deckId, pushData.data.card, pushData.data?.buyerId || null);
                 }
                 break;
             }
             case 'deal_rights_transferred': {
                 // Можем подсветить кому передали право
+                const dm = window.app?.getModule?.('dealModule');
+                dm?.onRightsTransferred(pushData.data);
                 this.eventBus.emit('deal:rights_transferred', pushData.data);
                 break;
             }

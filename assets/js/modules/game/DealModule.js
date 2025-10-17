@@ -104,10 +104,15 @@
             return { deckId, card };
         }
 
-        async showCardAndDecide(deckId, card){
+        async showCardAndDecide(deckId, card, buyerId){
             if(!card) return { action:'none' };
-            // Показать всем игрокам через push (если доступно)
-            try{ await fetch('/api/push/broadcast', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'deal_card_revealed', data:{ deckId, card } })}); }catch(_){ }
+            const activeId = this.getActivePlayerId();
+            const initialBuyer = buyerId || activeId || null;
+            this.currentReveal = { deckId, cardId: card.id, buyerId: initialBuyer };
+            // Показать всем игрокам через push (если мы локально инициируем)
+            if (!buyerId) {
+                try{ await fetch('/api/push/broadcast', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'deal_card_revealed', data:{ deckId, card, buyerId: initialBuyer } })}); }catch(_){ }
+            }
             return new Promise((resolve)=>{
                 const overlay = document.createElement('div');
                 overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:4100;display:flex;align-items:center;justify-content:center;';
@@ -125,11 +130,11 @@
                 overlay.appendChild(box);
                 document.body.appendChild(overlay);
                 const cleanup=()=>{ try{document.body.removeChild(overlay);}catch(_){} };
-                // Кнопки активны только у активного игрока
-                const isMyTurn = window.app?.getModule?.('turnService')?.isMyTurn?.() || false;
+                // Кнопки активны только у текущего владельца права
                 const buyBtn = overlay.querySelector('#deal_buy');
                 const passBtn = overlay.querySelector('#deal_pass');
-                if(!isMyTurn){ buyBtn.disabled = true; passBtn.disabled = true; buyBtn.title='Не ваш ход'; passBtn.title='Не ваш ход'; }
+                this.uiRefs = { overlay, box, buyBtn, passBtn };
+                this._updateDealButtonsState();
                 overlay.querySelector('#deal_cancel').onclick=()=>{ cleanup(); this.discard(deckId, card); resolve({ action:'discard' }); };
                 buyBtn.onclick=()=>{ cleanup(); this.acquire(card); resolve({ action:'buy', card }); };
                 passBtn.onclick=()=>{
@@ -141,15 +146,46 @@
                         b.className='btn';
                         b.textContent = `Передать: ${p.username||p.name||p.id}`;
                         b.onclick = async ()=>{
-                            try{ await fetch('/api/push/broadcast', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'deal_rights_transferred', data:{ to:p.id, card } })}); }catch(_){ }
-                            cleanup();
-                            resolve({ action:'pass', to:p.id, card });
+                            try{ await fetch('/api/push/broadcast', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'deal_rights_transferred', data:{ to:p.id, cardId: card.id } })}); }catch(_){ }
+                            this.onRightsTransferred({ to: p.id, cardId: card.id });
+                            resolve({ action:'pass', to: p.id, card });
                         };
                         list.appendChild(b);
                     });
                     box.appendChild(list);
                 };
             });
+        }
+
+        _updateDealButtonsState(){
+            if (!this.uiRefs) return;
+            const myId = this.getMyUserId();
+            const allowed = !!this.currentReveal && this.currentReveal.buyerId && this.currentReveal.buyerId === myId;
+            this.uiRefs.buyBtn.disabled = !allowed;
+            this.uiRefs.passBtn.disabled = !allowed;
+            this.uiRefs.buyBtn.title = allowed ? '' : 'Право покупки у другого игрока';
+            this.uiRefs.passBtn.title = allowed ? '' : 'Право покупки у другого игрока';
+        }
+
+        onRightsTransferred(data){
+            if (!this.currentReveal || !data) return;
+            if (data.cardId !== this.currentReveal.cardId) return;
+            this.currentReveal.buyerId = data.to;
+            this._updateDealButtonsState();
+        }
+
+        getMyUserId(){
+            try{
+                const bundleRaw = sessionStorage.getItem('am_player_bundle');
+                if (bundleRaw) { const b=JSON.parse(bundleRaw); return b?.currentUser?.id || b?.userId || b?.id || null; }
+                const userRaw = localStorage.getItem('aura_money_user');
+                if (userRaw) { const u=JSON.parse(userRaw); return u?.id || u?.userId || null; }
+            }catch(_){ }
+            return window.app?.getModule?.('gameState')?.getCurrentUser?.()?.id || null;
+        }
+
+        getActivePlayerId(){
+            try{ return window.app?.getModule?.('gameState')?.activePlayer?.id || null; }catch(_){ return null; }
         }
     }
 
