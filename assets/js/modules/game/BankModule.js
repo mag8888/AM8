@@ -1006,6 +1006,19 @@ class BankModule {
                 }
             }
             
+            // Если все еще не найден, пробуем использовать первого игрока
+            if (!currentPlayer) {
+                const gameStateManager = window.app?.services?.get('gameStateManager');
+                const state = gameStateManager?.getState();
+                const players = state?.players || [];
+                
+                if (players.length > 0) {
+                    currentPlayer = players[0];
+                    console.log('🔧 BankModule: Используем первого игрока как fallback:', currentPlayer.username);
+                    this.currentUserId = currentPlayer.id;
+                }
+            }
+            
             if (!currentPlayer) {
                 console.warn('⚠️ BankModule: Нельзя открыть банк - текущий пользователь не найден');
                 return;
