@@ -867,11 +867,27 @@ class BankModule {
     }
 
     takeCreditInline() {
-        const amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
-        if (amount <= 0) return;
+        let amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
         const player = this.getCurrentUserPlayer();
         const profId = player?.profession || 'entrepreneur';
         const ps = this.professionSystem;
+        // Ограничение: не больше доступного лимита (maxLoan - currentLoan)
+        const details = ps?.getProfessionDetails?.(profId, {
+            money: player.money || 0,
+            children: player.children || 0,
+            paidOffLoans: player.paidOffLoans || {},
+            extraIncome: player.extraIncome || 0,
+            currentLoan: player.currentLoan || 0,
+            otherMonthlyAdjustments: player.otherMonthlyAdjustments || 0
+        });
+        const maxLoan = details?.loan?.maxLoan || 0;
+        const currentLoan = player.currentLoan || 0;
+        const available = Math.max(0, maxLoan - currentLoan);
+        amount = Math.min(amount, available);
+        // Обновим поле ввода фактическим разрешённым значением
+        const input = this.ui.querySelector('#loan-amount');
+        if (input) input.value = String(amount);
+        if (amount <= 0) return;
         const res = ps?.takeLoan?.(profId, player, amount);
         if (res?.success) {
             player.currentLoan = res.newLoan;
