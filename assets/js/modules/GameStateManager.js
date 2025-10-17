@@ -42,6 +42,8 @@ class GameStateManager {
         console.log('🔍 GameStateManager: updateFromServer вызван с serverState:', serverState);
         console.log('🔍 GameStateManager: serverState.players:', serverState.players);
         console.log('🔍 GameStateManager: Array.isArray(serverState.players):', Array.isArray(serverState.players));
+        console.log('🔍 GameStateManager: serverState.players type:', typeof serverState.players);
+        console.log('🔍 GameStateManager: serverState.players constructor:', serverState.players?.constructor?.name);
 
         // Обновляем игроков (с фильтрацией дубликатов)
         if (Array.isArray(serverState.players)) {
