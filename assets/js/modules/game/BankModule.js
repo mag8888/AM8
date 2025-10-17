@@ -82,7 +82,7 @@ class BankModule {
                                 </div>
                                 
                                 <div class="current-balance">
-                                    <div class="balance-amount" id="bank-balance">$0</div>
+                                    <div class="balance-amount" id="bank-balance">$3 000</div>
                                     <div class="balance-description">Доступно для операций</div>
                                 </div>
                                 

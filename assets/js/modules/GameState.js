@@ -4,11 +4,6 @@
 class GameState {
     constructor(eventBus) {
         this.eventBus = eventBus;
-        
-        // Константы для инициализации игроков
-        this.STARTING_MONEY = 5000;
-        this.STARTING_POSITION = 0;
-        this.DEFAULT_TOKEN = '🎯';
         this.players = [];
         this.currentPlayerIndex = 0;
         this.gameStarted = false;
@@ -34,9 +29,9 @@ class GameState {
      */
     startGame(players = [{ 
         name: 'Игрок 1', 
-        position: this.STARTING_POSITION, 
+        position: 0, 
         isInner: false, 
-        money: this.STARTING_MONEY,
+        money: 5000,
         salary: 5000,
         totalIncome: 0,
         monthlyExpenses: 2000,
@@ -479,9 +474,9 @@ class GameState {
                 id: 'player1',
                 username: 'TestUser',
                 token: 'eagle',
-                position: this.STARTING_POSITION,
-                isInner: true,
-                money: this.STARTING_MONEY,
+                position: 0,
+                isInner: true, // Начинаем с малого круга
+                money: 5000,
                 salary: 5000,
                 totalIncome: 0,
                 monthlyExpenses: 2000,
@@ -492,9 +487,9 @@ class GameState {
                 id: 'player2',
                 username: 'Roman',
                 token: 'fox',
-                position: this.STARTING_POSITION,
-                isInner: true,
-                money: this.STARTING_MONEY,
+                position: 0,
+                isInner: true, // Начинаем с малого круга
+                money: 5000, // Одинаковый стартовый баланс
                 salary: 4000,
                 totalIncome: 0,
                 monthlyExpenses: 1500,
@@ -523,12 +518,12 @@ class GameState {
                 this.players = roomData.players.map((player, index) => ({
                     id: player.userId || `player${index + 1}`,
                     username: player.username || `Игрок ${index + 1}`,
-                    position: this.STARTING_POSITION,
-                    isInner: true,
-                    money: this.STARTING_MONEY,
+                    position: 0, // Все игроки начинают с клетки 1 малого круга (позиция 0)
+                    isInner: true, // Начинаем с малого круга
+                    money: 5000,
                     salary: 5000,
                     totalIncome: 0,
-                    token: player.token || this.DEFAULT_TOKEN,
+                    token: player.token || '🎯',
                     isReady: player.isReady || false,
                     dream: player.dream || null,
                     monthlyExpenses: 2000,

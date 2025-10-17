@@ -7,11 +7,6 @@ const router = express.Router();
 // Простое серверное состояние игры (на одном инстансе). Для прод-реализации заменить на Redis/БД/вебсокеты
 const gameStateByRoomId = new Map();
 
-// Константы для инициализации игроков (должны совпадать с клиентом)
-const STARTING_MONEY = 5000;
-const STARTING_POSITION = 0;
-const DEFAULT_TOKEN = '🎯';
-
 // Функция для получения состояния комнаты (для банк API)
 function getRoomGameState(roomId) {
     return gameStateByRoomId.get(roomId) || null;
@@ -47,10 +42,10 @@ function ensureGameState(db, roomId, cb) {
             id: r.userId,
             userId: r.userId,
             username: r.username || `player${idx+1}`,
-            position: STARTING_POSITION,
+            position: 0,
             isInner: true,
-            token: DEFAULT_TOKEN,
-            money: STARTING_MONEY,
+            token: '🎯',
+            money: 5000,
             isReady: true
         }));
         const state = {
