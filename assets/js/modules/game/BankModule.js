@@ -203,6 +203,14 @@ class BankModule {
                                         </button>
                                         <button class="transfer-reset" id="transfer-reset">СБРОСИТЬ</button>
                                     </div>
+                <div class="loan-inline" style="margin-top:12px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.1)">
+                    <label for="loan-amount">Кредит (шаг 1000)</label>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+                        <input type="number" id="loan-amount" class="form-input" placeholder="0" min="0" step="1000">
+                        <button class="transfer-btn" id="loan-take" style="min-width:120px">ВЗЯТЬ</button>
+                        <button class="transfer-reset" id="loan-repay" style="min-width:120px">ПОГАСИТЬ</button>
+                    </div>
+                </div>
                                 </div>
                             </div>
                             
@@ -586,6 +594,7 @@ class BankModule {
                 font-weight: 600;
                 cursor: pointer;
             }
+            .loan-inline input.form-input { max-width: 160px; }
             
             .transactions-list {
                 max-height: 300px;
@@ -833,6 +842,10 @@ class BankModule {
         // Кредиты
         const creditTake = this.ui.querySelector('#credit-take');
         creditTake.addEventListener('click', () => this.takeCredit());
+        const loanTake = this.ui.querySelector('#loan-take');
+        const loanRepay = this.ui.querySelector('#loan-repay');
+        if (loanTake) loanTake.addEventListener('click', () => this.takeCreditInline());
+        if (loanRepay) loanRepay.addEventListener('click', () => this.repayCreditInline());
         
         // Погашение кредитов
         const payoffButtons = this.ui.querySelectorAll('.payoff-btn');
@@ -850,6 +863,36 @@ class BankModule {
         }
         
         console.log('🏦 BankModule: Обработчики настроены');
+    }
+
+    takeCreditInline() {
+        const amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
+        if (amount <= 0) return;
+        const player = this.getCurrentUserPlayer();
+        const profId = player?.profession || 'entrepreneur';
+        const ps = this.professionSystem;
+        const res = ps?.takeLoan?.(profId, player, amount);
+        if (res?.success) {
+            player.currentLoan = res.newLoan;
+            player.otherMonthlyAdjustments = (player.otherMonthlyAdjustments||0) + (amount/1000)*100;
+            this.addTransaction('Кредит', `Взят кредит $${this.formatNumber(amount)}`, amount, 'completed');
+            this.updateBankData();
+        }
+    }
+
+    repayCreditInline() {
+        const amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
+        if (amount <= 0) return;
+        const player = this.getCurrentUserPlayer();
+        const profId = player?.profession || 'entrepreneur';
+        const ps = this.professionSystem;
+        const res = ps?.repayLoan?.(profId, player, amount);
+        if (res?.success) {
+            player.currentLoan = res.newLoan;
+            player.otherMonthlyAdjustments = Math.max(0, (player.otherMonthlyAdjustments||0) - (amount/1000)*100);
+            this.addTransaction('Погашение кредита', `Погашено $${this.formatNumber(amount)}`, -amount, 'completed');
+            this.updateBankData();
+        }
     }
     
     /**
