@@ -64,6 +64,11 @@ class GameStateManager {
             console.log('🔍 GameStateManager: serverState.players не является массивом или пустой:', serverState.players);
         }
         
+        // Принудительно обновляем состояние
+        console.log('🔍 GameStateManager: Принудительно обновляем состояние...');
+        console.log('🔍 GameStateManager: this.players перед emit:', this.players);
+        console.log('🔍 GameStateManager: this.players.length перед emit:', this.players?.length);
+        
         const newPlayersKey = JSON.stringify((this.players || []).map(p => (p && (p.id || p.userId || p.username)) || null));
         const playersChanged = oldPlayersKey !== newPlayersKey;
         
