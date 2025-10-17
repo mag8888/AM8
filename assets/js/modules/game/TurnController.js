@@ -102,9 +102,9 @@ class TurnController {
                     <span class="btn-icon">🎲</span>
                     <span class="btn-text">Бросить кубик</span>
                 </button>
-                <button id="end-turn-btn" class="action-btn btn-end" style="display: none;">
+                <button id="end-turn-btn" class="action-btn btn-end" disabled>
                     <span class="btn-icon">➡️</span>
-                    <span class="btn-text">Завершить ход</span>
+                    <span class="btn-text">Передать ход</span>
                 </button>
             </div>
             
@@ -880,7 +880,9 @@ class TurnController {
         }
         
         if (endTurnBtn) {
-            endTurnBtn.disabled = !state.canEndTurn;
+            // Кнопка всегда видна, но активна только если это мой ход И можно завершить ход
+            const isMyTurn = this.turnService ? this.turnService.isMyTurn() : false;
+            endTurnBtn.disabled = !isMyTurn || !state.canEndTurn;
         }
         
         // Обновляем кнопки перемещения
@@ -1130,9 +1132,8 @@ class TurnController {
         // Показываем кнопки перемещения
         moveActions.style.display = response?.state?.canMove ? 'block' : 'none';
         
-        // Показываем кнопку "Передать ход" после броска кубика
+        // Активируем кнопку "Передать ход" после броска кубика
         if (endTurnBtn) {
-            endTurnBtn.style.display = 'block';
             endTurnBtn.disabled = !this.turnService.canEndTurn();
         }
         
@@ -1189,10 +1190,14 @@ class TurnController {
     
     onMoveSuccess(response) {
         const endTurnBtn = this.ui.querySelector('#end-turn-btn');
-        endTurnBtn.style.display = 'block';
         const moveActions = this.ui.querySelector('#move-actions');
         if (moveActions) {
             moveActions.style.display = 'none';
+        }
+        
+        // Активируем кнопку "Передать ход" после движения
+        if (endTurnBtn) {
+            endTurnBtn.disabled = !this.turnService.canEndTurn();
         }
         
         this.updateStatus(`Перемещены на ${response.moveResult.steps} шагов`);
@@ -1226,7 +1231,11 @@ class TurnController {
         
         diceResult.style.display = 'none';
         moveActions.style.display = 'none';
-        endTurnBtn.style.display = 'none';
+        
+        // Отключаем кнопку "Передать ход" после завершения хода
+        if (endTurnBtn) {
+            endTurnBtn.disabled = true;
+        }
         
         this.updateStatus('Ход завершен');
         this.updateUI();

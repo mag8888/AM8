@@ -291,6 +291,13 @@ class PlayersPanel {
         if (passBtn) {
             // Кнопка передачи хода активна только если это мой ход И можно завершить ход
             passBtn.disabled = !isMyTurn || !state.canEndTurn;
+            
+            // Добавляем визуальную индикацию
+            if (isMyTurn && state.canEndTurn) {
+                passBtn.classList.add('active');
+            } else {
+                passBtn.classList.remove('active');
+            }
         }
         
         console.log('🎯 PlayersPanel: Обновлены кнопки управления:', {

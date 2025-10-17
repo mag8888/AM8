@@ -1011,6 +1011,17 @@
     transform: none;
 }
 
+.action-btn.active {
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
+    50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.8); }
+    100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
+}
+
 .btn-icon {
     font-size: 1.1rem;
 }
