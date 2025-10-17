@@ -320,9 +320,25 @@ class PlayerTokens {
             console.log('🎯 PlayerTokens: Фишка уже движется, пропускаем дублирующий вызов');
             return;
         }
+
+        // Защита от устаревших обновлений, приходящих сразу после движения
+        const nowTs = Date.now();
+        const lastUpdateTs = parseInt(token.getAttribute('data-update-ts')) || 0;
+        const currentPositionTsWindowMs = 1200; // окно защиты от отката
+        const currentPosition = parseInt(token.getAttribute('data-position')) || 0;
+        if (lastUpdateTs && (nowTs - lastUpdateTs) < currentPositionTsWindowMs) {
+            const maxPosition = isInner ? 23 : 43;
+            const isWrapAround = (currentPosition > newPosition) && ((currentPosition - newPosition) > 6) && (currentPosition === maxPosition || newPosition === 0);
+            if (!isWrapAround && newPosition < currentPosition && (currentPosition - newPosition) <= 6) {
+                console.log('🛡️ PlayerTokens: Игнорируем возможный откат позиции (устаревшее обновление)', {
+                    playerId, currentPosition, newPosition, sinceMs: nowTs - lastUpdateTs
+                });
+                return;
+            }
+        }
         
         // Получаем текущую позицию из атрибута data-position
-        const currentPosition = parseInt(token.getAttribute('data-position')) || 0;
+        // (поверх переменной currentPosition, объявленной выше)
         
         // Если позиция не изменилась, просто синхронизируем координаты
         if (currentPosition === newPosition) {
@@ -377,6 +393,7 @@ class PlayerTokens {
         token.style.left = newX + 'px';
         token.style.top = newY + 'px';
         token.setAttribute('data-position', position);
+        token.setAttribute('data-update-ts', String(Date.now()));
         
         console.log(`🎯 PlayerTokens: Фишка ${playerId} мгновенно перемещена на позицию ${position} со сдвигом (${offset.x}, ${offset.y})`);
     }
@@ -587,6 +604,7 @@ class PlayerTokens {
                 
                 // Обновляем атрибут позиции
                 token.setAttribute('data-position', stepPosition);
+                token.setAttribute('data-update-ts', String(Date.now()));
                 
                 console.log(`🎯 PlayerTokens: Шаг ${stepIndex + 1}/${steps.length}: позиция ${stepPosition} со сдвигом (${offset.x}, ${offset.y})`);
                 
