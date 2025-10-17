@@ -61,6 +61,8 @@ class GameStateManager {
                 
                 console.log('🏗️ GameStateManager: Игроки обновлены, итого:', this.players.length);
                 console.log('🏗️ GameStateManager: this.players после обновления:', this.players);
+                console.log('🏗️ GameStateManager: this.players === serverState.players:', this.players === serverState.players);
+                console.log('🏗️ GameStateManager: this.players[0]:', this.players[0]);
             } catch (error) {
                 console.error('❌ GameStateManager: Ошибка при обработке игроков:', error);
                 // Fallback: простое копирование
@@ -229,7 +231,11 @@ class GameStateManager {
      * @returns {Object} Текущее состояние
      */
     getState() {
-        return {
+        console.log('🔍 GameStateManager: getState() вызван');
+        console.log('🔍 GameStateManager: this.players в getState():', this.players);
+        console.log('🔍 GameStateManager: this.players.length в getState():', this.players?.length);
+        
+        const state = {
             players: this.players,
             activePlayer: this.activePlayer,
             roomId: this.roomId,
@@ -240,6 +246,9 @@ class GameStateManager {
             lastDiceResult: this.gameState.lastDiceResult,
             gameStarted: this.gameState.gameStarted
         };
+        
+        console.log('🔍 GameStateManager: возвращаем состояние:', state);
+        return state;
     }
     
     /**
