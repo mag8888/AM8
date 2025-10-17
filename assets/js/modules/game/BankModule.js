@@ -1503,6 +1503,17 @@ class BankModule {
     getCurrentUserPlayer() {
         if (!this.gameState) return null;
         
+        // Подписываемся на события GameStateManager для получения актуальных данных
+        if (this.gameStateManager && !this._subscribedToGameStateManager) {
+            this.gameStateManager.on('players:updated', (players) => {
+                console.log('🔍 BankModule: Получены обновленные игроки от GameStateManager:', players);
+            });
+            this.gameStateManager.on('state:updated', (state) => {
+                console.log('🔍 BankModule: Получено обновленное состояние от GameStateManager:', state);
+            });
+            this._subscribedToGameStateManager = true;
+        }
+        
         // Получаем ID текущего пользователя из различных источников
         let currentUserId = null;
         
@@ -1568,6 +1579,17 @@ class BankModule {
         if (this.gameStateManager) {
             const state = this.gameStateManager.getState();
             players = state.players || [];
+            console.log('🔍 BankModule: Игроки из GameStateManager:', players);
+            
+            // Если игроки пустые, попробуем принудительно обновить
+            if (players.length === 0) {
+                console.log('🔍 BankModule: Принудительно обновляем данные из GameStateManager...');
+                // Попробуем получить данные напрямую из внутреннего состояния
+                if (this.gameStateManager._players && this.gameStateManager._players.length > 0) {
+                    players = this.gameStateManager._players;
+                    console.log('🔍 BankModule: Найдены игроки в _players:', players);
+                }
+            }
         } else {
             players = this.gameState.getPlayers();
         }
