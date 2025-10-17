@@ -156,7 +156,12 @@ class BoardLayout {
 
         const numberElement = document.createElement('div');
         numberElement.className = 'cell-number';
-        numberElement.textContent = String(position + 1);
+        // Используем явный идентификатор клетки из конфигурации,
+        // чтобы избежать пересечений нумерации между кругами
+        const displayId = typeof cellData.id === 'number' ? cellData.id : (position + 1);
+        numberElement.textContent = String(displayId);
+        // Атрибут для логики перемещений/подсветки
+        cell.dataset.cellId = String(displayId);
 
         const iconElement = document.createElement('div');
         iconElement.className = 'cell-icon';
