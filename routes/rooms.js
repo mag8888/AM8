@@ -2,8 +2,16 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const PushService = require('../services/PushService');
 const RoomRepository = require('../repositories/RoomRepository');
+const BoardConfig = require('../assets/js/modules/game/BoardConfig.js');
 
 const router = express.Router();
+
+const OUTER_TRACK_LENGTH = Array.isArray(BoardConfig?.BIG_CIRCLE)
+    ? BoardConfig.BIG_CIRCLE.length
+    : (BoardConfig?.BIG_CIRCLE_CELLS || 44);
+const INNER_TRACK_LENGTH = Array.isArray(BoardConfig?.SMALL_CIRCLE)
+    ? BoardConfig.SMALL_CIRCLE.length
+    : (BoardConfig?.SMALL_CIRCLE_CELLS || 24);
 // Простое серверное состояние игры (на одном инстансе). Для прод-реализации заменить на Redis/БД/вебсокеты
 const gameStateByRoomId = new Map();
 
@@ -27,12 +35,46 @@ module.exports.gameStateByRoomId = gameStateByRoomId;
 const pushService = new PushService();
 
 function ensureGameState(db, roomId, cb) {
-    if (gameStateByRoomId.has(roomId)) return cb(null, gameStateByRoomId.get(roomId));
+    if (gameStateByRoomId.has(roomId)) {
+        const cachedState = gameStateByRoomId.get(roomId);
+        if (!cachedState.board) {
+            cachedState.board = {
+                innerLength: INNER_TRACK_LENGTH,
+                outerLength: OUTER_TRACK_LENGTH
+            };
+        }
+        if (Array.isArray(cachedState.players)) {
+            cachedState.players = cachedState.players.map(player => ({
+                ...player,
+                isInner: typeof player.isInner === 'boolean' ? player.isInner : player.track === 'inner',
+                track: player.track || (player.isInner ? 'inner' : 'outer')
+            }));
+            if (cachedState.activePlayer) {
+                const active = cachedState.players.find(p => p.id === cachedState.activePlayer.id || p.userId === cachedState.activePlayer.userId);
+                if (active) {
+                    cachedState.activePlayer = active;
+                }
+            }
+        }
+        return cb(null, cachedState);
+    }
     const q = `SELECT rp.user_id as userId, u.username as username
                FROM room_players rp LEFT JOIN users u ON u.id = rp.user_id
                WHERE rp.room_id = ? ORDER BY u.username ASC`;
     if (!db) {
-        const state = { players: [], currentPlayerIndex: 0, activePlayer: null, lastDiceResult: null, canRoll: true, canMove: false, canEndTurn: false };
+        const state = {
+            players: [],
+            currentPlayerIndex: 0,
+            activePlayer: null,
+            lastDiceResult: null,
+            canRoll: true,
+            canMove: false,
+            canEndTurn: false,
+            board: {
+                innerLength: INNER_TRACK_LENGTH,
+                outerLength: OUTER_TRACK_LENGTH
+            }
+        };
         gameStateByRoomId.set(roomId, state);
         return cb(null, state);
     }
@@ -44,6 +86,7 @@ function ensureGameState(db, roomId, cb) {
             username: r.username || `player${idx+1}`,
             position: 0,
             isInner: true,
+            track: 'inner',
             token: '🎯',
             money: 5000,
             isReady: true
@@ -55,7 +98,11 @@ function ensureGameState(db, roomId, cb) {
             lastDiceResult: null,
             canRoll: true,
             canMove: false,
-            canEndTurn: false
+            canEndTurn: false,
+            board: {
+                innerLength: INNER_TRACK_LENGTH,
+                outerLength: OUTER_TRACK_LENGTH
+            }
         };
         gameStateByRoomId.set(roomId, state);
         cb(null, state);
@@ -99,13 +146,26 @@ router.get('/:id/game-state', (req, res, next) => {
                 let state = gameStateByRoomId.get(id);
                 if (!state) {
                     state = {
-                        players: (room?.players || []).map(p => ({ id: p.id || p.userId, username: p.username, position: 0, isInner: true, token: p.token || '🎯', money: 5000, isReady: !!p.isReady })),
+                        players: (room?.players || []).map(p => ({
+                            id: p.id || p.userId,
+                            username: p.username,
+                            position: 0,
+                            isInner: true,
+                            track: 'inner',
+                            token: p.token || '🎯',
+                            money: 5000,
+                            isReady: !!p.isReady
+                        })),
                         currentPlayerIndex: 0,
                         activePlayer: null,
                         lastDiceResult: null,
                         canRoll: true,
                         canMove: false,
-                        canEndTurn: false
+                        canEndTurn: false,
+                        board: {
+                            innerLength: INNER_TRACK_LENGTH,
+                            outerLength: OUTER_TRACK_LENGTH
+                        }
                     };
                     state.activePlayer = state.players[0] || null;
                     gameStateByRoomId.set(id, state);
@@ -151,7 +211,7 @@ router.post('/:id/roll', (req, res, next) => {
 router.post('/:id/move', (req, res, next) => {
     const db = getDatabase();
     const { id } = req.params;
-    const { steps } = req.body || {};
+    const { steps, isInner, track } = req.body || {};
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
         const current = state.players[state.currentPlayerIndex];
@@ -167,8 +227,31 @@ router.post('/:id/move', (req, res, next) => {
         if (!Number.isFinite(moveSteps) || moveSteps <= 0) {
             return res.status(400).json({ success:false, message:'Некорректное количество шагов для перемещения', state });
         }
-        const maxInner = 12;
-        current.position = (current.position + moveSteps) % maxInner;
+        
+        if (!state.board) {
+            state.board = {
+                innerLength: INNER_TRACK_LENGTH,
+                outerLength: OUTER_TRACK_LENGTH
+            };
+        }
+
+        const requestedTrack = typeof isInner === 'boolean'
+            ? (isInner ? 'inner' : 'outer')
+            : (track === 'inner' || track === 'outer' ? track : null);
+        const effectiveTrack = requestedTrack || current.track || (current.isInner ? 'inner' : 'outer') || 'inner';
+        const isInnerTrack = effectiveTrack === 'inner';
+        const trackLength = isInnerTrack
+            ? (state.board.innerLength || INNER_TRACK_LENGTH)
+            : (state.board.outerLength || OUTER_TRACK_LENGTH);
+
+        current.isInner = isInnerTrack;
+        current.track = effectiveTrack;
+
+        const normalizedPosition = Number(current.position) || 0;
+        const maxIndex = Math.max(1, trackLength);
+        current.position = (normalizedPosition + moveSteps) % maxIndex;
+        state.activePlayer = current;
+        
         state.canRoll = false;
         state.canMove = false;
         state.canEndTurn = true;

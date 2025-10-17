@@ -252,16 +252,27 @@ class RoomApi {
      * Движение фишки (совместимо с TurnService.move)
      * @param {string} roomId - ID комнаты
      * @param {number} steps - Количество шагов
+     * @param {Object} options - Дополнительные параметры
+     * @param {boolean} [options.isInner] - Признак внутреннего круга
+     * @param {string} [options.track] - Идентификатор трека
      * @returns {Promise<Object>} Результат движения
      */
-    async move(roomId, steps) {
+    async move(roomId, steps, options = {}) {
         const endpoint = `/${roomId}/move`;
         
-        console.log(`🚶 RoomApi: Движение фишки в комнате ${roomId} на ${steps} шагов`);
+        const payload = { steps };
+        if (typeof options.isInner === 'boolean') {
+            payload.isInner = options.isInner;
+        }
+        if (options.track) {
+            payload.track = options.track;
+        }
+        
+        console.log(`🚶 RoomApi: Движение фишки в комнате ${roomId} на ${steps} шагов`, payload);
         
         return await this.request(endpoint, {
             method: 'POST',
-            body: JSON.stringify({ steps })
+            body: JSON.stringify(payload)
         });
     }
 

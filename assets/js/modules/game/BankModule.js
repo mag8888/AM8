@@ -866,7 +866,7 @@ class BankModule {
         console.log('🏦 BankModule: Обработчики настроены');
     }
 
-    takeCreditInline() {
+    async takeCreditInline() {
         let amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
         const player = this.getCurrentUserPlayer();
         const profId = player?.profession || 'entrepreneur';

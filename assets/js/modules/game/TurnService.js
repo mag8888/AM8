@@ -198,13 +198,25 @@ class TurnService extends EventTarget {
             throw new Error('TurnService.move: invalid steps value');
         }
         
+        const stateSnapshot = this.getState();
+        const playerContext = options.player || stateSnapshot?.activePlayer || null;
+        const isInnerTrack = typeof options.isInner === 'boolean'
+            ? options.isInner
+            : (playerContext && typeof playerContext.isInner === 'boolean'
+                ? Boolean(playerContext.isInner)
+                : true);
+        const trackId = isInnerTrack ? 'inner' : 'outer';
+
         try {
             this._isMoving = true;
             // Эмит начала перемещения
             this.emit('move:start', { steps: targetSteps });
             
             // Вызов API
-            const response = await this.roomApi.move(roomId, targetSteps);
+            const response = await this.roomApi.move(roomId, targetSteps, {
+                isInner: isInnerTrack,
+                track: trackId
+            });
             this._applyServerState(response?.state);
             
             // Эмит успешного результата
