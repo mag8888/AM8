@@ -1166,7 +1166,17 @@ class TurnController {
     
     onRollError(error) {
         console.error('❌ TurnController: Ошибка броска кубика:', error);
-        this.updateStatus('Ошибка броска кубика');
+        const rollBtn = this.ui.querySelector('#roll-dice-btn');
+        if (rollBtn) {
+            rollBtn.disabled = true;
+            setTimeout(()=>{ rollBtn.disabled = false; }, 1200);
+        }
+        const message = (error && (error.message || error.toString() || ''));
+        if (String(message).includes('HTTP 400') || String(message).toLowerCase().includes('not your turn')) {
+            this.updateStatus('Не ваш ход или действие недоступно');
+        } else {
+            this.updateStatus('Ошибка броска кубика');
+        }
     }
     
     onRollFinish() {

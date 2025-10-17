@@ -144,6 +144,12 @@ class TurnService extends EventTarget {
             // Эмит ошибки
             this.emit('roll:error', error);
             console.error('❌ TurnService: Ошибка броска кубика:', error);
+            // Мягко подавляем HTTP 400 (не ваш ход/недоступно)
+            const msg = String(error && (error.message || error))
+                .toLowerCase();
+            if (msg.includes('http 400') || msg.includes('not your turn')) {
+                return { error: 'bad_request' };
+            }
             throw error;
         } finally {
             this._isRolling = false;
