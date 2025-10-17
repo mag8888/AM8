@@ -1546,7 +1546,14 @@ class BankModule {
         if (!currentUserId) {
             console.warn('⚠️ BankModule: Не удалось определить ID текущего пользователя');
             // Попробуем использовать активного игрока как fallback
-            const activePlayer = this.gameState.getActivePlayer();
+            let activePlayer = null;
+            if (this.gameStateManager) {
+                const state = this.gameStateManager.getState();
+                activePlayer = state.activePlayer;
+            } else {
+                activePlayer = this.gameState.getActivePlayer();
+            }
+            
             if (activePlayer) {
                 console.log('🔍 BankModule: Используем активного игрока как fallback:', activePlayer.username);
                 return activePlayer;
@@ -1555,14 +1562,24 @@ class BankModule {
         }
         
         console.log('🔍 BankModule: Поиск игрока с ID:', currentUserId);
-        console.log('🔍 BankModule: Доступные игроки:', this.gameState.getPlayers().map(p => ({
+        
+        // Получаем игроков из GameStateManager, а не из GameState
+        let players = [];
+        if (this.gameStateManager) {
+            const state = this.gameStateManager.getState();
+            players = state.players || [];
+        } else {
+            players = this.gameState.getPlayers();
+        }
+        
+        console.log('🔍 BankModule: Доступные игроки:', players.map(p => ({
             id: p.id,
             username: p.username,
             userId: p.userId
         })));
         
         // Находим игрока по ID (проверяем все возможные поля)
-        let player = this.gameState.getPlayers().find(p => 
+        let player = players.find(p => 
             p.id === currentUserId || 
             p.username === currentUserId ||
             p.userId === currentUserId
@@ -1579,7 +1596,7 @@ class BankModule {
                     const username = bundle.username || bundle.currentUser?.username;
                     console.log('🔍 BankModule: Поиск по username из sessionStorage:', username);
                     if (username) {
-                        player = this.gameState.getPlayers().find(p => p.username === username);
+                        player = players.find(p => p.username === username);
                         console.log('🔍 BankModule: Результат поиска по username:', player ? 'найден' : 'не найден');
                     }
                 }
@@ -1590,7 +1607,14 @@ class BankModule {
         
         // Если все еще не найден, пытаемся найти по активному игроку
         if (!player) {
-            const activePlayer = this.gameState.getActivePlayer();
+            let activePlayer = null;
+            if (this.gameStateManager) {
+                const state = this.gameStateManager.getState();
+                activePlayer = state.activePlayer;
+            } else {
+                activePlayer = this.gameState.getActivePlayer();
+            }
+            
             if (activePlayer) {
                 console.log('🔍 BankModule: Пробуем использовать активного игрока:', activePlayer.username);
                 player = activePlayer;
@@ -1598,14 +1622,14 @@ class BankModule {
         }
         
         // Если все еще не найден, берем первого игрока как fallback
-        if (!player && this.gameState.getPlayers().length > 0) {
-            player = this.gameState.getPlayers()[0];
+        if (!player && players.length > 0) {
+            player = players[0];
             console.warn('⚠️ BankModule: Используем первого игрока как fallback:', player.username);
         }
         
         if (!player) {
             console.warn('⚠️ BankModule: Игрок с ID не найден:', currentUserId);
-            console.log('🔍 BankModule: Доступные игроки:', this.gameState.getPlayers().map(p => ({
+            console.log('🔍 BankModule: Доступные игроки:', players.map(p => ({
                 id: p.id,
                 username: p.username,
                 userId: p.userId
