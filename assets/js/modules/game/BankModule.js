@@ -915,6 +915,13 @@ class BankModule {
         
         const profId = player?.profession || 'entrepreneur';
         const ps = this.professionSystem;
+        
+        // Проверяем, что player существует и имеет необходимые свойства
+        if (!player || typeof player !== 'object') {
+            this.showNotification('Ошибка: Неверные данные игрока', 'error');
+            return;
+        }
+        
         // Ограничение: не больше доступного лимита (maxLoan - currentLoan)
         const details = ps?.getProfessionDetails?.(profId, {
             money: player.money || 0,
@@ -1000,6 +1007,12 @@ class BankModule {
         
         if (!player) {
             this.showNotification('Ошибка: Текущий игрок не найден', 'error');
+            return;
+        }
+        
+        // Проверяем, что player существует и имеет необходимые свойства
+        if (!player || typeof player !== 'object') {
+            this.showNotification('Ошибка: Неверные данные игрока', 'error');
             return;
         }
         
