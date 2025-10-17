@@ -23,6 +23,9 @@ class TurnService extends EventTarget {
         this.gameStateManager = gameStateManager || null;
         this.listeners = new Map();
         this.lastRollValue = null;
+        this._isRolling = false;
+        this._isMoving = false;
+        this._isEnding = false;
         
         console.log('🎮 TurnService: Инициализирован');
     }
@@ -40,6 +43,11 @@ class TurnService extends EventTarget {
         
         if (!roomId) {
             throw new Error('TurnService.roll: roomId is missing');
+        }
+
+        if (this._isRolling) {
+            console.warn('⚠️ TurnService: Бросок кубика уже выполняется');
+            throw new Error('Dice roll already in progress');
         }
         
         // Проверяем, что это ход текущего пользователя
@@ -75,6 +83,7 @@ class TurnService extends EventTarget {
 
         let response;
         try {
+            this._isRolling = true;
             // Эмит начала броска
             this.emit('roll:start', { diceChoice, isReroll });
             response = await this.roomApi.rollDice(roomId, diceChoice, isReroll);
@@ -121,6 +130,7 @@ class TurnService extends EventTarget {
             console.error('❌ TurnService: Ошибка броска кубика:', error);
             throw error;
         } finally {
+            this._isRolling = false;
             // Всегда эмитим завершение
             this.emit('roll:finish', { diceChoice, isReroll });
         }
@@ -138,6 +148,11 @@ class TurnService extends EventTarget {
         
         if (!roomId) {
             throw new Error('TurnService.move: roomId is missing');
+        }
+
+        if (this._isMoving) {
+            console.warn('⚠️ TurnService: Перемещение уже выполняется');
+            throw new Error('Move already in progress');
         }
         
         // Проверяем права на выполнение действия
@@ -162,6 +177,7 @@ class TurnService extends EventTarget {
         }
         
         try {
+            this._isMoving = true;
             // Эмит начала перемещения
             this.emit('move:start', { steps: targetSteps });
             
@@ -181,55 +197,9 @@ class TurnService extends EventTarget {
             this.emit('move:error', error);
             console.error('❌ move:error', { roomId, steps: targetSteps, error });
             console.error('❌ TurnService: Ошибка перемещения:', error);
-            
-            // Локальный fallback движения, чтобы не блокировать UX
-            try {
-                const currentState = typeof this.state.getState === 'function' ? this.state.getState() : null;
-                const players = Array.isArray(currentState?.players) ? currentState.players.slice() : [];
-                const activePlayer = currentState?.activePlayer || (players.length ? players[currentState.currentPlayerIndex || 0] : null);
-                if (activePlayer) {
-                    // Предпочтительно задействовать MovementService, если он есть
-                    if (this.movementService && typeof this.movementService.movePlayer === 'function') {
-                        try {
-                            this.movementService.movePlayer(activePlayer.id || activePlayer.userId, targetSteps);
-                        } catch (e) {
-                            console.warn('⚠️ Fallback MovementService.movePlayer error, continue with simple applyState:', e);
-                        }
-                    }
-                    
-                    // Простейшая модель позиции (внутренний круг 12 клеток, как на сервере)
-                    const maxInner = 12;
-                    const nextPlayers = players.map(p => {
-                        if ((p.id || p.userId) === (activePlayer.id || activePlayer.userId)) {
-                            const prev = Number(p.position) || 0;
-                            const next = (prev + Number(targetSteps)) % maxInner;
-                            return { ...p, position: next };
-                        }
-                        return p;
-                    });
-                    
-                    const fallbackState = {
-                        ...currentState,
-                        players: nextPlayers,
-                        canRoll: false,
-                        canMove: false,
-                        canEndTurn: true
-                    };
-                    this._applyServerState(fallbackState);
-                    
-                    const fallbackResponse = { success: true, moveResult: { steps: Number(targetSteps) || 0 }, state: fallbackState, fallback: true };
-                    this.emit('move:success', fallbackResponse);
-                    console.log('✅ move:success', { roomId, steps: targetSteps, server: false, fallback: true });
-                    this.lastRollValue = null;
-                    return fallbackResponse;
-                }
-            } catch (fallbackError) {
-                console.error('❌ TurnService: Fallback movement failed:', fallbackError);
-            }
-            
-            // Если даже fallback не удался — пробрасываем ошибку дальше
             throw error;
         } finally {
+            this._isMoving = false;
             // Всегда эмитим завершение
             this.emit('move:finish', { steps: targetSteps });
         }
@@ -245,8 +215,24 @@ class TurnService extends EventTarget {
         if (!roomId) {
             throw new Error('TurnService.endTurn: roomId is missing');
         }
+
+        if (this._isEnding) {
+            console.warn('⚠️ TurnService: Завершение хода уже выполняется');
+            throw new Error('End turn already in progress');
+        }
+
+        const permissionCheck = this.canPerformAction({ requireMyTurn: true });
+        if (!permissionCheck.canPerform) {
+            console.warn('⚠️ TurnService: Завершение хода запрещено', permissionCheck.reason);
+            throw new Error(permissionCheck.reason || 'Not your turn');
+        }
+
+        if (!this.canEndTurn()) {
+            throw new Error('TurnService.endTurn: cannot end turn right now');
+        }
         
         try {
+            this._isEnding = true;
             // Эмит начала завершения хода
             this.emit('end:start');
             
@@ -269,6 +255,7 @@ class TurnService extends EventTarget {
             console.error('❌ TurnService: Ошибка завершения хода:', error);
             throw error;
         } finally {
+            this._isEnding = false;
             // Всегда эмитим завершение
             this.emit('end:finish');
         }
@@ -280,13 +267,24 @@ class TurnService extends EventTarget {
      * @param {Function} handler - Обработчик события
      */
     on(event, handler) {
+        if (typeof handler !== 'function') {
+            return;
+        }
+        
         if (!this.listeners.has(event)) {
             this.listeners.set(event, new Set());
         }
-        this.listeners.get(event).add(handler);
         
-        // Также используем встроенный EventTarget
-        this.addEventListener(event, handler);
+        const wrappedHandler = (customEvent) => {
+            try {
+                handler(customEvent?.detail);
+            } catch (error) {
+                console.error(`❌ TurnService: Ошибка в обработчике события ${event}:`, error);
+            }
+        };
+        
+        this.listeners.get(event).add({ original: handler, wrapped: wrappedHandler });
+        this.addEventListener(event, wrappedHandler);
     }
     
     /**
@@ -295,12 +293,22 @@ class TurnService extends EventTarget {
      * @param {Function} handler - Обработчик события
      */
     off(event, handler) {
-        if (this.listeners.has(event)) {
-            this.listeners.get(event).delete(handler);
+        const handlers = this.listeners.get(event);
+        if (!handlers || !handlers.size) {
+            return;
         }
         
-        // Также удаляем из встроенного EventTarget
-        this.removeEventListener(event, handler);
+        for (const entry of handlers) {
+            if (entry.original === handler) {
+                this.removeEventListener(event, entry.wrapped);
+                handlers.delete(entry);
+                break;
+            }
+        }
+        
+        if (handlers.size === 0) {
+            this.listeners.delete(event);
+        }
     }
     
     /**
@@ -309,20 +317,8 @@ class TurnService extends EventTarget {
      * @param {*} data - Данные события
      */
     emit(event, data) {
-        // Эмит через встроенный EventTarget
         const customEvent = new CustomEvent(event, { detail: data });
         this.dispatchEvent(customEvent);
-        
-        // Также вызываем обработчики напрямую для совместимости
-        if (this.listeners.has(event)) {
-            this.listeners.get(event).forEach(handler => {
-                try {
-                    handler(data);
-                } catch (error) {
-                    console.error(`❌ TurnService: Ошибка в обработчике события ${event}:`, error);
-                }
-            });
-        }
     }
     
     /**
@@ -598,6 +594,11 @@ class TurnService extends EventTarget {
      * Очистка всех слушателей
      */
     destroy() {
+        for (const [event, handlers] of this.listeners.entries()) {
+            handlers.forEach(({ wrapped }) => {
+                this.removeEventListener(event, wrapped);
+            });
+        }
         this.listeners.clear();
         console.log('🎮 TurnService: Уничтожен');
     }
