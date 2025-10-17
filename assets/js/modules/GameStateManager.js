@@ -63,6 +63,13 @@ class GameStateManager {
             console.log('🔍 GameStateManager: this.players.length перед emit:', this.players?.length);
         } else {
             console.log('🔍 GameStateManager: serverState.players не является массивом или пустой:', serverState.players);
+            
+            // Если игроки не переданы, но у нас есть старые данные, сохраняем их
+            if (this.players && this.players.length > 0) {
+                console.log('🔍 GameStateManager: Сохраняем существующих игроков:', this.players.length);
+            } else {
+                console.log('🔍 GameStateManager: Нет игроков для сохранения');
+            }
         }
         
         // Принудительно обновляем состояние

@@ -46,6 +46,11 @@ class PlayersPanel {
             } catch (_) {}
         }
         
+        // Принудительно загружаем игроков через 1 секунду после инициализации
+        setTimeout(() => {
+            this.forceLoadPlayers();
+        }, 1000);
+        
         console.log('✅ PlayersPanel v2.0: Инициализирован');
     }
     
@@ -243,7 +248,8 @@ class PlayersPanel {
             canRoll: state.canRoll,
             canMove: state.canMove,
             canEndTurn: state.canEndTurn,
-            lastDiceResult: state.lastDiceResult?.total
+            lastDiceResult: state.lastDiceResult?.total,
+            playersCount: state.players?.length || 0
         });
         
         if (this._lastStateKey === stateKey) {
@@ -266,9 +272,38 @@ class PlayersPanel {
         }
         
         // Обновляем список игроков
-        if (state.players && Array.isArray(state.players)) {
+        if (state.players && Array.isArray(state.players) && state.players.length > 0) {
             this.updatePlayersList(state.players);
+        } else {
+            // Если игроки не переданы или пустые, пытаемся получить их принудительно
+            this.forceLoadPlayers();
         }
+    }
+    
+    /**
+     * Принудительная загрузка игроков
+     */
+    forceLoadPlayers() {
+        const roomId = window.location.hash.split('roomId=')[1];
+        if (!roomId) return;
+        
+        console.log('🔧 PlayersPanel: Принудительная загрузка игроков для комнаты:', roomId);
+        
+        fetch(`/api/rooms/${roomId}/game-state`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.state && data.state.players && data.state.players.length > 0) {
+                    console.log('🔧 PlayersPanel: Получены игроки принудительно:', data.state.players);
+                    this.updatePlayersList(data.state.players);
+                    
+                    // Также обновляем GameStateManager
+                    const gameStateManager = window.app?.services?.get('gameStateManager');
+                    if (gameStateManager) {
+                        gameStateManager.updateFromServer(data.state);
+                    }
+                }
+            })
+            .catch(err => console.error('❌ PlayersPanel: Ошибка принудительной загрузки игроков:', err));
     }
     
     /**
