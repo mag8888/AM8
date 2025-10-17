@@ -118,11 +118,7 @@
          * Обработчик кликов внутри панели
          */
         handleContainerClick(event) {
-            const refreshButton = event.target.closest('.card-deck-refresh');
-            if (refreshButton) {
-                event.preventDefault();
-                this.refresh();
-            }
+            // Обработка кликов удалена - кнопки обновления больше нет
         }
 
         /**
@@ -279,17 +275,11 @@
                 return;
             }
 
-            const timestamp = this.getFormattedTimestamp();
-            const timestampHtml = timestamp
-                ? `<span class="card-deck-timestamp">Обновлено: ${timestamp}</span>`
-                : '<span class="card-deck-timestamp">Обновление при старте</span>';
-
             this.container.innerHTML = decks.map((deck) => {
                 const stateClass = deck.drawCount === 0 ? ' empty' : '';
                 return `
                     <article class="card-deck-card${stateClass}" data-deck-id="${deck.id}">
                         <header class="card-deck-header">
-                            <div class="card-deck-order">Колода ${deck.order.toString().padStart(2, '0')}</div>
                             <div class="card-deck-title">${deck.name}</div>
                             ${deck.subtitle ? `<div class="card-deck-subtitle">${deck.subtitle}</div>` : ''}
                         </header>
@@ -299,22 +289,13 @@
                                     <div class="deck-metric-value">${deck.drawCount}</div>
                                     <div class="deck-metric-label">карт</div>
                                 </div>
-                                ${deck.drawDescription ? `<div class="deck-description">${deck.drawDescription}</div>` : ''}
                                 <div class="deck-divider"></div>
                                 <div class="deck-metric deck-metric--discard">
                                     <div class="deck-metric-value">${deck.discardCount}</div>
                                     <div class="deck-metric-label">отбой</div>
                                 </div>
-                                ${deck.discardDescription ? `<div class="deck-description deck-description--secondary">${deck.discardDescription}</div>` : ''}
                             </div>
                         </div>
-                        <footer class="card-deck-footer">
-                            ${timestampHtml}
-                            <button type="button" class="card-deck-refresh" data-action="refresh">
-                                <span class="icon">⟳</span>
-                                Обновить
-                            </button>
-                        </footer>
                     </article>
                 `;
             }).join('');
@@ -329,12 +310,6 @@
             this.container.innerHTML = `
                 <div class="card-decks-error">
                     <div>⚠️ ${message}</div>
-                    <div style="margin-top: 0.5rem;">
-                        <button type="button" class="card-deck-refresh" data-action="refresh">
-                            <span class="icon">⟳</span>
-                            Повторить попытку
-                        </button>
-                    </div>
                 </div>
             `;
         }
