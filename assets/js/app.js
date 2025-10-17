@@ -572,6 +572,12 @@ class App {
                 containerId: 'players-panel'
             });
             this.modules.set('playersPanel', playersPanel);
+            
+            // Вызываем setupEventListeners для подписки на события GameStateManager
+            if (typeof playersPanel.setupEventListeners === 'function') {
+                playersPanel.setupEventListeners();
+                console.log('🎯 PlayersPanel: setupEventListeners вызван');
+            }
         }
         
         // Инициализируем TurnService (с защитой от отсутствия GameState)
@@ -628,6 +634,13 @@ class App {
                         this.getEventBus()
                     );
                     this.modules.set('turnController', turnController);
+                    
+                    // Вызываем setupEventListeners для подписки на события GameStateManager
+                    if (typeof turnController.setupEventListeners === 'function') {
+                        turnController.setupEventListeners();
+                        console.log('🎯 TurnController: setupEventListeners вызван');
+                    }
+                    
                     console.log('🎯 TurnController: Инициализирован');
                 } catch (e) {
                     console.error('❌ App: Ошибка инициализации TurnController', e);
@@ -703,6 +716,12 @@ class App {
                         this.getEventBus()
                     );
                     this.modules.set('turnController', turnController);
+                    
+                    // Вызываем setupEventListeners для подписки на события GameStateManager
+                    if (typeof turnController.setupEventListeners === 'function') {
+                        turnController.setupEventListeners();
+                        console.log('🔄 TurnController: setupEventListeners вызван (retry)');
+                    }
                 }
             } catch (e) {
                 console.warn('⚠️ App: Ошибка в отложенной доинициализации модулей', e);
@@ -852,6 +871,16 @@ class App {
                 gameStateManager: this.services.get('gameStateManager'),
                 eventBus: this.services.get('eventBus')
             });
+            
+            // Вызываем setupEventListeners для подписки на события GameStateManager
+            if (typeof turnController.setupEventListeners === 'function') {
+                turnController.setupEventListeners();
+                console.log('🎯 TurnController: setupEventListeners вызван (_initGameModules)');
+            }
+            if (typeof playersPanel.setupEventListeners === 'function') {
+                playersPanel.setupEventListeners();
+                console.log('🎯 PlayersPanel: setupEventListeners вызван (_initGameModules)');
+            }
             
             // Создаем игровое поле
             const boardLayout = new window.BoardLayout({
