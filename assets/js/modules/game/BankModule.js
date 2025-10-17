@@ -1512,6 +1512,33 @@ class BankModule {
     async getCurrentUserPlayer() {
         if (!this.gameState) return null;
         
+        // Автоматически исправляем currentUserId если он не соответствует игрокам в игре
+        if (this.currentUserId) {
+            const gameStateManager = window.app?.services?.get('gameStateManager');
+            const state = gameStateManager?.getState();
+            const players = state?.players || [];
+            
+            // Проверяем, есть ли игрок с таким ID
+            let player = players.find(p => p.id === this.currentUserId);
+            
+            // Если не найден по ID, ищем по username из localStorage
+            if (!player) {
+                try {
+                    const userData = localStorage.getItem('currentUser');
+                    if (userData) {
+                        const user = JSON.parse(userData);
+                        player = players.find(p => p.username === user.username);
+                        if (player) {
+                            console.log('🔧 BankModule: Автоматически исправляем currentUserId с', this.currentUserId, 'на', player.id);
+                            this.currentUserId = player.id;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('⚠️ BankModule: Ошибка автоматического исправления currentUserId:', e);
+                }
+            }
+        }
+        
         // Подписываемся на события GameStateManager для получения актуальных данных
         if (this.gameStateManager && !this._subscribedToGameStateManager) {
             this.gameStateManager.on('players:updated', (players) => {
