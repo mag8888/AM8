@@ -312,11 +312,17 @@ class PlayersPanel {
             currentUserId,
             activePlayerId: activePlayer?.id,
             activePlayerUsername: activePlayer?.username,
+            activePlayerUserId: activePlayer?.userId,
             isMyTurn,
             canRoll: state.canRoll,
             canEndTurn: state.canEndTurn,
             passBtnDisabled: passBtn?.disabled,
-            shouldBeDisabled: !isMyTurn || !state.canEndTurn
+            shouldBeDisabled: !isMyTurn || !state.canEndTurn,
+            turnCheckDetails: {
+                idMatch: activePlayer?.id === currentUserId,
+                userIdMatch: activePlayer?.userId === currentUserId,
+                usernameMatch: activePlayer?.username === currentUserId
+            }
         });
     }
     
@@ -340,9 +346,26 @@ class PlayersPanel {
                 return;
             }
             
-            // Проверяем, что это действительно мой ход
-            if (!turnService.isMyTurn()) {
-                console.warn('⚠️ PlayersPanel: Не ваш ход - завершение хода заблокировано');
+            // Проверяем, что это действительно мой ход (используем ту же логику, что и TurnService)
+            const currentUserId = this.getCurrentUserId();
+            const state = turnService.getState();
+            
+            if (!state || !state.activePlayer) {
+                console.warn('⚠️ PlayersPanel: Нет активного игрока');
+                return;
+            }
+            
+            const activePlayer = state.activePlayer;
+            const isMyTurn = 
+                activePlayer.id === currentUserId ||
+                activePlayer.userId === currentUserId ||
+                (activePlayer.username && currentUserId && activePlayer.username === currentUserId);
+            
+            if (!isMyTurn) {
+                console.warn('⚠️ PlayersPanel: Не ваш ход - завершение хода заблокировано', {
+                    activePlayer: activePlayer.username || activePlayer.id,
+                    currentUserId
+                });
                 return;
             }
             
@@ -358,30 +381,49 @@ class PlayersPanel {
      * @returns {string|null} ID пользователя
      */
     getCurrentUserId() {
-        if (this.currentUser) {
-            return this.currentUser.id || this.currentUser.userId || this.currentUser.username;
-        }
-        
         try {
+            // Используем ту же логику, что и TurnService
             // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
-                this.currentUser = bundle.currentUser;
-                return this.currentUser?.id || this.currentUser?.userId || this.currentUser?.username;
+                const userId = bundle?.currentUser?.id || bundle?.currentUser?.userId;
+                if (userId) {
+                    console.log('🔍 PlayersPanel: ID пользователя из bundle:', userId);
+                    return userId;
+                }
             }
             
-            // Fallback к localStorage
+            // Пытаемся получить из localStorage
             const userRaw = localStorage.getItem('aura_money_user');
             if (userRaw) {
-                this.currentUser = JSON.parse(userRaw);
-                return this.currentUser?.id || this.currentUser?.userId || this.currentUser?.username;
+                const user = JSON.parse(userRaw);
+                const userId = user?.id || user?.userId;
+                if (userId) {
+                    console.log('🔍 PlayersPanel: ID пользователя из localStorage:', userId);
+                    return userId;
+                }
             }
+            
+            // Пытаемся получить из глобального объекта app
+            if (window.app && window.app.getModule) {
+                const userModel = window.app.getModule('userModel');
+                if (userModel && userModel.getCurrentUser) {
+                    const currentUser = userModel.getCurrentUser();
+                    if (currentUser && (currentUser.id || currentUser.userId)) {
+                        const userId = currentUser.id || currentUser.userId;
+                        console.log('🔍 PlayersPanel: ID пользователя из userModel:', userId);
+                        return userId;
+                    }
+                }
+            }
+            
+            console.warn('⚠️ PlayersPanel: Не удалось получить ID пользователя');
+            return null;
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка получения ID пользователя:', error);
+            return null;
         }
-        
-        return null;
     }
     
     
