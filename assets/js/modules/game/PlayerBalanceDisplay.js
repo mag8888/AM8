@@ -62,7 +62,8 @@ class PlayerBalanceDisplay {
     updatePlayerBalance(playerId, newBalance) {
         const playerCard = this.findPlayerCard(playerId);
         if (!playerCard) {
-            console.warn('⚠️ PlayerBalanceDisplay: Карточка игрока не найдена:', playerId);
+            // Не выводим предупреждение, если карточки еще не созданы
+            console.log('🔍 PlayerBalanceDisplay: Карточка игрока не найдена (возможно, еще не создана):', playerId);
             return;
         }
         

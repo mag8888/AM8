@@ -872,13 +872,57 @@ class App {
             this.modules.set('playersPanel', playersPanel);
             this.modules.set('boardLayout', boardLayout);
             
-            this.logger?.info('Игровые модули созданы', {
+            // Инициализируем модули
+            this._initializeGameModules();
+            
+            this.logger?.info('Игровые модули созданы и инициализированы', {
                 modules: Array.from(this.modules.keys())
             }, 'App');
             
         } catch (error) {
             this.logger?.error('Ошибка создания игровых модулей', error, 'App');
             throw error;
+        }
+    }
+    
+    /**
+     * Инициализация созданных игровых модулей
+     * @private
+     */
+    _initializeGameModules() {
+        try {
+            const gameStateManager = this.services.get('gameStateManager');
+            const eventBus = this.services.get('eventBus');
+            
+            // Инициализируем TurnController
+            const turnController = this.modules.get('turnController');
+            if (turnController && typeof turnController.init === 'function') {
+                turnController.init();
+            }
+            
+            // Инициализируем PlayersPanel
+            const playersPanel = this.modules.get('playersPanel');
+            if (playersPanel && typeof playersPanel.init === 'function') {
+                playersPanel.init();
+            }
+            
+            // Инициализируем BoardLayout
+            const boardLayout = this.modules.get('boardLayout');
+            if (boardLayout && typeof boardLayout.init === 'function') {
+                boardLayout.init();
+            }
+            
+            // Подписываемся на события GameStateManager
+            if (gameStateManager) {
+                // Принудительно обновляем состояние после инициализации
+                if (typeof gameStateManager.forceUpdate === 'function') {
+                    gameStateManager.forceUpdate();
+                }
+            }
+            
+            this.logger?.info('Игровые модули инициализированы', null, 'App');
+        } catch (error) {
+            this.logger?.error('Ошибка инициализации игровых модулей', error, 'App');
         }
     }
 
