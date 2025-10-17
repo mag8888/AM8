@@ -47,10 +47,18 @@ class BankModule {
      */
     initCurrentUser() {
         try {
-            const userData = localStorage.getItem('aura_money_user');
+            // Пробуем получить пользователя из разных источников
+            let userData = localStorage.getItem('currentUser');
+            if (!userData) {
+                userData = localStorage.getItem('aura_money_user');
+            }
+            
             if (userData) {
                 const user = JSON.parse(userData);
                 this.currentUserId = user.id;
+                console.log('🏦 BankModule: Текущий пользователь найден:', user.username, user.id);
+            } else {
+                console.warn('⚠️ BankModule: Пользователь не найден в localStorage');
             }
         } catch (error) {
             console.warn('⚠️ BankModule: Ошибка получения пользователя:', error);
@@ -1530,13 +1538,19 @@ class BankModule {
             console.warn('⚠️ BankModule: Ошибка чтения sessionStorage:', e);
         }
         
-        // 2. Из localStorage
+        // 2. Из localStorage (пробуем разные ключи)
         if (!currentUserId) {
             try {
-                const userData = localStorage.getItem('aura_money_user');
+                // Сначала пробуем currentUser (основной источник)
+                let userData = localStorage.getItem('currentUser');
+                if (!userData) {
+                    userData = localStorage.getItem('aura_money_user');
+                }
+                
                 if (userData) {
                     const user = JSON.parse(userData);
                     currentUserId = user.id || user.userId || user.username;
+                    console.log('🔍 BankModule: ID из localStorage:', currentUserId, user);
                 }
             } catch (e) {
                 console.warn('⚠️ BankModule: Ошибка чтения localStorage:', e);
@@ -1630,7 +1644,30 @@ class BankModule {
         
         console.log('🔍 BankModule: Результат поиска по ID:', player ? 'найден' : 'не найден');
         
-        // Если не найден по ID, пытаемся найти по username из sessionStorage
+        // Если не найден по ID, пытаемся найти по username из localStorage
+        if (!player) {
+            try {
+                // Сначала пробуем currentUser из localStorage
+                let userData = localStorage.getItem('currentUser');
+                if (!userData) {
+                    userData = localStorage.getItem('aura_money_user');
+                }
+                
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    const username = user.username;
+                    console.log('🔍 BankModule: Поиск по username из localStorage:', username);
+                    if (username) {
+                        player = players.find(p => p.username === username);
+                        console.log('🔍 BankModule: Результат поиска по username из localStorage:', player ? 'найден' : 'не найден');
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка чтения localStorage для поиска по username:', e);
+            }
+        }
+        
+        // Если все еще не найден, пытаемся найти по username из sessionStorage
         if (!player) {
             try {
                 const bundleRaw = sessionStorage.getItem('am_player_bundle');
@@ -1640,7 +1677,7 @@ class BankModule {
                     console.log('🔍 BankModule: Поиск по username из sessionStorage:', username);
                     if (username) {
                         player = players.find(p => p.username === username);
-                        console.log('🔍 BankModule: Результат поиска по username:', player ? 'найден' : 'не найден');
+                        console.log('🔍 BankModule: Результат поиска по username из sessionStorage:', player ? 'найден' : 'не найден');
                     }
                 }
             } catch (e) {
