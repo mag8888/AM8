@@ -1333,7 +1333,7 @@ class BankModule {
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
-                currentUserId = bundle.userId || bundle.id || bundle.username;
+                currentUserId = bundle.userId || bundle.id || bundle.username || bundle.currentUser?.id || bundle.currentUser?.username;
             }
         } catch (e) {
             console.warn('⚠️ BankModule: Ошибка чтения sessionStorage:', e);
@@ -1370,13 +1370,33 @@ class BankModule {
         }
         
         // Находим игрока по ID (проверяем все возможные поля)
-        const player = this.gameState.getPlayers().find(p => 
+        let player = this.gameState.getPlayers().find(p => 
             p.id === currentUserId || 
             p.username === currentUserId ||
-            p.userId === currentUserId ||
-            p.id === currentUserId ||
-            p.username === currentUserId
+            p.userId === currentUserId
         );
+        
+        // Если не найден по ID, пытаемся найти по username из sessionStorage
+        if (!player) {
+            try {
+                const bundleRaw = sessionStorage.getItem('am_player_bundle');
+                if (bundleRaw) {
+                    const bundle = JSON.parse(bundleRaw);
+                    const username = bundle.username || bundle.currentUser?.username;
+                    if (username) {
+                        player = this.gameState.getPlayers().find(p => p.username === username);
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка поиска по username:', e);
+            }
+        }
+        
+        // Если все еще не найден, берем первого игрока как fallback
+        if (!player && this.gameState.getPlayers().length > 0) {
+            player = this.gameState.getPlayers()[0];
+            console.warn('⚠️ BankModule: Используем первого игрока как fallback:', player.username);
+        }
         
         if (!player) {
             console.warn('⚠️ BankModule: Игрок с ID не найден:', currentUserId);
