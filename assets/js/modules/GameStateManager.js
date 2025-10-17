@@ -45,16 +45,24 @@ class GameStateManager {
 
         // Обновляем игроков (с фильтрацией дубликатов)
         if (Array.isArray(serverState.players)) {
+            console.log('🔍 GameStateManager: Обрабатываем массив игроков:', serverState.players);
             const uniquePlayers = [];
             const seen = new Set();
             serverState.players.forEach((player, idx) => {
+                console.log(`🔍 GameStateManager: Обрабатываем игрока ${idx}:`, player);
                 if (!player) {
+                    console.log(`🔍 GameStateManager: Игрок ${idx} пустой, пропускаем`);
                     return;
                 }
                 const key = player.id || player.userId || player.username || `idx_${idx}`;
+                console.log(`🔍 GameStateManager: Ключ игрока ${idx}:`, key);
                 if (!seen.has(key)) {
                     seen.add(key);
-                    uniquePlayers.push({ ...player, id: player.id || player.userId || key });
+                    const processedPlayer = { ...player, id: player.id || player.userId || key };
+                    uniquePlayers.push(processedPlayer);
+                    console.log(`🔍 GameStateManager: Добавлен игрок ${idx}:`, processedPlayer);
+                } else {
+                    console.log(`🔍 GameStateManager: Игрок ${idx} уже существует, пропускаем`);
                 }
             });
             this.players = uniquePlayers;
@@ -64,6 +72,8 @@ class GameStateManager {
                 token: p.token,
                 isReady: p.isReady
             })));
+        } else {
+            console.log('🔍 GameStateManager: serverState.players не является массивом:', serverState.players);
         }
         
         const newPlayersKey = JSON.stringify((this.players || []).map(p => (p && (p.id || p.userId || p.username)) || null));

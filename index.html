@@ -508,13 +508,18 @@
                                         
                                         api.getGameState(roomId)
                                             .then(gs => {
+                                                console.log('🔄 syncWithServer: Получены данные от сервера:', gs);
                                                 if (gs && gs.state) {
+                                                    console.log('🔄 syncWithServer: Состояние игры:', gs.state);
+                                                    console.log('🔄 syncWithServer: Игроки в состоянии:', gs.state.players);
                                                     if (gameStateModule && typeof gameStateModule.applyState === 'function') {
                                                         gameStateModule.applyState(gs.state);
                                                     }
                                                     if (gameStateManager) {
                                                         gameStateManager.updateFromServer(gs.state);
                                                     }
+                                                } else {
+                                                    console.log('🔄 syncWithServer: Нет данных состояния от сервера');
                                                 }
                                             })
                                             .catch(err => console.warn('⚠️ Ошибка получения состояния игры:', err))

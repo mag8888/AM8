@@ -363,7 +363,12 @@ class TurnService extends EventTarget {
      * @returns {Object} Состояние игры
      */
     getState() {
-        return this.state.getState();
+        // Используем GameStateManager как основной источник состояния
+        if (this.gameStateManager) {
+            return this.gameStateManager.getState();
+        }
+        // Fallback на старый state
+        return this.state ? this.state.getState() : null;
     }
     
     /**
