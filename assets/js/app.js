@@ -796,6 +796,93 @@ class App {
     }
 
     /**
+     * Инициализация игры
+     */
+    initGame() {
+        try {
+            this.logger?.info('Инициализация игры...', null, 'App');
+            
+            // Получаем ID комнаты из URL
+            const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+            const roomId = urlParams.get('roomId');
+            
+            if (!roomId) {
+                this.logger?.warn('ID комнаты не найден в URL', null, 'App');
+                return;
+            }
+            
+            // Инициализируем игровые модули
+            this._initGameModules(roomId);
+            
+            this.logger?.info('Игра инициализирована', { roomId }, 'App');
+        } catch (error) {
+            this.logger?.error('Ошибка инициализации игры', error, 'App');
+        }
+    }
+    
+    /**
+     * Инициализация игровых модулей
+     * @param {string} roomId - ID комнаты
+     * @private
+     */
+    _initGameModules(roomId) {
+        try {
+            // Создаем игровые модули
+            const gameState = new window.GameState(this.services.get('eventBus'));
+            const roomApi = new window.RoomApi(roomId);
+            const diceService = new window.DiceService();
+            const movementService = new window.MovementService(gameState, this.services.get('eventBus'));
+            const turnService = new window.TurnService({
+                state: gameState,
+                roomApi: roomApi,
+                diceService: diceService,
+                movementService: movementService,
+                gameStateManager: this.services.get('gameStateManager')
+            });
+            
+            // Создаем UI компоненты
+            const playerTokenRenderer = new window.PlayerTokenRenderer();
+            const turnController = new window.TurnController(
+                turnService,
+                playerTokenRenderer,
+                this.services.get('gameStateManager'),
+                this.services.get('eventBus')
+            );
+            const playersPanel = new window.PlayersPanel({
+                gameStateManager: this.services.get('gameStateManager'),
+                eventBus: this.services.get('eventBus')
+            });
+            
+            // Создаем игровое поле
+            const boardLayout = new window.BoardLayout({
+                outerTrackSelector: '#outer-track',
+                innerTrackSelector: '#inner-track',
+                gameState: gameState,
+                eventBus: this.services.get('eventBus')
+            });
+            
+            // Сохраняем модули
+            this.modules.set('gameState', gameState);
+            this.modules.set('roomApi', roomApi);
+            this.modules.set('diceService', diceService);
+            this.modules.set('movementService', movementService);
+            this.modules.set('turnService', turnService);
+            this.modules.set('playerTokenRenderer', playerTokenRenderer);
+            this.modules.set('turnController', turnController);
+            this.modules.set('playersPanel', playersPanel);
+            this.modules.set('boardLayout', boardLayout);
+            
+            this.logger?.info('Игровые модули созданы', {
+                modules: Array.from(this.modules.keys())
+            }, 'App');
+            
+        } catch (error) {
+            this.logger?.error('Ошибка создания игровых модулей', error, 'App');
+            throw error;
+        }
+    }
+
+    /**
      * Режим отладки
      */
     enableDebugMode() {
@@ -813,5 +900,20 @@ class App {
 if (typeof window !== 'undefined') {
     window.App = App;
 }
+
+// Автоматическая инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 DOM загружен, инициализируем приложение...');
+    
+    // Создаем экземпляр приложения
+    window.app = new App();
+    
+    // Инициализируем игру если мы на игровой странице
+    const hash = window.location.hash;
+    if (hash.includes('game')) {
+        console.log('🎮 Обнаружен игровой маршрут, инициализируем игру...');
+        window.app.initGame();
+    }
+});
 
 // Version: 1760439000 - App v2.0.0
