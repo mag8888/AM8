@@ -877,7 +877,42 @@ class BankModule {
 
     async takeCreditInline() {
         let amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
-        const player = await this.getCurrentUserPlayer();
+        
+        // Используем fallback логику для получения текущего игрока
+        let player = await this.getCurrentUserPlayer();
+        if (!player) {
+            console.log('🔧 BankModule: getCurrentUserPlayer вернул null, используем fallback для кредита...');
+            
+            const gameStateManager = window.app?.services?.get('gameStateManager');
+            const state = gameStateManager?.getState();
+            const players = state?.players || [];
+            
+            // Ищем по username из localStorage
+            try {
+                const userData = localStorage.getItem('currentUser');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    player = players.find(p => p.username === user.username);
+                    if (player) {
+                        console.log('✅ BankModule: Текущий игрок найден через fallback для кредита:', player.username);
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка fallback для кредита:', e);
+            }
+            
+            // Если все еще не найден, используем первого игрока
+            if (!player && players.length > 0) {
+                player = players[0];
+                console.log('🔧 BankModule: Используем первого игрока для кредита:', player.username);
+            }
+        }
+        
+        if (!player) {
+            this.showNotification('Ошибка: Текущий игрок не найден', 'error');
+            return;
+        }
+        
         const profId = player?.profession || 'entrepreneur';
         const ps = this.professionSystem;
         // Ограничение: не больше доступного лимита (maxLoan - currentLoan)
@@ -932,7 +967,42 @@ class BankModule {
     async repayCreditInline() {
         const amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
         if (amount <= 0) return;
-        const player = await this.getCurrentUserPlayer();
+        
+        // Используем fallback логику для получения текущего игрока
+        let player = await this.getCurrentUserPlayer();
+        if (!player) {
+            console.log('🔧 BankModule: getCurrentUserPlayer вернул null, используем fallback для погашения кредита...');
+            
+            const gameStateManager = window.app?.services?.get('gameStateManager');
+            const state = gameStateManager?.getState();
+            const players = state?.players || [];
+            
+            // Ищем по username из localStorage
+            try {
+                const userData = localStorage.getItem('currentUser');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    player = players.find(p => p.username === user.username);
+                    if (player) {
+                        console.log('✅ BankModule: Текущий игрок найден через fallback для погашения кредита:', player.username);
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка fallback для погашения кредита:', e);
+            }
+            
+            // Если все еще не найден, используем первого игрока
+            if (!player && players.length > 0) {
+                player = players[0];
+                console.log('🔧 BankModule: Используем первого игрока для погашения кредита:', player.username);
+            }
+        }
+        
+        if (!player) {
+            this.showNotification('Ошибка: Текущий игрок не найден', 'error');
+            return;
+        }
+        
         const profId = player?.profession || 'entrepreneur';
         const ps = this.professionSystem;
         // Серверный вызов
@@ -1057,7 +1127,35 @@ class BankModule {
         if (!this.gameState) return;
         
         // Получаем текущего пользователя браузера, а не активного игрока
-        const currentPlayer = await this.getCurrentUserPlayer();
+        let currentPlayer = await this.getCurrentUserPlayer();
+        if (!currentPlayer) {
+            console.log('🔧 BankModule: getCurrentUserPlayer вернул null, используем fallback для updateBankData...');
+            
+            const gameStateManager = window.app?.services?.get('gameStateManager');
+            const state = gameStateManager?.getState();
+            const players = state?.players || [];
+            
+            // Ищем по username из localStorage
+            try {
+                const userData = localStorage.getItem('currentUser');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    currentPlayer = players.find(p => p.username === user.username);
+                    if (currentPlayer) {
+                        console.log('✅ BankModule: Текущий игрок найден через fallback для updateBankData:', currentPlayer.username);
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка fallback для updateBankData:', e);
+            }
+            
+            // Если все еще не найден, используем первого игрока
+            if (!currentPlayer && players.length > 0) {
+                currentPlayer = players[0];
+                console.log('🔧 BankModule: Используем первого игрока для updateBankData:', currentPlayer.username);
+            }
+        }
+        
         if (!currentPlayer) {
             console.warn('⚠️ BankModule: Текущий пользователь не найден - пропускаем обновление');
             return;
@@ -1236,7 +1334,36 @@ class BankModule {
             return;
         }
         
-        const currentPlayer = await this.getCurrentUserPlayer();
+        // Используем fallback логику для получения текущего игрока
+        let currentPlayer = await this.getCurrentUserPlayer();
+        if (!currentPlayer) {
+            console.log('🔧 BankModule: getCurrentUserPlayer вернул null, используем fallback для перевода...');
+            
+            const gameStateManager = window.app?.services?.get('gameStateManager');
+            const state = gameStateManager?.getState();
+            const players = state?.players || [];
+            
+            // Ищем по username из localStorage
+            try {
+                const userData = localStorage.getItem('currentUser');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    currentPlayer = players.find(p => p.username === user.username);
+                    if (currentPlayer) {
+                        console.log('✅ BankModule: Текущий игрок найден через fallback для перевода:', currentPlayer.username);
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка fallback для перевода:', e);
+            }
+            
+            // Если все еще не найден, используем первого игрока
+            if (!currentPlayer && players.length > 0) {
+                currentPlayer = players[0];
+                console.log('🔧 BankModule: Используем первого игрока для перевода:', currentPlayer.username);
+            }
+        }
+        
         if (!currentPlayer) {
             this.showNotification('Ошибка: Текущий игрок не найден', 'error');
             return;
