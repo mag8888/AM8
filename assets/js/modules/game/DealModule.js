@@ -97,6 +97,13 @@
             });
         }
 
+        // Прямой выбор без модалки (для кнопок из других модалок)
+        drawFrom(deck){
+            const deckId = deck === 'big' ? 'big_deal' : 'deal';
+            const card = this.draw(deckId);
+            return { deckId, card };
+        }
+
         async showCardAndDecide(deckId, card){
             if(!card) return { action:'none' };
             return new Promise((resolve)=>{

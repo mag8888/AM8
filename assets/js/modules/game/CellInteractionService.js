@@ -296,32 +296,44 @@ class CellInteractionService {
      * Обработка клетки шанса
      */
     handleChanceCell(interaction) {
-        const { cellData, playerId } = interaction;
+        const { cellData } = interaction;
         const { name, description } = cellData;
-        
-        this.showModal({
-            title: name,
-            content: description,
-            type: 'chance',
-            actions: [
-                {
-                    text: 'Выбрать малую возможность',
-                    type: 'primary',
-                    action: () => {
-                        this.closeModal();
-                        this.eventBus?.emit('chance:small_opportunity', { playerId });
-                    }
-                },
-                {
-                    text: 'Выбрать большую возможность',
-                    type: 'primary',
-                    action: () => {
-                        this.closeModal();
-                        this.eventBus?.emit('chance:big_opportunity', { playerId });
-                    }
-                }
-            ]
-        });
+
+        // Предлагаем выбрать Малая/Большая сделка и сразу отдаём карту
+        try {
+            const app = window.app; const dm = app?.getModule?.('dealModule');
+            if (dm) {
+                this.showModal({
+                    title: name,
+                    content: description + '\n\nВыберите тип сделки: Малая или Большая.',
+                    type: 'chance',
+                    actions: [
+                        {
+                            text: 'Малая сделка',
+                            type: 'primary',
+                            action: async () => {
+                                this.closeModal();
+                                const { deckId, card } = dm.drawFrom('small');
+                                if (card) await dm.showCardAndDecide(deckId, card);
+                            }
+                        },
+                        {
+                            text: 'Большая сделка',
+                            type: 'primary',
+                            action: async () => {
+                                this.closeModal();
+                                const { deckId, card } = dm.drawFrom('big');
+                                if (card) await dm.showCardAndDecide(deckId, card);
+                            }
+                        }
+                    ]
+                });
+                return;
+            }
+        } catch(_) {}
+
+        // Fallback на старое поведение
+        this.showModal({ title: name, content: description, type: 'chance' });
     }
     
     /**
