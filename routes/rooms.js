@@ -21,6 +21,7 @@ function updateRoomGameState(roomId, state) {
 // Экспортируем функции для использования в других модулях
 module.exports.getRoomGameState = getRoomGameState;
 module.exports.updateRoomGameState = updateRoomGameState;
+module.exports.gameStateByRoomId = gameStateByRoomId;
 
 // Инициализируем PushService для уведомлений
 const pushService = new PushService();

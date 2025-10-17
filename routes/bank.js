@@ -10,6 +10,10 @@ const router = express.Router();
 const PushService = require('../services/PushService');
 const { getRoomGameState, updateRoomGameState } = require('./rooms');
 
+// Получаем доступ к gameStateByRoomId для отладки
+const roomsModule = require('./rooms');
+const gameStateByRoomId = roomsModule.gameStateByRoomId || new Map();
+
 // Используем прямые вызовы функций из routes/rooms.js для работы с состоянием игры
 
 // Глобальное хранилище банковских операций (временное решение)
@@ -326,18 +330,58 @@ router.get('/room-balances/:roomId', async (req, res) => {
         
         console.log('🏦 Bank API: Получение балансов комнаты:', roomId);
         
-        const roomData = getRoomGameState(roomId);
-        if (!roomData) {
-            console.log('❌ Bank API: Комната не найдена:', roomId);
-            return res.status(404).json({ success: false, message: 'Комната не найдена' });
+        // Проверяем, что getRoomGameState функция доступна
+        if (typeof getRoomGameState !== 'function') {
+            console.error('❌ Bank API: getRoomGameState не является функцией:', typeof getRoomGameState);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Функция getRoomGameState недоступна' 
+            });
         }
         
-        const balances = roomData.players?.map(player => ({
-            playerId: player.id,
-            username: player.username,
-            balance: player.money || 0,
-            lastUpdated: new Date().toISOString()
-        })) || [];
+        const roomData = getRoomGameState(roomId);
+        console.log('🏦 Bank API: Получены данные комнаты:', {
+            roomId,
+            hasRoomData: !!roomData,
+            roomDataType: typeof roomData,
+            hasPlayers: !!(roomData && roomData.players),
+            playersCount: roomData?.players?.length || 0,
+            roomDataKeys: roomData ? Object.keys(roomData) : 'no roomData'
+        });
+        
+        if (!roomData) {
+            console.log('❌ Bank API: Комната не найдена:', roomId);
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Комната не найдена',
+                roomId: roomId 
+            });
+        }
+        
+        if (!roomData.players || !Array.isArray(roomData.players)) {
+            console.log('⚠️ Bank API: В комнате нет игроков или players не массив:', roomData.players);
+            return res.json({
+                success: true,
+                data: {
+                    roomId: roomId,
+                    balances: [],
+                    totalPlayers: 0
+                }
+            });
+        }
+        
+        const balances = roomData.players.map(player => {
+            if (!player) {
+                console.warn('⚠️ Bank API: Обнаружен null/undefined игрок');
+                return null;
+            }
+            return {
+                playerId: player.id || 'unknown',
+                username: player.username || 'Unknown',
+                balance: typeof player.money === 'number' ? player.money : 0,
+                lastUpdated: new Date().toISOString()
+            };
+        }).filter(balance => balance !== null);
         
         console.log('✅ Bank API: Найдено балансов:', balances.length);
         
@@ -351,8 +395,51 @@ router.get('/room-balances/:roomId', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Bank API: Ошибка получения балансов:', error);
-        res.status(500).json({ success: false, message: 'Ошибка сервера' });
+        console.error('❌ Bank API: Критическая ошибка получения балансов:', error);
+        console.error('❌ Bank API: Stack trace:', error.stack);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Ошибка сервера',
+            details: error.message 
+        });
+    }
+});
+
+/**
+ * GET /api/bank/debug/rooms
+ * Отладочный endpoint для проверки состояния всех комнат
+ */
+router.get('/debug/rooms', (req, res) => {
+    try {
+        console.log('🏦 Bank API: Отладочный запрос состояния комнат');
+        
+        // Получаем все комнаты из gameStateByRoomId
+        const rooms = [];
+        for (const [roomId, state] of gameStateByRoomId.entries()) {
+            rooms.push({
+                roomId,
+                hasState: !!state,
+                playersCount: state?.players?.length || 0,
+                gameStarted: state?.gameStarted || false,
+                activePlayer: state?.activePlayer?.username || 'none'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: {
+                totalRooms: rooms.length,
+                rooms: rooms
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Bank API: Ошибка отладочного запроса:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Ошибка отладки',
+            details: error.message 
+        });
     }
 });
 
