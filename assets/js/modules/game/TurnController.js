@@ -438,8 +438,10 @@ class TurnController {
             }
             
             .dice-value {
-                font-size: 2.5rem;
+                font-size: 7.5rem; /* Увеличено в 3 раза с 2.5rem */
                 margin-bottom: 0.5rem;
+                font-weight: bold;
+                text-shadow: 0 0 15px rgba(245, 158, 11, 0.8);
             }
             
             .dice-text {

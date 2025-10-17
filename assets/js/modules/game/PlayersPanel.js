@@ -560,6 +560,10 @@ class PlayersPanel {
     _showRollingAnimation() {
         const el = document.getElementById('dice-result');
         if (!el) return;
+        
+        // Добавляем класс для анимации
+        el.classList.add('rolling');
+        
         const seq = ['⚀','⚁','⚂','⚃','⚄','⚅'];
         let i = 0;
         this._rollingTimer && clearInterval(this._rollingTimer);
@@ -573,6 +577,12 @@ class PlayersPanel {
         if (this._rollingTimer) {
             clearInterval(this._rollingTimer);
             this._rollingTimer = null;
+        }
+        
+        // Убираем класс анимации
+        const el = document.getElementById('dice-result');
+        if (el) {
+            el.classList.remove('rolling');
         }
     }
     

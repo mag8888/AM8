@@ -473,3 +473,32 @@ a {
         font-size: 0.8rem;
     }
 }
+
+/* Увеличенный размер отображения кубика */
+#dice-result {
+    font-size: 3rem !important; /* Увеличено в 3 раза с 1rem */
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+    transition: all 0.3s ease;
+    display: inline-block;
+    min-width: 60px;
+    text-align: center;
+    color: #f59e0b !important;
+}
+
+/* Дополнительные стили для кубика в PlayersPanel */
+.player-info #dice-result {
+    font-size: 3rem !important;
+    margin-left: 8px;
+}
+
+/* Анимация для кубика */
+#dice-result.rolling {
+    animation: dicePulse 0.5s ease-in-out infinite;
+}
+
+@keyframes dicePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
