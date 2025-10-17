@@ -223,15 +223,43 @@ class PlayersPanel {
                     const roomApi = app.getModule('roomApi');
                     
                     const professionSystem = app.getModule('professionSystem');
-                    
-                    bankModule = new window.BankModule({
-                        gameState: gameState,
-                        eventBus: eventBus,
-                        roomApi: roomApi,
-                        professionSystem: professionSystem
-                    });
-                    
-                    app.modules.set('bankModule', bankModule);
+                    // Ожидаем загрузку скрипта BankModule (на медленных сетях возможна гонка)
+                    const createModule = () => {
+                        try {
+                            bankModule = new window.BankModule({
+                                gameState: gameState,
+                                eventBus: eventBus,
+                                roomApi: roomApi,
+                                professionSystem: professionSystem
+                            });
+                            app.modules.set('bankModule', bankModule);
+                            bankModule.open();
+                            console.log('🏦 PlayersPanel: Банк модуль создан');
+                        } catch (e) {
+                            console.warn('⚠️ PlayersPanel: BankModule ещё не готов, повторим...', e);
+                            setTimeout(() => {
+                                if (window.BankModule) {
+                                    createModule();
+                                }
+                            }, 150);
+                        }
+                    };
+                    if (window.BankModule) {
+                        createModule();
+                        return;
+                    } else {
+                        // Подстраховка: ожидаем событий загрузки документа
+                        const retry = () => {
+                            if (window.BankModule) {
+                                createModule();
+                                window.removeEventListener('load', retry);
+                            }
+                        };
+                        window.addEventListener('load', retry);
+                        // Также запустим таймер-повтор через 300 мс
+                        setTimeout(retry, 300);
+                        return;
+                    }
                 }
                 
                 bankModule.open();
