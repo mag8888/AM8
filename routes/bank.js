@@ -8,10 +8,11 @@ const router = express.Router();
 
 // Импорт сервисов
 const PushService = require('../services/PushService');
-const { getRoomGameState, updateRoomGameState } = require('./rooms');
-
-// Получаем доступ к gameStateByRoomId для отладки
 const roomsModule = require('./rooms');
+
+// Получаем функции из rooms module
+const getRoomGameState = roomsModule.getRoomGameState;
+const updateRoomGameState = roomsModule.updateRoomGameState;
 const gameStateByRoomId = roomsModule.gameStateByRoomId || new Map();
 
 // Используем прямые вызовы функций из routes/rooms.js для работы с состоянием игры

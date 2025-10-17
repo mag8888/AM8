@@ -1448,6 +1448,11 @@ router.get('/push/stats', (req, res) => {
     });
 });
 
+// Экспортируем router и дополнительные функции
+router.getRoomGameState = getRoomGameState;
+router.updateRoomGameState = updateRoomGameState;
+router.gameStateByRoomId = gameStateByRoomId;
+
 module.exports = router;
 /**
  * DELETE /api/rooms/:id/players/:playerId - Удалить игрока из комнаты (только хост)
