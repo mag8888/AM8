@@ -882,8 +882,18 @@ class BankModule {
     updateBankData() {
         if (!this.gameState) return;
         
-        const currentPlayer = this.gameState.getCurrentPlayer();
-        if (!currentPlayer) return;
+        // Получаем текущего пользователя браузера, а не активного игрока
+        const currentPlayer = this.getCurrentUserPlayer();
+        if (!currentPlayer) {
+            console.warn('⚠️ BankModule: Текущий пользователь не найден');
+            return;
+        }
+        
+        console.log('🏦 BankModule: Обновляем данные для пользователя:', {
+            id: currentPlayer.id,
+            username: currentPlayer.username,
+            money: currentPlayer.money
+        });
         
         // Получаем данные профессии
         const professionId = currentPlayer.profession || 'entrepreneur';
@@ -1040,7 +1050,7 @@ class BankModule {
             return;
         }
         
-        const currentPlayer = this.gameState.getCurrentPlayer();
+        const currentPlayer = this.getCurrentUserPlayer();
         if (!currentPlayer) {
             this.showNotification('Ошибка: Текущий игрок не найден', 'error');
             return;
@@ -1099,7 +1109,7 @@ class BankModule {
     async performTransfer(recipientId, amount) {
         if (!this.gameState || !this.currentRoomId) return false;
         
-        const currentPlayer = this.gameState.getCurrentPlayer();
+        const currentPlayer = this.getCurrentUserPlayer();
         const recipient = this.gameState.getPlayers().find(p => p.id === recipientId);
         
         if (!recipient) return false;
@@ -1172,7 +1182,7 @@ class BankModule {
             return;
         }
         
-        const currentPlayer = this.gameState.getCurrentPlayer();
+        const currentPlayer = this.getCurrentUserPlayer();
         if (!currentPlayer) {
             this.showNotification('Текущий игрок не найден', 'error');
             return;
@@ -1221,7 +1231,7 @@ class BankModule {
             return;
         }
         
-        const currentPlayer = this.gameState.getCurrentPlayer();
+        const currentPlayer = this.getCurrentUserPlayer();
         if (!currentPlayer) {
             this.showNotification('Текущий игрок не найден', 'error');
             return;
@@ -1302,6 +1312,77 @@ class BankModule {
         }
     }
     
+    /**
+     * Получение текущего пользователя браузера (не активного игрока)
+     */
+    getCurrentUserPlayer() {
+        if (!this.gameState) return null;
+        
+        // Получаем ID текущего пользователя из различных источников
+        let currentUserId = null;
+        
+        // 1. Из sessionStorage
+        try {
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                currentUserId = bundle.userId || bundle.id || bundle.username;
+            }
+        } catch (e) {
+            console.warn('⚠️ BankModule: Ошибка чтения sessionStorage:', e);
+        }
+        
+        // 2. Из localStorage
+        if (!currentUserId) {
+            try {
+                const userData = localStorage.getItem('currentUser');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    currentUserId = user.id || user.userId || user.username;
+                }
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка чтения localStorage:', e);
+            }
+        }
+        
+        // 3. Из window.app
+        if (!currentUserId && window.app) {
+            try {
+                const userModel = window.app.getModule('userModel');
+                if (userModel) {
+                    currentUserId = userModel.getId() || userModel.getUsername();
+                }
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка получения userModel:', e);
+            }
+        }
+        
+        if (!currentUserId) {
+            console.warn('⚠️ BankModule: Не удалось определить ID текущего пользователя');
+            return null;
+        }
+        
+        // Находим игрока по ID
+        const player = this.gameState.getPlayers().find(p => 
+            p.id === currentUserId || 
+            p.username === currentUserId ||
+            p.userId === currentUserId
+        );
+        
+        if (!player) {
+            console.warn('⚠️ BankModule: Игрок с ID не найден:', currentUserId);
+            return null;
+        }
+        
+        console.log('✅ BankModule: Найден текущий пользователь:', {
+            id: player.id,
+            username: player.username,
+            money: player.money
+        });
+        
+        return player;
+    }
+
     /**
      * Получение ID текущей комнаты
      */
