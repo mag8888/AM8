@@ -83,6 +83,17 @@ class PlayersPanel {
                 this.handleTurnChanged(data || {});
             });
         }
+        
+        // Подписываемся на push-уведомления для принудительного обновления
+        this.eventBus.on('push:message', (message) => {
+            if (message.type === 'turn_changed' || message.type === 'game_state_updated') {
+                console.log('🎯 PlayersPanel: Получено push-уведомление о смене хода');
+                // Принудительно обновляем состояние
+                if (this.gameStateManager && this.gameStateManager.forceUpdate) {
+                    this.gameStateManager.forceUpdate();
+                }
+            }
+        });
     }
     
     /**
@@ -207,14 +218,12 @@ class PlayersPanel {
                     const roomApi = app.getModule('roomApi');
                     
                     const professionSystem = app.getModule('professionSystem');
-                    const bankApi = app.getModule('bankApi');
                     
                     bankModule = new window.BankModule({
                         gameState: gameState,
                         eventBus: eventBus,
                         roomApi: roomApi,
-                        professionSystem: professionSystem,
-                        bankApi: bankApi
+                        professionSystem: professionSystem
                     });
                     
                     app.modules.set('bankModule', bankModule);
@@ -267,13 +276,39 @@ class PlayersPanel {
         const rollBtn = document.getElementById('roll-dice');
         const passBtn = document.getElementById('pass-turn');
         
+        // Проверяем, мой ли это ход
+        const currentUserId = this.getCurrentUserId();
+        const isMyTurn = state.activePlayer && (
+            state.activePlayer.id === currentUserId ||
+            (state.activePlayer.username && currentUserId && state.activePlayer.username === currentUserId)
+        );
+        
         if (rollBtn) {
-            rollBtn.disabled = !state.canRoll;
+            // Кнопка активна только если это мой ход И можно бросать
+            rollBtn.disabled = !isMyTurn || !state.canRoll;
+            
+            // Добавляем визуальную индикацию
+            if (isMyTurn && state.canRoll) {
+                rollBtn.classList.add('my-turn');
+                rollBtn.style.boxShadow = '0 0 0 2px rgba(34,197,94,0.35), 0 10px 22px rgba(34,197,94,0.45)';
+            } else {
+                rollBtn.classList.remove('my-turn');
+                rollBtn.style.boxShadow = '';
+            }
         }
         
         if (passBtn) {
-            passBtn.disabled = !state.canEndTurn;
+            // Кнопка передачи хода активна только если это мой ход И можно завершить ход
+            passBtn.disabled = !isMyTurn || !state.canEndTurn;
         }
+        
+        console.log('🎯 PlayersPanel: Обновлены кнопки управления:', {
+            isMyTurn,
+            canRoll: state.canRoll,
+            canEndTurn: state.canEndTurn,
+            rollBtnDisabled: rollBtn?.disabled,
+            passBtnDisabled: passBtn?.disabled
+        });
     }
     
     /**
