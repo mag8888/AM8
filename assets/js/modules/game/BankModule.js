@@ -974,6 +974,13 @@ class BankModule {
             this.ui.style.display = 'none';
             this.isOpen = false;
             console.log('🏦 BankModule: Закрыт');
+            // При закрытии убеждаемся, что локальные изменения кредита/баланса зафиксированы в GameState
+            try {
+                const player = this.getCurrentUserPlayer();
+                if (player && this.gameState && typeof this.gameState.updatePlayer === 'function') {
+                    this.gameState.updatePlayer(player.id, player);
+                }
+            } catch (_) {}
         }
     }
     
