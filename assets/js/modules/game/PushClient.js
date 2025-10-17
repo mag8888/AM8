@@ -11,7 +11,8 @@ class PushClient {
         this.clientId = null;
         this.isRegistered = false;
         this.pollingInterval = null;
-        this.pollingIntervalMs = 2000; // Polling каждые 2 секунды
+        // Снижаем частоту опроса, чтобы уменьшить нагрузку и спам-запросы
+        this.pollingIntervalMs = 5000; // 5 секунд
         this.retryCount = 0;
         this.maxRetries = 5;
         

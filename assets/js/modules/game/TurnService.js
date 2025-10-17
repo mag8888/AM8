@@ -49,6 +49,15 @@ class TurnService extends EventTarget {
             console.warn('⚠️ TurnService: Бросок кубика уже выполняется');
             throw new Error('Dice roll already in progress');
         }
+
+        // Защита от повторных кликов/спама: блокируем повторный roll на короткое время
+        const now = Date.now();
+        if (!this._lastRollAttemptTs) this._lastRollAttemptTs = 0;
+        if (now - this._lastRollAttemptTs < 1200) {
+            console.warn('⏳ TurnService: Повторный бросок слишком рано, игнорируем');
+            throw new Error('Roll throttled');
+        }
+        this._lastRollAttemptTs = now;
         
         // Проверяем, что это ход текущего пользователя
         if (!this.isMyTurn()) {
