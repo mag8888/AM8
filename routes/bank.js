@@ -444,4 +444,65 @@ router.get('/debug/rooms', (req, res) => {
     }
 });
 
+/**
+ * POST /api/bank/loan/take
+ * Взять кредит: зачисляет деньги и увеличивает ежемесячные обязательства
+ */
+router.post('/loan/take', async (req, res) => {
+    try {
+        const { roomId, playerId, amount } = req.body;
+        if (!roomId || !playerId || !amount) return res.status(400).json({ success: false, message: 'roomId, playerId, amount обязательны' });
+        const roomData = getRoomGameState(roomId);
+        if (!roomData) return res.status(404).json({ success: false, message: 'Комната не найдена' });
+        const player = roomData.players?.find(p => p.id === playerId);
+        if (!player) return res.status(404).json({ success: false, message: 'Игрок не найден' });
+        const take = Math.max(0, Math.floor(Number(amount) / 1000) * 1000);
+        // лимит: net*10 (если есть в player), иначе без ограничения
+        const net = Number(player.netIncome || 0);
+        const maxLoan = Math.max(0, Math.floor((net * 10) / 1000) * 1000);
+        const currentLoan = Number(player.currentLoan || 0);
+        const available = maxLoan > 0 ? Math.max(0, maxLoan - currentLoan) : take;
+        const finalAmount = maxLoan > 0 ? Math.min(take, available) : take;
+        if (finalAmount <= 0) return res.status(400).json({ success: false, message: 'Сумма недоступна' });
+        player.currentLoan = currentLoan + finalAmount;
+        player.money = Number(player.money || 0) + finalAmount;
+        // Сохраняем
+        updateRoomGameState(roomId, roomData);
+        // Push всем
+        try { await new PushService().broadcastPush('bank_balanceUpdated', { roomId, players: roomData.players }); } catch (_) {}
+        return res.json({ success: true, data: { player, amount: finalAmount } });
+    } catch (e) {
+        console.error('❌ Bank API: loan/take error', e);
+        return res.status(500).json({ success: false, message: 'Ошибка сервера' });
+    }
+});
+
+/**
+ * POST /api/bank/loan/repay
+ * Погашение кредита: списывает деньги и уменьшает текущий долг
+ */
+router.post('/loan/repay', async (req, res) => {
+    try {
+        const { roomId, playerId, amount } = req.body;
+        if (!roomId || !playerId || !amount) return res.status(400).json({ success: false, message: 'roomId, playerId, amount обязательны' });
+        const roomData = getRoomGameState(roomId);
+        if (!roomData) return res.status(404).json({ success: false, message: 'Комната не найдена' });
+        const player = roomData.players?.find(p => p.id === playerId);
+        if (!player) return res.status(404).json({ success: false, message: 'Игрок не найден' });
+        const repay = Math.max(0, Math.floor(Number(amount) / 1000) * 1000);
+        const currentLoan = Number(player.currentLoan || 0);
+        const balance = Number(player.money || 0);
+        const finalAmount = Math.min(repay, currentLoan, balance);
+        if (finalAmount <= 0) return res.status(400).json({ success: false, message: 'Недостаточно долга или баланса' });
+        player.currentLoan = currentLoan - finalAmount;
+        player.money = balance - finalAmount;
+        updateRoomGameState(roomId, roomData);
+        try { await new PushService().broadcastPush('bank_balanceUpdated', { roomId, players: roomData.players }); } catch (_) {}
+        return res.json({ success: true, data: { player, amount: finalAmount } });
+    } catch (e) {
+        console.error('❌ Bank API: loan/repay error', e);
+        return res.status(500).json({ success: false, message: 'Ошибка сервера' });
+    }
+});
+
 module.exports = router;

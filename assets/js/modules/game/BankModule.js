@@ -888,12 +888,20 @@ class BankModule {
         const input = this.ui.querySelector('#loan-amount');
         if (input) input.value = String(amount);
         if (amount <= 0) return;
-        const res = ps?.takeLoan?.(profId, player, amount);
+        // Серверный вызов
+        const roomId = this.getRoomId?.() || this._getCurrentRoomId?.();
+        let res = null;
+        try {
+            const response = await fetch('/api/bank/loan/take', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId, playerId: player.id, amount })
+            });
+            res = await response.json();
+        } catch (e) { res = null; }
         if (res?.success) {
-            player.currentLoan = res.newLoan;
-            player.otherMonthlyAdjustments = (player.otherMonthlyAdjustments||0) + (amount/1000)*100;
-            // Деньги зачисляются на баланс игрока
-            player.money = (player.money || 0) + amount;
+            // Берем актуального игрока из ответа
+            Object.assign(player, res.data.player);
             this.addTransaction('Кредит', `Взят кредит $${this.formatNumber(amount)}`, amount, 'completed');
             // Уведомим слушателей об изменении баланса
             this.eventBus?.emit('bank:balanceUpdated', { userId: player.id, delta: amount });
@@ -918,18 +926,19 @@ class BankModule {
         const player = this.getCurrentUserPlayer();
         const profId = player?.profession || 'entrepreneur';
         const ps = this.professionSystem;
-        const res = ps?.repayLoan?.(profId, player, amount);
+        // Серверный вызов
+        const roomId = this.getRoomId?.() || this._getCurrentRoomId?.();
+        let res = null;
+        try {
+            const response = await fetch('/api/bank/loan/repay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId, playerId: player.id, amount })
+            });
+            res = await response.json();
+        } catch (e) { res = null; }
         if (res?.success) {
-            // Проверим достаточно ли средств на балансе
-            const available = player.money || 0;
-            if (available < amount) {
-                this.addTransaction('Погашение кредита', 'Недостаточно средств', 0, 'failed');
-                return;
-            }
-            player.currentLoan = res.newLoan;
-            player.otherMonthlyAdjustments = Math.max(0, (player.otherMonthlyAdjustments||0) - (amount/1000)*100);
-            // Списываем деньги
-            player.money = available - amount;
+            Object.assign(player, res.data.player);
             this.addTransaction('Погашение кредита', `Погашено $${this.formatNumber(amount)}`, -amount, 'completed');
             this.eventBus?.emit('bank:balanceUpdated', { userId: player.id, delta: -amount });
             try {
