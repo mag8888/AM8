@@ -941,7 +941,18 @@ class TurnController {
      * Обработка броска кубика
      */
     async handleRollDice() {
-        if (this.isRolling) return;
+        // Защита от множественных воздействий
+        if (this.isRolling) {
+            console.warn('⚠️ TurnController: Бросок кубика уже выполняется');
+            return;
+        }
+        
+        // Дополнительная проверка на уровне UI
+        const rollBtn = this.ui.querySelector('#roll-dice-btn');
+        if (rollBtn && rollBtn.disabled) {
+            console.warn('⚠️ TurnController: Кнопка броска отключена');
+            return;
+        }
         
         // Проверяем права на бросок кубика
         const permissionCheck = this.turnService.canPerformAction({
@@ -954,7 +965,14 @@ class TurnController {
             return;
         }
         
-        console.log('🎲 TurnController: click roll, canRoll =', this.turnService ? this.turnService.canRoll() : 'n/a');
+        // Проверяем, что это действительно ход текущего пользователя
+        if (!this.turnService.isMyTurn()) {
+            console.warn('⚠️ TurnController: Не ваш ход - бросок кубика заблокирован');
+            this.showNotification('❌ Не ваш ход!', 'error');
+            return;
+        }
+        
+        console.log('🎲 TurnController: Начинаем бросок кубика для текущего пользователя');
         try {
             await this.turnService.roll({ diceChoice: 'single' });
         } catch (error) {

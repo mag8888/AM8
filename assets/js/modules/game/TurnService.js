@@ -47,6 +47,31 @@ class TurnService extends EventTarget {
             console.warn('⚠️ TurnService: Не ваш ход, бросок кубика заблокирован');
             throw new Error('Not your turn');
         }
+        
+        // Дополнительная проверка безопасности
+        const currentUserId = this._getCurrentUserId();
+        const currentUsername = this._getCurrentUsername();
+        const state = this.getState();
+        
+        if (!state || !state.activePlayer) {
+            console.warn('⚠️ TurnService: Нет активного игрока');
+            throw new Error('No active player');
+        }
+        
+        // Проверяем, что активный игрок действительно текущий пользователь
+        const activePlayer = state.activePlayer;
+        const isReallyMyTurn = 
+            activePlayer.id === currentUserId ||
+            activePlayer.userId === currentUserId ||
+            (activePlayer.username && currentUsername && activePlayer.username === currentUsername);
+        
+        if (!isReallyMyTurn) {
+            console.warn('⚠️ TurnService: Нарушение безопасности - попытка хода за другого игрока', {
+                activePlayer: activePlayer.username || activePlayer.id,
+                currentUser: currentUsername || currentUserId
+            });
+            throw new Error('Security violation: Not your turn');
+        }
 
         let response;
         try {

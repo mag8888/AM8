@@ -111,10 +111,11 @@ class PlayersPanel {
                 <div class="panel-grid">
                     <section class="game-controls">
                         <div class="dice-controls">
-                            <button class="btn btn-primary" id="roll-dice" disabled>
-                                <span class="btn-icon">🎲</span>
-                                <span class="btn-text">Бросить кубик</span>
-                            </button>
+                            <!-- Кнопка броска кубика управляется через TurnController -->
+                            <div class="dice-display">
+                                <div id="dice-result" class="dice-value">🎲</div>
+                                <div class="dice-label">Результат броска</div>
+                            </div>
                             <button class="btn btn-secondary" id="pass-turn" type="button" disabled>
                                 <span class="btn-icon">➡️</span>
                                 <span class="btn-text">Передать ход</span>
@@ -277,7 +278,7 @@ class PlayersPanel {
      * @param {Object} state - Состояние игры
      */
     updateControlButtons(state) {
-        const rollBtn = document.getElementById('roll-dice');
+        // Удаляем кнопку roll-dice - управление через TurnController
         const passBtn = document.getElementById('pass-turn');
         
         // Проверяем, мой ли это ход
@@ -286,20 +287,6 @@ class PlayersPanel {
             state.activePlayer.id === currentUserId ||
             (state.activePlayer.username && currentUserId && state.activePlayer.username === currentUserId)
         );
-        
-        if (rollBtn) {
-            // Кнопка активна только если это мой ход И можно бросать
-            rollBtn.disabled = !isMyTurn || !state.canRoll;
-            
-            // Добавляем визуальную индикацию
-            if (isMyTurn && state.canRoll) {
-                rollBtn.classList.add('my-turn');
-                rollBtn.style.boxShadow = '0 0 0 2px rgba(34,197,94,0.35), 0 10px 22px rgba(34,197,94,0.45)';
-            } else {
-                rollBtn.classList.remove('my-turn');
-                rollBtn.style.boxShadow = '';
-            }
-        }
         
         if (passBtn) {
             // Кнопка передачи хода активна только если это мой ход И можно завершить ход
@@ -310,7 +297,6 @@ class PlayersPanel {
             isMyTurn,
             canRoll: state.canRoll,
             canEndTurn: state.canEndTurn,
-            rollBtnDisabled: rollBtn?.disabled,
             passBtnDisabled: passBtn?.disabled
         });
     }
