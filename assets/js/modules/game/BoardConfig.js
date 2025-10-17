@@ -9,9 +9,8 @@ const BoardConfig = {
     SMALL_CIRCLE_CELLS: 24,
     
     // Внешний трек (44 клетки, номера 25-68)
-    BIG_CIRCLE: [[
+    BIG_CIRCLE: [
         {
-            "id": 25,
             "id": 25,
             "name": "Паспортный доход",
             "description": "Вам выплачивается доход от ваших инвестиций",
@@ -716,10 +715,11 @@ const BoardConfig = {
             "special": true,
             "mandatoryStop": false,
             "customData": { "category": "dream" }
-    ]],
+        }
+    ],
     
     // Внутренний трек (24 клетки)
-    SMALL_CIRCLE: [[
+    SMALL_CIRCLE: [
         { "id": 1, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
         { "id": 2, "name": "Розовые траты", "description": "Обязательные траты от $100 до $4000", "icon": "🛒", "color": "#ec4899", "type": "expense", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "Заплатите за бытовые нужды (чайник, кофе, ТВ, прочее)", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "expenseRange": [100, 4000], "expenseType": "household" },
         { "id": 3, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
@@ -743,8 +743,8 @@ const BoardConfig = {
         { "id": 21, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
         { "id": 22, "name": "PayDay", "description": "Получите зарплату", "icon": "💰", "color": "#fbbf24", "type": "money", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "income", "actionText": "Получите зарплату", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "salaryType": true },
         { "id": 23, "name": "Зеленая возможность", "description": "Выберите малую или большую возможность", "icon": "🎲", "color": "#10b981", "type": "chance", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "card", "actionText": "Выберите: малая возможность или большая возможность", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "opportunityType": "green" },
-        { "id": 24, "name": "Рынок", "description": "Покупатели на разные активы", "icon": "🏪", "color": "#3b82f6", "type": "market", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "На рынке появились покупатели на ваши активы", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "marketType": "buyers" }
-    ]]
+        { "id": 24, "name": "Рынок", "description": "Покупатели на разные активы", "icon": "🏪", "color": "#3b82f6", "type": "market", "income": 0, "expense": 0, "price": 0, "rent": 0, "actionType": "custom", "actionText": "На рынке появились покупатели на ваши активы", "purchasable": false, "special": true, "mandatoryStop": true, "customData": { "marketType": "buyers" } }
+    ]
 };
 
 // Экспорт для использования в других модулях
