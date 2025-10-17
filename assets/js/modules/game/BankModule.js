@@ -878,34 +878,10 @@ class BankModule {
     async takeCreditInline() {
         let amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
         
-        // Используем fallback логику для получения текущего игрока
+        // Получаем текущего игрока с fallback логикой
         let player = await this.getCurrentUserPlayer();
         if (!player) {
-            console.log('🔧 BankModule: getCurrentUserPlayer вернул null, используем fallback для кредита...');
-            
-            const gameStateManager = window.app?.services?.get('gameStateManager');
-            const state = gameStateManager?.getState();
-            const players = state?.players || [];
-            
-            // Ищем по username из localStorage
-            try {
-                const userData = localStorage.getItem('currentUser');
-                if (userData) {
-                    const user = JSON.parse(userData);
-                    player = players.find(p => p.username === user.username);
-                    if (player) {
-                        console.log('✅ BankModule: Текущий игрок найден через fallback для кредита:', player.username);
-                    }
-                }
-            } catch (e) {
-                console.warn('⚠️ BankModule: Ошибка fallback для кредита:', e);
-            }
-            
-            // Если все еще не найден, используем первого игрока
-            if (!player && players.length > 0) {
-                player = players[0];
-                console.log('🔧 BankModule: Используем первого игрока для кредита:', player.username);
-            }
+            player = await this.getCurrentUserPlayerWithFallback();
         }
         
         if (!player) {
@@ -915,13 +891,6 @@ class BankModule {
         
         const profId = player?.profession || 'entrepreneur';
         const ps = this.professionSystem;
-        
-        // Проверяем, что player существует и имеет необходимые свойства
-        if (!player || typeof player !== 'object') {
-            this.showNotification('Ошибка: Неверные данные игрока', 'error');
-            return;
-        }
-        
         // Ограничение: не больше доступного лимита (maxLoan - currentLoan)
         const details = ps?.getProfessionDetails?.(profId, {
             money: player.money || 0,
@@ -975,44 +944,14 @@ class BankModule {
         const amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
         if (amount <= 0) return;
         
-        // Используем fallback логику для получения текущего игрока
+        // Получаем текущего игрока с fallback логикой
         let player = await this.getCurrentUserPlayer();
         if (!player) {
-            console.log('🔧 BankModule: getCurrentUserPlayer вернул null, используем fallback для погашения кредита...');
-            
-            const gameStateManager = window.app?.services?.get('gameStateManager');
-            const state = gameStateManager?.getState();
-            const players = state?.players || [];
-            
-            // Ищем по username из localStorage
-            try {
-                const userData = localStorage.getItem('currentUser');
-                if (userData) {
-                    const user = JSON.parse(userData);
-                    player = players.find(p => p.username === user.username);
-                    if (player) {
-                        console.log('✅ BankModule: Текущий игрок найден через fallback для погашения кредита:', player.username);
-                    }
-                }
-            } catch (e) {
-                console.warn('⚠️ BankModule: Ошибка fallback для погашения кредита:', e);
-            }
-            
-            // Если все еще не найден, используем первого игрока
-            if (!player && players.length > 0) {
-                player = players[0];
-                console.log('🔧 BankModule: Используем первого игрока для погашения кредита:', player.username);
-            }
+            player = await this.getCurrentUserPlayerWithFallback();
         }
         
         if (!player) {
             this.showNotification('Ошибка: Текущий игрок не найден', 'error');
-            return;
-        }
-        
-        // Проверяем, что player существует и имеет необходимые свойства
-        if (!player || typeof player !== 'object') {
-            this.showNotification('Ошибка: Неверные данные игрока', 'error');
             return;
         }
         
@@ -1142,31 +1081,7 @@ class BankModule {
         // Получаем текущего пользователя браузера, а не активного игрока
         let currentPlayer = await this.getCurrentUserPlayer();
         if (!currentPlayer) {
-            console.log('🔧 BankModule: getCurrentUserPlayer вернул null, используем fallback для updateBankData...');
-            
-            const gameStateManager = window.app?.services?.get('gameStateManager');
-            const state = gameStateManager?.getState();
-            const players = state?.players || [];
-            
-            // Ищем по username из localStorage
-            try {
-                const userData = localStorage.getItem('currentUser');
-                if (userData) {
-                    const user = JSON.parse(userData);
-                    currentPlayer = players.find(p => p.username === user.username);
-                    if (currentPlayer) {
-                        console.log('✅ BankModule: Текущий игрок найден через fallback для updateBankData:', currentPlayer.username);
-                    }
-                }
-            } catch (e) {
-                console.warn('⚠️ BankModule: Ошибка fallback для updateBankData:', e);
-            }
-            
-            // Если все еще не найден, используем первого игрока
-            if (!currentPlayer && players.length > 0) {
-                currentPlayer = players[0];
-                console.log('🔧 BankModule: Используем первого игрока для updateBankData:', currentPlayer.username);
-            }
+            currentPlayer = await this.getCurrentUserPlayerWithFallback();
         }
         
         if (!currentPlayer) {
@@ -1347,34 +1262,10 @@ class BankModule {
             return;
         }
         
-        // Используем fallback логику для получения текущего игрока
+        // Получаем текущего игрока с fallback логикой
         let currentPlayer = await this.getCurrentUserPlayer();
         if (!currentPlayer) {
-            console.log('🔧 BankModule: getCurrentUserPlayer вернул null, используем fallback для перевода...');
-            
-            const gameStateManager = window.app?.services?.get('gameStateManager');
-            const state = gameStateManager?.getState();
-            const players = state?.players || [];
-            
-            // Ищем по username из localStorage
-            try {
-                const userData = localStorage.getItem('currentUser');
-                if (userData) {
-                    const user = JSON.parse(userData);
-                    currentPlayer = players.find(p => p.username === user.username);
-                    if (currentPlayer) {
-                        console.log('✅ BankModule: Текущий игрок найден через fallback для перевода:', currentPlayer.username);
-                    }
-                }
-            } catch (e) {
-                console.warn('⚠️ BankModule: Ошибка fallback для перевода:', e);
-            }
-            
-            // Если все еще не найден, используем первого игрока
-            if (!currentPlayer && players.length > 0) {
-                currentPlayer = players[0];
-                console.log('🔧 BankModule: Используем первого игрока для перевода:', currentPlayer.username);
-            }
+            currentPlayer = await this.getCurrentUserPlayerWithFallback();
         }
         
         if (!currentPlayer) {
@@ -1439,7 +1330,17 @@ class BankModule {
     async performTransfer(recipientId, amount) {
         if (!this.gameState || !this.currentRoomId) return false;
         
-        const currentPlayer = await this.getCurrentUserPlayer();
+        // Получаем текущего игрока с fallback логикой
+        let currentPlayer = await this.getCurrentUserPlayer();
+        if (!currentPlayer) {
+            currentPlayer = await this.getCurrentUserPlayerWithFallback();
+        }
+        
+        if (!currentPlayer) {
+            console.warn('⚠️ BankModule: Не удалось получить текущего игрока для перевода');
+            return false;
+        }
+        
         const recipient = this.gameState.getPlayers().find(p => p.id === recipientId);
         
         if (!recipient) return false;
@@ -1512,7 +1413,12 @@ class BankModule {
             return;
         }
         
-        const currentPlayer = await this.getCurrentUserPlayer();
+        // Получаем текущего игрока с fallback логикой
+        let currentPlayer = await this.getCurrentUserPlayer();
+        if (!currentPlayer) {
+            currentPlayer = await this.getCurrentUserPlayerWithFallback();
+        }
+        
         if (!currentPlayer) {
             this.showNotification('Текущий игрок не найден', 'error');
             return;
@@ -1561,7 +1467,12 @@ class BankModule {
             return;
         }
         
-        const currentPlayer = await this.getCurrentUserPlayer();
+        // Получаем текущего игрока с fallback логикой
+        let currentPlayer = await this.getCurrentUserPlayer();
+        if (!currentPlayer) {
+            currentPlayer = await this.getCurrentUserPlayerWithFallback();
+        }
+        
         if (!currentPlayer) {
             this.showNotification('Текущий игрок не найден', 'error');
             return;
@@ -1694,6 +1605,48 @@ class BankModule {
         console.log('🏦 BankModule: Загружено транзакций:', this.bankState.transactions.length);
     }
     
+    /**
+     * Fallback метод для получения текущего игрока
+     */
+    async getCurrentUserPlayerWithFallback() {
+        console.log('🔧 BankModule: Используем fallback логику для получения игрока...');
+        
+        const gameStateManager = window.app?.services?.get('gameStateManager');
+        const state = gameStateManager?.getState();
+        const players = state?.players || [];
+        
+        console.log('🔧 BankModule: Игроки в игре:', players.map(p => ({ id: p.id, username: p.username })));
+        
+        // Ищем по username из localStorage
+        try {
+            const userData = localStorage.getItem('currentUser');
+            if (userData) {
+                const user = JSON.parse(userData);
+                console.log('🔧 BankModule: Пользователь из localStorage:', user);
+                
+                const player = players.find(p => p.username === user.username);
+                if (player) {
+                    console.log('✅ BankModule: Игрок найден через fallback по username:', player.username);
+                    this.currentUserId = player.id;
+                    return player;
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ BankModule: Ошибка fallback логики:', e);
+        }
+        
+        // Если не найден по username, используем первого игрока
+        if (players.length > 0) {
+            const player = players[0];
+            console.log('🔧 BankModule: Используем первого игрока как fallback:', player.username);
+            this.currentUserId = player.id;
+            return player;
+        }
+        
+        console.warn('⚠️ BankModule: Fallback логика не смогла найти игрока');
+        return null;
+    }
+
     /**
      * Получение текущего пользователя браузера (не активного игрока)
      */
