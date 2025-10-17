@@ -886,7 +886,9 @@ class TurnController {
         // Обновляем кнопки перемещения
         const moveBtns = this.ui.querySelectorAll('.move-btn');
         moveBtns.forEach(btn => {
-            btn.disabled = !state.canMove || this.isMoving;
+            // Кнопка активна только если это мой ход И можно двигаться
+            const isMyTurn = this.turnService ? this.turnService.isMyTurn() : false;
+            btn.disabled = !isMyTurn || !state.canMove || this.isMoving;
         });
     }
     
@@ -1040,7 +1042,19 @@ class TurnController {
      * Обработка перемещения
      */
     async handleMove(steps) {
-        if (this.isMoving) return;
+        // Защита от множественных воздействий
+        if (this.isMoving) {
+            console.warn('⚠️ TurnController: Перемещение уже выполняется');
+            return;
+        }
+        
+        // Дополнительная проверка на уровне UI
+        const moveBtns = this.ui.querySelectorAll('.move-btn');
+        const clickedBtn = Array.from(moveBtns).find(btn => parseInt(btn.dataset.steps) === steps);
+        if (clickedBtn && clickedBtn.disabled) {
+            console.warn('⚠️ TurnController: Кнопка перемещения отключена');
+            return;
+        }
         
         // Проверяем права на перемещение
         const permissionCheck = this.turnService.canPerformAction({
@@ -1053,12 +1067,20 @@ class TurnController {
             return;
         }
         
+        // Проверяем, что это действительно ход текущего пользователя
+        if (!this.turnService.isMyTurn()) {
+            console.warn('⚠️ TurnController: Не ваш ход - перемещение заблокировано');
+            this.showNotification('❌ Не ваш ход!', 'error');
+            return;
+        }
+        
         if (!this.turnService.canMove()) {
             console.warn('⚠️ TurnController: Перемещение недоступно');
             this.showNotification('❌ Перемещение недоступно', 'error');
             return;
         }
         
+        console.log('🎯 TurnController: Начинаем перемещение для текущего пользователя');
         try {
             await this.turnService.move(steps);
         } catch (error) {
