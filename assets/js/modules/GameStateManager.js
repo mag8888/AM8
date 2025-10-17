@@ -39,6 +39,10 @@ class GameStateManager {
         
         const oldPlayersKey = JSON.stringify((oldState.players || []).map(p => (p && (p.id || p.userId || p.username)) || null));
 
+        console.log('🔍 GameStateManager: updateFromServer вызван с serverState:', serverState);
+        console.log('🔍 GameStateManager: serverState.players:', serverState.players);
+        console.log('🔍 GameStateManager: Array.isArray(serverState.players):', Array.isArray(serverState.players));
+
         // Обновляем игроков (с фильтрацией дубликатов)
         if (Array.isArray(serverState.players)) {
             const uniquePlayers = [];
