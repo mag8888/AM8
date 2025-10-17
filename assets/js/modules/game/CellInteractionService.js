@@ -16,6 +16,7 @@ class CellInteractionService {
         // Обработчики для разных типов клеток
         this.cellHandlers = {
             'money': this.handleMoneyCell.bind(this),
+            // Payday на малом круге (6,14,22) будет обработан как специальный случай ниже
             'dream': this.handleDreamCell.bind(this),
             'business': this.handleBusinessCell.bind(this),
             'loss': this.handleLossCell.bind(this),
@@ -93,9 +94,18 @@ class CellInteractionService {
      * Обработка взаимодействия с клеткой
      */
     processCellInteraction(interaction) {
-        const { cellData, playerId } = interaction;
+        const { cellData, playerId, position } = interaction;
         const cellType = cellData.type || 'unknown';
         
+        // Спец. случаи малого круга: PayDay (6,14,22) и Ребенок
+        if (position?.track === 'inner') {
+            const innerIndex = position.position; // 0-based
+            const logicalId = (cellData && typeof cellData.id === 'number') ? cellData.id : (innerIndex + 1);
+            if (logicalId === 6 || logicalId === 14 || logicalId === 22) {
+                return this.handleInnerPayday(interaction);
+            }
+        }
+
         // Получаем обработчик для типа клетки
         const handler = this.cellHandlers[cellType];
         
@@ -369,21 +379,114 @@ class CellInteractionService {
         const { cellData, playerId } = interaction;
         const { name, description } = cellData;
         
+        // Микромодуль "ребенок": бросок, увеличение расходов, разовая выплата и конфетти
+        const rollChild = () => {
+            const die = Math.floor(Math.random() * 6) + 1; // 1..6
+            const born = die <= 4; // 1-4 — родился
+            if (born) {
+                // Увеличиваем ежемесячные расходы через событие для Bank/Profession
+                this.eventBus?.emit('family:expense_increase', { playerId, reason: 'child' });
+                // Разовая выплата 5000
+                if (this.balanceManager && this.balanceManager.getBalance) {
+                    const current = this.balanceManager.getBalance(playerId);
+                    this.balanceManager.updateBalance(playerId, current - 5000, 'family-child');
+                }
+                // Конфетти
+                try { this.launchConfetti?.(); } catch (_) {}
+                this.showModal({
+                    title: 'Поздравляем! 👶',
+                    content: `У вас родился ребенок! (кубик: ${die}). Разовый платеж $5000, увеличены ежемесячные расходы.`,
+                    type: 'family'
+                });
+            } else {
+                this.showModal({
+                    title: name,
+                    content: `Кубик: ${die}. Ребенок не родился.`,
+                    type: 'family'
+                });
+            }
+        };
+
         this.showModal({
             title: name,
-            content: description,
+            content: description + '\n\nБросьте кубик: 1–4 — родился, 5–6 — нет.',
             type: 'family',
             actions: [
                 {
-                    text: 'Принять изменения',
+                    text: 'Бросить кубик',
                     type: 'primary',
                     action: () => {
                         this.closeModal();
-                        this.eventBus?.emit('family:expense_increase', { playerId });
+                        rollChild();
                     }
                 }
             ]
         });
+    }
+
+    /**
+     * Payday на малом круге (клетки 6,14,22): начисляем зарплату,
+     * если игрок стал на клетку или прошел через нее
+     */
+    handleInnerPayday(interaction) {
+        const { playerId } = interaction;
+        // Получаем данные о зарплате из ProfessionSystem/Bank или из игрока
+        try {
+            const app = window.app;
+            const gameState = app?.getModule?.('gameState');
+            const players = gameState?.players || [];
+            const player = players.find(p => p.id === playerId);
+            let salary = 0;
+            // Пытаемся через ProfessionSystem
+            const prof = window.ProfessionSystem && window.ProfessionSystem.getCurrentProfessionForPlayer
+                ? window.ProfessionSystem.getCurrentProfessionForPlayer(playerId)
+                : null;
+            if (prof?.income?.salary) salary = prof.income.salary;
+            if (!salary && player?.salary) salary = player.salary;
+            if (!salary) salary = 0;
+            // Начисляем
+            if (this.balanceManager) {
+                const current = this.balanceManager.getBalance(playerId);
+                this.balanceManager.updateBalance(playerId, current + salary, 'inner-payday');
+            }
+            this.showModal({
+                title: 'PayDay 💰',
+                content: `Зарплата начислена: $${salary.toLocaleString()}`,
+                type: 'money'
+            });
+        } catch (e) {
+            console.warn('⚠️ CellInteractionService: Ошибка payday малого круга', e);
+        }
+    }
+
+    // Простая конфетти-анимация (канвас), если доступно
+    launchConfetti() {
+        try {
+            const duration = 1500;
+            const end = Date.now() + duration;
+            const colors = ['#bb0000', '#ffffff', '#22c55e', '#f59e0b'];
+            const frame = () => {
+                const el = document.body;
+                const dot = document.createElement('div');
+                dot.style.position = 'fixed';
+                dot.style.left = Math.random() * 100 + 'vw';
+                dot.style.top = '-10px';
+                dot.style.width = '6px';
+                dot.style.height = '10px';
+                dot.style.background = colors[Math.floor(Math.random()*colors.length)];
+                dot.style.opacity = '0.9';
+                dot.style.transform = 'rotate(' + (Math.random()*360) + 'deg)';
+                dot.style.zIndex = '5000';
+                el.appendChild(dot);
+                const fall = dot.animate([
+                    { transform: dot.style.transform, top: '-10px' },
+                    { transform: dot.style.transform, top: '110vh' }
+                ], { duration: 1200 + Math.random()*600, easing: 'ease-out' });
+                fall.onfinish = () => dot.remove();
+                if (Date.now() < end) requestAnimationFrame(frame);
+            };
+            requestAnimationFrame(frame);
+        } catch(_) {}
     }
     
     /**
