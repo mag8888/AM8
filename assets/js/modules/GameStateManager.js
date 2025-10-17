@@ -47,17 +47,22 @@ class GameStateManager {
 
         // Обновляем игроков (с фильтрацией дубликатов)
         if (Array.isArray(serverState.players)) {
-            console.log('🔍 GameStateManager: Обрабатываем массив игроков:', serverState.players);
+            console.log('🔍 GameStateManager: Обрабатываем массив игроков, длина:', serverState.players.length);
             const uniquePlayers = [];
             const seen = new Set();
-            serverState.players.forEach((player, idx) => {
+            
+            for (let idx = 0; idx < serverState.players.length; idx++) {
+                const player = serverState.players[idx];
                 console.log(`🔍 GameStateManager: Обрабатываем игрока ${idx}:`, player);
+                
                 if (!player) {
                     console.log(`🔍 GameStateManager: Игрок ${idx} пустой, пропускаем`);
-                    return;
+                    continue;
                 }
+                
                 const key = player.id || player.userId || player.username || `idx_${idx}`;
                 console.log(`🔍 GameStateManager: Ключ игрока ${idx}:`, key);
+                
                 if (!seen.has(key)) {
                     seen.add(key);
                     const processedPlayer = { ...player, id: player.id || player.userId || key };
@@ -66,14 +71,11 @@ class GameStateManager {
                 } else {
                     console.log(`🔍 GameStateManager: Игрок ${idx} уже существует, пропускаем`);
                 }
-            });
+            }
+            
             this.players = uniquePlayers;
-            console.log('🏗️ GameStateManager: Игроки обновлены:', uniquePlayers.map(p => ({
-                id: p.id,
-                username: p.username,
-                token: p.token,
-                isReady: p.isReady
-            })));
+            console.log('🏗️ GameStateManager: Игроки обновлены, итого:', uniquePlayers.length);
+            console.log('🏗️ GameStateManager: this.players после обновления:', this.players);
         } else {
             console.log('🔍 GameStateManager: serverState.players не является массивом:', serverState.players);
         }
