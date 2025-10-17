@@ -293,7 +293,9 @@ class GameStateManager {
         }
         this.listeners.get(event).add(callback);
         
-        console.log(`🏗️ GameStateManager: Подписка на событие: ${event}`);
+        const listenersCount = this.listeners.get(event).size;
+        console.log(`🏗️ GameStateManager: Подписка на событие: ${event}, всего слушателей: ${listenersCount}`);
+        console.trace('🏗️ GameStateManager: Stack trace подписки');
     }
     
     /**
