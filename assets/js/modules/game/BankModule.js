@@ -970,7 +970,33 @@ class BankModule {
     async open() {
         if (this.ui) {
             // Проверяем, что текущий пользователь найден
-            const currentPlayer = await this.getCurrentUserPlayer();
+            let currentPlayer = await this.getCurrentUserPlayer();
+            
+            // Если не найден, пытаемся исправить currentUserId
+            if (!currentPlayer) {
+                console.log('🔧 BankModule: Пытаемся исправить currentUserId...');
+                
+                const gameStateManager = window.app?.services?.get('gameStateManager');
+                const state = gameStateManager?.getState();
+                const players = state?.players || [];
+                
+                // Ищем по username из localStorage
+                try {
+                    const userData = localStorage.getItem('currentUser');
+                    if (userData) {
+                        const user = JSON.parse(userData);
+                        const player = players.find(p => p.username === user.username);
+                        if (player) {
+                            console.log('🔧 BankModule: Исправляем currentUserId с', this.currentUserId, 'на', player.id);
+                            this.currentUserId = player.id;
+                            currentPlayer = player;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('⚠️ BankModule: Ошибка исправления currentUserId:', e);
+                }
+            }
+            
             if (!currentPlayer) {
                 console.warn('⚠️ BankModule: Нельзя открыть банк - текущий пользователь не найден');
                 return;
