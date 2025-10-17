@@ -49,26 +49,13 @@ class GameStateManager {
         if (Array.isArray(serverState.players) && serverState.players.length > 0) {
             console.log('🔍 GameStateManager: Обрабатываем массив игроков, длина:', serverState.players.length);
             
-            try {
-                // Простое решение: напрямую копируем игроков
-                this.players = serverState.players.map((player, idx) => {
-                    if (!player) return null;
-                    return {
-                        ...player,
-                        id: player.id || player.userId || `player_${idx}`
-                    };
-                }).filter(player => player !== null);
-                
-                console.log('🏗️ GameStateManager: Игроки обновлены, итого:', this.players.length);
-                console.log('🏗️ GameStateManager: this.players после обновления:', this.players);
-                console.log('🏗️ GameStateManager: this.players === serverState.players:', this.players === serverState.players);
-                console.log('🏗️ GameStateManager: this.players[0]:', this.players[0]);
-            } catch (error) {
-                console.error('❌ GameStateManager: Ошибка при обработке игроков:', error);
-                // Fallback: простое копирование
-                this.players = [...serverState.players];
-                console.log('🏗️ GameStateManager: Fallback - скопировали игроков напрямую:', this.players.length);
-            }
+            // Простое решение: напрямую присваиваем игроков
+            this.players = serverState.players;
+            
+            console.log('🏗️ GameStateManager: Игроки обновлены, итого:', this.players.length);
+            console.log('🏗️ GameStateManager: this.players после обновления:', this.players);
+            console.log('🏗️ GameStateManager: this.players === serverState.players:', this.players === serverState.players);
+            console.log('🏗️ GameStateManager: this.players[0]:', this.players[0]);
         } else {
             console.log('🔍 GameStateManager: serverState.players не является массивом или пустой:', serverState.players);
         }
