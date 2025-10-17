@@ -1,447 +1,613 @@
 /**
- * GameStateManager v1.0.0
- * Централизованное управление состоянием игры
- * Единый источник истины для всех компонентов UI
+ * GameStateManager v2.0.0
+ * ---------------------------------------------------------------------------
+ * Centralised game state store used by UI modules and services.
+ * Guarantees:
+ *   - state is preserved between updates (optional persistence via storage)
+ *   - `getState()` always returns a deep copy (consumers cannot mutate source)
+ *   - granular change notifications (`state:updated`, `players:updated`, etc.)
  */
+
+const STORAGE_KEY_PREFIX = 'am_game_state';
 
 class GameStateManager {
     constructor() {
-        this.players = [];
-        this.activePlayer = null;
-        this.roomId = null;
-        this.gameState = {
-            canRoll: false,
-            canMove: false,
-            canEndTurn: false,
-            lastDiceResult: null,
-            gameStarted: false
-        };
+        /** @type {Map<string, Set<Function>>} */
         this.listeners = new Map();
-        
-        console.log('🏗️ GameStateManager: Инициализирован');
+        this._state = this._createEmptyState();
+        this._stateSnapshot = null;
+
+        this._storage = this._detectStorage();
+        this._hydratedFromStorage = false;
+
+        const roomIdFromHash = this._parseRoomIdFromHash();
+        if (roomIdFromHash) {
+            this._state.roomId = roomIdFromHash;
+        }
+
+        this._hydrateFromStorage();
+
+        console.log('🏗️ GameStateManager: initialised', {
+            roomId: this._state.roomId,
+            players: this._state.players.length
+        });
     }
-    
+
     /**
-     * Установка roomId
-     * @param {string} roomId - ID комнаты
+     * Update state using payload from server.
+     * @param {Object} serverState
+     */
+    updateFromServer(serverState = {}) {
+        if (!serverState || typeof serverState !== 'object') {
+            console.warn('⚠️ GameStateManager.updateFromServer: invalid payload', serverState);
+            return;
+        }
+
+        const previous = this._cloneState(this._state);
+        const next = this._cloneState(this._state);
+
+        let playersChanged = false;
+        let activePlayerChanged = false;
+        let coreFlagsChanged = false;
+
+        if (Array.isArray(serverState.players)) {
+            const normalisedPlayers = serverState.players
+                .map(player => this._normalisePlayer(player))
+                .filter(Boolean);
+
+            playersChanged = !this._arePlayersEqual(next.players, normalisedPlayers);
+            if (playersChanged) {
+                next.players = normalisedPlayers;
+            }
+        }
+
+        if (typeof serverState.currentPlayerIndex === 'number') {
+            next.currentPlayerIndex = Math.max(0, Math.floor(serverState.currentPlayerIndex));
+        }
+
+        const candidateActivePlayer = this._resolveActivePlayer(serverState, next);
+        if (candidateActivePlayer) {
+            activePlayerChanged = !this._arePlayersEqual([previous.activePlayer], [candidateActivePlayer]);
+            next.activePlayer = candidateActivePlayer;
+            next.currentPlayerIndex = Math.max(
+                0,
+                next.players.findIndex(p => p.id === candidateActivePlayer.id)
+            );
+        } else if (next.players.length && next.currentPlayerIndex >= 0) {
+            next.activePlayer = next.players[next.currentPlayerIndex] || null;
+        }
+
+        if (serverState.roomId && serverState.roomId !== next.roomId) {
+            next.roomId = serverState.roomId;
+            coreFlagsChanged = true;
+        }
+
+        const serverFlags = this._extractGameFlags(serverState);
+        coreFlagsChanged = this._applyFlags(next, serverFlags) || coreFlagsChanged;
+
+        if (serverState.gameState && typeof serverState.gameState === 'object') {
+            coreFlagsChanged = this._applyFlags(next, this._extractGameFlags(serverState.gameState)) || coreFlagsChanged;
+        }
+
+        if (!playersChanged &&
+            !activePlayerChanged &&
+            !coreFlagsChanged &&
+            !this._hasMiscChanges(previous, next)) {
+            return;
+        }
+
+        next.updatedAt = Date.now();
+        this._commitState(next, previous, { playersChanged, activePlayerChanged });
+    }
+
+    /**
+     * Force re-emit current snapshot.
+     */
+    forceUpdate() {
+        this._emitStateUpdate(this._cloneState(this._state), this._cloneState(this._state), {
+            playersChanged: false,
+            activePlayerChanged: false
+        });
+    }
+
+    /**
+     * Set room id and rehydrate persisted state for that room if available.
+     * @param {string} roomId
      */
     setRoomId(roomId) {
-        this.roomId = roomId;
-        console.log('🏗️ GameStateManager: RoomId установлен:', roomId);
-    }
-    
-    /**
-     * Обновление состояния от сервера
-     * @param {Object} serverState - Состояние с сервера
-     */
-    updateFromServer(serverState) {
-        const oldState = this.getState();
-        
-        const oldPlayersKey = JSON.stringify((oldState.players || []).map(p => (p && (p.id || p.userId || p.username)) || null));
+        if (!roomId || typeof roomId !== 'string') {
+            return;
+        }
+        if (roomId === this._state.roomId) {
+            return;
+        }
 
-        console.log('🔍 GameStateManager: updateFromServer вызван с serverState:', serverState);
-        console.log('🔍 GameStateManager: serverState.players:', serverState.players);
-        console.log('🔍 GameStateManager: Array.isArray(serverState.players):', Array.isArray(serverState.players));
-        console.log('🔍 GameStateManager: serverState.players type:', typeof serverState.players);
-        console.log('🔍 GameStateManager: serverState.players constructor:', serverState.players?.constructor?.name);
+        const previous = this._cloneState(this._state);
+        this._state.roomId = roomId;
+        this._hydrateFromStorage(roomId);
+        this._persistState();
+        this._emitStateUpdate(previous, this._cloneState(this._state), {
+            playersChanged: false,
+            activePlayerChanged: false
+        });
+        console.log('🏗️ GameStateManager: roomId set', roomId);
+    }
 
-        // Обновляем игроков (с фильтрацией дубликатов)
-        if (Array.isArray(serverState.players) && serverState.players.length > 0) {
-            console.log('🔍 GameStateManager: Обрабатываем массив игроков, длина:', serverState.players.length);
-            
-            // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно сохраняем игроков
-            this.players = [];
-            this.players.push(...serverState.players);
-            
-            console.log('🏗️ GameStateManager: Игроки обновлены, итого:', this.players.length);
-            console.log('🏗️ GameStateManager: this.players после обновления:', this.players);
-            console.log('🏗️ GameStateManager: this.players === serverState.players:', this.players === serverState.players);
-            console.log('🏗️ GameStateManager: this.players[0]:', this.players[0]);
-            
-            // Дополнительная проверка - принудительно устанавливаем игроков
-            if (this.players.length === 0) {
-                console.log('🚨 GameStateManager: КРИТИЧЕСКАЯ ОШИБКА - игроки не сохранились!');
-                this.players = [...serverState.players];
-                console.log('🚨 GameStateManager: Принудительно восстановили игроков:', this.players.length);
-            }
-            
-            // Принудительно обновляем состояние
-            console.log('🔍 GameStateManager: Принудительно обновляем состояние...');
-            console.log('🔍 GameStateManager: this.players перед emit:', this.players);
-            console.log('🔍 GameStateManager: this.players.length перед emit:', this.players?.length);
-        } else {
-            console.log('🔍 GameStateManager: serverState.players не является массивом или пустой:', serverState.players);
-            
-            // Если игроки не переданы, но у нас есть старые данные, сохраняем их
-            if (this.players && this.players.length > 0) {
-                console.log('🔍 GameStateManager: Сохраняем существующих игроков:', this.players.length);
-            } else {
-                console.log('🔍 GameStateManager: Нет игроков для сохранения');
-            }
-        }
-        
-        // Принудительно обновляем состояние
-        console.log('🔍 GameStateManager: Принудительно обновляем состояние...');
-        console.log('🔍 GameStateManager: this.players перед emit:', this.players);
-        console.log('🔍 GameStateManager: this.players.length перед emit:', this.players?.length);
-        
-        // Принудительно устанавливаем игроков
-        if (Array.isArray(serverState.players) && serverState.players.length > 0) {
-            this.players = [...serverState.players];
-            console.log('🔍 GameStateManager: Принудительно установили this.players:', this.players);
-        }
-        
-        // Дополнительная проверка и принудительное обновление
-        if (Array.isArray(serverState.players) && serverState.players.length > 0) {
-            console.log('🔍 GameStateManager: Дополнительная проверка - устанавливаем игроков напрямую');
-            this.players = serverState.players.slice(); // Создаем копию массива
-            console.log('🔍 GameStateManager: this.players после дополнительной установки:', this.players);
-            console.log('🔍 GameStateManager: this.players.length после дополнительной установки:', this.players.length);
-        }
-        
-        const newPlayersKey = JSON.stringify((this.players || []).map(p => (p && (p.id || p.userId || p.username)) || null));
-        const playersChanged = oldPlayersKey !== newPlayersKey;
-        
-        // Обновляем активного игрока
-        if (serverState.activePlayer) {
-            this.activePlayer = serverState.activePlayer;
-        }
-        
-        // Обновляем игровое состояние
-        if (serverState.canRoll !== undefined) {
-            this.gameState.canRoll = serverState.canRoll;
-        }
-        if (serverState.canMove !== undefined) {
-            this.gameState.canMove = serverState.canMove;
-        }
-        if (serverState.canEndTurn !== undefined) {
-            this.gameState.canEndTurn = serverState.canEndTurn;
-        }
-        if (serverState.lastDiceResult) {
-            this.gameState.lastDiceResult = serverState.lastDiceResult;
-        }
-        if (serverState.gameStarted !== undefined) {
-            this.gameState.gameStarted = serverState.gameStarted;
-        }
-        
-        // Уведомляем подписчиков только если состояние действительно изменилось
-        if (playersChanged || this.hasGameStateChanged(oldState)) {
-            console.log('🔍 GameStateManager: Отправляем событие state:updated');
-            this.notifyListeners('state:updated', this.getState());
-        }
-        
-        // Принудительно обновляем состояние в любом случае
-        console.log('🔍 GameStateManager: Принудительно отправляем событие state:updated');
-        this.notifyListeners('state:updated', this.getState());
-        
-        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно обновляем PlayersPanel
-        if (this.players && this.players.length > 0) {
-            console.log('🔧 GameStateManager: Принудительно обновляем PlayersPanel с', this.players.length, 'игроками');
-            const playersPanel = window.app?.modules?.get('playersPanel');
-            if (playersPanel && typeof playersPanel.updatePlayersList === 'function') {
-                playersPanel.updatePlayersList(this.players);
-                console.log('✅ GameStateManager: PlayersPanel обновлен принудительно');
-            }
-        }
-        
-        // Специальные события
-        if (serverState.activePlayer && (!oldState.activePlayer || oldState.activePlayer.id !== serverState.activePlayer.id)) {
-            this.notifyListeners('turn:changed', {
-                activePlayer: serverState.activePlayer,
-                previousPlayer: oldState.activePlayer
-            });
-        }
-        
-        if (playersChanged) {
-            console.log('🏗️ GameStateManager: Отправляем событие players:updated', this.players);
-            this.notifyListeners('players:updated', {
-                players: this.players,
-                added: (this.players?.length || 0) > (oldState.players?.length || 0)
-            });
-            
-            // Уведомляем о необходимости обновить фишки
-            console.log('🏗️ GameStateManager: Отправляем событие game:playersUpdated', this.players);
-            this.notifyListeners('game:playersUpdated', {
-                players: this.players
-            });
-        }
-        
-        console.log('🏗️ GameStateManager: Состояние обновлено от сервера');
-    }
-    
     /**
-     * Проверка изменения игрового состояния
-     * @param {Object} oldState - Предыдущее состояние
-     * @returns {boolean} - Изменилось ли состояние
-     */
-    hasGameStateChanged(oldState) {
-        const oldGameState = oldState.gameState || {};
-        const newGameState = this.gameState || {};
-        
-        return oldGameState.canRoll !== newGameState.canRoll ||
-               oldGameState.canMove !== newGameState.canMove ||
-               oldGameState.canEndTurn !== newGameState.canEndTurn ||
-               oldGameState.gameStarted !== newGameState.gameStarted ||
-               JSON.stringify(oldGameState.lastDiceResult) !== JSON.stringify(newGameState.lastDiceResult) ||
-               (oldState.activePlayer && this.activePlayer && oldState.activePlayer.id !== this.activePlayer.id);
-    }
-    
-    /**
-     * Добавление игрока
-     * @param {Object} player - Данные игрока
-     */
-    addPlayer(player) {
-        const existingIndex = this.players.findIndex(p => p.id === player.id);
-        if (existingIndex >= 0) {
-            this.players[existingIndex] = player;
-        } else {
-            this.players.push(player);
-        }
-        
-        this.notifyListeners('player:added', { player });
-        // state:updated будет отправлен автоматически через updateFromServer
-        
-        console.log('🏗️ GameStateManager: Игрок добавлен:', player.username);
-    }
-    
-    /**
-     * Обновление игрока
-     * @param {Object} player - Обновленные данные игрока
-     */
-    updatePlayer(player) {
-        const index = this.players.findIndex(p => p.id === player.id);
-        if (index >= 0) {
-            this.players[index] = { ...this.players[index], ...player };
-            this.notifyListeners('player:updated', { player: this.players[index] });
-            // state:updated будет отправлен автоматически через updateFromServer
-            
-            console.log('🏗️ GameStateManager: Игрок обновлен:', player.username);
-        }
-    }
-    
-    /**
-     * Удаление игрока
-     * @param {string} playerId - ID игрока
-     */
-    removePlayer(playerId) {
-        const index = this.players.findIndex(p => p.id === playerId);
-        if (index >= 0) {
-            const player = this.players[index];
-            this.players.splice(index, 1);
-            
-            this.notifyListeners('player:removed', { player });
-            // state:updated будет отправлен автоматически через updateFromServer
-            
-            console.log('🏗️ GameStateManager: Игрок удален:', player.username);
-        }
-    }
-    
-    /**
-     * Обновление результата броска кубика
-     * @param {Object} diceResult - Результат броска
-     */
-    updateDiceResult(diceResult) {
-        this.gameState.lastDiceResult = diceResult;
-        this.notifyListeners('dice:rolled', { diceResult });
-        // state:updated будет отправлен автоматически через updateFromServer
-        
-        console.log('🏗️ GameStateManager: Результат кубика обновлен:', diceResult);
-    }
-    
-    /**
-     * Получение текущего состояния
-     * @returns {Object} Текущее состояние
+     * Get immutable snapshot of the current state.
+     * @returns {Object}
      */
     getState() {
-        console.log('🔍 GameStateManager: getState() вызван');
-        console.log('🔍 GameStateManager: this.players в getState():', this.players);
-        console.log('🔍 GameStateManager: this.players.length в getState():', this.players?.length);
-        
-        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительно восстанавливаем игроков если они потеряны
-        if (!this.players || this.players.length === 0) {
-            console.log('🚨 GameStateManager: КРИТИЧЕСКАЯ ОШИБКА - игроки потеряны в getState()!');
-            
-            // Пытаемся восстановить из кэша или принудительно загрузить
-            const roomId = window.location.hash.split('roomId=')[1];
-            if (roomId) {
-                console.log('🔧 GameStateManager: Принудительно загружаем игроков для комнаты:', roomId);
-                fetch(`/api/rooms/${roomId}/game-state`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success && data.state && data.state.players && data.state.players.length > 0) {
-                            console.log('🔧 GameStateManager: Восстановили игроков:', data.state.players.length);
-                            this.players = [...data.state.players];
-                            
-                            // Принудительно обновляем PlayersPanel
-                            const playersPanel = window.app?.modules?.get('playersPanel');
-                            if (playersPanel && typeof playersPanel.updatePlayersList === 'function') {
-                                playersPanel.updatePlayersList(this.players);
-                                console.log('✅ GameStateManager: PlayersPanel обновлен после восстановления');
-                            }
-                        }
-                    })
-                    .catch(err => console.error('❌ GameStateManager: Ошибка восстановления игроков:', err));
-            }
+        if (!this._stateSnapshot) {
+            const snapshot = this._cloneState(this._state);
+            const derived = {
+                players: snapshot.players,
+                activePlayer: snapshot.activePlayer,
+                currentPlayerIndex: snapshot.currentPlayerIndex,
+                roomId: snapshot.roomId,
+                gameState: {
+                    canRoll: snapshot.canRoll,
+                    canMove: snapshot.canMove,
+                    canEndTurn: snapshot.canEndTurn,
+                    lastDiceResult: snapshot.lastDiceResult,
+                    gameStarted: snapshot.gameStarted
+                },
+                canRoll: snapshot.canRoll,
+                canMove: snapshot.canMove,
+                canEndTurn: snapshot.canEndTurn,
+                lastDiceResult: snapshot.lastDiceResult,
+                gameStarted: snapshot.gameStarted,
+                updatedAt: snapshot.updatedAt
+            };
+            this._stateSnapshot = this._freezeSnapshot(derived);
         }
-        
-        const state = {
-            players: this.players || [],
-            activePlayer: this.activePlayer,
-            roomId: this.roomId,
-            gameState: this.gameState,
-            canRoll: this.gameState.canRoll,
-            canMove: this.gameState.canMove,
-            canEndTurn: this.gameState.canEndTurn,
-            lastDiceResult: this.gameState.lastDiceResult,
-            gameStarted: this.gameState.gameStarted
-        };
-        
-        console.log('🔍 GameStateManager: возвращаем состояние:', state);
-        return state;
+        return this._cloneState(this._stateSnapshot);
     }
-    
+
     /**
-     * Получение игроков
-     * @returns {Array} Массив игроков
+     * @returns {Array}
      */
     getPlayers() {
-        return this.players;
+        return this._cloneState(this._state.players);
     }
-    
+
     /**
-     * Получение активного игрока
-     * @returns {Object|null} Активный игрок
-     */
-    getActivePlayer() {
-        return this.activePlayer;
-    }
-    
-    /**
-     * Получение игрока по ID
-     * @param {string} playerId - ID игрока
-     * @returns {Object|null} Игрок
+     * @param {string} playerId
+     * @returns {Object|null}
      */
     getPlayerById(playerId) {
-        return this.players.find(p => p.id === playerId) || null;
+        if (!playerId) return null;
+        return this._cloneState(
+            this._state.players.find(p => p.id === playerId || p.userId === playerId) || null
+        );
     }
-    
+
     /**
-     * Проверка, является ли игрок активным
-     * @param {string} playerId - ID игрока
-     * @returns {boolean} Активен ли игрок
+     * @returns {Object|null}
+     */
+    getActivePlayer() {
+        return this._cloneState(this._state.activePlayer);
+    }
+
+    /**
+     * @param {string} playerId
+     * @returns {boolean}
      */
     isPlayerActive(playerId) {
-        return this.activePlayer && this.activePlayer.id === playerId;
+        if (!playerId || !this._state.activePlayer) return false;
+        return this._state.activePlayer.id === playerId ||
+            this._state.activePlayer.userId === playerId;
     }
-    
+
     /**
-     * Подписка на события
-     * @param {string} event - Название события
-     * @param {Function} callback - Обработчик
+     * Add or replace player locally.
+     * @param {Object} player
+     */
+    addPlayer(player) {
+        const normalised = this._normalisePlayer(player);
+        if (!normalised) return;
+
+        const previous = this._cloneState(this._state);
+        const next = this._cloneState(this._state);
+
+        const existingIndex = next.players.findIndex(p => p.id === normalised.id);
+        if (existingIndex >= 0) {
+            next.players[existingIndex] = normalised;
+        } else {
+            next.players.push(normalised);
+        }
+
+        next.updatedAt = Date.now();
+        this._commitState(next, previous, { playersChanged: true, activePlayerChanged: false });
+    }
+
+    /**
+     * Merge player updates.
+     * @param {Object} player
+     */
+    updatePlayer(player) {
+        const normalised = this._normalisePlayer(player);
+        if (!normalised) return;
+
+        const previous = this._cloneState(this._state);
+        const next = this._cloneState(this._state);
+
+        const idx = next.players.findIndex(p => p.id === normalised.id);
+        if (idx === -1) {
+            return;
+        }
+
+        next.players[idx] = { ...next.players[idx], ...normalised };
+        if (next.activePlayer && next.activePlayer.id === normalised.id) {
+            next.activePlayer = next.players[idx];
+        }
+
+        next.updatedAt = Date.now();
+        this._commitState(next, previous, {
+            playersChanged: true,
+            activePlayerChanged: Boolean(next.activePlayer && next.activePlayer.id === normalised.id)
+        });
+    }
+
+    /**
+     * Remove player locally.
+     * @param {string} playerId
+     */
+    removePlayer(playerId) {
+        if (!playerId) return;
+        const previous = this._cloneState(this._state);
+        const next = this._cloneState(this._state);
+
+        const initialLength = next.players.length;
+        next.players = next.players.filter(player =>
+            player.id !== playerId && player.userId !== playerId
+        );
+
+        if (next.players.length === initialLength) {
+            return;
+        }
+
+        if (next.activePlayer && (
+            next.activePlayer.id === playerId ||
+            next.activePlayer.userId === playerId
+        )) {
+            next.activePlayer = next.players[0] || null;
+            next.currentPlayerIndex = next.activePlayer ? 0 : 0;
+        } else {
+            next.currentPlayerIndex = Math.min(next.currentPlayerIndex, Math.max(next.players.length - 1, 0));
+        }
+
+        next.updatedAt = Date.now();
+        this._commitState(next, previous, { playersChanged: true, activePlayerChanged: true });
+    }
+
+    /**
+     * Persist dice result.
+     * @param {Object|number|null} diceResult
+     */
+    updateDiceResult(diceResult) {
+        const previous = this._cloneState(this._state);
+        const next = this._cloneState(this._state);
+        next.lastDiceResult = diceResult ?? null;
+        next.updatedAt = Date.now();
+        this._commitState(next, previous, { playersChanged: false, activePlayerChanged: false });
+    }
+
+    /**
+     * Set active player by id.
+     * @param {string} playerId
+     */
+    setActivePlayer(playerId) {
+        if (!playerId) return;
+
+        const previous = this._cloneState(this._state);
+        const next = this._cloneState(this._state);
+        const player = next.players.find(p =>
+            p.id === playerId || p.userId === playerId
+        );
+
+        if (!player || (next.activePlayer && next.activePlayer.id === player.id)) {
+            return;
+        }
+
+        next.activePlayer = player;
+        next.currentPlayerIndex = next.players.findIndex(p => p.id === player.id);
+        next.updatedAt = Date.now();
+        this._commitState(next, previous, { playersChanged: false, activePlayerChanged: true });
+    }
+
+    /**
+     * Rotate to next player.
+     */
+    passTurnToNextPlayer() {
+        if (!this._state.players.length) return;
+        const previous = this._cloneState(this._state);
+        const next = this._cloneState(this._state);
+
+        next.currentPlayerIndex = (next.currentPlayerIndex + 1) % next.players.length;
+        next.activePlayer = next.players[next.currentPlayerIndex] || null;
+        next.updatedAt = Date.now();
+        this._commitState(next, previous, { playersChanged: false, activePlayerChanged: true });
+    }
+
+    /**
+     * Subscribe on event.
+     * @param {string} event
+     * @param {Function} callback
      */
     on(event, callback) {
+        if (!event || typeof callback !== 'function') {
+            return;
+        }
         if (!this.listeners.has(event)) {
             this.listeners.set(event, new Set());
         }
         this.listeners.get(event).add(callback);
-        
-        const listenersCount = this.listeners.get(event).size;
-        console.log(`🏗️ GameStateManager: Подписка на событие: ${event}, всего слушателей: ${listenersCount}`);
-        console.trace('🏗️ GameStateManager: Stack trace подписки');
     }
-    
+
     /**
-     * Отписка от событий
-     * @param {string} event - Название события
-     * @param {Function} callback - Обработчик
+     * Unsubscribe handler.
+     * @param {string} event
+     * @param {Function} callback
      */
     off(event, callback) {
-        if (this.listeners.has(event)) {
-            this.listeners.get(event).delete(callback);
-        }
-        
-        console.log(`🏗️ GameStateManager: Отписка от события: ${event}`);
-    }
-    
-    /**
-     * Уведомление подписчиков
-     * @param {string} event - Название события
-     * @param {*} data - Данные события
-     */
-    notifyListeners(event, data) {
-        const listenersCount = this.listeners.has(event) ? this.listeners.get(event).size : 0;
-        console.log(`🏗️ GameStateManager: notifyListeners(${event})`, { listenersCount, data });
-        
-        if (this.listeners.has(event)) {
-            this.listeners.get(event).forEach(callback => {
-                try {
-                    callback(data);
-                } catch (error) {
-                    console.error(`❌ GameStateManager: Ошибка в обработчике ${event}:`, error);
-                }
-            });
-        } else {
-            console.warn(`⚠️ GameStateManager: Нет слушателей для события ${event}`);
-            
-            // Автоматически переподписываем компоненты, если нет слушателей
-            if (event === 'state:updated' && listenersCount === 0) {
-                console.log('🔄 GameStateManager: Автоматическая переподписка компонентов');
-                this.autoResubscribeComponents();
-            }
+        if (!event || !this.listeners.has(event)) return;
+        const set = this.listeners.get(event);
+        set.delete(callback);
+        if (set.size === 0) {
+            this.listeners.delete(event);
         }
     }
-    
+
     /**
-     * Автоматическая переподписка компонентов
-     */
-    autoResubscribeComponents() {
-        // Проверяем, есть ли глобальный объект app
-        if (window.app && window.app.modules) {
-            const turnController = window.app.modules.get('turnController');
-            const playersPanel = window.app.modules.get('playersPanel');
-            
-            if (turnController && typeof turnController.setupEventListeners === 'function') {
-                console.log('🔄 GameStateManager: Переподписываем TurnController');
-                turnController.setupEventListeners();
-            }
-            
-            if (playersPanel && typeof playersPanel.setupEventListeners === 'function') {
-                console.log('🔄 GameStateManager: Переподписываем PlayersPanel');
-                playersPanel.setupEventListeners();
-            }
-        }
-    }
-    
-    /**
-     * Очистка состояния
+     * Clear state (used on logout / room leave).
      */
     clear() {
-        this.players = [];
-        this.activePlayer = null;
-        this.roomId = null;
-        this.gameState = {
-            canRoll: false,
-            canMove: false,
-            canEndTurn: false,
-            lastDiceResult: null,
-            gameStarted: false
-        };
-        
+        const previous = this._cloneState(this._state);
+        this._state = this._createEmptyState({ roomId: previous.roomId });
+        this._stateSnapshot = null;
+        this._persistState();
         this.notifyListeners('state:cleared', {});
-        console.log('🏗️ GameStateManager: Состояние очищено');
+        this._emitStateUpdate(previous, this._cloneState(this._state), {
+            playersChanged: previous.players.length > 0,
+            activePlayerChanged: Boolean(previous.activePlayer)
+        });
     }
-    
+
     /**
-     * Уничтожение менеджера
+     * Destroy manager.
      */
     destroy() {
         this.listeners.clear();
-        this.clear();
-        console.log('🏗️ GameStateManager: Уничтожен');
+        this._state = this._createEmptyState({ roomId: this._state.roomId });
+        this._stateSnapshot = null;
+        console.log('🏗️ GameStateManager: destroyed');
+    }
+
+    /**
+     * Notify listeners (internal).
+     * @param {string} event
+     * @param {*} data
+     */
+    notifyListeners(event, data) {
+        if (!this.listeners.has(event)) {
+            return;
+        }
+        for (const callback of this.listeners.get(event)) {
+            try {
+                callback(data);
+            } catch (error) {
+                console.error(`❌ GameStateManager listener error (${event})`, error);
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Internal helpers
+    // ---------------------------------------------------------------------
+
+    _commitState(next, previous, meta) {
+        this._state = next;
+        this._stateSnapshot = null;
+        this._persistState();
+        this._emitStateUpdate(previous, next, meta);
+    }
+
+    _emitStateUpdate(previous, current, meta) {
+        const snapshot = this.getState();
+        this.notifyListeners('state:updated', snapshot);
+
+        if (meta.activePlayerChanged) {
+            this.notifyListeners('turn:changed', {
+                activePlayer: snapshot.activePlayer,
+                previousPlayer: previous.activePlayer
+            });
+        }
+
+        if (meta.playersChanged) {
+            this.notifyListeners('players:updated', {
+                players: snapshot.players,
+                added: snapshot.players.length > (previous.players?.length || 0)
+            });
+            this.notifyListeners('game:playersUpdated', {
+                players: snapshot.players
+            });
+        }
+    }
+
+    _normalisePlayer(player) {
+        if (!player || typeof player !== 'object') return null;
+        const id = player.id || player.userId;
+        if (!id) return null;
+        return {
+            ...player,
+            id,
+            userId: player.userId || id,
+            username: player.username || player.name || `player-${id}`,
+            isReady: Boolean(player.isReady)
+        };
+    }
+
+    _resolveActivePlayer(serverState, next) {
+        const fromPayload = serverState.activePlayer ? this._normalisePlayer(serverState.activePlayer) : null;
+        if (fromPayload) {
+            const existing = next.players.find(p => p.id === fromPayload.id);
+            if (existing) return existing;
+            return fromPayload;
+        }
+        if (typeof serverState.currentPlayerIndex === 'number') {
+            const idx = Math.max(0, Math.floor(serverState.currentPlayerIndex));
+            return next.players[idx] || null;
+        }
+        return null;
+    }
+
+    _extractGameFlags(source) {
+        const flags = {};
+        const keys = ['canRoll', 'canMove', 'canEndTurn', 'gameStarted', 'lastDiceResult'];
+        for (const key of keys) {
+            if (Object.prototype.hasOwnProperty.call(source, key)) {
+                flags[key] = source[key];
+            }
+        }
+        return flags;
+    }
+
+    _applyFlags(target, flags) {
+        let changed = false;
+        for (const [key, value] of Object.entries(flags)) {
+            if (target[key] !== value) {
+                target[key] = value;
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    _createEmptyState(overrides = {}) {
+        return {
+            roomId: null,
+            players: [],
+            currentPlayerIndex: 0,
+            activePlayer: null,
+            canRoll: false,
+            canMove: false,
+            canEndTurn: false,
+            gameStarted: false,
+            lastDiceResult: null,
+            updatedAt: Date.now(),
+            ...overrides
+        };
+    }
+
+    _cloneState(value) {
+        if (value === null || value === undefined) return value;
+        if (typeof structuredClone === 'function') {
+            try {
+                return structuredClone(value);
+            } catch (_) { /* no-op */ }
+        }
+        return JSON.parse(JSON.stringify(value));
+    }
+
+    _freezeSnapshot(snapshot) {
+        if (!snapshot || typeof snapshot !== 'object') return snapshot;
+        if (Array.isArray(snapshot)) {
+            return snapshot.map(item => this._freezeSnapshot(item));
+        }
+        const clone = {};
+        for (const [key, value] of Object.entries(snapshot)) {
+            clone[key] = this._freezeSnapshot(value);
+        }
+        return clone;
+    }
+
+    _arePlayersEqual(a = [], b = []) {
+        if (a.length !== b.length) return false;
+        const serialize = (players) => players.map(player => ({
+            id: player?.id,
+            username: player?.username,
+            money: player?.money,
+            position: player?.position,
+            isReady: Boolean(player?.isReady)
+        }));
+        return JSON.stringify(serialize(a)) === JSON.stringify(serialize(b));
+    }
+
+    _hasMiscChanges(previous, next) {
+        return previous.roomId !== next.roomId ||
+            previous.lastDiceResult !== next.lastDiceResult ||
+            previous.gameStarted !== next.gameStarted;
+    }
+
+    _parseRoomIdFromHash() {
+        if (typeof window === 'undefined' || !window.location || !window.location.hash) {
+            return null;
+        }
+        try {
+            const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+            return params.get('roomId');
+        } catch (_) {
+            return null;
+        }
+    }
+
+    _detectStorage() {
+        if (typeof window === 'undefined') return null;
+        const stores = [window.sessionStorage, window.localStorage].filter(Boolean);
+        for (const store of stores) {
+            try {
+                const key = '__gsm_probe__';
+                store.setItem(key, '1');
+                store.removeItem(key);
+                return store;
+            } catch (_) {
+                continue;
+            }
+        }
+        return null;
+    }
+
+    _buildStorageKey(roomId) {
+        const suffix = roomId || this._state.roomId || 'global';
+        return `${STORAGE_KEY_PREFIX}:${suffix}`;
+    }
+
+    _hydrateFromStorage(explicitRoomId) {
+        if (!this._storage) return;
+        const key = this._buildStorageKey(explicitRoomId);
+        try {
+            const raw = this._storage.getItem(key);
+            if (!raw) return;
+            const stored = JSON.parse(raw);
+            if (!stored || typeof stored !== 'object') return;
+            this._state = this._createEmptyState({
+                ...stored,
+                roomId: explicitRoomId || this._state.roomId
+            });
+            this._stateSnapshot = null;
+            this._hydratedFromStorage = true;
+            console.log('🏗️ GameStateManager: state restored from storage', {
+                roomId: this._state.roomId,
+                players: this._state.players.length
+            });
+        } catch (error) {
+            console.warn('⚠️ GameStateManager: failed to hydrate state', error);
+        }
+    }
+
+    _persistState() {
+        if (!this._storage) return;
+        try {
+            const key = this._buildStorageKey();
+            const payload = this._cloneState(this._state);
+            this._storage.setItem(key, JSON.stringify(payload));
+        } catch (error) {
+            console.warn('⚠️ GameStateManager: failed to persist state', error);
+        }
     }
 }
 
-// Экспорт для использования в других модулях
 if (typeof window !== 'undefined') {
     window.GameStateManager = GameStateManager;
 }
