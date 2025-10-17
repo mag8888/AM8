@@ -160,6 +160,18 @@ class PlayersPanel {
         } else {
             console.warn('⚠️ PlayersPanel: eventBus недоступен для push-уведомлений');
         }
+        
+        // Обработчик клика для кнопки банка
+        const bankButton = document.getElementById('open-bank');
+        if (bankButton) {
+            bankButton.addEventListener('click', () => {
+                console.log('🏦 PlayersPanel: Клик по кнопке банка');
+                this.openBankModule();
+            });
+            console.log('✅ PlayersPanel: Обработчик клика для банка привязан');
+        } else {
+            console.warn('⚠️ PlayersPanel: Кнопка банка не найдена');
+        }
     }
     
     /**
@@ -233,6 +245,19 @@ class PlayersPanel {
         
         // Настраиваем обработчики
         this.setupControls();
+        
+        // Привязываем обработчик клика для кнопки банка
+        const bankButton = document.getElementById('open-bank');
+        if (bankButton) {
+            // Удаляем старый обработчик, если есть
+            bankButton.removeEventListener('click', this.openBankModule);
+            // Добавляем новый обработчик
+            bankButton.addEventListener('click', () => {
+                console.log('🏦 PlayersPanel: Клик по кнопке банка (из render)');
+                this.openBankModule();
+            });
+            console.log('✅ PlayersPanel: Обработчик клика для банка привязан в render');
+        }
         
         console.log('✅ PlayersPanel v2.0: Отрендерен');
     }
