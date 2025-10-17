@@ -896,14 +896,26 @@ class App {
             
             // Инициализируем TurnController
             const turnController = this.modules.get('turnController');
-            if (turnController && typeof turnController.init === 'function') {
-                turnController.init();
+            if (turnController) {
+                if (typeof turnController.init === 'function') {
+                    turnController.init();
+                }
+                // Убеждаемся, что слушатели событий настроены
+                if (typeof turnController.setupEventListeners === 'function') {
+                    turnController.setupEventListeners();
+                }
             }
             
             // Инициализируем PlayersPanel
             const playersPanel = this.modules.get('playersPanel');
-            if (playersPanel && typeof playersPanel.init === 'function') {
-                playersPanel.init();
+            if (playersPanel) {
+                if (typeof playersPanel.init === 'function') {
+                    playersPanel.init();
+                }
+                // Убеждаемся, что слушатели событий настроены
+                if (typeof playersPanel.setupEventListeners === 'function') {
+                    playersPanel.setupEventListeners();
+                }
             }
             
             // Инициализируем BoardLayout

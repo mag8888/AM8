@@ -661,11 +661,25 @@ class TurnController {
         // Слушатели событий GameStateManager
         if (this.gameStateManager) {
             this.gameStateManager.on('state:updated', (state) => this.updateFromGameState(state));
+            this.gameStateManager.on('turn:changed', (data) => this.onTurnChanged(data));
             this.gameStateManager.on('players:updated', (players) => this.onPlayersUpdated(players));
             this.gameStateManager.on('game:playersUpdated', (players) => this.onPlayersUpdated(players));
         }
     }
     
+    /**
+     * Обработка смены хода
+     * @param {Object} data - Данные о смене хода
+     */
+    onTurnChanged(data) {
+        console.log('🎯 TurnController: Ход изменен', data);
+        // Обновляем UI при смене хода
+        if (this.gameStateManager) {
+            const state = this.gameStateManager.getState();
+            this.updateFromGameState(state);
+        }
+    }
+
     /**
      * Обработка обновления игроков
      * @param {Array} players - Список игроков
