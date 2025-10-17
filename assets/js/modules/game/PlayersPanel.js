@@ -283,14 +283,22 @@ class PlayersPanel {
         
         // Проверяем, мой ли это ход
         const currentUserId = this.getCurrentUserId();
-        const isMyTurn = state.activePlayer && (
-            state.activePlayer.id === currentUserId ||
-            (state.activePlayer.username && currentUserId && state.activePlayer.username === currentUserId)
-        );
+        const activePlayer = state.activePlayer;
+        
+        // Расширенная проверка isMyTurn
+        let isMyTurn = false;
+        if (activePlayer && currentUserId) {
+            isMyTurn = 
+                activePlayer.id === currentUserId ||
+                activePlayer.userId === currentUserId ||
+                activePlayer.username === currentUserId ||
+                (activePlayer.username && currentUserId && activePlayer.username === currentUserId);
+        }
         
         if (passBtn) {
-            // Кнопка передачи хода активна только если это мой ход И можно завершить ход
-            passBtn.disabled = !isMyTurn || !state.canEndTurn;
+            // Кнопка передачи хода активна ТОЛЬКО если это мой ход И можно завершить ход
+            const shouldBeDisabled = !isMyTurn || !state.canEndTurn;
+            passBtn.disabled = shouldBeDisabled;
             
             // Добавляем визуальную индикацию
             if (isMyTurn && state.canEndTurn) {
@@ -301,11 +309,48 @@ class PlayersPanel {
         }
         
         console.log('🎯 PlayersPanel: Обновлены кнопки управления:', {
+            currentUserId,
+            activePlayerId: activePlayer?.id,
+            activePlayerUsername: activePlayer?.username,
             isMyTurn,
             canRoll: state.canRoll,
             canEndTurn: state.canEndTurn,
-            passBtnDisabled: passBtn?.disabled
+            passBtnDisabled: passBtn?.disabled,
+            shouldBeDisabled: !isMyTurn || !state.canEndTurn
         });
+    }
+    
+    /**
+     * Обработка завершения хода
+     */
+    async handleEndTurn() {
+        try {
+            // Получаем TurnService через window.app
+            const app = window.app;
+            const turnService = app && app.getModule ? app.getModule('turnService') : null;
+            
+            if (!turnService) {
+                console.warn('⚠️ PlayersPanel: TurnService не найден');
+                return;
+            }
+            
+            // Проверяем права на завершение хода
+            if (!turnService.canEndTurn()) {
+                console.warn('⚠️ PlayersPanel: Нельзя завершить ход');
+                return;
+            }
+            
+            // Проверяем, что это действительно мой ход
+            if (!turnService.isMyTurn()) {
+                console.warn('⚠️ PlayersPanel: Не ваш ход - завершение хода заблокировано');
+                return;
+            }
+            
+            console.log('🎯 PlayersPanel: Завершаем ход для текущего пользователя');
+            await turnService.endTurn();
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка завершения хода:', error);
+        }
     }
     
     /**
@@ -527,6 +572,14 @@ class PlayersPanel {
         if (openBankBtn) {
             openBankBtn.addEventListener('click', () => {
                 this.openBankModule();
+            });
+        }
+        
+        // Обработчик кнопки "Передать ход"
+        const passTurnBtn = this.container.querySelector('#pass-turn');
+        if (passTurnBtn) {
+            passTurnBtn.addEventListener('click', () => {
+                this.handleEndTurn();
             });
         }
         

@@ -876,7 +876,9 @@ class TurnController {
         const endTurnBtn = this.ui.querySelector('#end-turn-btn');
         
         if (rollBtn) {
-            rollBtn.disabled = !state.canRoll || this.isRolling;
+            // Кнопка броска активна только если это мой ход И можно бросать
+            const isMyTurn = this.turnService ? this.turnService.isMyTurn() : false;
+            rollBtn.disabled = !isMyTurn || !state.canRoll || this.isRolling;
         }
         
         if (endTurnBtn) {
