@@ -5,10 +5,11 @@
  */
 
 class TurnController {
-    constructor(turnService, playerTokenRenderer, gameStateManager) {
+    constructor(turnService, playerTokenRenderer, gameStateManager, eventBus = null) {
         this.turnService = turnService;
         this.playerTokenRenderer = playerTokenRenderer;
         this.gameStateManager = gameStateManager;
+        this.eventBus = eventBus;
         this.ui = null;
         this.isRolling = false;
         this.isMoving = false;
@@ -62,13 +63,19 @@ class TurnController {
         });
         
         // Подписываемся на push-уведомления для принудительного обновления
-        this.eventBus.on('push:message', (message) => {
-            if (message.type === 'turn_changed' || message.type === 'game_state_updated') {
-                console.log('🎯 TurnController: Получено push-уведомление о смене хода');
-                // Принудительно обновляем состояние
-                this.gameStateManager.forceUpdate();
-            }
-        });
+        if (this.eventBus && typeof this.eventBus.on === 'function') {
+            this.eventBus.on('push:message', (message) => {
+                if (message.type === 'turn_changed' || message.type === 'game_state_updated') {
+                    console.log('🎯 TurnController: Получено push-уведомление о смене хода');
+                    // Принудительно обновляем состояние
+                    if (this.gameStateManager && typeof this.gameStateManager.forceUpdate === 'function') {
+                        this.gameStateManager.forceUpdate();
+                    }
+                }
+            });
+        } else {
+            console.warn('⚠️ TurnController: eventBus недоступен для push-уведомлений');
+        }
     }
     
     /**

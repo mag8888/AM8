@@ -592,7 +592,8 @@ class App {
                     const turnController = new window.TurnController(
                         turnService,
                         playerTokensModule,
-                        gameStateManager
+                        gameStateManager,
+                        this.getEventBus()
                     );
                     this.modules.set('turnController', turnController);
                     console.log('🎯 TurnController: Инициализирован');
@@ -666,7 +667,8 @@ class App {
                     const turnController = new window.TurnController(
                         this.getModule('turnService'),
                         this.getModule('playerTokens'),
-                        this.getGameStateManager()
+                        this.getGameStateManager(),
+                        this.getEventBus()
                     );
                     this.modules.set('turnController', turnController);
                 }

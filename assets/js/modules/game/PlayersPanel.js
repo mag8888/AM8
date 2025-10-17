@@ -85,15 +85,19 @@ class PlayersPanel {
         }
         
         // Подписываемся на push-уведомления для принудительного обновления
-        this.eventBus.on('push:message', (message) => {
-            if (message.type === 'turn_changed' || message.type === 'game_state_updated') {
-                console.log('🎯 PlayersPanel: Получено push-уведомление о смене хода');
-                // Принудительно обновляем состояние
-                if (this.gameStateManager && this.gameStateManager.forceUpdate) {
-                    this.gameStateManager.forceUpdate();
+        if (this.eventBus && typeof this.eventBus.on === 'function') {
+            this.eventBus.on('push:message', (message) => {
+                if (message.type === 'turn_changed' || message.type === 'game_state_updated') {
+                    console.log('🎯 PlayersPanel: Получено push-уведомление о смене хода');
+                    // Принудительно обновляем состояние
+                    if (this.gameStateManager && typeof this.gameStateManager.forceUpdate === 'function') {
+                        this.gameStateManager.forceUpdate();
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            console.warn('⚠️ PlayersPanel: eventBus недоступен для push-уведомлений');
+        }
     }
     
     /**
