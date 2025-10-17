@@ -857,11 +857,18 @@ class BankModule {
      */
     open() {
         if (this.ui) {
+            // Проверяем, что текущий пользователь найден
+            const currentPlayer = this.getCurrentUserPlayer();
+            if (!currentPlayer) {
+                console.warn('⚠️ BankModule: Нельзя открыть банк - текущий пользователь не найден');
+                return;
+            }
+            
             this.ui.style.display = 'flex';
             this.isOpen = true;
             this.updateBankData();
             this.loadPlayers();
-            console.log('🏦 BankModule: Открыт');
+            console.log('🏦 BankModule: Открыт для пользователя:', currentPlayer.username);
         }
     }
     
@@ -885,7 +892,7 @@ class BankModule {
         // Получаем текущего пользователя браузера, а не активного игрока
         const currentPlayer = this.getCurrentUserPlayer();
         if (!currentPlayer) {
-            console.warn('⚠️ BankModule: Текущий пользователь не найден');
+            console.warn('⚠️ BankModule: Текущий пользователь не найден - пропускаем обновление');
             return;
         }
         
