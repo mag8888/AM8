@@ -10,6 +10,7 @@ class BankModule {
         this.eventBus = config.eventBus || null;
         this.roomApi = config.roomApi || null;
         this.professionSystem = config.professionSystem || null;
+        this.gameStateManager = config.gameStateManager || null;
         this.currentUserId = null;
         this.currentRoomId = this._getCurrentRoomId();
         

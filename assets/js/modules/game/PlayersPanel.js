@@ -262,7 +262,8 @@ class PlayersPanel {
                                 gameState: gameState,
                                 eventBus: eventBus,
                                 roomApi: roomApi,
-                                professionSystem: professionSystem
+                                professionSystem: professionSystem,
+                                gameStateManager: this.gameStateManager
                             });
                             app.modules.set('bankModule', bankModule);
                             bankModule.open();
