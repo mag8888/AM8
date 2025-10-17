@@ -117,11 +117,41 @@ class RoomApi {
     async getGameState(roomId) {
         const endpoint = `/${roomId}/game-state`;
         
+        // Проверяем кэш
+        const cacheKey = `gameState_${roomId}`;
+        const now = Date.now();
+        const cached = this.cache?.get(cacheKey);
+        
+        if (cached && (now - cached.timestamp) < 3000) { // Кэш на 3 секунды
+            console.log(`📊 RoomApi: Используем кэшированное состояние игры для ${roomId}`);
+            return cached.data;
+        }
+        
         console.log(`📊 RoomApi: Получение состояния игры в комнате ${roomId}`);
         
-        return await this.request(endpoint, {
-            method: 'GET'
-        });
+        try {
+            const result = await this.request(endpoint, {
+                method: 'GET'
+            });
+            
+            // Сохраняем в кэш
+            if (!this.cache) {
+                this.cache = new Map();
+            }
+            this.cache.set(cacheKey, {
+                data: result,
+                timestamp: now
+            });
+            
+            return result;
+        } catch (error) {
+            // При ошибке 429 возвращаем кэшированные данные, если есть
+            if (error.message && error.message.includes('429') && cached) {
+                console.log(`📊 RoomApi: HTTP 429, используем кэшированные данные для ${roomId}`);
+                return cached.data;
+            }
+            throw error;
+        }
     }
     
     /**

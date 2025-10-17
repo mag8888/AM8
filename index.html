@@ -522,7 +522,21 @@
                                                     console.log('🔄 syncWithServer: Нет данных состояния от сервера');
                                                 }
                                             })
-                                            .catch(err => console.warn('⚠️ Ошибка получения состояния игры:', err))
+                                            .catch(err => {
+                                                console.warn('⚠️ Ошибка получения состояния игры:', err);
+                                                // Добавляем задержку перед повторным запросом при ошибке
+                                                if (err.message && err.message.includes('429')) {
+                                                    console.log('🔄 HTTP 429: Ждем 5 секунд перед повторным запросом');
+                                                    setTimeout(() => {
+                                                        isSyncing = false;
+                                                        if (pendingSync) {
+                                                            pendingSync = false;
+                                                            syncWithServer();
+                                                        }
+                                                    }, 5000);
+                                                    return;
+                                                }
+                                            })
                                             .finally(() => {
                                                 isSyncing = false;
                                                 if (pendingSync) {
@@ -535,7 +549,7 @@
                                     window.requestRoomSync = syncWithServer;
                                     
                                     syncWithServer();
-                                    const syncInterval = setInterval(syncWithServer, 2000);
+                                    const syncInterval = setInterval(syncWithServer, 10000); // Увеличиваем интервал до 10 секунд
                                     
                                     const handleVisibility = () => {
                                         if (!document.hidden) {
