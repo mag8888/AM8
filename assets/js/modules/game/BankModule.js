@@ -990,6 +990,7 @@ class BankModule {
                             console.log('🔧 BankModule: Исправляем currentUserId с', this.currentUserId, 'на', player.id);
                             this.currentUserId = player.id;
                             currentPlayer = player;
+                            console.log('✅ BankModule: currentPlayer найден через fallback:', currentPlayer.username);
                         }
                     }
                 } catch (e) {
