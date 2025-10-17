@@ -75,6 +75,14 @@ class GameStateManager {
             console.log('🔍 GameStateManager: Принудительно установили this.players:', this.players);
         }
         
+        // Дополнительная проверка и принудительное обновление
+        if (Array.isArray(serverState.players) && serverState.players.length > 0) {
+            console.log('🔍 GameStateManager: Дополнительная проверка - устанавливаем игроков напрямую');
+            this.players = serverState.players.slice(); // Создаем копию массива
+            console.log('🔍 GameStateManager: this.players после дополнительной установки:', this.players);
+            console.log('🔍 GameStateManager: this.players.length после дополнительной установки:', this.players.length);
+        }
+        
         const newPlayersKey = JSON.stringify((this.players || []).map(p => (p && (p.id || p.userId || p.username)) || null));
         const playersChanged = oldPlayersKey !== newPlayersKey;
         
