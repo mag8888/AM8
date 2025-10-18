@@ -62,20 +62,20 @@ class BankModuleServer {
             
             console.log('🌐 BankModuleServer: Загружаем данные с сервера для комнаты:', roomId);
             
-            // Параллельно загружаем все необходимые данные
-            const [gameStateData, balanceData] = await Promise.all([
-                this.fetchGameState(roomId),
-                this.fetchBalanceData(roomId)
-            ]);
+            // Загружаем только состояние игры, баланс получаем из него
+            const gameStateData = await this.fetchGameState(roomId);
             
-            // Обновляем состояние банка
-            this.updateBankStateFromServer(gameStateData, balanceData);
+            // Обновляем состояние банка данными из gameState
+            this.updateBankStateFromServer(gameStateData, null);
             
             console.log('✅ BankModuleServer: Данные загружены с сервера');
             
         } catch (error) {
             console.error('❌ BankModuleServer: Ошибка загрузки данных:', error);
             this.showNotification('Ошибка загрузки данных с сервера', 'error');
+            
+            // Fallback: пытаемся получить данные из локального GameStateManager
+            this.loadLocalData();
         } finally {
             this.isLoading = false;
             this.showLoadingState(false);
@@ -100,26 +100,29 @@ class BankModuleServer {
     }
     
     /**
-     * Загрузка данных баланса с сервера
+     * Загрузка локальных данных как fallback
      */
-    async fetchBalanceData(roomId) {
-        // Получаем ID текущего игрока
-        const currentUser = await this.getCurrentUser();
-        if (!currentUser) {
-            throw new Error('Пользователь не найден');
+    loadLocalData() {
+        try {
+            console.log('🔄 BankModuleServer: Загружаем локальные данные как fallback');
+            
+            // Пытаемся получить данные из GameStateManager
+            if (this.gameStateManager && typeof this.gameStateManager.getState === 'function') {
+                const localState = this.gameStateManager.getState();
+                if (localState && localState.players && localState.players.length > 0) {
+                    console.log('✅ BankModuleServer: Получены локальные данные из GameStateManager');
+                    this.updateBankStateFromServer({ players: localState.players }, null);
+                    return;
+                }
+            }
+            
+            // Если GameStateManager недоступен, показываем уведомление
+            this.showNotification('Данные недоступны, попробуйте открыть банк позже', 'warning');
+            
+        } catch (error) {
+            console.error('❌ BankModuleServer: Ошибка загрузки локальных данных:', error);
+            this.showNotification('Ошибка загрузки данных', 'error');
         }
-        
-        const response = await fetch(`/api/bank/balance/${roomId}/${currentUser.id}`);
-        if (!response.ok) {
-            throw new Error(`Ошибка загрузки баланса: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.message || 'Ошибка получения баланса');
-        }
-        
-        return data;
     }
     
     /**
@@ -127,15 +130,47 @@ class BankModuleServer {
      */
     updateBankStateFromServer(gameState, balanceData) {
         const currentUser = this.getCurrentUserSync();
-        if (!currentUser) return;
+        if (!currentUser) {
+            console.warn('⚠️ BankModuleServer: Текущий пользователь не найден');
+            return;
+        }
         
-        // Находим данные текущего игрока
-        const currentPlayer = gameState.players?.find(p => 
-            p.id === currentUser.id || p.userId === currentUser.id || p.username === currentUser.username
+        console.log('🔍 BankModuleServer: Поиск игрока для пользователя:', {
+            userId: currentUser.id,
+            username: currentUser.username,
+            players: gameState.players?.map(p => ({ id: p.id, userId: p.userId, username: p.username }))
+        });
+        
+        // Находим данные текущего игрока по разным полям
+        let currentPlayer = gameState.players?.find(p => 
+            p.id === currentUser.id || 
+            p.userId === currentUser.id || 
+            p.username === currentUser.username ||
+            (p.userId && p.userId.toString() === currentUser.id.toString())
         );
         
+        // Если не найден по ID, пробуем найти по username из localStorage
+        if (!currentPlayer && currentUser.username) {
+            currentPlayer = gameState.players?.find(p => 
+                p.username === currentUser.username ||
+                p.name === currentUser.username
+            );
+        }
+        
         if (!currentPlayer) {
-            console.warn('⚠️ BankModuleServer: Текущий игрок не найден в данных игры');
+            console.warn('⚠️ BankModuleServer: Текущий игрок не найден в данных игры', {
+                currentUser,
+                availablePlayers: gameState.players?.map(p => ({ id: p.id, userId: p.userId, username: p.username }))
+            });
+            // Используем первого игрока как fallback
+            currentPlayer = gameState.players?.[0];
+            if (currentPlayer) {
+                console.log('🔧 BankModuleServer: Используем первого игрока как fallback:', currentPlayer.username);
+            }
+        }
+        
+        if (!currentPlayer) {
+            console.error('❌ BankModuleServer: Нет игроков в игре');
             return;
         }
         
@@ -1068,18 +1103,37 @@ class BankModuleServer {
      */
     getCurrentUserSync() {
         try {
-            const userData = localStorage.getItem('currentUser');
-            if (userData) {
-                return JSON.parse(userData);
+            // Сначала пробуем sessionStorage (там может быть ID игрока)
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                if (bundle.userId || bundle.id || bundle.username) {
+                    console.log('🔍 BankModuleServer: Пользователь из sessionStorage:', bundle);
+                    return {
+                        id: bundle.userId || bundle.id,
+                        username: bundle.username || bundle.currentUser?.username
+                    };
+                }
             }
             
+            // Затем localStorage
+            const userData = localStorage.getItem('currentUser');
+            if (userData) {
+                const user = JSON.parse(userData);
+                console.log('🔍 BankModuleServer: Пользователь из localStorage:', user);
+                return user;
+            }
+            
+            // И наконец токен
             const token = localStorage.getItem('authToken');
             if (token) {
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                return {
+                const user = {
                     id: payload.userId || payload.id,
                     username: payload.username || payload.email
                 };
+                console.log('🔍 BankModuleServer: Пользователь из токена:', user);
+                return user;
             }
             
             return null;
