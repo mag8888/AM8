@@ -15,6 +15,7 @@ class TurnController {
         this.isMoving = false;
         this.isMobile = window.innerWidth <= 768;
         this._lastStateKey = null;
+        this._eventListenersSetup = false; // Флаг для избежания повторной настройки
         
         // Создаем PlayerList для отображения игроков
         this.playerList = null;
@@ -44,7 +45,8 @@ class TurnController {
         }
         
         // Создаем PlayerList с настройками для игрового меню
-        this.playerList = new PlayerList('turn-controller-players', {
+        // Используем контейнер из PlayersPanel
+        this.playerList = new PlayerList('players-list', {
             showBalance: true,
             showStatus: true,
             showToken: true,
@@ -174,19 +176,25 @@ class TurnController {
      * Настройка обработчиков событий для существующих элементов
      */
     setupEventListeners() {
+        // Избегаем повторной настройки после успешной привязки
+        if (this._eventListenersSetup) {
+            console.log('🎮 TurnController: Обработчики уже настроены, пропускаем');
+            return;
+        }
+        
         console.log('🎮 TurnController: Привязка обработчиков к существующим элементам');
         
         // Больше не добавляем свой UI в DOM - работаем с существующими элементами
         const playersPanel = document.getElementById('players-panel');
         if (!playersPanel) {
             console.warn('⚠️ TurnController: players-panel не найден');
+            // Повторяем попытку через некоторое время (не устанавливаем флаг)
+            setTimeout(() => this.setupEventListeners(), 500);
             return;
         }
         
-        // Бросок кубика - ищем кнопку по тексту
-        const rollBtn = playersPanel.querySelector('#roll-dice-btn') || 
-                       Array.from(playersPanel.querySelectorAll('button')).find(btn => 
-                           btn.textContent.includes('Бросить кубик') || btn.id === 'roll-dice');
+        // Бросок кубика - ищем кнопку по ID (более надежно)
+        const rollBtn = playersPanel.querySelector('#roll-dice-btn');
         
         if (rollBtn) {
             // Удаляем старый обработчик, если есть
@@ -194,7 +202,11 @@ class TurnController {
             rollBtn.addEventListener('click', () => this.handleRollDice());
             console.log('🎮 TurnController: Обработчик броска кубика привязан');
         } else {
-            console.warn('⚠️ TurnController: Кнопка броска кубика не найдена');
+            console.warn('⚠️ TurnController: Кнопка броска кубика не найдена, повтор через 500ms');
+            // Сбрасываем флаг и повторяем попытку
+            this._eventListenersSetup = false;
+            setTimeout(() => this.setupEventListeners(), 500);
+            return;
         }
         
         // Кнопки перемещения (если есть)
@@ -206,11 +218,9 @@ class TurnController {
             });
         });
         
-        // Завершение хода - ищем кнопку по ID или тексту
-        const endTurnBtn = playersPanel.querySelector('#end-turn-btn') ||
-                          playersPanel.querySelector('#pass-turn') ||
-                          Array.from(playersPanel.querySelectorAll('button')).find(btn => 
-                              btn.textContent.includes('Передать ход'));
+        // Завершение хода - ищем кнопку по ID (приоритет #pass-turn из PlayersPanel)
+        const endTurnBtn = playersPanel.querySelector('#pass-turn') ||
+                          playersPanel.querySelector('#end-turn-btn');
         
         if (endTurnBtn) {
             // Удаляем старый обработчик, если есть
@@ -218,7 +228,11 @@ class TurnController {
             endTurnBtn.addEventListener('click', () => this.handleEndTurn());
             console.log('🎮 TurnController: Обработчик передачи хода привязан');
         } else {
-            console.warn('⚠️ TurnController: Кнопка передачи хода не найдена');
+            console.warn('⚠️ TurnController: Кнопка передачи хода не найдена, повтор через 500ms');
+            // Сбрасываем флаг и повторяем попытку
+            this._eventListenersSetup = false;
+            setTimeout(() => this.setupEventListeners(), 500);
+            return;
         }
         
         // Слушатели событий TurnService
@@ -244,6 +258,10 @@ class TurnController {
             this.gameStateManager.on('players:updated', (players) => this.onPlayersUpdated(players));
             this.gameStateManager.on('game:playersUpdated', (players) => this.onPlayersUpdated(players));
         }
+        
+        // Отмечаем, что обработчики успешно настроены
+        this._eventListenersSetup = true;
+        console.log('✅ TurnController: Все обработчики событий успешно привязаны');
     }
     
     /**
