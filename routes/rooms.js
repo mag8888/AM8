@@ -22,14 +22,123 @@ function getRoomGameState(roomId) {
 
 // Функция для обновления состояния комнаты (для банк API)
 function updateRoomGameState(roomId, state) {
-    gameStateByRoomId.set(roomId, state);
+    if (state) {
+        gameStateByRoomId.set(roomId, state);
+    }
     return true;
 }
 
-// Экспортируем функции для использования в других модулях
-module.exports.getRoomGameState = getRoomGameState;
-module.exports.updateRoomGameState = updateRoomGameState;
-module.exports.gameStateByRoomId = gameStateByRoomId;
+const toNumber = (value, fallback = 0) => {
+    if (value === null || value === undefined) {
+        return fallback;
+    }
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+};
+
+function normalizePlayer(source, index = 0) {
+    if (!source) {
+        return null;
+    }
+
+    const id = source.id || source.userId || source.playerId || source._id || `player_${index + 1}`;
+    const username = source.username || source.name || source.displayName || `player${index + 1}`;
+    const track = source.track || (typeof source.isInner === 'boolean' ? (source.isInner ? 'inner' : 'outer') : 'inner');
+    const isInner = typeof source.isInner === 'boolean' ? source.isInner : track === 'inner';
+
+    const salary = toNumber(source.salary ?? source.monthlySalary ?? source.payday, 5000);
+    const totalIncome = toNumber(source.totalIncome ?? source.total_income ?? source.income, salary);
+    const monthlyExpenses = toNumber(
+        source.monthlyExpenses ?? source.monthly_expenses ?? source.expenses,
+        2000
+    );
+
+    const player = {
+        id,
+        userId: source.userId || source.id || source.playerId || id,
+        username,
+        name: source.name || username,
+        position: toNumber(source.position, 0),
+        track,
+        isInner,
+        token: source.token || source.avatar || source.icon || '🎯',
+        money: toNumber(source.money ?? source.balance ?? source.cash ?? source.wallet, 5000),
+        salary,
+        totalIncome,
+        monthlyExpenses,
+        netIncome: toNumber(
+            source.netIncome ?? source.net_income ?? totalIncome - monthlyExpenses,
+            totalIncome - monthlyExpenses
+        ),
+        currentLoan: toNumber(source.currentLoan ?? source.current_loan ?? source.loan ?? source.credit, 0),
+        profession: source.profession || source.professionId || null,
+        children: toNumber(source.children ?? source.childrenCount, 0),
+        extraIncome: toNumber(source.extraIncome ?? source.extra_income ?? source.sideIncome, 0),
+        otherMonthlyAdjustments: toNumber(
+            source.otherMonthlyAdjustments ?? source.other_monthly_adjustments ?? source.adjustments,
+            0
+        ),
+        isReady: typeof source.isReady === 'boolean' ? source.isReady : !!source.is_ready,
+        avatar: source.avatar || null
+    };
+
+    return player;
+}
+
+function buildState(players = []) {
+    const normalized = players
+        .map((player, index) => normalizePlayer(player, index))
+        .filter(Boolean);
+
+    return {
+        players: normalized,
+        currentPlayerIndex: 0,
+        activePlayer: normalized[0] || null,
+        lastDiceResult: null,
+        canRoll: true,
+        canMove: false,
+        canEndTurn: false,
+        board: {
+            innerLength: INNER_TRACK_LENGTH,
+            outerLength: OUTER_TRACK_LENGTH
+        }
+    };
+}
+
+async function fetchOrCreateRoomState(roomId) {
+    if (!roomId) {
+        return null;
+    }
+
+    const existing = gameStateByRoomId.get(roomId);
+    if (existing) {
+        return existing;
+    }
+
+    const db = getDatabase();
+    if (!db) {
+        try {
+            const repo = new RoomRepository();
+            const room = await repo.getById(roomId);
+            const state = buildState(room?.players || []);
+            gameStateByRoomId.set(roomId, state);
+            return state;
+        } catch (error) {
+            const fallbackState = buildState([]);
+            gameStateByRoomId.set(roomId, fallbackState);
+            return fallbackState;
+        }
+    }
+
+    return new Promise((resolve, reject) => {
+        ensureGameState(db, roomId, (err, state) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(state);
+        });
+    });
+}
 
 // Инициализируем PushService для уведомлений
 const pushService = new PushService();
@@ -37,73 +146,48 @@ const pushService = new PushService();
 function ensureGameState(db, roomId, cb) {
     if (gameStateByRoomId.has(roomId)) {
         const cachedState = gameStateByRoomId.get(roomId);
-        if (!cachedState.board) {
-            cachedState.board = {
-                innerLength: INNER_TRACK_LENGTH,
-                outerLength: OUTER_TRACK_LENGTH
-            };
+        const refreshed = buildState(cachedState.players || []);
+        refreshed.currentPlayerIndex = cachedState.currentPlayerIndex || 0;
+        refreshed.lastDiceResult = cachedState.lastDiceResult || null;
+        refreshed.canRoll = typeof cachedState.canRoll === 'boolean' ? cachedState.canRoll : refreshed.canRoll;
+        refreshed.canMove = typeof cachedState.canMove === 'boolean' ? cachedState.canMove : refreshed.canMove;
+        refreshed.canEndTurn = typeof cachedState.canEndTurn === 'boolean' ? cachedState.canEndTurn : refreshed.canEndTurn;
+
+        if (cachedState.activePlayer) {
+            const activeCandidate = refreshed.players.find(
+                player =>
+                    player.id === cachedState.activePlayer.id ||
+                    player.userId === cachedState.activePlayer.userId
+            );
+            refreshed.activePlayer = activeCandidate || refreshed.players[refreshed.currentPlayerIndex] || null;
         }
-        if (Array.isArray(cachedState.players)) {
-            cachedState.players = cachedState.players.map(player => ({
-                ...player,
-                isInner: typeof player.isInner === 'boolean' ? player.isInner : player.track === 'inner',
-                track: player.track || (player.isInner ? 'inner' : 'outer')
-            }));
-            if (cachedState.activePlayer) {
-                const active = cachedState.players.find(p => p.id === cachedState.activePlayer.id || p.userId === cachedState.activePlayer.userId);
-                if (active) {
-                    cachedState.activePlayer = active;
-                }
-            }
-        }
-        return cb(null, cachedState);
+
+        gameStateByRoomId.set(roomId, refreshed);
+        return cb(null, refreshed);
     }
-    const q = `SELECT rp.user_id as userId, u.username as username
-               FROM room_players rp LEFT JOIN users u ON u.id = rp.user_id
-               WHERE rp.room_id = ? ORDER BY u.username ASC`;
+    const q = `SELECT 
+                    rp.user_id as userId,
+                    rp.id as playerId,
+                    u.username as username,
+                    rp.position,
+                    rp.money,
+                    rp.salary,
+                    rp.total_income,
+                    rp.monthly_expenses,
+                    rp.token,
+                    rp.is_ready
+               FROM room_players rp
+               LEFT JOIN users u ON u.id = rp.user_id
+               WHERE rp.room_id = ?
+               ORDER BY rp.joined_at ASC, u.username ASC`;
     if (!db) {
-        const state = {
-            players: [],
-            currentPlayerIndex: 0,
-            activePlayer: null,
-            lastDiceResult: null,
-            canRoll: true,
-            canMove: false,
-            canEndTurn: false,
-            board: {
-                innerLength: INNER_TRACK_LENGTH,
-                outerLength: OUTER_TRACK_LENGTH
-            }
-        };
+        const state = buildState([]);
         gameStateByRoomId.set(roomId, state);
         return cb(null, state);
     }
     db.all(q, [roomId], (err, rows) => {
         if (err) return cb(err);
-        const players = (rows || []).map((r, idx) => ({
-            id: r.userId,
-            userId: r.userId,
-            username: r.username || `player${idx+1}`,
-            position: 0,
-            isInner: true,
-            track: 'inner',
-            token: '🎯',
-            money: 5000,
-            isReady: true
-        }));
-        const state = {
-            players,
-            currentPlayerIndex: 0,
-            activePlayer: players[0] || null,
-            lastDiceResult: null,
-            canRoll: true,
-            canMove: false,
-            canEndTurn: false,
-            board: {
-                innerLength: INNER_TRACK_LENGTH,
-                outerLength: OUTER_TRACK_LENGTH
-            }
-        };
+        const state = buildState(rows || []);
         gameStateByRoomId.set(roomId, state);
         cb(null, state);
     });
@@ -145,29 +229,10 @@ router.get('/:id/game-state', (req, res, next) => {
                 const room = await repo.getById(id);
                 let state = gameStateByRoomId.get(id);
                 if (!state) {
-                    state = {
-                        players: (room?.players || []).map(p => ({
-                            id: p.id || p.userId,
-                            username: p.username,
-                            position: 0,
-                            isInner: true,
-                            track: 'inner',
-                            token: p.token || '🎯',
-                            money: 5000,
-                            isReady: !!p.isReady
-                        })),
-                        currentPlayerIndex: 0,
-                        activePlayer: null,
-                        lastDiceResult: null,
-                        canRoll: true,
-                        canMove: false,
-                        canEndTurn: false,
-                        board: {
-                            innerLength: INNER_TRACK_LENGTH,
-                            outerLength: OUTER_TRACK_LENGTH
-                        }
-                    };
-                    state.activePlayer = state.players[0] || null;
+                    state = buildState(room?.players || []);
+                    gameStateByRoomId.set(id, state);
+                } else if (!state.players || !state.players.length) {
+                    state = buildState(room?.players || []);
                     gameStateByRoomId.set(id, state);
                 }
                 return res.json({ success: true, state });
@@ -1280,17 +1345,13 @@ router.post('/:id/start', async (req, res, next) => {
                 await repo.updateStatus(id, { isStarted: true, status: 'playing' });
 
                 // ensure game state
-                const state = gameStateByRoomId.get(id) || {
-                    players: (room.players || []).map(p => ({ id: p.id || p.userId, username: p.username, position: 0, isInner: true, token: p.token || '🎯', money: 5000, isReady: !!p.isReady })),
-                    currentPlayerIndex: 0,
-                    activePlayer: null,
-                    lastDiceResult: null,
-                    canRoll: true,
-                    canMove: false,
-                    canEndTurn: false
-                };
-                state.activePlayer = state.players[0] || null;
-                gameStateByRoomId.set(id, state);
+                const state = gameStateByRoomId.get(id) || buildState(room.players || []);
+                if (!state.players || !state.players.length) {
+                    const rebuilt = buildState(room.players || []);
+                    gameStateByRoomId.set(id, rebuilt);
+                } else {
+                    gameStateByRoomId.set(id, state);
+                }
 
                 // push notify (safe)
                 pushService.broadcastPush('game_started', {
@@ -1535,6 +1596,7 @@ router.get('/push/stats', (req, res) => {
 router.getRoomGameState = getRoomGameState;
 router.updateRoomGameState = updateRoomGameState;
 router.gameStateByRoomId = gameStateByRoomId;
+router.fetchOrCreateRoomState = fetchOrCreateRoomState;
 
 module.exports = router;
 /**

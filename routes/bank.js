@@ -11,8 +11,7 @@ const PushService = require('../services/PushService');
 const roomsModule = require('./rooms');
 
 // Получаем функции из rooms module
-const getRoomGameState = roomsModule.getRoomGameState;
-const updateRoomGameState = roomsModule.updateRoomGameState;
+const { getRoomGameState, updateRoomGameState, fetchOrCreateRoomState } = roomsModule;
 const gameStateByRoomId = roomsModule.gameStateByRoomId || new Map();
 
 // Используем прямые вызовы функций из routes/rooms.js для работы с состоянием игры
@@ -30,7 +29,10 @@ router.get('/balance/:roomId/:playerId', async (req, res) => {
         const { roomId, playerId } = req.params;
         
         // Получаем баланс из игры
-        const roomData = getRoomGameState(roomId);
+        let roomData = getRoomGameState(roomId);
+        if (!roomData) {
+            roomData = await fetchOrCreateRoomState(roomId);
+        }
         if (!roomData) {
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
         }
@@ -91,12 +93,20 @@ router.post('/transfer', async (req, res) => {
         
         // Получаем состояние комнаты
         console.log('🏦 Bank API: Получение состояния комнаты:', roomId);
-        const roomData = getRoomGameState(roomId);
+        let roomData = getRoomGameState(roomId);
+        if (!roomData) {
+            try {
+                roomData = await fetchOrCreateRoomState(roomId);
+            } catch (error) {
+                console.log('❌ Bank API: Не удалось инициализировать состояние комнаты:', error.message);
+                roomData = null;
+            }
+        }
         if (!roomData) {
             console.log('❌ Bank API: Комната не найдена:', roomId);
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
         }
-        
+
         console.log('🏦 Bank API: Состояние комнаты:', roomData);
         
         const fromPlayer = roomData.players?.find(p => p.id === fromPlayerId);
@@ -340,7 +350,15 @@ router.get('/room-balances/:roomId', async (req, res) => {
             });
         }
         
-        const roomData = getRoomGameState(roomId);
+        let roomData = getRoomGameState(roomId);
+        if (!roomData) {
+            try {
+                roomData = await fetchOrCreateRoomState(roomId);
+            } catch (error) {
+                console.log('❌ Bank API: Не удалось получить состояние комнаты:', error.message);
+                roomData = null;
+            }
+        }
         console.log('🏦 Bank API: Получены данные комнаты:', {
             roomId,
             hasRoomData: !!roomData,
@@ -452,7 +470,15 @@ router.post('/loan/take', async (req, res) => {
     try {
         const { roomId, playerId, amount } = req.body;
         if (!roomId || !playerId || !amount) return res.status(400).json({ success: false, message: 'roomId, playerId, amount обязательны' });
-        const roomData = getRoomGameState(roomId);
+        let roomData = getRoomGameState(roomId);
+        if (!roomData) {
+            try {
+                roomData = await fetchOrCreateRoomState(roomId);
+            } catch (error) {
+                console.log('❌ Bank API: Не удалось подготовить состояние комнаты:', error.message);
+                roomData = null;
+            }
+        }
         if (!roomData) return res.status(404).json({ success: false, message: 'Комната не найдена' });
         const player = roomData.players?.find(p => p.id === playerId);
         if (!player) return res.status(404).json({ success: false, message: 'Игрок не найден' });
@@ -485,7 +511,15 @@ router.post('/loan/repay', async (req, res) => {
     try {
         const { roomId, playerId, amount } = req.body;
         if (!roomId || !playerId || !amount) return res.status(400).json({ success: false, message: 'roomId, playerId, amount обязательны' });
-        const roomData = getRoomGameState(roomId);
+        let roomData = getRoomGameState(roomId);
+        if (!roomData) {
+            try {
+                roomData = await fetchOrCreateRoomState(roomId);
+            } catch (error) {
+                console.log('❌ Bank API: Не удалось подготовить состояние комнаты для погашения кредита:', error.message);
+                roomData = null;
+            }
+        }
         if (!roomData) return res.status(404).json({ success: false, message: 'Комната не найдена' });
         const player = roomData.players?.find(p => p.id === playerId);
         if (!player) return res.status(404).json({ success: false, message: 'Игрок не найден' });
