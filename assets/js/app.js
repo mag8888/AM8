@@ -472,28 +472,44 @@ class App {
             console.error('❌ App: BoardLayout не найден в window');
         }
 
-        if (window.CardDeckPanel) {
-            const cardDeckPanel = new window.CardDeckPanel({
-                containerSelector: '#card-decks-panel',
-                eventBus: this.getEventBus()
-            });
-            this.modules.set('cardDeckPanel', cardDeckPanel);
-            console.log('🃏 CardDeckPanel: Инициализирован');
-        } else {
-            console.warn('⚠️ App: CardDeckPanel не найден в window');
-        }
+        // Инициализируем CardDeckPanel с отсрочкой
+        const initCardDeckPanel = () => {
+            if (window.CardDeckPanel && !this.modules.get('cardDeckPanel')) {
+                const cardDeckPanel = new window.CardDeckPanel({
+                    containerSelector: '#card-decks-panel',
+                    eventBus: this.getEventBus()
+                });
+                this.modules.set('cardDeckPanel', cardDeckPanel);
+                console.log('🃏 CardDeckPanel: Инициализирован');
+            }
+        };
 
-        // Инициализируем BankPreview для отображения превью банка
-        if (window.BankPreview) {
-            const bankPreview = new window.BankPreview({
-                containerSelector: '#card-decks-panel',
-                eventBus: this.getEventBus(),
-                gameStateManager: gameStateManager
-            });
-            this.modules.set('bankPreview', bankPreview);
-            console.log('🏦 BankPreview: Инициализирован');
-        } else {
-            console.warn('⚠️ App: BankPreview не найден в window');
+        // Инициализируем BankPreview с отсрочкой
+        const initBankPreview = () => {
+            if (window.BankPreview && !this.modules.get('bankPreview')) {
+                const bankPreview = new window.BankPreview({
+                    containerSelector: '#card-decks-panel',
+                    eventBus: this.getEventBus(),
+                    gameStateManager: gameStateManager
+                });
+                this.modules.set('bankPreview', bankPreview);
+                console.log('🏦 BankPreview: Инициализирован');
+            }
+        };
+
+        // Пытаемся инициализировать сразу
+        initCardDeckPanel();
+        initBankPreview();
+
+        // Если не получилось, пробуем через задержки
+        if (!this.modules.get('cardDeckPanel')) {
+            setTimeout(initCardDeckPanel, 100);
+            setTimeout(initCardDeckPanel, 1000);
+        }
+        
+        if (!this.modules.get('bankPreview')) {
+            setTimeout(initBankPreview, 100);
+            setTimeout(initBankPreview, 1000);
         }
         
         // Инициализируем DealModule (микромодуль сделок)

@@ -32,9 +32,14 @@ class BankPreview {
         // Откладываем рендер, чтобы он произошел после CardDeckPanel
         setTimeout(() => {
             this.render();
-        }, 100);
+        }, 1000);
         
-        this.setupEventListeners();
+        // Также рендерим еще несколько раз с задержкой для гарантии
+        setTimeout(() => {
+            this.render();
+        }, 3000);
+        
+        // setupEventListeners будет вызван в render()
         
         // Обновляем данные каждые 5 секунд
         this.updateInterval = setInterval(() => {
@@ -111,6 +116,9 @@ class BankPreview {
         // Вставляем превью в начало контейнера
         this.container.insertBefore(this.previewElement, this.container.firstChild);
         
+        // Настраиваем обработчики событий после создания элемента
+        this.setupEventListeners();
+        
         // Загружаем данные
         this.updatePreviewData();
     }
@@ -131,6 +139,13 @@ class BankPreview {
         if (this.eventBus) {
             this.eventBus.on('bank:updated', () => {
                 this.updatePreviewData();
+            });
+            
+            // Подписываемся на события обновления карт, чтобы перерендерить превью
+            this.eventBus.on('cards:updated', () => {
+                setTimeout(() => {
+                    this.render();
+                }, 100);
             });
         }
     }
