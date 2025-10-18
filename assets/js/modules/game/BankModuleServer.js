@@ -191,20 +191,28 @@ class BankModuleServer {
             otherMonthlyAdjustments: currentPlayer.otherMonthlyAdjustments || 0
         });
         
+        // Пытаемся получить данные из ProfessionSystem
         if (professionDetails) {
             this.bankState.income = professionDetails.income?.total || 0;
             this.bankState.expenses = professionDetails.expenses?.total || 0;
             this.bankState.netIncome = professionDetails.netIncome?.netIncome || (this.bankState.income - this.bankState.expenses);
             this.bankState.salary = professionDetails.income?.salary || 0;
-            this.bankState.maxCredit = this.bankState.netIncome * 10;
+            
+            // Проверяем, получены ли корректные данные
+            if (this.bankState.income === 0 || this.bankState.expenses === 0) {
+                console.log('⚠️ BankModuleServer: ProfessionSystem вернул нулевые значения, используем fallback');
+                this.initEntrepreneurFallbackData(currentPlayer);
+            } else {
+                this.bankState.maxCredit = this.bankState.netIncome * 10;
+            }
         } else {
-            // Fallback значения
-            this.bankState.income = currentPlayer.totalIncome || 0;
-            this.bankState.expenses = currentPlayer.monthlyExpenses || 0;
-            this.bankState.netIncome = this.bankState.income - this.bankState.expenses;
-            this.bankState.salary = currentPlayer.salary || 0;
-            this.bankState.maxCredit = Math.max(this.bankState.netIncome * 10, 0);
+            // Fallback значения для предпринимателя (если ProfessionSystem недоступен)
+            console.log('⚠️ BankModuleServer: ProfessionSystem недоступен, используем fallback данные');
+            this.initEntrepreneurFallbackData(currentPlayer);
         }
+        
+        // Финальная проверка и исправление значений предпринимателя
+        this.ensureCorrectEntrepreneurValues();
         
         this.bankState.credit = currentPlayer.currentLoan || 0;
         this.bankState.currentPlayer = currentPlayer;
@@ -214,6 +222,118 @@ class BankModuleServer {
             netIncome: this.bankState.netIncome,
             maxCredit: this.bankState.maxCredit,
             credit: this.bankState.credit
+        });
+    }
+    
+    /**
+     * Инициализация данных предпринимателя как fallback
+     */
+    initEntrepreneurFallbackData(currentPlayer) {
+        console.log('🏢 BankModuleServer: Инициализация данных предпринимателя (fallback)');
+        
+        // 1. Зарплата - $10,000 + пассивный доход $0 = $10,000
+        const salary = currentPlayer.salary || 10000;
+        const passiveIncome = currentPlayer.extraIncome || 0;
+        this.bankState.income = salary + passiveIncome;
+        this.bankState.salary = salary;
+        
+        // 2. Расходы по умолчанию для предпринимателя
+        const childCount = currentPlayer.children || 0;
+        const currentLoan = currentPlayer.currentLoan || 0;
+        
+        // Базовые расходы предпринимателя
+        this.bankState.expenses = this.calculateEntrepreneurExpenses(currentLoan, childCount);
+        
+        // 3. PAYDAY = Денежный поток = доходы - расходы
+        this.bankState.netIncome = this.bankState.income - this.bankState.expenses;
+        
+        // 4. Максимальный кредит = чистый доход × 10
+        this.bankState.maxCredit = Math.max(this.bankState.netIncome * 10, 0);
+        
+        console.log('💰 BankModuleServer: Данные предпринимателя инициализированы:', {
+            income: this.bankState.income,
+            expenses: this.bankState.expenses,
+            netIncome: this.bankState.netIncome,
+            maxCredit: this.bankState.maxCredit
+        });
+    }
+    
+    /**
+     * Расчет расходов предпринимателя
+     */
+    calculateEntrepreneurExpenses(currentLoan = 0, childCount = 0) {
+        // Базовые расходы предпринимателя:
+        // 2.1 Налоги: $1,300 (13%) - погасить нельзя
+        const taxes = 1300;
+        
+        // 2.2 Прочие расходы: $1,500 - погасить нельзя  
+        const otherExpenses = 1500;
+        
+        // 2.3 Кредит на авто: $700 (можно погасить 14,000)
+        const autoLoan = 700;
+        
+        // 2.4 Образовательный кредит: $500 (можно погасить 10,000)
+        const educationLoan = 500;
+        
+        // 2.5 Кредитные карты: $1,000 (можно погасить 20,000)
+        const creditCards = 1000;
+        
+        // 2.6 Ипотека студия: $1,200 - $48,000
+        const mortgage = 1200;
+        
+        // 2.7 Расходы на ребенка: $500 × количество детей (максимум 3)
+        const childExpenses = Math.min(childCount, 3) * 500;
+        
+        // 2.8 Банк кредит: 10% от взятого кредита
+        const bankLoanExpenses = Math.floor(currentLoan * 0.1);
+        
+        // Итого расходы: $6,200 + расходы на детей + банковские расходы по кредиту
+        const totalExpenses = taxes + otherExpenses + autoLoan + educationLoan + 
+                             creditCards + mortgage + childExpenses + bankLoanExpenses;
+        
+        console.log('💸 BankModuleServer: Расчет расходов:', {
+            taxes,
+            otherExpenses,
+            autoLoan,
+            educationLoan,
+            creditCards,
+            mortgage,
+            childExpenses,
+            bankLoanExpenses,
+            totalExpenses
+        });
+        
+        return totalExpenses;
+    }
+    
+    /**
+     * Проверка корректности значений предпринимателя
+     */
+    ensureCorrectEntrepreneurValues() {
+        // Если значения все еще нулевые или неправильные, устанавливаем defaults для предпринимателя
+        if (this.bankState.income === 0 || this.bankState.expenses === 0) {
+            console.log('🔧 BankModuleServer: Принудительная установка значений предпринимателя');
+            
+            // Доходы: зарплата $10,000 + пассивный доход $0 = $10,000
+            this.bankState.income = 10000;
+            this.bankState.salary = 10000;
+            
+            // Расходы: $6,200 (базовые) + возможные дополнительные
+            this.bankState.expenses = 6200;
+            
+            // PAYDAY = $10,000 - $6,200 = $3,800
+            this.bankState.netIncome = 3800;
+            
+            // Максимальный кредит = $3,800 × 10 = $38,000
+            this.bankState.maxCredit = 38000;
+        }
+        
+        console.log('✅ BankModuleServer: Финальные значения предпринимателя:', {
+            income: this.bankState.income,
+            expenses: this.bankState.expenses,
+            netIncome: this.bankState.netIncome,
+            maxCredit: this.bankState.maxCredit,
+            payday: this.bankState.netIncome
         });
     }
     
