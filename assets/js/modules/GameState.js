@@ -20,7 +20,51 @@ class GameState {
         // Инициализируем модуль профессий
         this.professionModule = new ProfessionModule();
         
+        // Загружаем игроков из комнаты при инициализации
+        this.loadPlayersFromCurrentRoom();
+        
         console.log('✅ GameState инициализирован');
+    }
+    
+    /**
+     * Загрузка игроков из текущей комнаты
+     */
+    loadPlayersFromCurrentRoom() {
+        try {
+            // Получаем roomId из URL
+            const hash = window.location.hash;
+            const roomIdMatch = hash.match(/roomId=([^&]+)/);
+            if (!roomIdMatch) {
+                console.log('⚠️ GameState: RoomId не найден в URL, добавляем тестовых игроков');
+                this.addTestPlayers();
+                return;
+            }
+            
+            const roomId = roomIdMatch[1];
+            this.roomId = roomId;
+            
+            console.log('🏠 GameState: Загружаем игроков из комнаты:', roomId);
+            
+            // Загружаем данные комнаты
+            fetch(`/api/rooms/${roomId}/game-state`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.state && data.state.players && data.state.players.length > 0) {
+                        console.log('✅ GameState: Игроки загружены из комнаты:', data.state.players.length);
+                        this.loadPlayersFromRoom(data.state);
+                    } else {
+                        console.log('⚠️ GameState: Данные комнаты не найдены, добавляем тестовых игроков');
+                        this.addTestPlayers();
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ GameState: Ошибка загрузки игроков из комнаты:', error);
+                    this.addTestPlayers();
+                });
+        } catch (error) {
+            console.error('❌ GameState: Ошибка загрузки игроков:', error);
+            this.addTestPlayers();
+        }
     }
 
     /**
@@ -701,13 +745,28 @@ class GameState {
      * Передать ход следующему игроку
      */
     passTurnToNextPlayer() {
-        const currentPlayer = this.getCurrentActivePlayer();
-        if (!currentPlayer || this.players.length === 0) {
+        // Проверяем наличие игроков
+        if (!this.players || this.players.length === 0) {
             console.warn('⚠️ GameState: Нет игроков для передачи хода');
             return;
         }
 
+        const currentPlayer = this.getCurrentActivePlayer();
+        if (!currentPlayer) {
+            // Если нет активного игрока, устанавливаем первого
+            this.setActivePlayer(this.players[0].id);
+            console.log(`🔄 GameState: Установлен первый игрок как активный: ${this.players[0].username}`);
+            return;
+        }
+
         const currentIndex = this.players.findIndex(p => p.id === currentPlayer.id);
+        if (currentIndex === -1) {
+            // Если текущий игрок не найден в списке, устанавливаем первого
+            this.setActivePlayer(this.players[0].id);
+            console.log(`🔄 GameState: Текущий игрок не найден, установлен первый: ${this.players[0].username}`);
+            return;
+        }
+
         const nextIndex = (currentIndex + 1) % this.players.length;
         const nextPlayer = this.players[nextIndex];
 

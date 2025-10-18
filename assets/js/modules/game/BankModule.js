@@ -43,6 +43,41 @@ class BankModule {
     }
     
     /**
+     * Обновление баланса игрока
+     * @param {Object} player - Данные игрока
+     */
+    updatePlayerBalance(player) {
+        if (!player) return;
+        
+        try {
+            // Обновляем баланс в состоянии банка
+            const balance = player.balance || player.money || player.cash || 0;
+            this.bankState.balance = balance;
+            
+            // Обновляем UI, если банк открыт
+            if (this.isOpen && this.ui) {
+                this.updateBalanceDisplay();
+            }
+            
+            console.log('💰 BankModule: Баланс игрока обновлен:', balance);
+        } catch (error) {
+            console.warn('⚠️ BankModule: Ошибка обновления баланса:', error);
+        }
+    }
+    
+    /**
+     * Обновление отображения баланса в UI
+     */
+    updateBalanceDisplay() {
+        if (!this.ui) return;
+        
+        const balanceElement = this.ui.querySelector('.bank-balance-amount');
+        if (balanceElement) {
+            balanceElement.textContent = `$${this.bankState.balance.toLocaleString()}`;
+        }
+    }
+    
+    /**
      * Инициализация текущего пользователя
      */
     initCurrentUser() {

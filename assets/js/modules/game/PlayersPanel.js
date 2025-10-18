@@ -365,6 +365,38 @@ class PlayersPanel {
         });
         
         console.log('👥 PlayersPanel: Обновлен список игроков', players.length);
+        
+        // Синхронизируем баланс с банком, если он открыт
+        this.syncBalanceWithBank(players);
+    }
+    
+    /**
+     * Синхронизация баланса игроков с банком
+     * @param {Array} players - Массив игроков
+     */
+    syncBalanceWithBank(players) {
+        if (!this.bankModule) return;
+        
+        try {
+            // Получаем текущего пользователя
+            const currentUserId = this.getCurrentUserId();
+            if (!currentUserId) return;
+            
+            // Находим текущего игрока в списке
+            const currentPlayer = players.find(p => 
+                p.id === currentUserId || 
+                p.userId === currentUserId || 
+                p.username === currentUserId
+            );
+            
+            if (currentPlayer && this.bankModule.updatePlayerBalance) {
+                // Обновляем баланс в банке
+                this.bankModule.updatePlayerBalance(currentPlayer);
+                console.log('💰 PlayersPanel: Баланс синхронизирован с банком:', currentPlayer.balance || currentPlayer.money);
+            }
+        } catch (error) {
+            console.warn('⚠️ PlayersPanel: Ошибка синхронизации баланса:', error);
+        }
     }
     
     /**
@@ -376,6 +408,10 @@ class PlayersPanel {
     createPlayerElement(player, index) {
         const playerDiv = document.createElement('div');
         playerDiv.className = 'player-item';
+        
+        // Получаем баланс из разных возможных источников
+        const balance = player.balance || player.money || player.cash || 0;
+        
         playerDiv.innerHTML = `
             <div class="player-avatar">
                 <span class="player-icon">🎯</span>
@@ -385,7 +421,7 @@ class PlayersPanel {
                 <div class="player-status ${player.isActive ? 'active' : 'inactive'}">
                     ${player.isActive ? 'Активен' : 'Ожидание'}
                 </div>
-                <div class="player-balance">$${player.balance || 0}</div>
+                <div class="player-balance">$${balance}</div>
             </div>
             <div class="player-token">
                 <span class="token-icon">🎲</span>
