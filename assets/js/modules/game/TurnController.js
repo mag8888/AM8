@@ -724,6 +724,14 @@ class TurnController {
                 this.playerList.updatePlayers(players);
             } else {
                 console.warn('TurnController: players не является массивом:', typeof players, players);
+                // Fallback: получаем игроков из GameStateManager
+                if (this.gameStateManager) {
+                    const state = this.gameStateManager.getState();
+                    const playersArray = state?.players || [];
+                    if (Array.isArray(playersArray)) {
+                        this.playerList.updatePlayers(playersArray);
+                    }
+                }
             }
         }
     }

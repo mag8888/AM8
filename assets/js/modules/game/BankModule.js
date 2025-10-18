@@ -1423,13 +1423,11 @@ class BankModule {
                         // Обновляем локальный GameState серверными данными
                         if (this.gameState && typeof this.gameState.updatePlayers === 'function') {
                             this.gameState.updatePlayers(players);
-                        } else if (this.gameStateManager) {
-                            // Обновляем через gameStateManager
-                            const state = this.gameStateManager.getState();
-                            if (state) {
-                                state.players = players;
-                                this.gameStateManager.setState(state);
-                            }
+                        } else if (this.gameStateManager && typeof this.gameStateManager.updateFromServer === 'function') {
+                            // Обновляем через gameStateManager правильным методом
+                            this.gameStateManager.updateFromServer({
+                                players: players
+                            });
                         }
                     }
                 }

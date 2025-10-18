@@ -425,13 +425,8 @@ class GameStateManager {
         }
 
         if (meta.playersChanged) {
-            this.notifyListeners('players:updated', {
-                players: snapshot.players,
-                added: snapshot.players.length > (previous.players?.length || 0)
-            });
-            this.notifyListeners('game:playersUpdated', {
-                players: snapshot.players
-            });
+            this.notifyListeners('players:updated', snapshot.players);
+            this.notifyListeners('game:playersUpdated', snapshot.players);
         }
     }
 
