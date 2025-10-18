@@ -273,14 +273,10 @@
                         </header>
                         <div class="card-deck-body">
                             <div class="deck-metrics">
-                                <div class="deck-metric deck-metric--draw">
-                                    <div class="deck-metric-value">${deck.drawCount}</div>
-                                    <div class="deck-metric-label">карт</div>
-                                </div>
-                                <div class="deck-divider"></div>
-                                <div class="deck-metric deck-metric--discard">
-                                    <div class="deck-metric-value">${deck.discardCount}</div>
-                                    <div class="deck-metric-label">отбой</div>
+                                <div class="deck-metric deck-metric--compact">
+                                    <div class="deck-metric-value deck-metric-value--primary">${deck.drawCount}</div>
+                                    <div class="deck-metric-separator">/</div>
+                                    <div class="deck-metric-value deck-metric-value--secondary">${deck.discardCount}</div>
                                 </div>
                             </div>
                         </div>
