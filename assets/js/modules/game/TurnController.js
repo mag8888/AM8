@@ -22,8 +22,11 @@ class TurnController {
         this.playerList = null;
         
         console.log('🎮 TurnController v2.0: Инициализация, isMobile:', this.isMobile, 'window.innerWidth:', window.innerWidth);
-        this.init();
-        console.log('🎮 TurnController v2.0: Инициализирован');
+        
+        // НЕ вызываем this.init() сразу в конструкторе
+        // Это позволит PlayersPanel сначала отрендериться
+        // init() будет вызван позже явно или через bindToExistingUI
+        console.log('🎮 TurnController v2.0: Конструктор завершен, init() будет вызван позже');
     }
     
     /**
@@ -171,12 +174,13 @@ class TurnController {
         
         // Ограничиваем количество попыток
         this._setupAttempts = this._setupAttempts || 0;
+        this._setupAttempts++;
+        
         if (this._setupAttempts > 10) {
-            console.error('❌ TurnController: Превышено максимальное количество попыток настройки обработчиков (10)');
+            console.error(`❌ TurnController: Превышено максимальное количество попыток настройки обработчиков (${this._setupAttempts}/10), прекращаем попытки`);
             return;
         }
         
-        this._setupAttempts++;
         console.log(`🎮 TurnController: Привязка обработчиков (попытка ${this._setupAttempts}/10)`);
         
         // Больше не добавляем свой UI в DOM - работаем с существующими элементами
@@ -202,8 +206,20 @@ class TurnController {
             rollBtn.addEventListener('click', () => this.handleRollDice());
             console.log('🎮 TurnController: Обработчик броска кубика привязан');
         } else {
-            console.warn(`⚠️ TurnController: Кнопка броска кубика не найдена, повтор через 500ms (попытка ${this._setupAttempts}/10)`);
-            setTimeout(() => this.setupEventListeners(), 500);
+            console.warn(`⚠️ TurnController: Кнопка броска кубика не найдена (попытка ${this._setupAttempts}/10)`);
+            // Добавляем диагностику - проверяем, что есть в playersPanel
+            console.log('🔍 TurnController: Диагностика playersPanel:');
+            console.log('  - playersPanel элемент:', playersPanel);
+            console.log('  - innerHTML length:', playersPanel?.innerHTML?.length || 0);
+            console.log('  - все кнопки в playersPanel:', Array.from(playersPanel?.querySelectorAll('button') || []).map(btn => ({ id: btn.id, text: btn.textContent.trim() })));
+            console.log('  - глобальная кнопка #roll-dice-btn:', !!document.querySelector('#roll-dice-btn'));
+            
+            // Не повторяем, если превышен лимит попыток - проверка уже сделана в начале метода
+            if (this._setupAttempts < 10) {
+                setTimeout(() => this.setupEventListeners(), 500);
+            } else {
+                console.error(`❌ TurnController: Превышен лимит попыток поиска кнопки броска кубика (${this._setupAttempts}/10)`);
+            }
             return;
         }
         
@@ -230,8 +246,13 @@ class TurnController {
             endTurnBtn.addEventListener('click', () => this.handleEndTurn());
             console.log('🎮 TurnController: Обработчик передачи хода привязан');
         } else {
-            console.warn(`⚠️ TurnController: Кнопка передачи хода не найдена, повтор через 500ms (попытка ${this._setupAttempts}/10)`);
-            setTimeout(() => this.setupEventListeners(), 500);
+            console.warn(`⚠️ TurnController: Кнопка передачи хода не найдена (попытка ${this._setupAttempts}/10)`);
+            // Не повторяем, если превышен лимит попыток - проверка уже сделана в начале метода
+            if (this._setupAttempts < 10) {
+                setTimeout(() => this.setupEventListeners(), 500);
+            } else {
+                console.error(`❌ TurnController: Превышен лимит попыток поиска кнопки передачи хода (${this._setupAttempts}/10)`);
+            }
             return;
         }
         

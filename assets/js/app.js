@@ -649,37 +649,40 @@ class App {
             console.warn('⚠️ App: TurnService не найден в window');
         }
         
-        // Инициализируем TurnController с GameStateManager (безопасно)
-        if (window.TurnController) {
-            const turnService = this.modules.get('turnService');
-            const playerTokensModule = this.modules.get('playerTokens');
-            if (turnService && gameStateManager) {
-                try {
-                    console.log('🎯 App: Инициализируем TurnController...');
-                    const turnController = new window.TurnController(
-                        turnService,
-                        playerTokensModule,
-                        gameStateManager,
-                        this.getEventBus()
-                    );
-                    this.modules.set('turnController', turnController);
-                    
-                    // Вызываем setupEventListeners для подписки на события GameStateManager
-                    if (typeof turnController.setupEventListeners === 'function') {
-                        turnController.setupEventListeners();
-                        console.log('🎯 TurnController: setupEventListeners вызван');
+        // Инициализируем TurnController с GameStateManager (после PlayersPanel)
+        // Устанавливаем задержку, чтобы PlayersPanel успел отрендериться
+        setTimeout(() => {
+            if (window.TurnController) {
+                const turnService = this.modules.get('turnService');
+                const playerTokensModule = this.modules.get('playerTokens');
+                if (turnService && gameStateManager) {
+                    try {
+                        console.log('🎯 App: Инициализируем TurnController (с задержкой для PlayersPanel)...');
+                        const turnController = new window.TurnController(
+                            turnService,
+                            playerTokensModule,
+                            gameStateManager,
+                            this.getEventBus()
+                        );
+                        this.modules.set('turnController', turnController);
+                        
+                        // Теперь вызываем init() для TurnController - PlayersPanel уже отрендерился
+                        if (typeof turnController.init === 'function') {
+                            turnController.init();
+                            console.log('🎯 TurnController: init() вызван успешно');
+                        } else {
+                            console.warn('⚠️ TurnController: init() метод не найден');
+                        }
+                    } catch (e) {
+                        console.error('❌ App: Ошибка инициализации TurnController', e);
                     }
-                    
-                    console.log('🎯 TurnController: Инициализирован');
-                } catch (e) {
-                    console.error('❌ App: Ошибка инициализации TurnController', e);
+                } else {
+                    console.warn('⚠️ App: Пропускаем TurnController — нет turnService или gameStateManager');
                 }
             } else {
-                console.warn('⚠️ App: Пропускаем TurnController — нет turnService или gameStateManager');
+                console.warn('⚠️ App: TurnController не найден в window');
             }
-        } else {
-            console.warn('⚠️ App: TurnController не найден в window');
-        }
+        }, 200); // Задержка для завершения рендера PlayersPanel
         
         // Инициализируем TurnSyncService для синхронизации ходов (временно отключен)
         if (false && window.TurnSyncService) {
@@ -746,10 +749,10 @@ class App {
                     );
                     this.modules.set('turnController', turnController);
                     
-                    // Вызываем setupEventListeners для подписки на события GameStateManager
-                    if (typeof turnController.setupEventListeners === 'function') {
-                        turnController.setupEventListeners();
-                        console.log('🔄 TurnController: setupEventListeners вызван (retry)');
+                    // Вызываем init() для правильной инициализации
+                    if (typeof turnController.init === 'function') {
+                        turnController.init();
+                        console.log('🔄 TurnController: init() вызван (retry)');
                     }
                 }
             } catch (e) {
@@ -901,10 +904,13 @@ class App {
                 eventBus: this.services.get('eventBus')
             });
             
-            // Вызываем setupEventListeners для подписки на события GameStateManager
-            if (typeof turnController.setupEventListeners === 'function') {
-                turnController.setupEventListeners();
-                console.log('🎯 TurnController: setupEventListeners вызван (_initGameModules)');
+            // Вызываем init() для правильной инициализации TurnController
+            if (typeof turnController.init === 'function') {
+                // Добавляем небольшую задержку для PlayersPanel
+                setTimeout(() => {
+                    turnController.init();
+                    console.log('🎯 TurnController: init() вызван (_initGameModules)');
+                }, 50);
             }
             if (typeof playersPanel.setupEventListeners === 'function') {
                 playersPanel.setupEventListeners();
@@ -955,12 +961,9 @@ class App {
             // Инициализируем TurnController
             const turnController = this.modules.get('turnController');
             if (turnController) {
+                // init() уже содержит setupEventListeners через bindToExistingUI
                 if (typeof turnController.init === 'function') {
                     turnController.init();
-                }
-                // Убеждаемся, что слушатели событий настроены
-                if (typeof turnController.setupEventListeners === 'function') {
-                    turnController.setupEventListeners();
                 }
             }
             
