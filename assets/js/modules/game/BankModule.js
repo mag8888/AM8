@@ -1260,9 +1260,25 @@ class BankModule {
 
         // Обновляем мини-индикаторы в правом блоке кредита
         const loanBalance = this.ui.querySelector('#loan-balance');
-        if (loanBalance) loanBalance.textContent = `$${this.formatNumber(currentPlayer.currentLoan || 0)}`;
+        if (loanBalance) {
+            const currentLoan = currentPlayer.currentLoan || 0;
+            loanBalance.textContent = `$${this.formatNumber(currentLoan)}`;
+            
+            // Добавляем визуальную индикацию
+            if (currentLoan > 0) {
+                loanBalance.style.color = '#ef4444'; // Красный для активного кредита
+                loanBalance.style.fontWeight = 'bold';
+            } else {
+                loanBalance.style.color = '#10b981'; // Зеленый для отсутствия кредита
+                loanBalance.style.fontWeight = 'normal';
+            }
+        }
+        
         const loanMax = this.ui.querySelector('#loan-max');
-        if (loanMax) loanMax.textContent = `$${this.formatNumber(professionDetails?.loan?.maxLoan || 0)}`;
+        if (loanMax) {
+            const maxLoan = professionDetails?.loan?.maxLoan || 10000;
+            loanMax.textContent = `$${this.formatNumber(maxLoan)}`;
+        }
         
         // Обновляем чистый доход
         const netIncomeElement = this.ui.querySelector('#bank-net-income');
@@ -1340,20 +1356,25 @@ class BankModule {
         
         if (!recipientSelect) return;
         
+        // Получаем текущего пользователя
+        const currentUser = this.getCurrentUser();
+        const currentUserId = currentUser?.id;
+        
         // Очищаем список
         recipientSelect.innerHTML = '<option value="">Выберите игрока</option>';
         
         // Добавляем игроков (исключая текущего)
         players.forEach(player => {
-            if (player.id !== this.currentUserId) {
+            if (player.id !== currentUserId) {
                 const option = document.createElement('option');
                 option.value = player.id;
-                option.textContent = `${player.username || player.name} ($${this.formatNumber(player.money || 0)})`;
+                const balance = player.balance || player.money || 0;
+                option.textContent = `${player.username || player.name} ($${this.formatNumber(balance)})`;
                 recipientSelect.appendChild(option);
             }
         });
         
-        console.log('🏦 BankModule: Список игроков загружен');
+        console.log('🏦 BankModule: Список игроков загружен:', players.length, 'игроков');
     }
     
     /**
