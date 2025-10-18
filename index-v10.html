@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Money - Настольная игра</title>
+    <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+    <link rel="apple-touch-icon" href="assets/images/favicon.svg">
+    <link rel="stylesheet" href="assets/css/main.css?v=10">
+    <link rel="stylesheet" href="assets/css/board.css?v=10">
+    <link rel="stylesheet" href="assets/css/modals.css?v=10">
+    <link rel="stylesheet" href="assets/css/fixes.css?v=10">
+    <link rel="stylesheet" href="assets/css/navigation.css?v=10">
+    <style>
+        /* Стили для контейнера страниц */
+        #page-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        }
+
+        /* Стили навигации удалены */
+
+        /* Основной контент */
+        .app-content {
+            padding: 0; /* Убираем отступы полностью */
+            min-height: 100vh; /* Полная высота экрана */
+        }
+
+        /* Стили для страниц */
+        .page {
+            display: none;
+            min-height: 100vh; /* Полная высота экрана */
+        }
+
+        .page.active {
+            display: block;
+        }
+        
+        /* Стили для iframe страниц */
+        .page iframe {
+            width: 100%;
+            height: calc(100vh - 120px);
+            border: none;
+            border-radius: 1rem;
+            background: transparent;
+        }
+        
+        #rooms-page iframe {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        }
+
+
+
+        .back-btn {
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        
+        /* Стили для кнопок навигации */
+        .main-navigation .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .main-navigation {
+                position: relative !important;
+                top: auto !important;
+                left: auto !important;
+                margin: 1rem;
+            }
+            
+            .main-navigation div {
+                justify-content: center;
+            }
+            
+            .main-navigation .nav-btn {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
+
+        /* Стили для игровой страницы - CSS Grid система */
+        .game-page {
+            padding: 0.5rem; /* Минимальные отступы */
+            max-width: 1600px;
+            margin: 0 auto;
+            min-height: 100vh; /* Полная высота экрана */
+            display: grid;
+            grid-template-columns: 280px 1fr 400px; /* Уменьшено для одной колонки карт */
+            grid-template-rows: 1fr;
+            grid-template-areas: "card-decks game-board players-panel";
+            gap: 1rem; /* Уменьшенный отступ */
+            align-items: start;
+        }
+
+        /* Колоды карточек */
+        .card-decks-container {
+            grid-area: card-decks;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-height: 100%;
+        }
+
+        /* Контейнер для игровой доски */
+        .game-board-container {
+            grid-area: game-board;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Полная высота экрана */
+            padding: 0.5rem; /* Минимальные отступы */
+        }
+
+        /* Контейнер для панели игроков */
+        .players-panel-container {
+            grid-area: players-panel;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        /* Специальная навигация для игровой комнаты */
+        .app-navigation.game-room-nav {
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0.75rem 0;
+        }
+
+        .game-room-nav .nav-container {
+            justify-content: flex-end;
+        }
+
+        .game-room-nav .nav-logo,
+        .game-room-nav .nav-menu,
+        .game-room-nav .nav-button[href="/admin/"] {
+            display: none;
+        }
+
+        .game-room-nav .nav-user {
+            margin-left: auto;
+        }
+        
+        /* Оптимизированное игровое поле для главной страницы */
+        .game-page .board-wrapper {
+            width: min(100vmin, 1000px) !important;
+            height: min(100vmin, 1000px) !important;
+            border: 3px solid rgba(99, 102, 241, 0.4) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+            border-radius: 12px !important;
+        }
+        
+        .game-page .track-cell {
+            border-radius: 6px !important;
+            border: 2.5px solid var(--surface-border) !important;
+            font-weight: 700 !important;
+        }
+        
+        .game-page .cell-icon {
+            font-size: clamp(1.2rem, 2.5vmin, 1.8rem) !important;
+        }
+        
+        .game-page .cell-number {
+            width: 16px !important;
+            height: 16px !important;
+            font-size: 0.5rem !important;
+            line-height: 16px !important;
+        }
+        
+        /* Стили кнопки удалены - только логотип */
+        
+        /* Стили для кнопок */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }
+        
+        .center-actions {
+            margin-top: 1.5rem;
+        }
+
+        /* Удалены стили game-control-panel - функциональность интегрирована в PlayersPanel */
+
+        /* Адаптивность для средних экранов - Grid система */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .game-page {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+                grid-template-areas: 
+                    "game-board"
+                    "players-panel";
+                gap: 1.5rem;
+            }
+            
+            .players-panel-container {
+                max-width: 100%;
+            }
+        }
+
+        /* Адаптивность для мобильных - Grid система */
+        @media (max-width: 768px) {
+            .app-content {
+                padding: 0;
+            }
+
+            .game-page {
+                padding: 0.25rem; /* Минимальные отступы */
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                grid-template-areas: 
+                    "card-decks"
+                    "game-board"
+                    "players-panel";
+                gap: 0.5rem; /* Уменьшенный отступ */
+            }
+
+            .card-decks-container {
+                flex-direction: column;
+                justify-content: flex-start;
+                overflow-y: auto;
+                max-height: 500px;
+                padding: 0.5rem;
+            }
+            
+            .players-panel-container {
+                max-width: 100%;
+            }
+            
+            .game-page .board-wrapper {
+                width: min(88vmin, 520px) !important; /* Уменьшаем размер */
+                height: min(88vmin, 520px) !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-page {
+                padding: 0.1rem; /* Минимальные отступы */
+            }
+            
+            .game-page .board-wrapper {
+                width: min(85vmin, 400px) !important; /* Уменьшаем размер */
+                height: min(85vmin, 400px) !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация удалена -->
+
+    <!-- Основной контент -->
+    <main class="app-content">
+        <div id="page-container">
+            <!-- Страница игры (BoardLayout) -->
+            <div id="game-page" class="page active">
+                <div class="game-page">
+                    <!-- Колоды карточек -->
+                    <aside class="card-decks-container" id="card-decks-panel">
+                        <!-- CardDeckPanel отрисует содержимое -->
+                    </aside>
+                    
+                    <!-- Игровая доска -->
+                    <div class="game-board-container">
+                        <div class="board-wrapper">
+                            <!-- Внешний трек (большой круг) -->
+                            <div id="outer-track" class="track outer-track"></div>
+                            
+                            <!-- Внутренний трек (маленький круг) -->
+                            <div id="inner-track" class="track inner-track"></div>
+                            
+                            <!-- Центральная область с логотипом -->
+                            <div class="center-area">
+                                <div class="logo-center" id="logo-center">
+                                    <img src="assets/images/logo.svg?v=2" alt="Энергия денег" class="logo-img" id="center-logo">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Панель игроков -->
+                    <div id="players-panel" class="players-panel-container"></div>
+                </div>
+                
+                <!-- Кнопки навигации скрыты в режиме геймборда (перенесены в CSS через класс .game-board-only) -->
+                <div class="main-navigation" style="display:none"></div>
+            </div>
+
+            <!-- Страница авторизации -->
+            <div id="auth-page" class="page">
+                <iframe src="pages/auth.html" width="100%" height="100%" frameborder="0" class="page-iframe"></iframe>
+            </div>
+
+
+            <!-- Страница комнат -->
+            <div id="rooms-page" class="page">
+                <iframe src="pages/rooms.html" width="100%" height="100%" frameborder="0" class="page-iframe"></iframe>
+            </div>
+
+            <!-- Заглушка для других страниц -->
+            <div id="placeholder-page" class="page">
+                <div style="padding: 4rem 2rem; text-align: center; color: #a0a0a0;">
+                    <h2>🔄 Переход на другую страницу...</h2>
+                    <p>Используйте навигацию для перехода между разделами</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Загрузка конфигурации игры -->
+    <script src="assets/js/modules/game/BoardConfig.js?v=10"></script>
+
+    <!-- Утилиты -->
+    <script src="assets/js/utils/ModalUtils.js?v=10"></script>
+
+    <!-- Основные модули -->
+    <script src="assets/js/modules/Router.js?v=10"></script>
+    <script src="assets/js/modules/game/BoardLayout.js?v=10"></script>
+    <script src="assets/js/modules/game/CardDeckPanel.js?v=10"></script>
+    <script src="assets/js/modules/EventBus.js?v=10"></script>
+    <script src="assets/js/modules/GameState.js?v=10"></script>
+    
+    <!-- Новые компоненты для рефакторинга -->
+    <script src="assets/js/modules/GameStateManager.js?v=10"></script>
+    <script src="assets/js/utils/PlayerStatusUtils.js?v=10"></script>
+    <script src="assets/js/components/PlayerList.js?v=10"></script>
+    
+    <!-- Модули управления ходами -->
+    <script src="assets/js/modules/game/RoomApi.js?v=10"></script>
+    <script src="assets/js/modules/game/DiceService.js?v=10"></script>
+    <script src="assets/js/modules/game/MovementService.js?v=10"></script>
+    <script src="assets/js/modules/game/CellInteractionService.js?v=10"></script>
+    <script src="assets/js/modules/game/ModalService.js?v=10"></script>
+    <script src="assets/js/modules/game/TurnService.js?v=10"></script>
+    <script src="assets/js/modules/game/TurnSyncService.js?v=10"></script>
+    <script src="assets/js/modules/game/PlayerTokenRenderer.js?v=10"></script>
+    <script src="assets/js/modules/game/TurnController.js?v=10"></script>
+    <script src="assets/js/modules/game/BalanceManager.js?v=10"></script>
+    <script src="assets/js/modules/game/PlayersPanel.js?v=10"></script>
+    <script src="assets/js/modules/game/PlayerTokens.js?v=10"></script>
+    <script src="assets/js/modules/game/DiceDisplay.js?v=10"></script>
+    <script src="assets/js/modules/game/ProfessionSystem.js?v=10"></script>
+    <script src="assets/js/modules/game/PlayerBalanceDisplay.js?v=10"></script>
+    <script src="assets/js/modules/game/BankModule.js?v=10"></script>
+    <script src="assets/js/modules/game/DealModule.js?v=10"></script>
+    <script src="assets/js/modules/game/CellPopup.js?v=10"></script>
+    <script src="assets/js/modules/game/PushClient.js?v=10"></script>
+    
+    <!-- Модуль профессий -->
+    <script src="assets/js/modules/ProfessionModule.js?v=10"></script>
+    
+    <!-- Навигация -->
+    <script src="assets/js/navigation.js?v=10"></script>
+
+    <!-- Главный скрипт приложения -->
+    <script src="assets/js/app.js?v=10"></script>
+    
+    <!-- Кнопка ротации хода (показывается на гейм-борде) -->
+    <style>
+        #pass-turn-btn {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            z-index: 9999;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+            display: none;
+        }
+        #pass-turn-btn:hover { transform: translateY(-1px); }
+    </style>
+    <button id="pass-turn-btn">➡️ Передать ход</button>
+    
+    <!-- Скрипты для страницы авторизации -->
+    <script>
+        (function() {
+        // Если пришли по ссылке вида #game?roomId=..., сразу открываем страницу комнаты
+        const isGameHash = window.location.hash && window.location.hash.includes('game');
+        if (isGameHash) {
+            try {
+                const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+                const roomId = params.get('roomId');
+                if (roomId) {
+                    // Проверяем авторизацию: доступ только авторизованным
+                    try {
+                        const userRaw = localStorage.getItem('currentUser') || localStorage.getItem('aura_money_user');
+                        const user = userRaw ? JSON.parse(userRaw) : null;
+                        if (!user || !user.isLoggedIn) {
+                            window.location.href = '/auth';
+                            return;
+                        }
+                    } catch (_) {
+                        window.location.href = '/auth';
+                        return;
+                    }
+                    // Попытка инициализировать игровое состояние из sessionStorage
+                    try {
+                        const bundleRaw = sessionStorage.getItem('am_player_bundle');
+                        if (bundleRaw && window.App && window.GameState) {
+                            const bundle = JSON.parse(bundleRaw);
+                            // Инициализация App, если ещё не выполнена
+                            if (!window.app) {
+                                window.app = new window.App();
+                                window.app.init?.();
+                            }
+                            
+                            // Инициализируем GameState если его нет
+                            if (!window.app.getModule('gameState')) {
+                                const gameState = new window.GameState(window.app.getEventBus());
+                                window.app.modules.set('gameState', gameState);
+                                console.log('✅ GameState: Инициализирован для ротации хода');
+                            }
+                            // Форсируем показ страницы геймборда и загрузку игровых модулей
+                            try {
+                                if (window.app && window.app._showPage) {
+                                    window.app._showPage('game-page');
+                                }
+                                
+                                // Принудительно обновляем логотип
+                                const centerLogo = document.getElementById('center-logo');
+                                if (centerLogo) {
+                                    centerLogo.src = 'assets/images/logo.svg?v=' + Date.now();
+                                    console.log('🎨 Логотип обновлен с версией:', Date.now());
+                                }
+                                
+                                // Инициализируем игровые модули с GameStateManager после загрузки DOM
+                                setTimeout(() => {
+                                    console.log('🎮 Index: Проверяем доступность модулей:', {
+                                        PlayerTokens: !!window.PlayerTokens,
+                                        DiceService: !!window.DiceService,
+                                        DiceDisplay: !!window.DiceDisplay,
+                                        BoardLayout: !!window.BoardLayout
+                                    });
+                                    
+                                    if (window.app && window.app._initializeGameModules) {
+                                        window.app._initializeGameModules(roomId);
+                                    } else {
+                                        console.error('❌ Index: App или _initializeGameModules не найден');
+                                    }
+                                    
+                                    // Управление броском и перемещением выполняется через TurnController/TurnService
+                                }, 100);
+                                
+                                // Получаем серверное состояние и синхронизируем с GameStateManager
+                                try {
+                                    const api = new window.RoomApi();
+                                    const gameStateManager = window.app.getGameStateManager();
+                                    const gameStateModule = window.app.getModule?.('gameState');
+                                    
+                                    let isSyncing = false;
+                                    let pendingSync = false;
+                                    const syncWithServer = () => {
+                                        if (isSyncing) {
+                                            pendingSync = true;
+                                            return;
+                                        }
+                                        isSyncing = true;
+                                        
+                                        api.getGameState(roomId)
+                                            .then(gs => {
+                                                console.log('🔄 syncWithServer: Получены данные от сервера:', gs);
+                                                if (gs && gs.state) {
+                                                    console.log('🔄 syncWithServer: Состояние игры:', gs.state);
+                                                    console.log('🔄 syncWithServer: Игроки в состоянии:', gs.state.players);
+                                                    if (gameStateModule && typeof gameStateModule.applyState === 'function') {
+                                                        gameStateModule.applyState(gs.state);
+                                                    }
+                                                    if (gameStateManager) {
+                                                        gameStateManager.updateFromServer(gs.state);
+                                                        
+                                                        // Принудительно переподписываем компоненты после обновления
+                                                        setTimeout(() => {
+                                                            if (window.app && window.app.modules) {
+                                                                const turnController = window.app.modules.get('turnController');
+                                                                const playersPanel = window.app.modules.get('playersPanel');
+                                                                
+                                                                if (turnController && typeof turnController.setupEventListeners === 'function') {
+                                                                    turnController.setupEventListeners();
+                                                                    console.log('🔄 syncWithServer: Переподписан TurnController');
+                                                                }
+                                                                
+                                                                if (playersPanel && typeof playersPanel.setupEventListeners === 'function') {
+                                                                    playersPanel.setupEventListeners();
+                                                                    console.log('🔄 syncWithServer: Переподписан PlayersPanel');
+                                                                }
+                                                            }
+                                                        }, 100);
+                                                    }
+                                                } else {
+                                                    console.log('🔄 syncWithServer: Нет данных состояния от сервера');
+                                                }
+                                            })
+                                            .catch(err => {
+                                                console.warn('⚠️ Ошибка получения состояния игры:', err);
+                                                // Добавляем задержку перед повторным запросом при ошибке
+                                                if (err.message && err.message.includes('429')) {
+                                                    console.log('🔄 HTTP 429: Ждем 5 секунд перед повторным запросом');
+                                                    setTimeout(() => {
+                                                        isSyncing = false;
+                                                        if (pendingSync) {
+                                                            pendingSync = false;
+                                                            syncWithServer();
+                                                        }
+                                                    }, 5000);
+                                                    return;
+                                                }
+                                            })
+                                            .finally(() => {
+                                                isSyncing = false;
+                                                if (pendingSync) {
+                                                    pendingSync = false;
+                                                    syncWithServer();
+                                                }
+                                            });
+                                    };
+                                    
+                                    window.requestRoomSync = syncWithServer;
+                                    
+                                    syncWithServer();
+                                    const syncInterval = setInterval(syncWithServer, 10000); // Увеличиваем интервал до 10 секунд
+                                    
+                                    const handleVisibility = () => {
+                                        if (!document.hidden) {
+                                            syncWithServer();
+                                        }
+                                    };
+                                    
+                                    window.addEventListener('focus', syncWithServer, { passive: true });
+                                    document.addEventListener('visibilitychange', handleVisibility, { passive: true });
+                                    const eventBus = window.app.getEventBus?.();
+                                    const handlePushStats = () => syncWithServer();
+                                    eventBus?.on('push:stats_updated', handlePushStats);
+                                    
+                                    window.addEventListener('beforeunload', () => {
+                                        clearInterval(syncInterval);
+                                        window.requestRoomSync = null;
+                                        window.removeEventListener('focus', syncWithServer);
+                                        document.removeEventListener('visibilitychange', handleVisibility);
+                                        eventBus?.off?.('push:stats_updated', handlePushStats);
+                                    });
+                                    
+                                } catch(error) {
+                                    console.error('❌ Ошибка синхронизации с сервером:', error);
+                                }
+
+                                // PlayersPanel теперь инициализируется в _initializeGameModules
+                            } catch (_) { /* no-op */ }
+                            const gameState = window.app.getModule?.('gameState');
+                            if (gameState) {
+                                gameState.setRoomId(roomId);
+                            }
+                            // Включаем режим геймборда: скрываем всё лишнее, оставляем поле
+                            document.body.classList.add('game-board-only');
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Не удалось инициализировать GameState из sessionStorage', e);
+                    }
+                    // Остаёмся на этой странице для отображения только игрового поля
+                }
+            } catch (e) {
+                console.warn('⚠️ Не удалось распарсить roomId из hash, остаёмся на главной');
+            }
+        } else {
+            // Проверяем авторизацию только если не на игровой доске
+            document.addEventListener('DOMContentLoaded', function() {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                if (currentUser && currentUser.isLoggedIn) {
+                    console.log('👤 Пользователь авторизован, перенаправляем в комнаты');
+                    setTimeout(() => { window.location.href = 'pages/rooms.html'; }, 300);
+                } else {
+                    console.log('🔒 Не авторизован: перенаправление на страницу входа');
+                    // Мгновенный редирект на страницу авторизации при первом входе
+                    setTimeout(() => { window.location.href = 'pages/auth.html'; }, 100);
+                }
+            });
+        }
+        
+        // Кнопка "Передать ход" — работает, когда инициализировано приложение и GameState
+        (function initPassTurnButton() {
+            const btn = document.getElementById('pass-turn-btn');
+            const updateVisibility = () => {
+                const onGame = (window.location.hash || '').includes('game');
+                btn.style.display = onGame ? 'block' : 'none';
+            };
+            updateVisibility();
+            window.addEventListener('hashchange', updateVisibility);
+            btn.addEventListener('click', () => {
+                try {
+                    const gameState = (window.app && window.app.getModule) ? window.app.getModule('gameState') : (window.gameState || null);
+                    if (gameState && typeof gameState.passTurnToNextPlayer === 'function') {
+                        gameState.passTurnToNextPlayer();
+                        console.log('🔄 Передан ход следующему игроку');
+                    } else {
+                        console.warn('⚠️ GameState не инициализирован для ротации хода');
+                    }
+                } catch (err) {
+                    console.error('❌ Ошибка передачи хода:', err);
+                }
+            });
+        })();
+        
+        // Обработчик для навигационных кнопок с data-route
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-route]');
+            if (target) {
+                const route = target.getAttribute('data-route');
+                if (typeof router !== 'undefined' && router.navigate) {
+                    router.navigate(route);
+                } else {
+                    // Fallback навигация
+                    const pages = {
+                        '/': 'home-page',
+                        '/auth': 'auth-page',
+                        '/rooms': 'rooms-page'
+                    };
+                    const pageId = pages[route];
+                    if (pageId) {
+                        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                        const targetPage = document.getElementById(pageId);
+                        if (targetPage) targetPage.classList.add('active');
+                    }
+                }
+            }
+        });
+        })();
+    </script>
+</body>
+</html>
