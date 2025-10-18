@@ -16,6 +16,7 @@ class TurnController {
         this.isMobile = window.innerWidth <= 768;
         this._lastStateKey = null;
         this._eventListenersSetup = false; // Флаг для избежания повторной настройки
+        this._setupAttempts = 0; // Счетчик попыток настройки обработчиков
         
         // Создаем PlayerList для отображения игроков
         this.playerList = null;
@@ -29,8 +30,7 @@ class TurnController {
      * Инициализация контроллера
      */
     init() {
-        this.createUI();
-        this.setupEventListeners();
+        this.createUI(); // createUI() вызовет bindToExistingUI(), который сам найдет правильное время для setupEventListeners()
         this.initializePlayerList();
         this.updateUI();
     }
@@ -100,26 +100,13 @@ class TurnController {
      * Привязка к существующим элементам UI из PlayersPanel
      */
     bindToExistingUI() {
-        // Ждем, пока PlayersPanel создаст свои элементы
-        const checkForElements = () => {
-            const playersPanel = document.getElementById('players-panel');
-            const rollButton = playersPanel?.querySelector('#roll-dice-btn');
-            const endTurnButton = playersPanel?.querySelector('#pass-turn, #end-turn-btn');
-            
-            if (playersPanel && (rollButton || endTurnButton)) {
-                console.log('🎮 TurnController: Найдены элементы PlayersPanel, привязываем события');
-                this.setupEventListeners();
-                return true;
-            }
-            return false;
-        };
+        console.log('🎮 TurnController: Начинаем привязку к существующим элементам UI');
+        // Сбрасываем счетчик попыток и флаг для новой попытки
+        this._setupAttempts = 0;
+        this._eventListenersSetup = false;
         
-        // Пробуем сразу, если не получается - ждем
-        if (!checkForElements()) {
-            setTimeout(checkForElements, 100);
-            setTimeout(checkForElements, 500);
-            setTimeout(checkForElements, 1000);
-        }
+        // Запускаем setupEventListeners, который сам будет пытаться найти элементы
+        this.setupEventListeners();
     }
     
     /**
@@ -182,19 +169,32 @@ class TurnController {
             return;
         }
         
-        console.log('🎮 TurnController: Привязка обработчиков к существующим элементам');
+        // Ограничиваем количество попыток
+        this._setupAttempts = this._setupAttempts || 0;
+        if (this._setupAttempts > 10) {
+            console.error('❌ TurnController: Превышено максимальное количество попыток настройки обработчиков (10)');
+            return;
+        }
+        
+        this._setupAttempts++;
+        console.log(`🎮 TurnController: Привязка обработчиков (попытка ${this._setupAttempts}/10)`);
         
         // Больше не добавляем свой UI в DOM - работаем с существующими элементами
         const playersPanel = document.getElementById('players-panel');
         if (!playersPanel) {
-            console.warn('⚠️ TurnController: players-panel не найден');
-            // Повторяем попытку через некоторое время (не устанавливаем флаг)
+            console.warn(`⚠️ TurnController: players-panel не найден (попытка ${this._setupAttempts}/10)`);
+            // Дополнительная диагностика - проверяем, есть ли другие контейнеры
+            const allPanels = document.querySelectorAll('[id*="panel"], [class*="panel"]');
+            console.log('🔍 Доступные панели:', Array.from(allPanels).map(el => ({ id: el.id, className: el.className })));
             setTimeout(() => this.setupEventListeners(), 500);
             return;
         }
         
-        // Бросок кубика - ищем кнопку по ID (более надежно)
-        const rollBtn = playersPanel.querySelector('#roll-dice-btn');
+        // Бросок кубика - ищем кнопку по ID (сначала внутри playersPanel, потом глобально)
+        let rollBtn = playersPanel.querySelector('#roll-dice-btn');
+        if (!rollBtn) {
+            rollBtn = document.querySelector('#roll-dice-btn');
+        }
         
         if (rollBtn) {
             // Удаляем старый обработчик, если есть
@@ -202,9 +202,7 @@ class TurnController {
             rollBtn.addEventListener('click', () => this.handleRollDice());
             console.log('🎮 TurnController: Обработчик броска кубика привязан');
         } else {
-            console.warn('⚠️ TurnController: Кнопка броска кубика не найдена, повтор через 500ms');
-            // Сбрасываем флаг и повторяем попытку
-            this._eventListenersSetup = false;
+            console.warn(`⚠️ TurnController: Кнопка броска кубика не найдена, повтор через 500ms (попытка ${this._setupAttempts}/10)`);
             setTimeout(() => this.setupEventListeners(), 500);
             return;
         }
@@ -218,9 +216,13 @@ class TurnController {
             });
         });
         
-        // Завершение хода - ищем кнопку по ID (приоритет #pass-turn из PlayersPanel)
-        const endTurnBtn = playersPanel.querySelector('#pass-turn') ||
-                          playersPanel.querySelector('#end-turn-btn');
+        // Завершение хода - ищем кнопку по ID (сначала внутри playersPanel, потом глобально)
+        let endTurnBtn = playersPanel.querySelector('#pass-turn') ||
+                         playersPanel.querySelector('#end-turn-btn');
+        if (!endTurnBtn) {
+            endTurnBtn = document.querySelector('#pass-turn') || 
+                        document.querySelector('#end-turn-btn');
+        }
         
         if (endTurnBtn) {
             // Удаляем старый обработчик, если есть
@@ -228,9 +230,7 @@ class TurnController {
             endTurnBtn.addEventListener('click', () => this.handleEndTurn());
             console.log('🎮 TurnController: Обработчик передачи хода привязан');
         } else {
-            console.warn('⚠️ TurnController: Кнопка передачи хода не найдена, повтор через 500ms');
-            // Сбрасываем флаг и повторяем попытку
-            this._eventListenersSetup = false;
+            console.warn(`⚠️ TurnController: Кнопка передачи хода не найдена, повтор через 500ms (попытка ${this._setupAttempts}/10)`);
             setTimeout(() => this.setupEventListeners(), 500);
             return;
         }
