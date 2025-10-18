@@ -482,6 +482,19 @@ class App {
         } else {
             console.warn('⚠️ App: CardDeckPanel не найден в window');
         }
+
+        // Инициализируем BankPreview для отображения превью банка
+        if (window.BankPreview) {
+            const bankPreview = new window.BankPreview({
+                containerSelector: '#card-decks-panel',
+                eventBus: this.getEventBus(),
+                gameStateManager: gameStateManager
+            });
+            this.modules.set('bankPreview', bankPreview);
+            console.log('🏦 BankPreview: Инициализирован');
+        } else {
+            console.warn('⚠️ App: BankPreview не найден в window');
+        }
         
         // Инициализируем DealModule (микромодуль сделок)
         if (window.DealModule) {
