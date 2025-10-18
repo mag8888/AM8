@@ -381,7 +381,7 @@ class BankModuleServer {
             netIncomeElement.textContent = `$${this.formatNumber(this.bankState.netIncome)}/мес`;
         }
         
-        // Обновляем зарплату
+        // Обновляем зарплату (если есть отдельный элемент)
         const salaryElement = this.ui.querySelector('#bank-salary');
         if (salaryElement) {
             salaryElement.textContent = `$${this.formatNumber(this.bankState.salary)}/мес`;
@@ -489,11 +489,6 @@ class BankModuleServer {
                                         <span class="summary-icon expense">📉</span>
                                         <span class="summary-label">Расходы:</span>
                                         <span class="summary-value expense" id="bank-expenses">$0</span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <span class="summary-icon payday">💰</span>
-                                        <span class="summary-label">PAYDAY:</span>
-                                        <span class="summary-value payday" id="bank-salary">$0/мес</span>
                                     </div>
                                     <div class="summary-item">
                                         <span class="summary-icon net">💎</span>
