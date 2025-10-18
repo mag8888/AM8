@@ -937,7 +937,9 @@ class BankModule {
             otherMonthlyAdjustments: player.otherMonthlyAdjustments || 0
         });
         
-        const maxLoan = details?.loan?.maxLoan || 10000; // Дефолтный лимит
+        // Максимальный кредит = PAYDAY * 10
+        const payday = details?.income?.payday || 0;
+        const maxLoan = payday * 10;
         const currentLoan = player.currentLoan || 0;
         const available = Math.max(0, maxLoan - currentLoan);
         
@@ -1276,7 +1278,9 @@ class BankModule {
         
         const loanMax = this.ui.querySelector('#loan-max');
         if (loanMax) {
-            const maxLoan = professionDetails?.loan?.maxLoan || 10000;
+            // Максимальный кредит = PAYDAY * 10
+            const payday = professionDetails?.income?.payday || 0;
+            const maxLoan = payday * 10;
             loanMax.textContent = `$${this.formatNumber(maxLoan)}`;
         }
         
@@ -1349,12 +1353,26 @@ class BankModule {
      * Загрузка списка игроков для переводов
      */
     loadPlayers() {
-        if (!this.gameState) return;
-        
-        const players = this.gameState.getPlayers();
         const recipientSelect = this.ui.querySelector('#transfer-recipient');
-        
         if (!recipientSelect) return;
+        
+        let players = [];
+        
+        // Пытаемся получить игроков из GameState
+        if (this.gameState && typeof this.gameState.getPlayers === 'function') {
+            players = this.gameState.getPlayers();
+        } else if (this.gameStateManager) {
+            // Fallback через gameStateManager
+            const state = this.gameStateManager.getState();
+            players = state?.players || [];
+        } else {
+            // Fallback через window.app
+            const gameStateManager = window.app?.services?.get('gameStateManager');
+            if (gameStateManager) {
+                const state = gameStateManager.getState();
+                players = state?.players || [];
+            }
+        }
         
         // Получаем текущего пользователя
         const currentUser = this.getCurrentUser();
