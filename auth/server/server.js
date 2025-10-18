@@ -27,7 +27,7 @@ class AuthServer {
         this.port = process.env.PORT || 3001;
         this.isInitialized = false;
         
-        this.init();
+        // init() будет вызван явно перед start()
     }
 
     /**
@@ -296,8 +296,9 @@ module.exports = AuthServer;
 if (require.main === module) {
     const server = new AuthServer();
     
-    // Сервер уже инициализирован в конструкторе, просто запускаем
-    server.start()
+    // Инициализируем сервер асинхронно, затем запускаем
+    server.init()
+        .then(() => server.start())
         .catch((error) => {
             console.error('❌ AuthServer: Критическая ошибка:', error);
             process.exit(1);
