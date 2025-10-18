@@ -1151,8 +1151,8 @@ class BankModule {
             
             this.ui.style.display = 'flex';
             this.isOpen = true;
-            this.updateBankData();
-            this.loadPlayers();
+            await this.updateBankData();
+            await this.loadPlayers();
             console.log('🏦 BankModule: Открыт для пользователя:', currentPlayer.username);
         }
     }
@@ -1190,6 +1190,43 @@ class BankModule {
         if (!currentPlayer) {
             console.warn('⚠️ BankModule: Текущий пользователь не найден - пропускаем обновление');
             return;
+        }
+        
+        // Получаем roomId для серверных запросов
+        const roomId = this._getCurrentRoomId() || this.gameState?.getRoomId?.();
+        let serverPlayerData = null;
+        
+        // Загружаем актуальные данные игрока с сервера
+        if (roomId && currentPlayer.id) {
+            try {
+                console.log('🌐 BankModule: Загружаем данные игрока с сервера...', { roomId, playerId: currentPlayer.id });
+                
+                const response = await fetch(`/api/rooms/${roomId}/game-state`);
+                if (response.ok) {
+                    const gameStateData = await response.json();
+                    if (gameStateData.success && gameStateData.state?.players) {
+                        // Находим данные текущего игрока на сервере
+                        serverPlayerData = gameStateData.state.players.find(p => p.id === currentPlayer.id);
+                        if (serverPlayerData) {
+                            console.log('✅ BankModule: Данные игрока загружены с сервера:', {
+                                id: serverPlayerData.id,
+                                balance: serverPlayerData.balance || serverPlayerData.money,
+                                currentLoan: serverPlayerData.currentLoan
+                            });
+                            
+                            // Обновляем локальные данные игрока серверными данными
+                            Object.assign(currentPlayer, serverPlayerData);
+                            
+                            // Синхронизируем с GameState
+                            if (this.gameState && typeof this.gameState.updatePlayer === 'function') {
+                                this.gameState.updatePlayer(currentPlayer.id, currentPlayer);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ BankModule: Ошибка загрузки данных с сервера:', error);
+            }
         }
         
         console.log('🏦 BankModule: Обновляем данные для пользователя:', {
@@ -1362,25 +1399,60 @@ class BankModule {
     /**
      * Загрузка списка игроков для переводов
      */
-    loadPlayers() {
+    async loadPlayers() {
         const recipientSelect = this.ui.querySelector('#transfer-recipient');
         if (!recipientSelect) return;
         
         let players = [];
         
-        // Пытаемся получить игроков из GameState
-        if (this.gameState && typeof this.gameState.getPlayers === 'function') {
-            players = this.gameState.getPlayers();
-        } else if (this.gameStateManager) {
-            // Fallback через gameStateManager
-            const state = this.gameStateManager.getState();
-            players = state?.players || [];
-        } else {
-            // Fallback через window.app
-            const gameStateManager = window.app?.services?.get('gameStateManager');
-            if (gameStateManager) {
-                const state = gameStateManager.getState();
+        // Получаем roomId для загрузки данных с сервера
+        const roomId = this._getCurrentRoomId() || this.gameState?.getRoomId?.();
+        
+        // Загружаем актуальные данные игроков с сервера
+        if (roomId) {
+            try {
+                console.log('🌐 BankModule: Загружаем список игроков с сервера...', { roomId });
+                
+                const response = await fetch(`/api/rooms/${roomId}/game-state`);
+                if (response.ok) {
+                    const gameStateData = await response.json();
+                    if (gameStateData.success && gameStateData.state?.players) {
+                        players = gameStateData.state.players;
+                        console.log('✅ BankModule: Игроки загружены с сервера:', players.length);
+                        
+                        // Обновляем локальный GameState серверными данными
+                        if (this.gameState && typeof this.gameState.updatePlayers === 'function') {
+                            this.gameState.updatePlayers(players);
+                        } else if (this.gameStateManager) {
+                            // Обновляем через gameStateManager
+                            const state = this.gameStateManager.getState();
+                            if (state) {
+                                state.players = players;
+                                this.gameStateManager.setState(state);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ BankModule: Ошибка загрузки игроков с сервера, используем локальные данные:', error);
+            }
+        }
+        
+        // Fallback: пытаемся получить игроков из локального GameState
+        if (players.length === 0) {
+            if (this.gameState && typeof this.gameState.getPlayers === 'function') {
+                players = this.gameState.getPlayers();
+            } else if (this.gameStateManager) {
+                // Fallback через gameStateManager
+                const state = this.gameStateManager.getState();
                 players = state?.players || [];
+            } else {
+                // Fallback через window.app
+                const gameStateManager = window.app?.services?.get('gameStateManager');
+                if (gameStateManager) {
+                    const state = gameStateManager.getState();
+                    players = state?.players || [];
+                }
             }
         }
         
@@ -1487,8 +1559,8 @@ class BankModule {
             if (success) {
                 this.showNotification(`Перевод $${this.formatNumber(amount)} выполнен`, 'success');
                 this.resetTransferForm();
-                this.updateBankData();
-                this.loadPlayers();
+                await this.updateBankData();
+                await this.loadPlayers();
                 
                 const recipient = this.gameState.getPlayers().find(p => p.id === recipientId);
                 console.log('🏦 BankModule: Добавляем транзакцию перевода:', {
