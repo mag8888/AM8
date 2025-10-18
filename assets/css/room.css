@@ -307,17 +307,22 @@
     flex: 1;
     min-width: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .player-name {
     color: #ffffff;
     font-weight: 600;
     font-size: 1rem;
+    line-height: 1.2;
 }
 
 .player-status {
     color: #a0a0a0;
     font-size: 0.9rem;
+    line-height: 1.2;
 }
 
 .player-money {
