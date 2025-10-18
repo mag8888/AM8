@@ -231,8 +231,8 @@ class BankModuleServer {
     initEntrepreneurFallbackData(currentPlayer) {
         console.log('🏢 BankModuleServer: Инициализация данных предпринимателя (fallback)');
         
-        // 1. Зарплата - $10,000 + пассивный доход $0 = $10,000
-        const salary = currentPlayer.salary || 10000;
+        // 1. Зарплата предпринимателя - всегда $10,000 + пассивный доход $0 = $10,000
+        const salary = 10000; // Стандартная зарплата предпринимателя
         const passiveIncome = currentPlayer.extraIncome || 0;
         this.bankState.income = salary + passiveIncome;
         this.bankState.salary = salary;
@@ -310,9 +310,21 @@ class BankModuleServer {
      * Проверка корректности значений предпринимателя
      */
     ensureCorrectEntrepreneurValues() {
-        // Если значения все еще нулевые или неправильные, устанавливаем defaults для предпринимателя
-        if (this.bankState.income === 0 || this.bankState.expenses === 0) {
-            console.log('🔧 BankModuleServer: Принудительная установка значений предпринимателя');
+        // Проверяем и исправляем значения предпринимателя если они неправильные
+        const needsCorrection = this.bankState.income === 0 || 
+                               this.bankState.expenses === 0 || 
+                               this.bankState.income !== 10000 || 
+                               this.bankState.maxCredit === 0 && this.bankState.netIncome > 0;
+        
+        if (needsCorrection) {
+            console.log('🔧 BankModuleServer: Исправление значений предпринимателя:', {
+                current: {
+                    income: this.bankState.income,
+                    expenses: this.bankState.expenses,
+                    netIncome: this.bankState.netIncome,
+                    maxCredit: this.bankState.maxCredit
+                }
+            });
             
             // Доходы: зарплата $10,000 + пассивный доход $0 = $10,000
             this.bankState.income = 10000;
@@ -326,6 +338,8 @@ class BankModuleServer {
             
             // Максимальный кредит = $3,800 × 10 = $38,000
             this.bankState.maxCredit = 38000;
+            
+            console.log('✅ BankModuleServer: Значения исправлены на правильные');
         }
         
         console.log('✅ BankModuleServer: Финальные значения предпринимателя:', {
