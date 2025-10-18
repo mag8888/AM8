@@ -926,26 +926,41 @@ class BankModule {
         
         const profId = player?.profession || 'entrepreneur';
         const ps = this.professionSystem;
+        
         // Ограничение: не больше доступного лимита (maxLoan - currentLoan)
         const details = ps?.getProfessionDetails?.(profId, {
-            money: player.money || 0,
+            money: player.balance || player.money || 0,
             children: player.children || 0,
             paidOffLoans: player.paidOffLoans || {},
             extraIncome: player.extraIncome || 0,
             currentLoan: player.currentLoan || 0,
             otherMonthlyAdjustments: player.otherMonthlyAdjustments || 0
         });
-        const maxLoan = details?.loan?.maxLoan || 0;
+        
+        const maxLoan = details?.loan?.maxLoan || 10000; // Дефолтный лимит
         const currentLoan = player.currentLoan || 0;
         const available = Math.max(0, maxLoan - currentLoan);
+        
+        if (available <= 0) {
+            this.showNotification(`Кредитный лимит исчерпан. Максимум: $${this.formatNumber(maxLoan)}`, 'error');
+            return;
+        }
+        
         amount = Math.min(amount, available);
+        
         // Обновим поле ввода фактическим разрешённым значением
         const input = this.ui.querySelector('#loan-amount');
         if (input) input.value = String(amount);
-        if (amount <= 0) return;
+        
+        if (amount <= 0) {
+            this.showNotification('Сумма кредита должна быть больше 0', 'error');
+            return;
+        }
+        
         // Серверный вызов
         const roomId = this.getRoomId?.() || this._getCurrentRoomId?.();
         let res = null;
+        
         try {
             const response = await fetch('/api/bank/loan/take', {
                 method: 'POST',
@@ -953,13 +968,23 @@ class BankModule {
                 body: JSON.stringify({ roomId, playerId: player.id, amount })
             });
             res = await response.json();
-        } catch (e) { res = null; }
+        } catch (e) { 
+            console.error('❌ BankModule: Ошибка API кредита:', e);
+            res = null; 
+        }
+        
         if (res?.success) {
             // Берем актуального игрока из ответа
             Object.assign(player, res.data.player);
+            
+            // Синхронизируем поля баланса
+            player.balance = player.money;
+            
             this.addTransaction('Кредит', `Взят кредит $${this.formatNumber(amount)}`, amount, 'completed');
+            
             // Уведомим слушателей об изменении баланса
             this.eventBus?.emit('bank:balanceUpdated', { userId: player.id, delta: amount });
+            
             // Синхронизируем в GameState и рассылаем обновление
             try {
                 if (this.gameState && typeof this.gameState.updatePlayer === 'function') {
@@ -968,16 +993,26 @@ class BankModule {
                 if (this.eventBus) {
                     this.eventBus.emit('game:playersUpdated', { players: this.gameState.getPlayers?.() || [] });
                 }
-            } catch (_) {}
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка синхронизации GameState:', e);
+            }
+            
             this.updateBankData();
+            this.showNotification(`Кредит $${this.formatNumber(amount)} взят успешно`, 'success');
+            
             const input = this.ui.querySelector('#loan-amount');
             if (input) input.value = '';
+        } else {
+            this.showNotification(res?.message || 'Ошибка взятия кредита', 'error');
         }
     }
 
     async repayCreditInline() {
         const amount = Math.max(0, Math.floor((parseInt(this.ui.querySelector('#loan-amount').value)||0)/1000)*1000);
-        if (amount <= 0) return;
+        if (amount <= 0) {
+            this.showNotification('Сумма погашения должна быть больше 0', 'error');
+            return;
+        }
         
         // Получаем текущего игрока с fallback логикой
         let player = await this.getCurrentUserPlayer();
@@ -990,23 +1025,47 @@ class BankModule {
             return;
         }
         
-        const profId = player?.profession || 'entrepreneur';
-        const ps = this.professionSystem;
+        // Проверяем достаточность средств для погашения
+        const currentBalance = player.balance || player.money || 0;
+        if (currentBalance < amount) {
+            this.showNotification(`Недостаточно средств для погашения. Доступно: $${this.formatNumber(currentBalance)}`, 'error');
+            return;
+        }
+        
+        // Проверяем, есть ли кредит для погашения
+        const currentLoan = player.currentLoan || 0;
+        if (currentLoan <= 0) {
+            this.showNotification('У вас нет активных кредитов для погашения', 'error');
+            return;
+        }
+        
+        const actualAmount = Math.min(amount, currentLoan);
+        
         // Серверный вызов
         const roomId = this.getRoomId?.() || this._getCurrentRoomId?.();
         let res = null;
+        
         try {
             const response = await fetch('/api/bank/loan/repay', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ roomId, playerId: player.id, amount })
+                body: JSON.stringify({ roomId, playerId: player.id, amount: actualAmount })
             });
             res = await response.json();
-        } catch (e) { res = null; }
+        } catch (e) { 
+            console.error('❌ BankModule: Ошибка API погашения кредита:', e);
+            res = null; 
+        }
+        
         if (res?.success) {
             Object.assign(player, res.data.player);
-            this.addTransaction('Погашение кредита', `Погашено $${this.formatNumber(amount)}`, -amount, 'completed');
-            this.eventBus?.emit('bank:balanceUpdated', { userId: player.id, delta: -amount });
+            
+            // Синхронизируем поля баланса
+            player.balance = player.money;
+            
+            this.addTransaction('Погашение кредита', `Погашено $${this.formatNumber(actualAmount)}`, -actualAmount, 'completed');
+            this.eventBus?.emit('bank:balanceUpdated', { userId: player.id, delta: -actualAmount });
+            
             try {
                 if (this.gameState && typeof this.gameState.updatePlayer === 'function') {
                     this.gameState.updatePlayer(player.id, player);
@@ -1014,10 +1073,17 @@ class BankModule {
                 if (this.eventBus) {
                     this.eventBus.emit('game:playersUpdated', { players: this.gameState.getPlayers?.() || [] });
                 }
-            } catch (_) {}
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка синхронизации GameState:', e);
+            }
+            
             this.updateBankData();
+            this.showNotification(`Кредит погашен на $${this.formatNumber(actualAmount)}`, 'success');
+            
             const input = this.ui.querySelector('#loan-amount');
             if (input) input.value = '';
+        } else {
+            this.showNotification(res?.message || 'Ошибка погашения кредита', 'error');
         }
     }
     
@@ -1172,7 +1238,17 @@ class BankModule {
         // Обновляем кредит (текущий остаток)
         const creditElement = this.ui.querySelector('#bank-credit');
         if (creditElement) {
-            creditElement.textContent = `$${this.formatNumber(currentPlayer.currentLoan || 0)}`;
+            const currentLoan = currentPlayer.currentLoan || 0;
+            creditElement.textContent = `$${this.formatNumber(currentLoan)}`;
+            
+            // Добавляем визуальную индикацию кредита
+            if (currentLoan > 0) {
+                creditElement.style.color = '#ef4444'; // Красный для активного кредита
+                creditElement.style.fontWeight = 'bold';
+            } else {
+                creditElement.style.color = '#10b981'; // Зеленый для отсутствия кредита
+                creditElement.style.fontWeight = 'normal';
+            }
         }
         
         // Обновляем максимальный кредит
@@ -1423,7 +1499,17 @@ class BankModule {
         
         const recipient = this.gameState.getPlayers().find(p => p.id === recipientId);
         
-        if (!recipient) return false;
+        if (!recipient) {
+            console.warn('⚠️ BankModule: Получатель не найден:', recipientId);
+            return false;
+        }
+        
+        // Проверяем достаточность средств
+        const currentBalance = currentPlayer.balance || currentPlayer.money || 0;
+        if (currentBalance < amount) {
+            this.showNotification(`Недостаточно средств. Доступно: $${this.formatNumber(currentBalance)}`, 'error');
+            return false;
+        }
         
         try {
             // Выполняем запрос к серверу
@@ -1448,8 +1534,16 @@ class BankModule {
             }
             
             // Обновляем локальные данные с серверными
-            currentPlayer.money = result.data.fromPlayerBalance;
-            recipient.money = result.data.toPlayerBalance;
+            currentPlayer.balance = result.data.fromPlayerBalance;
+            currentPlayer.money = result.data.fromPlayerBalance; // Синхронизируем оба поля
+            recipient.balance = result.data.toPlayerBalance;
+            recipient.money = result.data.toPlayerBalance; // Синхронизируем оба поля
+            
+            // Обновляем GameState
+            if (this.gameState && typeof this.gameState.updatePlayer === 'function') {
+                this.gameState.updatePlayer(currentPlayer.id, currentPlayer);
+                this.gameState.updatePlayer(recipient.id, recipient);
+            }
             
             // Уведомляем другие модули об обновлении
             if (this.eventBus) {
@@ -1459,13 +1553,19 @@ class BankModule {
                     amount: amount,
                     transaction: result.data.transaction
                 });
+                
+                // Уведомляем об обновлении игроков
+                this.eventBus.emit('game:playersUpdated', {
+                    players: this.gameState.getPlayers()
+                });
             }
             
             return true;
             
         } catch (error) {
             console.error('❌ BankModule: Ошибка API перевода:', error);
-            throw error;
+            this.showNotification(`Ошибка перевода: ${error.message}`, 'error');
+            return false;
         }
     }
     
