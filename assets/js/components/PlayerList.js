@@ -35,6 +35,12 @@ class PlayerList {
     updatePlayers(players, activePlayer, currentUserId = null) {
         if (!this.container) return;
         
+        // Проверяем, что players является массивом
+        if (!Array.isArray(players)) {
+            console.warn('PlayerList: players не является массивом:', typeof players, players);
+            return;
+        }
+        
         // Фильтруем игроков если нужно
         let displayPlayers = players;
         if (this.options.filterCurrentUser && currentUserId) {

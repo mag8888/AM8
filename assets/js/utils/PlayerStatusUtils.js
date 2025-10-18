@@ -213,6 +213,11 @@ class PlayerStatusUtils {
      * @returns {Array} Отсортированные игроки
      */
     static sortPlayers(players, activePlayer) {
+        // Проверяем, что players является массивом
+        if (!Array.isArray(players)) {
+            console.warn('PlayerStatusUtils: players не является массивом:', typeof players, players);
+            return [];
+        }
         return [...players].sort((a, b) => this.comparePlayers(a, b, activePlayer));
     }
 }

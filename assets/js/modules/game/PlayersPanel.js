@@ -181,7 +181,12 @@ class PlayersPanel {
     onPlayersUpdated(players) {
         console.log('👥 PlayersPanel: Игроки обновлены', players);
         if (this.playerList) {
-            this.playerList.updatePlayers(players);
+            // Проверяем, что players является массивом
+            if (Array.isArray(players)) {
+                this.playerList.updatePlayers(players);
+            } else {
+                console.warn('PlayersPanel: players не является массивом:', typeof players, players);
+            }
         }
     }
 

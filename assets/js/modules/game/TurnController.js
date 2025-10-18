@@ -719,7 +719,12 @@ class TurnController {
     onPlayersUpdated(players) {
         console.log('🎯 TurnController: Игроки обновлены', players);
         if (this.playerList) {
-            this.playerList.updatePlayers(players);
+            // Проверяем, что players является массивом
+            if (Array.isArray(players)) {
+                this.playerList.updatePlayers(players);
+            } else {
+                console.warn('TurnController: players не является массивом:', typeof players, players);
+            }
         }
     }
 
