@@ -128,6 +128,7 @@ class TurnController {
         return; // Отключено для избежания дублирования с PlayersPanel
         
         /*
+        // Закомментированный код старой реализации UI
         // Создаем контейнер для меню ходов
         const turnMenu = document.createElement('div');
         turnMenu.className = 'turn-menu';
@@ -657,6 +658,7 @@ class TurnController {
         this.addUIToDOM();
         
         console.log('🎮 TurnController v2.0: UI создан и добавлен в DOM');
+        */
     }
     
     /**
