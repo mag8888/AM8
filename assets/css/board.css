@@ -102,6 +102,24 @@
     color: #f8fafc;
 }
 
+.card-deck-title-with-metrics {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.card-deck-title-with-metrics .card-deck-title {
+    flex: 1;
+    margin: 0;
+}
+
+.card-deck-title-with-metrics .deck-metric--compact {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
 .card-deck-subtitle {
     font-size: 0.9rem;
     font-weight: 500;

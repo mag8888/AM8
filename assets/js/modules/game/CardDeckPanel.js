@@ -268,18 +268,16 @@
                 return `
                     <article class="card-deck-card${stateClass}" data-deck-id="${deck.id}">
                         <header class="card-deck-header">
-                            <div class="card-deck-title">${deck.name}</div>
+                            <div class="card-deck-title-with-metrics">
+                                <span class="card-deck-title">${deck.name}</span>
+                                <span class="deck-metric deck-metric--compact">
+                                    <span class="deck-metric-value deck-metric-value--primary">${deck.drawCount}</span>
+                                    <span class="deck-metric-separator">/</span>
+                                    <span class="deck-metric-value deck-metric-value--secondary">${deck.discardCount}</span>
+                                </span>
+                            </div>
                             ${deck.subtitle ? `<div class="card-deck-subtitle">${deck.subtitle}</div>` : ''}
                         </header>
-                        <div class="card-deck-body">
-                            <div class="deck-metrics">
-                                <div class="deck-metric deck-metric--compact">
-                                    <div class="deck-metric-value deck-metric-value--primary">${deck.drawCount}</div>
-                                    <div class="deck-metric-separator">/</div>
-                                    <div class="deck-metric-value deck-metric-value--secondary">${deck.discardCount}</div>
-                                </div>
-                            </div>
-                        </div>
                     </article>
                 `;
             }).join('');
