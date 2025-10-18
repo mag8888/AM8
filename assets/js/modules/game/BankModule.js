@@ -1375,8 +1375,21 @@ class BankModule {
         }
         
         // Получаем текущего пользователя
-        const currentUser = this.getCurrentUser();
-        const currentUserId = currentUser?.id;
+        let currentUser = null;
+        let currentUserId = null;
+        
+        // Пытаемся получить текущего пользователя из разных источников
+        if (typeof this.getCurrentUser === 'function') {
+            currentUser = this.getCurrentUser();
+            currentUserId = currentUser?.id;
+        } else if (window.app && window.app.getCurrentUser) {
+            currentUser = window.app.getCurrentUser();
+            currentUserId = currentUser?.id;
+        } else if (window.gameStateManager) {
+            const state = window.gameStateManager.getState();
+            currentUser = state?.currentUser;
+            currentUserId = currentUser?.id;
+        }
         
         // Очищаем список
         recipientSelect.innerHTML = '<option value="">Выберите игрока</option>';
@@ -1863,6 +1876,34 @@ class BankModule {
         }
         
         console.warn('⚠️ BankModule: Fallback логика не смогла найти игрока');
+        return null;
+    }
+
+    /**
+     * Получение текущего пользователя (синхронная версия)
+     */
+    getCurrentUser() {
+        try {
+            // Пытаемся получить из localStorage
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                return {
+                    id: payload.userId || payload.id,
+                    email: payload.email,
+                    username: payload.username || payload.email
+                };
+            }
+        } catch (error) {
+            console.warn('⚠️ BankModule: Ошибка получения пользователя из токена:', error);
+        }
+        
+        // Fallback - пытаемся получить из GameStateManager
+        if (window.gameStateManager) {
+            const state = window.gameStateManager.getState();
+            return state?.currentUser || null;
+        }
+        
         return null;
     }
 
