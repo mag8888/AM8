@@ -1316,8 +1316,30 @@ class BankModule {
         const loanMax = this.ui.querySelector('#loan-max');
         if (loanMax) {
             // Максимальный кредит = Чистый доход * 10
-            const netIncome = professionDetails?.netIncome?.netIncome || 0;
-            const maxLoan = netIncome * 10;
+            let netIncome = professionDetails?.netIncome?.netIncome || 0;
+            
+            // Fallback: если чистый доход из профессии недоступен, вычисляем его из доходов и расходов
+            if (netIncome === 0 && professionDetails) {
+                const totalIncome = professionDetails.income?.total || 0;
+                const totalExpenses = professionDetails.expenses?.total || 0;
+                netIncome = totalIncome - totalExpenses;
+            }
+            
+            // Если все еще 0, пытаемся вычислить из элементов на странице
+            if (netIncome === 0) {
+                const incomeElement = this.ui.querySelector('#bank-income');
+                const expensesElement = this.ui.querySelector('#bank-expenses');
+                
+                if (incomeElement && expensesElement) {
+                    const incomeText = incomeElement.textContent.replace(/[$,]/g, '');
+                    const expensesText = expensesElement.textContent.replace(/[$,]/g, '');
+                    const incomeValue = parseInt(incomeText) || 0;
+                    const expensesValue = parseInt(expensesText) || 0;
+                    netIncome = incomeValue - expensesValue;
+                }
+            }
+            
+            const maxLoan = Math.max(netIncome * 10, 0);
             loanMax.textContent = `$${this.formatNumber(maxLoan)}`;
             
             // Принудительно добавляем визуальное выделение
@@ -1325,7 +1347,8 @@ class BankModule {
             loanMax.style.fontWeight = 'bold';
             
             console.log('🏦 BankModule: Обновлен максимальный кредит:', {
-                netIncome,
+                netIncomeFromProfession: professionDetails?.netIncome?.netIncome || 0,
+                calculatedNetIncome: netIncome,
                 maxLoan: maxLoan,
                 textContent: loanMax.textContent
             });
@@ -1469,6 +1492,20 @@ class BankModule {
             const state = window.gameStateManager.getState();
             currentUser = state?.currentUser;
             currentUserId = currentUser?.id;
+        }
+        
+        // Fallback: получаем из localStorage
+        if (!currentUserId) {
+            try {
+                const userData = localStorage.getItem('currentUser');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    currentUserId = user.id;
+                    console.log('🔧 BankModule: currentUserId получен из localStorage:', currentUserId);
+                }
+            } catch (e) {
+                console.warn('⚠️ BankModule: Ошибка получения currentUserId из localStorage:', e);
+            }
         }
         
         // Очищаем список
