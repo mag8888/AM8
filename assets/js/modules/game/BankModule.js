@@ -1282,6 +1282,16 @@ class BankModule {
             const netIncome = professionDetails?.netIncome?.netIncome || 0;
             const maxLoan = netIncome * 10;
             loanMax.textContent = `$${this.formatNumber(maxLoan)}`;
+            
+            // Принудительно добавляем визуальное выделение
+            loanMax.style.color = '#10b981';
+            loanMax.style.fontWeight = 'bold';
+            
+            console.log('🏦 BankModule: Обновлен максимальный кредит:', {
+                netIncome,
+                maxLoan: maxLoan,
+                textContent: loanMax.textContent
+            });
         }
         
         // Обновляем чистый доход
