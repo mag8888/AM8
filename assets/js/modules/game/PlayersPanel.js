@@ -55,45 +55,77 @@ class PlayersPanel {
     }
     
     /**
-     * Создание BankModule
+     * Создание BankModuleServer (новый модуль с загрузкой данных с сервера)
      */
     createBankModule() {
         if (this.bankModule) {
             return; // Уже создан
         }
         
-        if (!window.BankModule) {
-            console.warn('⚠️ PlayersPanel: BankModule не загружен');
-            return;
+        // Приоритет новому BankModuleServer, fallback к старому BankModule
+        if (window.BankModuleServer) {
+            try {
+                // Получаем необходимые модули из app
+                const app = window.app;
+                if (!app) {
+                    console.warn('⚠️ PlayersPanel: App не найден');
+                    return;
+                }
+                
+                const gameState = app.getModule('gameState');
+                const eventBus = app.getEventBus();
+                const roomApi = app.getModule('roomApi');
+                const professionSystem = app.getModule('professionSystem');
+                
+                this.bankModule = new window.BankModuleServer({
+                    gameState: gameState,
+                    eventBus: eventBus,
+                    roomApi: roomApi,
+                    professionSystem: professionSystem,
+                    gameStateManager: this.gameStateManager
+                });
+                
+                // Сохраняем в app для доступа из других модулей
+                app.modules.set('bankModule', this.bankModule);
+                app.modules.set('bankModuleServer', this.bankModule);
+                
+                console.log('🏦 PlayersPanel: BankModuleServer создан (загрузка данных с сервера)');
+                return;
+            } catch (error) {
+                console.error('❌ PlayersPanel: Ошибка создания BankModuleServer:', error);
+            }
         }
         
-        try {
-            // Получаем необходимые модули из app
-            const app = window.app;
-            if (!app) {
-                console.warn('⚠️ PlayersPanel: App не найден');
-                return;
+        // Fallback к старому BankModule
+        if (window.BankModule) {
+            try {
+                const app = window.app;
+                if (!app) {
+                    console.warn('⚠️ PlayersPanel: App не найден');
+                    return;
+                }
+                
+                const gameState = app.getModule('gameState');
+                const eventBus = app.getEventBus();
+                const roomApi = app.getModule('roomApi');
+                const professionSystem = app.getModule('professionSystem');
+                
+                this.bankModule = new window.BankModule({
+                    gameState: gameState,
+                    eventBus: eventBus,
+                    roomApi: roomApi,
+                    professionSystem: professionSystem,
+                    gameStateManager: this.gameStateManager
+                });
+                
+                app.modules.set('bankModule', this.bankModule);
+                
+                console.log('🏦 PlayersPanel: BankModule создан (fallback к старой версии)');
+            } catch (error) {
+                console.error('❌ PlayersPanel: Ошибка создания BankModule:', error);
             }
-            
-            const gameState = app.getModule('gameState');
-            const eventBus = app.getEventBus();
-            const roomApi = app.getModule('roomApi');
-            const professionSystem = app.getModule('professionSystem');
-            
-            this.bankModule = new window.BankModule({
-                gameState: gameState,
-                eventBus: eventBus,
-                roomApi: roomApi,
-                professionSystem: professionSystem,
-                gameStateManager: this.gameStateManager
-            });
-            
-            // Сохраняем в app для доступа из других модулей
-            app.modules.set('bankModule', this.bankModule);
-            
-            console.log('🏦 PlayersPanel: BankModule создан при инициализации');
-        } catch (error) {
-            console.error('❌ PlayersPanel: Ошибка создания BankModule:', error);
+        } else {
+            console.warn('⚠️ PlayersPanel: Ни BankModuleServer, ни BankModule не загружены');
         }
     }
     

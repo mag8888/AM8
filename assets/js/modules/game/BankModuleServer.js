@@ -1,0 +1,1142 @@
+/**
+ * BankModuleServer v2.0.0
+ * Новый банковский модуль, загружающий все данные с сервера
+ * Полностью серверо-ориентированный подход
+ */
+
+class BankModuleServer {
+    constructor(config = {}) {
+        this.config = config;
+        this.gameState = config.gameState || null;
+        this.eventBus = config.eventBus || null;
+        this.roomApi = config.roomApi || null;
+        this.professionSystem = config.professionSystem || null;
+        this.gameStateManager = config.gameStateManager || null;
+        
+        // Состояние банка (загружается с сервера)
+        this.bankState = {
+            roomId: null,
+            playerId: null,
+            balance: 0,
+            income: 0,
+            expenses: 0,
+            netIncome: 0,
+            salary: 0,
+            credit: 0,
+            maxCredit: 0,
+            players: [],
+            transactions: []
+        };
+        
+        // UI элементы
+        this.ui = null;
+        this.isOpen = false;
+        this.isLoading = false;
+        
+        console.log('🏦 BankModuleServer: Инициализирован (v2.0.0)');
+        this.init();
+    }
+    
+    /**
+     * Инициализация модуля
+     */
+    init() {
+        this.createUI();
+        this.setupEventListeners();
+    }
+    
+    /**
+     * Получение данных с сервера
+     */
+    async loadServerData() {
+        if (this.isLoading) return;
+        
+        this.isLoading = true;
+        this.showLoadingState(true);
+        
+        try {
+            const roomId = this.getRoomId();
+            if (!roomId) {
+                throw new Error('Room ID не найден');
+            }
+            
+            console.log('🌐 BankModuleServer: Загружаем данные с сервера для комнаты:', roomId);
+            
+            // Параллельно загружаем все необходимые данные
+            const [gameStateData, balanceData] = await Promise.all([
+                this.fetchGameState(roomId),
+                this.fetchBalanceData(roomId)
+            ]);
+            
+            // Обновляем состояние банка
+            this.updateBankStateFromServer(gameStateData, balanceData);
+            
+            console.log('✅ BankModuleServer: Данные загружены с сервера');
+            
+        } catch (error) {
+            console.error('❌ BankModuleServer: Ошибка загрузки данных:', error);
+            this.showNotification('Ошибка загрузки данных с сервера', 'error');
+        } finally {
+            this.isLoading = false;
+            this.showLoadingState(false);
+        }
+    }
+    
+    /**
+     * Загрузка состояния игры с сервера
+     */
+    async fetchGameState(roomId) {
+        const response = await fetch(`/api/rooms/${roomId}/game-state`);
+        if (!response.ok) {
+            throw new Error(`Ошибка загрузки состояния игры: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || 'Ошибка получения данных игры');
+        }
+        
+        return data.state;
+    }
+    
+    /**
+     * Загрузка данных баланса с сервера
+     */
+    async fetchBalanceData(roomId) {
+        // Получаем ID текущего игрока
+        const currentUser = await this.getCurrentUser();
+        if (!currentUser) {
+            throw new Error('Пользователь не найден');
+        }
+        
+        const response = await fetch(`/api/bank/balance/${roomId}/${currentUser.id}`);
+        if (!response.ok) {
+            throw new Error(`Ошибка загрузки баланса: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || 'Ошибка получения баланса');
+        }
+        
+        return data;
+    }
+    
+    /**
+     * Обновление состояния банка данными с сервера
+     */
+    updateBankStateFromServer(gameState, balanceData) {
+        const currentUser = this.getCurrentUserSync();
+        if (!currentUser) return;
+        
+        // Находим данные текущего игрока
+        const currentPlayer = gameState.players?.find(p => 
+            p.id === currentUser.id || p.userId === currentUser.id || p.username === currentUser.username
+        );
+        
+        if (!currentPlayer) {
+            console.warn('⚠️ BankModuleServer: Текущий игрок не найден в данных игры');
+            return;
+        }
+        
+        // Обновляем состояние банка
+        this.bankState.roomId = this.getRoomId();
+        this.bankState.playerId = currentPlayer.id;
+        this.bankState.balance = currentPlayer.money || currentPlayer.balance || 0;
+        this.bankState.players = gameState.players || [];
+        
+        // Получаем данные профессии для расчета максимального кредита
+        const professionId = currentPlayer.profession || 'entrepreneur';
+        const professionDetails = this.professionSystem?.getProfessionDetails(professionId, {
+            money: currentPlayer.money || 0,
+            children: currentPlayer.children || 0,
+            paidOffLoans: currentPlayer.paidOffLoans || {},
+            extraIncome: currentPlayer.extraIncome || 0,
+            currentLoan: currentPlayer.currentLoan || 0,
+            otherMonthlyAdjustments: currentPlayer.otherMonthlyAdjustments || 0
+        });
+        
+        if (professionDetails) {
+            this.bankState.income = professionDetails.income?.total || 0;
+            this.bankState.expenses = professionDetails.expenses?.total || 0;
+            this.bankState.netIncome = professionDetails.netIncome?.netIncome || (this.bankState.income - this.bankState.expenses);
+            this.bankState.salary = professionDetails.income?.salary || 0;
+            this.bankState.maxCredit = this.bankState.netIncome * 10;
+        } else {
+            // Fallback значения
+            this.bankState.income = currentPlayer.totalIncome || 0;
+            this.bankState.expenses = currentPlayer.monthlyExpenses || 0;
+            this.bankState.netIncome = this.bankState.income - this.bankState.expenses;
+            this.bankState.salary = currentPlayer.salary || 0;
+            this.bankState.maxCredit = Math.max(this.bankState.netIncome * 10, 0);
+        }
+        
+        this.bankState.credit = currentPlayer.currentLoan || 0;
+        this.bankState.currentPlayer = currentPlayer;
+        
+        console.log('📊 BankModuleServer: Состояние обновлено:', {
+            balance: this.bankState.balance,
+            netIncome: this.bankState.netIncome,
+            maxCredit: this.bankState.maxCredit,
+            credit: this.bankState.credit
+        });
+    }
+    
+    /**
+     * Обновление UI данными с сервера
+     */
+    updateUIFromServer() {
+        if (!this.ui) return;
+        
+        // Обновляем баланс
+        const balanceElement = this.ui.querySelector('#bank-balance');
+        if (balanceElement) {
+            balanceElement.textContent = `$${this.formatNumber(this.bankState.balance)}`;
+        }
+        
+        // Обновляем доходы
+        const incomeElement = this.ui.querySelector('#bank-income');
+        if (incomeElement) {
+            incomeElement.textContent = `$${this.formatNumber(this.bankState.income)}`;
+        }
+        
+        // Обновляем расходы
+        const expensesElement = this.ui.querySelector('#bank-expenses');
+        if (expensesElement) {
+            expensesElement.textContent = `$${this.formatNumber(this.bankState.expenses)}`;
+        }
+        
+        // Обновляем чистый доход
+        const netIncomeElement = this.ui.querySelector('#bank-net-income');
+        if (netIncomeElement) {
+            netIncomeElement.textContent = `$${this.formatNumber(this.bankState.netIncome)}/мес`;
+        }
+        
+        // Обновляем зарплату
+        const salaryElement = this.ui.querySelector('#bank-salary');
+        if (salaryElement) {
+            salaryElement.textContent = `$${this.formatNumber(this.bankState.salary)}/мес`;
+        }
+        
+        // Обновляем кредитный баланс
+        const creditElement = this.ui.querySelector('#bank-credit');
+        if (creditElement) {
+            creditElement.textContent = `$${this.formatNumber(this.bankState.credit)}`;
+            creditElement.style.color = this.bankState.credit > 0 ? '#ef4444' : '#10b981';
+            creditElement.style.fontWeight = this.bankState.credit > 0 ? 'bold' : 'normal';
+        }
+        
+        // Обновляем максимальный кредит
+        const maxCreditElement = this.ui.querySelector('#bank-max-credit');
+        if (maxCreditElement) {
+            maxCreditElement.textContent = `$${this.formatNumber(this.bankState.maxCredit)}`;
+        }
+        
+        // Обновляем мини-блок кредита
+        const loanBalance = this.ui.querySelector('#loan-balance');
+        if (loanBalance) {
+            loanBalance.textContent = `$${this.formatNumber(this.bankState.credit)}`;
+            loanBalance.style.color = this.bankState.credit > 0 ? '#ef4444' : '#10b981';
+            loanBalance.style.fontWeight = this.bankState.credit > 0 ? 'bold' : 'normal';
+        }
+        
+        const loanMax = this.ui.querySelector('#loan-max');
+        if (loanMax) {
+            loanMax.textContent = `$${this.formatNumber(this.bankState.maxCredit)}`;
+            loanMax.style.color = '#10b981';
+            loanMax.style.fontWeight = 'bold';
+        }
+        
+        // Обновляем список игроков
+        this.updatePlayersList();
+        
+        console.log('🔄 BankModuleServer: UI обновлен данными с сервера');
+    }
+    
+    /**
+     * Обновление списка игроков данными с сервера
+     */
+    updatePlayersList() {
+        const recipientSelect = this.ui.querySelector('#transfer-recipient');
+        if (!recipientSelect) return;
+        
+        // Очищаем список
+        recipientSelect.innerHTML = '<option value="">Выберите игрока</option>';
+        
+        // Добавляем игроков (исключая текущего)
+        this.bankState.players.forEach(player => {
+            if (player.id !== this.bankState.playerId) {
+                const option = document.createElement('option');
+                option.value = player.id;
+                const balance = player.balance || player.money || 0;
+                option.textContent = `${player.username || player.name} ($${this.formatNumber(balance)})`;
+                recipientSelect.appendChild(option);
+            }
+        });
+        
+        console.log(`👥 BankModuleServer: Обновлен список игроков: ${this.bankState.players.length} игроков`);
+    }
+    
+    /**
+     * Создание UI банк модуля
+     */
+    createUI() {
+        // Используем тот же HTML, что и в оригинальном модуле
+        const bankModuleHTML = `
+            <div id="bank-module-server" class="bank-module" style="display: none;">
+                <div class="bank-overlay"></div>
+                <div class="bank-container">
+                    <div class="bank-header">
+                        <div class="bank-title">
+                            <span class="bank-icon">🏦</span>
+                            <span>Банковские операции</span>
+                            <span class="server-badge">СЕРВЕР</span>
+                        </div>
+                        <button class="bank-close" id="bank-close-server">✕</button>
+                    </div>
+                    
+                    <div class="bank-content">
+                        <div class="bank-left">
+                            <div class="bank-status">
+                                <div class="bank-status-header">
+                                    <span class="bank-icon">🏦</span>
+                                    <span>Банк</span>
+                                    <span class="status-badge active">Активен</span>
+                                    <button class="refresh-btn" id="refresh-server-data">🔄</button>
+                                </div>
+                                
+                                <div class="current-balance">
+                                    <div class="balance-amount" id="bank-balance">$0</div>
+                                    <div class="balance-description">Доступно для операций</div>
+                                </div>
+                                
+                                <div class="financial-summary">
+                                    <div class="summary-item">
+                                        <span class="summary-icon income">📈</span>
+                                        <span class="summary-label">Доход:</span>
+                                        <span class="summary-value income" id="bank-income">$0</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-icon expense">📉</span>
+                                        <span class="summary-label">Расходы:</span>
+                                        <span class="summary-value expense" id="bank-expenses">$0</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-icon payday">💰</span>
+                                        <span class="summary-label">PAYDAY:</span>
+                                        <span class="summary-value payday" id="bank-salary">$0/мес</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-icon net">💎</span>
+                                        <span class="summary-label">Чистый доход:</span>
+                                        <span class="summary-value net" id="bank-net-income">$0/мес</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="credit-info">
+                                    <div class="credit-item">
+                                        <span class="credit-icon">💳</span>
+                                        <span class="credit-label">Кредит:</span>
+                                        <span class="credit-value" id="bank-credit">$0</span>
+                                    </div>
+                                    <div class="credit-item">
+                                        <span class="credit-label">Макс. кредит:</span>
+                                        <span class="credit-value max" id="bank-max-credit">$0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bank-right">
+                            <div class="transfer-section">
+                                <div class="section-title">
+                                    <span class="section-icon">💸</span>
+                                    <span>Перевод средств</span>
+                                </div>
+                                
+                                <div class="transfer-form">
+                                    <div class="form-group">
+                                        <label for="transfer-recipient">Получатель</label>
+                                        <select id="transfer-recipient" class="form-select">
+                                            <option value="">Выберите игрока</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="transfer-amount">Сумма ($)</label>
+                                        <div class="amount-input">
+                                            <input type="number" id="transfer-amount" class="form-input" placeholder="0" min="1">
+                                            <button class="amount-eye" id="amount-eye">👁</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="transfer-actions">
+                                        <button class="transfer-btn" id="transfer-execute-server">
+                                            <span class="btn-icon">✈</span>
+                                            <span>ВЫПОЛНИТЬ ПЕРЕВОД</span>
+                                        </button>
+                                        <button class="transfer-reset" id="transfer-reset-server">СБРОСИТЬ</button>
+                                    </div>
+                                    
+                                    <div class="loan-inline" style="margin-top:12px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.1)">
+                                        <label for="loan-amount-server">Кредит (шаг 1000)</label>
+                                        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+                                            <input type="number" id="loan-amount-server" class="form-input" placeholder="0" min="0" step="1000">
+                                            <button class="transfer-btn" id="loan-take-server" style="min-width:120px">ВЗЯТЬ</button>
+                                            <button class="transfer-reset" id="loan-repay-server" style="min-width:120px">ПОГАСИТЬ</button>
+                                        </div>
+                                        <div style="margin-top:8px;opacity:.85;display:flex;gap:16px">
+                                            <div>Баланс: <span id="loan-balance">$0</span></div>
+                                            <div>Макс.: <span id="loan-max">$0</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="transactions-section">
+                                <div class="section-title">
+                                    <span class="section-icon">🕐</span>
+                                    <span>История операций</span>
+                                    <span class="new-badge" id="new-transactions-server">0</span>
+                                </div>
+                                
+                                <div class="transactions-list" id="transactions-list-server">
+                                    <div class="loading-indicator" id="loading-indicator">
+                                        <div class="loading-text">Загрузка данных с сервера...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Добавляем HTML в body
+        document.body.insertAdjacentHTML('beforeend', bankModuleHTML);
+        this.ui = document.getElementById('bank-module-server');
+        
+        // Добавляем стили
+        this.addStyles();
+        
+        console.log('🏦 BankModuleServer: UI создан');
+    }
+    
+    /**
+     * Добавление CSS стилей (копируем из оригинального модуля + дополнительные)
+     */
+    addStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .bank-module {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .bank-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(5px);
+            }
+            
+            .bank-container {
+                position: relative;
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+                border-radius: 20px;
+                border: 2px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+                width: 96%;
+                max-width: 1400px;
+                height: 92%;
+                max-height: none;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .bank-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 20px 30px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.05);
+            }
+            
+            .bank-title {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: white;
+            }
+            
+            .server-badge {
+                background: #10b981;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 0.7rem;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+            
+            .refresh-btn {
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 1rem;
+                transition: all 0.3s ease;
+            }
+            
+            .refresh-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+            
+            .loading-indicator {
+                text-align: center;
+                padding: 40px;
+                color: rgba(255, 255, 255, 0.7);
+            }
+            
+            .loading-text {
+                font-size: 1.1rem;
+            }
+            
+            /* Копируем остальные стили из оригинального модуля */
+            .bank-icon {
+                font-size: 1.8rem;
+            }
+            
+            .bank-close {
+                background: none;
+                border: none;
+                color: white;
+                font-size: 1.5rem;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 50%;
+                transition: all 0.3s ease;
+            }
+            
+            .bank-close:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            .bank-content {
+                display: flex;
+                flex: 1;
+                overflow: hidden;
+            }
+            
+            .bank-left {
+                flex: 1;
+                padding: 30px;
+                border-right: 1px solid rgba(255, 255, 255, 0.1);
+                overflow-y: auto;
+            }
+            
+            .bank-right {
+                flex: 1;
+                padding: 30px;
+                overflow-y: auto;
+            }
+            
+            .bank-status {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 15px;
+                padding: 25px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .bank-status-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 25px;
+            }
+            
+            .status-badge {
+                background: #10b981;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                margin-left: auto;
+            }
+            
+            .current-balance {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            
+            .balance-amount {
+                font-size: 3rem;
+                font-weight: 700;
+                color: #10b981;
+                margin-bottom: 8px;
+            }
+            
+            .balance-description {
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 1rem;
+            }
+            
+            .financial-summary {
+                margin-bottom: 30px;
+            }
+            
+            .summary-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            
+            .summary-icon {
+                font-size: 1.2rem;
+            }
+            
+            .summary-label {
+                color: white;
+                font-weight: 500;
+                min-width: 80px;
+            }
+            
+            .summary-value {
+                font-weight: 600;
+                margin-left: auto;
+            }
+            
+            .summary-value.income {
+                color: #10b981;
+            }
+            
+            .summary-value.expense {
+                color: #ef4444;
+            }
+            
+            .summary-value.payday {
+                color: #f59e0b;
+            }
+            
+            .summary-value.net {
+                color: #10b981;
+            }
+            
+            .credit-info {
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                padding-top: 20px;
+            }
+            
+            .credit-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            
+            .credit-icon {
+                font-size: 1.2rem;
+            }
+            
+            .credit-label {
+                color: white;
+                font-weight: 500;
+                min-width: 100px;
+            }
+            
+            .credit-value {
+                font-weight: 600;
+                margin-left: auto;
+            }
+            
+            .credit-value.max {
+                color: #8b5cf6;
+            }
+            
+            .transfer-section, .transactions-section {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 15px;
+                padding: 25px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                margin-bottom: 20px;
+            }
+            
+            .section-title {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 20px;
+                font-size: 1.2rem;
+                font-weight: 600;
+                color: white;
+            }
+            
+            .section-icon {
+                font-size: 1.4rem;
+            }
+            
+            .new-badge {
+                background: #8b5cf6;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                margin-left: auto;
+            }
+            
+            .form-group {
+                margin-bottom: 20px;
+            }
+            
+            .form-group label {
+                display: block;
+                color: white;
+                font-weight: 500;
+                margin-bottom: 8px;
+            }
+            
+            .form-select, .form-input {
+                width: 100%;
+                padding: 12px 16px;
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 8px;
+                color: white;
+                font-size: 1rem;
+            }
+            
+            .form-select:focus, .form-input:focus {
+                outline: none;
+                border-color: #10b981;
+                box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+            }
+            
+            .amount-input {
+                position: relative;
+            }
+            
+            .amount-eye {
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                color: white;
+                cursor: pointer;
+                font-size: 1.2rem;
+            }
+            
+            .transfer-actions {
+                display: flex;
+                gap: 12px;
+            }
+            
+            .transfer-btn {
+                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+            
+            .transfer-reset {
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+            }
+            
+            .loan-inline input.form-input { 
+                max-width: 160px; 
+            }
+            
+            .transactions-list {
+                max-height: 300px;
+                overflow-y: auto;
+            }
+        `;
+        
+        document.head.appendChild(style);
+    }
+    
+    /**
+     * Настройка обработчиков событий
+     */
+    setupEventListeners() {
+        if (!this.ui) return;
+        
+        // Закрытие модуля
+        const closeBtn = this.ui.querySelector('#bank-close-server');
+        closeBtn.addEventListener('click', () => this.close());
+        
+        // Обновление данных с сервера
+        const refreshBtn = this.ui.querySelector('#refresh-server-data');
+        refreshBtn.addEventListener('click', () => this.loadServerData());
+        
+        // Переводы
+        const transferExecute = this.ui.querySelector('#transfer-execute-server');
+        transferExecute.addEventListener('click', () => this.executeTransfer());
+        
+        const transferReset = this.ui.querySelector('#transfer-reset-server');
+        transferReset.addEventListener('click', () => this.resetTransferForm());
+        
+        // Кредиты
+        const loanTake = this.ui.querySelector('#loan-take-server');
+        const loanRepay = this.ui.querySelector('#loan-repay-server');
+        if (loanTake) loanTake.addEventListener('click', () => this.takeCreditInline());
+        if (loanRepay) loanRepay.addEventListener('click', () => this.repayCreditInline());
+        
+        console.log('🏦 BankModuleServer: Обработчики настроены');
+    }
+    
+    /**
+     * Показ состояния загрузки
+     */
+    showLoadingState(show) {
+        const loadingIndicator = this.ui?.querySelector('#loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = show ? 'block' : 'none';
+        }
+        
+        const refreshBtn = this.ui?.querySelector('#refresh-server-data');
+        if (refreshBtn) {
+            refreshBtn.disabled = show;
+            refreshBtn.textContent = show ? '⏳' : '🔄';
+        }
+    }
+    
+    /**
+     * Открытие банк модуля
+     */
+    async open() {
+        if (!this.ui) return;
+        
+        this.ui.style.display = 'flex';
+        this.isOpen = true;
+        
+        // Загружаем данные с сервера при открытии
+        await this.loadServerData();
+        
+        // Обновляем UI
+        this.updateUIFromServer();
+        
+        console.log('🏦 BankModuleServer: Открыт');
+    }
+    
+    /**
+     * Закрытие банк модуля
+     */
+    close() {
+        if (this.ui) {
+            this.ui.style.display = 'none';
+            this.isOpen = false;
+            console.log('🏦 BankModuleServer: Закрыт');
+        }
+    }
+    
+    /**
+     * Выполнение перевода через сервер
+     */
+    async executeTransfer() {
+        const recipientId = this.ui.querySelector('#transfer-recipient').value;
+        const amount = parseInt(this.ui.querySelector('#transfer-amount').value);
+        
+        if (!recipientId || !amount || amount <= 0) {
+            this.showNotification('Заполните все поля корректно', 'error');
+            return;
+        }
+        
+        if (amount > this.bankState.balance) {
+            this.showNotification('Недостаточно средств', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/bank/transfer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    roomId: this.bankState.roomId,
+                    fromPlayerId: this.bankState.playerId,
+                    toPlayerId: recipientId,
+                    amount: amount,
+                    description: `Перевод через BankModuleServer`
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification(`Перевод $${this.formatNumber(amount)} выполнен`, 'success');
+                this.resetTransferForm();
+                
+                // Перезагружаем данные с сервера
+                await this.loadServerData();
+                this.updateUIFromServer();
+            } else {
+                this.showNotification(result.message || 'Ошибка выполнения перевода', 'error');
+            }
+        } catch (error) {
+            console.error('❌ BankModuleServer: Ошибка перевода:', error);
+            this.showNotification('Ошибка выполнения перевода', 'error');
+        }
+    }
+    
+    /**
+     * Взятие кредита через сервер
+     */
+    async takeCreditInline() {
+        const amountInput = this.ui.querySelector('#loan-amount-server');
+        const amount = Math.max(0, Math.floor((parseInt(amountInput.value) || 0) / 1000) * 1000);
+        
+        if (amount <= 0) {
+            this.showNotification('Сумма кредита должна быть больше 0', 'error');
+            return;
+        }
+        
+        const maxAmount = this.bankState.maxCredit - this.bankState.credit;
+        if (amount > maxAmount) {
+            this.showNotification(`Превышен лимит кредита. Доступно: $${this.formatNumber(maxAmount)}`, 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/bank/loan/take', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    roomId: this.bankState.roomId,
+                    playerId: this.bankState.playerId,
+                    amount: amount
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification(`Кредит $${this.formatNumber(amount)} взят успешно`, 'success');
+                amountInput.value = '';
+                
+                // Перезагружаем данные с сервера
+                await this.loadServerData();
+                this.updateUIFromServer();
+            } else {
+                this.showNotification(result.message || 'Ошибка взятия кредита', 'error');
+            }
+        } catch (error) {
+            console.error('❌ BankModuleServer: Ошибка взятия кредита:', error);
+            this.showNotification('Ошибка взятия кредита', 'error');
+        }
+    }
+    
+    /**
+     * Погашение кредита через сервер
+     */
+    async repayCreditInline() {
+        const amountInput = this.ui.querySelector('#loan-amount-server');
+        const amount = Math.max(0, Math.floor((parseInt(amountInput.value) || 0) / 1000) * 1000);
+        
+        if (amount <= 0) {
+            this.showNotification('Сумма погашения должна быть больше 0', 'error');
+            return;
+        }
+        
+        if (amount > this.bankState.balance) {
+            this.showNotification('Недостаточно средств для погашения', 'error');
+            return;
+        }
+        
+        if (amount > this.bankState.credit) {
+            this.showNotification(`Нельзя погасить больше, чем задолжано. Задолженность: $${this.formatNumber(this.bankState.credit)}`, 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/bank/loan/repay', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    roomId: this.bankState.roomId,
+                    playerId: this.bankState.playerId,
+                    amount: amount
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification(`Кредит погашен на $${this.formatNumber(amount)}`, 'success');
+                amountInput.value = '';
+                
+                // Перезагружаем данные с сервера
+                await this.loadServerData();
+                this.updateUIFromServer();
+            } else {
+                this.showNotification(result.message || 'Ошибка погашения кредита', 'error');
+            }
+        } catch (error) {
+            console.error('❌ BankModuleServer: Ошибка погашения кредита:', error);
+            this.showNotification('Ошибка погашения кредита', 'error');
+        }
+    }
+    
+    /**
+     * Сброс формы перевода
+     */
+    resetTransferForm() {
+        this.ui.querySelector('#transfer-recipient').value = '';
+        this.ui.querySelector('#transfer-amount').value = '';
+    }
+    
+    /**
+     * Получение ID комнаты
+     */
+    getRoomId() {
+        try {
+            const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+            return urlParams.get('roomId');
+        } catch (error) {
+            console.error('❌ BankModuleServer: Ошибка получения ID комнаты:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * Получение текущего пользователя (асинхронная версия)
+     */
+    async getCurrentUser() {
+        try {
+            const userData = localStorage.getItem('currentUser');
+            if (userData) {
+                return JSON.parse(userData);
+            }
+            
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                return {
+                    id: payload.userId || payload.id,
+                    username: payload.username || payload.email
+                };
+            }
+            
+            return null;
+        } catch (error) {
+            console.warn('⚠️ BankModuleServer: Ошибка получения пользователя:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * Получение текущего пользователя (синхронная версия)
+     */
+    getCurrentUserSync() {
+        try {
+            const userData = localStorage.getItem('currentUser');
+            if (userData) {
+                return JSON.parse(userData);
+            }
+            
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                return {
+                    id: payload.userId || payload.id,
+                    username: payload.username || payload.email
+                };
+            }
+            
+            return null;
+        } catch (error) {
+            console.warn('⚠️ BankModuleServer: Ошибка получения пользователя:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * Форматирование чисел
+     */
+    formatNumber(num) {
+        return new Intl.NumberFormat('ru-RU').format(num);
+    }
+    
+    /**
+     * Показ уведомлений
+     */
+    showNotification(message, type = 'info') {
+        console.log(`🏦 BankModuleServer: ${type.toUpperCase()} - ${message}`);
+        
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 10001;
+            font-weight: 600;
+            max-width: 400px;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+    }
+    
+    /**
+     * Уничтожение модуля
+     */
+    destroy() {
+        if (this.ui && this.ui.parentNode) {
+            this.ui.parentNode.removeChild(this.ui);
+        }
+        this.ui = null;
+        console.log('🏦 BankModuleServer: Уничтожен');
+    }
+}
+
+// Экспорт для глобального использования
+window.BankModuleServer = BankModuleServer;
