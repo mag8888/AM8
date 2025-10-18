@@ -242,6 +242,10 @@ class PlayersPanel {
                     <section class="game-controls">
                         <div class="dice-controls">
                             <!-- Кнопка броска кубика управляется через TurnController -->
+                            <button class="btn btn-primary" id="roll-dice-btn" type="button">
+                                <span class="btn-icon">🎲</span>
+                                <span class="btn-text">Бросить кубик</span>
+                            </button>
                             <div class="dice-display">
                                 <div id="dice-result" class="dice-value">🎲</div>
                                 <div class="dice-label">Результат броска</div>

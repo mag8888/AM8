@@ -80,11 +80,54 @@ class TurnController {
     }
     
     /**
-     * Создание UI элементов
+     * Создание UI элементов - теперь только привязка к существующим элементам PlayersPanel
      */
     createUI() {
-        console.log('🎮 TurnController v2.0: Создание UI, isMobile:', this.isMobile);
+        console.log('🎮 TurnController v2.0: Привязка к существующим элементам UI');
         
+        // Вместо создания новых элементов, привязываемся к существующим из PlayersPanel
+        this.bindToExistingUI();
+        
+        // Сохраняем ссылку на UI (будет null, так как не создаем новые элементы)
+        this.ui = null;
+        
+        console.log('🎮 TurnController v2.0: Привязка к UI завершена');
+    }
+    
+    /**
+     * Привязка к существующим элементам UI из PlayersPanel
+     */
+    bindToExistingUI() {
+        // Ждем, пока PlayersPanel создаст свои элементы
+        const checkForElements = () => {
+            const playersPanel = document.getElementById('players-panel');
+            const rollButton = playersPanel?.querySelector('#roll-dice-btn');
+            const endTurnButton = playersPanel?.querySelector('#pass-turn, #end-turn-btn');
+            
+            if (playersPanel && (rollButton || endTurnButton)) {
+                console.log('🎮 TurnController: Найдены элементы PlayersPanel, привязываем события');
+                this.setupEventListeners();
+                return true;
+            }
+            return false;
+        };
+        
+        // Пробуем сразу, если не получается - ждем
+        if (!checkForElements()) {
+            setTimeout(checkForElements, 100);
+            setTimeout(checkForElements, 500);
+            setTimeout(checkForElements, 1000);
+        }
+    }
+    
+    /**
+     * Создание старых элементов UI (закомментировано для избежания дублирования)
+     */
+    createOldUI() {
+        console.log('🎮 TurnController v2.0: Создание UI (отключено для избежания дублирования)');
+        return; // Отключено для избежания дублирования с PlayersPanel
+        
+        /*
         // Создаем контейнер для меню ходов
         const turnMenu = document.createElement('div');
         turnMenu.className = 'turn-menu';
@@ -631,9 +674,14 @@ class TurnController {
             return;
         }
         
-        // Пытаемся найти подходящий контейнер
+        // Пытаемся найти подходящий контейнер, избегая конфликта с PlayersPanel
+        const playersPanel = document.getElementById('players-panel');
         const containers = [
-            document.getElementById('players-panel'),
+            // Ищем специальный контейнер для TurnController или создаем его
+            document.getElementById('turn-controller-container'),
+            document.querySelector('.game-controls-container'),
+            // Только если PlayersPanel еще не инициализирован, используем players-panel
+            ...(playersPanel && !playersPanel.querySelector('.players-section') ? [playersPanel] : []),
             document.querySelector('main'),
             document.querySelector('#game-container'),
             document.body
@@ -651,18 +699,34 @@ class TurnController {
     }
     
     /**
-     * Настройка обработчиков событий
+     * Настройка обработчиков событий для существующих элементов
      */
     setupEventListeners() {
-        // Убеждаемся, что UI в DOM
-        this.addUIToDOM();
+        console.log('🎮 TurnController: Привязка обработчиков к существующим элементам');
         
-        // Бросок кубика
-        const rollBtn = this.ui?.querySelector('#roll-dice-btn');
-        rollBtn.addEventListener('click', () => this.handleRollDice());
+        // Больше не добавляем свой UI в DOM - работаем с существующими элементами
+        const playersPanel = document.getElementById('players-panel');
+        if (!playersPanel) {
+            console.warn('⚠️ TurnController: players-panel не найден');
+            return;
+        }
         
-        // Кнопки перемещения
-        const moveBtns = this.ui.querySelectorAll('.move-btn');
+        // Бросок кубика - ищем кнопку по тексту
+        const rollBtn = playersPanel.querySelector('#roll-dice-btn') || 
+                       Array.from(playersPanel.querySelectorAll('button')).find(btn => 
+                           btn.textContent.includes('Бросить кубик') || btn.id === 'roll-dice');
+        
+        if (rollBtn) {
+            // Удаляем старый обработчик, если есть
+            rollBtn.removeEventListener('click', this.handleRollDice);
+            rollBtn.addEventListener('click', () => this.handleRollDice());
+            console.log('🎮 TurnController: Обработчик броска кубика привязан');
+        } else {
+            console.warn('⚠️ TurnController: Кнопка броска кубика не найдена');
+        }
+        
+        // Кнопки перемещения (если есть)
+        const moveBtns = playersPanel.querySelectorAll('.move-btn');
         moveBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const steps = parseInt(btn.dataset.steps);
@@ -670,9 +734,20 @@ class TurnController {
             });
         });
         
-        // Завершение хода
-        const endTurnBtn = this.ui.querySelector('#end-turn-btn');
-        endTurnBtn.addEventListener('click', () => this.handleEndTurn());
+        // Завершение хода - ищем кнопку по ID или тексту
+        const endTurnBtn = playersPanel.querySelector('#end-turn-btn') ||
+                          playersPanel.querySelector('#pass-turn') ||
+                          Array.from(playersPanel.querySelectorAll('button')).find(btn => 
+                              btn.textContent.includes('Передать ход'));
+        
+        if (endTurnBtn) {
+            // Удаляем старый обработчик, если есть
+            endTurnBtn.removeEventListener('click', this.handleEndTurn);
+            endTurnBtn.addEventListener('click', () => this.handleEndTurn());
+            console.log('🎮 TurnController: Обработчик передачи хода привязан');
+        } else {
+            console.warn('⚠️ TurnController: Кнопка передачи хода не найдена');
+        }
         
         // Слушатели событий TurnService
         this.turnService.on('roll:start', () => this.onRollStart());
