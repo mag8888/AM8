@@ -937,9 +937,9 @@ class BankModule {
             otherMonthlyAdjustments: player.otherMonthlyAdjustments || 0
         });
         
-        // Максимальный кредит = PAYDAY * 10
-        const payday = details?.income?.payday || 0;
-        const maxLoan = payday * 10;
+        // Максимальный кредит = Чистый доход * 10
+        const netIncome = details?.netIncome?.netIncome || 0;
+        const maxLoan = netIncome * 10;
         const currentLoan = player.currentLoan || 0;
         const available = Math.max(0, maxLoan - currentLoan);
         
@@ -1278,9 +1278,9 @@ class BankModule {
         
         const loanMax = this.ui.querySelector('#loan-max');
         if (loanMax) {
-            // Максимальный кредит = PAYDAY * 10
-            const payday = professionDetails?.income?.payday || 0;
-            const maxLoan = payday * 10;
+            // Максимальный кредит = Чистый доход * 10
+            const netIncome = professionDetails?.netIncome?.netIncome || 0;
+            const maxLoan = netIncome * 10;
             loanMax.textContent = `$${this.formatNumber(maxLoan)}`;
         }
         
