@@ -497,19 +497,19 @@ class App {
             }
         };
 
-        // Пытаемся инициализировать сразу
-        initCardDeckPanel();
+        // Сначала инициализируем BankPreview, затем CardDeckPanel
         initBankPreview();
+        initCardDeckPanel();
 
         // Если не получилось, пробуем через задержки
-        if (!this.modules.get('cardDeckPanel')) {
-            setTimeout(initCardDeckPanel, 100);
-            setTimeout(initCardDeckPanel, 1000);
-        }
-        
         if (!this.modules.get('bankPreview')) {
             setTimeout(initBankPreview, 100);
             setTimeout(initBankPreview, 1000);
+        }
+        
+        if (!this.modules.get('cardDeckPanel')) {
+            setTimeout(initCardDeckPanel, 200);
+            setTimeout(initCardDeckPanel, 1200);
         }
         
         // Инициализируем DealModule (микромодуль сделок)

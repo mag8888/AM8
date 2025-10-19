@@ -208,7 +208,12 @@
          */
         renderLoading() {
             if (!this.container) return;
-            this.container.innerHTML = `
+            
+            // Сохраняем BankPreview если он есть
+            const bankPreview = this.container.querySelector('.bank-preview-card');
+            const bankPreviewHTML = bankPreview ? bankPreview.outerHTML : '';
+            
+            this.container.innerHTML = bankPreviewHTML + `
                 <div class="card-decks-empty">Загружаем карточные колоды...</div>
             `;
         }
@@ -256,14 +261,18 @@
         renderDecks(decks = []) {
             if (!this.container) return;
 
+            // Сохраняем BankPreview если он есть
+            const bankPreview = this.container.querySelector('.bank-preview-card');
+            const bankPreviewHTML = bankPreview ? bankPreview.outerHTML : '';
+
             if (!Array.isArray(decks) || decks.length === 0) {
-                this.container.innerHTML = `
+                this.container.innerHTML = bankPreviewHTML + `
                     <div class="card-decks-empty">Нет доступных колод. Добавьте карточки через админку.</div>
                 `;
                 return;
             }
 
-            this.container.innerHTML = decks.map((deck) => {
+            const decksHTML = decks.map((deck) => {
                 const stateClass = deck.drawCount === 0 ? ' empty' : '';
                 return `
                     <article class="card-deck-card${stateClass}" data-deck-id="${deck.id}">
@@ -281,6 +290,14 @@
                     </article>
                 `;
             }).join('');
+
+            // Объединяем BankPreview и колоды карт
+            this.container.innerHTML = bankPreviewHTML + decksHTML;
+
+            // Уведомляем другие компоненты об обновлении
+            if (this.eventBus) {
+                this.eventBus.emit('cards:updated', { decks });
+            }
         }
 
         /**
@@ -288,8 +305,13 @@
          */
         renderError(error) {
             if (!this.container) return;
+            
+            // Сохраняем BankPreview если он есть
+            const bankPreview = this.container.querySelector('.bank-preview-card');
+            const bankPreviewHTML = bankPreview ? bankPreview.outerHTML : '';
+            
             const message = error?.message || 'Не удалось загрузить карточные колоды';
-            this.container.innerHTML = `
+            this.container.innerHTML = bankPreviewHTML + `
                 <div class="card-decks-error">
                     <div>⚠️ ${message}</div>
                 </div>
