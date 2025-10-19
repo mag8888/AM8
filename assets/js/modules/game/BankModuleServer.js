@@ -180,7 +180,12 @@ class BankModuleServer {
         // Обновляем состояние банка
         this.bankState.roomId = this.getRoomId();
         this.bankState.playerId = currentPlayer.id;
-        this.bankState.balance = currentPlayer.money || currentPlayer.balance || 0;
+        // Получаем баланс, учитывая что 0 может быть валидным значением
+        this.bankState.balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
+            ? currentPlayer.money 
+            : ((currentPlayer.balance !== undefined && currentPlayer.balance !== null) 
+                ? currentPlayer.balance 
+                : 5000); // fallback только если значения undefined/null
         this.bankState.players = gameState.players || [];
         
         // Получаем данные профессии для расчета максимального кредита

@@ -246,10 +246,17 @@ class BankPreview {
         
         if (!currentPlayer) return null;
         
+        // Получаем баланс, учитывая что 0 может быть валидным значением
+        const balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
+            ? currentPlayer.money 
+            : ((currentPlayer.balance !== undefined && currentPlayer.balance !== null) 
+                ? currentPlayer.balance 
+                : 5000); // fallback только если значения undefined/null
+        
         // Используем данные предпринимателя по умолчанию если это предприниматель
         if (currentPlayer.profession === 'Предприниматель' || !currentPlayer.profession) {
             return {
-                balance: currentPlayer.money || currentPlayer.balance || 5000,
+                balance: balance,
                 income: 10000,
                 expenses: 6200,
                 netIncome: 3800,
@@ -260,7 +267,7 @@ class BankPreview {
         
         // Для других профессий используем их данные
         return {
-            balance: currentPlayer.money || currentPlayer.balance || 5000,
+            balance: balance,
             income: currentPlayer.totalIncome || currentPlayer.salary || 5000,
             expenses: currentPlayer.monthlyExpenses || 2000,
             netIncome: (currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000),
