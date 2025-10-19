@@ -445,6 +445,47 @@
                         window.location.href = '/auth';
                         return;
                     }
+                    
+                    // Сразу показываем игровую страницу
+                    console.log('🎮 Показываем игровую страницу для roomId:', roomId);
+                    setTimeout(() => {
+                        // Скрываем все страницы
+                        document.querySelectorAll('.page').forEach(page => {
+                            page.style.display = 'none';
+                            page.classList.remove('active');
+                        });
+                        
+                        // Показываем игровую страницу
+                        const gamePage = document.getElementById('game-page');
+                        if (gamePage) {
+                            gamePage.style.display = 'block';
+                            gamePage.classList.add('active');
+                            console.log('✅ Игровая страница активирована');
+                        }
+                    }, 50);
+                    
+                    // Инициализируем App если еще не инициализировано
+                    if (!window.app && window.App) {
+                        try {
+                            window.app = new window.App();
+                            window.app.init();
+                            console.log('✅ App: Инициализирован для игрового маршрута');
+                        } catch (error) {
+                            console.error('❌ App: Ошибка инициализации для игрового маршрута:', error);
+                        }
+                    }
+                    
+                    // Обрабатываем маршрут через роутер
+                    setTimeout(() => {
+                        if (window.app && window.app.getRouter) {
+                            const router = window.app.getRouter();
+                            if (router && router.handleCurrentRoute) {
+                                console.log('🗺️ Обрабатываем игровой маршрут через роутер');
+                                router.handleCurrentRoute();
+                            }
+                        }
+                    }, 300);
+                    
                     // Попытка инициализировать игровое состояние из sessionStorage
                     try {
                         const bundleRaw = sessionStorage.getItem('am_player_bundle');
@@ -675,6 +716,36 @@
             }
         });
         })();
+        
+        // Основная инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM загружен, инициализируем приложение');
+            
+            // Инициализируем App если еще не инициализировано
+            if (!window.app && window.App) {
+                try {
+                    window.app = new window.App();
+                    window.app.init();
+                    console.log('✅ App: Основная инициализация завершена');
+                } catch (error) {
+                    console.error('❌ App: Ошибка инициализации:', error);
+                }
+            }
+            
+            // Если мы на игровой странице, обрабатываем маршрут
+            const hash = window.location.hash;
+            if (hash && hash.includes('game')) {
+                setTimeout(() => {
+                    if (window.app && window.app.getRouter) {
+                        const router = window.app.getRouter();
+                        if (router && router.handleCurrentRoute) {
+                            console.log('🗺️ Обрабатываем игровой маршрут:', hash);
+                            router.handleCurrentRoute();
+                        }
+                    }
+                }, 200);
+            }
+        });
     </script>
 </body>
 </html>
