@@ -210,6 +210,14 @@ class App {
         this.getEventBus().on('navigate:forward', () => {
             window.history.forward();
         });
+
+        // Обрабатываем текущий маршрут после настройки
+        setTimeout(() => {
+            const router = this.getRouter();
+            if (router && router.handleCurrentRoute) {
+                router.handleCurrentRoute();
+            }
+        }, 100);
     }
 
     /**
@@ -361,10 +369,8 @@ class App {
             const roomId = state?.roomId || roomIdFromHash;
 
             if (roomId) {
-                // Инициализируем игру прямо на главной странице
-                console.log('🎮 App: Инициализация игры для комнаты:', roomId);
-                this._showPage('game-page');
-                this._initializeGameModules(roomId);
+                // Показываем игровую страницу вместо перенаправления
+                this._showGamePage(roomId);
                 return;
             }
 
@@ -386,12 +392,66 @@ class App {
      */
     _showPage(pageId) {
         const pages = document.querySelectorAll('.page');
-        pages.forEach(page => page.classList.remove('active'));
+        pages.forEach(page => page.style.display = 'none');
         
         const targetPage = document.getElementById(pageId);
         if (targetPage) {
-            targetPage.classList.add('active');
+            targetPage.style.display = 'block';
             this.logger?.debug(`Показана страница: ${pageId}`, null, 'App');
+        }
+    }
+
+    /**
+     * Показать игровую страницу
+     * @param {string} roomId - ID комнаты
+     */
+    _showGamePage(roomId) {
+        this.logger?.info('Показ игровой страницы', { roomId }, 'App');
+        
+        try {
+            // Скрываем все страницы
+            const allPages = document.querySelectorAll('.page');
+            allPages.forEach(page => {
+                page.style.display = 'none';
+                page.classList.remove('active');
+            });
+            
+            // Показываем только игровую страницу
+            const gamePage = document.getElementById('game-page');
+            if (gamePage) {
+                gamePage.style.display = 'block';
+                gamePage.classList.add('active');
+                console.log('✅ App: Игровая страница активирована');
+            } else {
+                console.error('❌ App: Элемент game-page не найден');
+            }
+            
+            // Скрываем placeholder страницу
+            const placeholderPage = document.getElementById('placeholder-page');
+            if (placeholderPage) {
+                placeholderPage.style.display = 'none';
+                placeholderPage.classList.remove('active');
+                console.log('✅ App: Placeholder страница скрыта');
+            }
+            
+            // Инициализируем игровые модули для этой комнаты
+            setTimeout(() => {
+                this._initializeGameModules(roomId);
+            }, 100);
+            
+            // Обновляем URL без перезагрузки
+            window.history.replaceState(null, '', `#game?roomId=${roomId}`);
+            
+            this.logger?.info('Игровая страница показана', { roomId }, 'App');
+            
+        } catch (error) {
+            console.error('❌ App: Ошибка показа игровой страницы:', error);
+            this.errorHandler?.handleError({
+                type: 'UI_ERROR',
+                message: 'Failed to show game page',
+                error,
+                context: 'App._showGamePage'
+            });
         }
     }
 
