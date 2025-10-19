@@ -68,6 +68,9 @@ class BankModuleServer {
             // Обновляем состояние банка данными из gameState
             this.updateBankStateFromServer(gameStateData, null);
             
+            // Загружаем историю операций
+            await this.loadTransactionsHistory();
+            
             console.log('✅ BankModuleServer: Данные загружены с сервера');
             
         } catch (error) {
@@ -418,6 +421,9 @@ class BankModuleServer {
         
         // Обновляем список игроков
         this.updatePlayersList();
+        
+        // Обновляем историю операций
+        this.updateTransactionsHistory();
         
         console.log('🔄 BankModuleServer: UI обновлен данными с сервера');
     }
@@ -948,6 +954,132 @@ class BankModuleServer {
                 max-height: 300px;
                 overflow-y: auto;
             }
+            
+            .transaction-item {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 10px;
+                padding: 15px;
+                margin-bottom: 10px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .transaction-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 8px;
+            }
+            
+            .transaction-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+            
+            .transaction-icon.transfer {
+                background: rgba(59, 130, 246, 0.2);
+                color: #60a5fa;
+            }
+            
+            .transaction-icon.transfer-in {
+                background: rgba(34, 197, 94, 0.2);
+                color: #4ade80;
+            }
+            
+            .transaction-icon.transfer-out {
+                background: rgba(239, 68, 68, 0.2);
+                color: #f87171;
+            }
+            
+            .transaction-icon.credit-take {
+                background: rgba(168, 85, 247, 0.2);
+                color: #a78bfa;
+            }
+            
+            .transaction-icon.credit-repay {
+                background: rgba(34, 197, 94, 0.2);
+                color: #4ade80;
+            }
+            
+            .transaction-icon.default {
+                background: rgba(156, 163, 175, 0.2);
+                color: #d1d5db;
+            }
+            
+            .transaction-info {
+                flex: 1;
+            }
+            
+            .transaction-type {
+                font-weight: 600;
+                color: #ffffff;
+                margin-bottom: 2px;
+            }
+            
+            .transaction-participant {
+                font-size: 0.85rem;
+                color: rgba(156, 163, 175, 0.9);
+            }
+            
+            .transaction-amount {
+                font-weight: 700;
+                font-size: 1.1rem;
+            }
+            
+            .transaction-amount.positive {
+                color: #10b981;
+            }
+            
+            .transaction-amount.negative {
+                color: #ef4444;
+            }
+            
+            .transaction-details {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 0.8rem;
+                color: rgba(156, 163, 175, 0.8);
+            }
+            
+            .transaction-time {
+                font-weight: 500;
+            }
+            
+            .transaction-description {
+                max-width: 200px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .no-transactions {
+                text-align: center;
+                padding: 40px 20px;
+                color: rgba(156, 163, 175, 0.8);
+            }
+            
+            .no-transactions-icon {
+                font-size: 48px;
+                margin-bottom: 16px;
+                opacity: 0.5;
+            }
+            
+            .no-transactions-text {
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: rgba(156, 163, 175, 0.9);
+            }
+            
+            .no-transactions-subtext {
+                font-size: 0.9rem;
+                opacity: 0.7;
+            }
         `;
         
         document.head.appendChild(style);
@@ -1064,6 +1196,17 @@ class BankModuleServer {
             
             if (result.success) {
                 this.showNotification(`Перевод $${this.formatNumber(amount)} выполнен`, 'success');
+                
+                // Добавляем операцию в историю
+                const recipient = this.bankState.players.find(p => p.id === recipientId);
+                this.addTransaction({
+                    type: 'transfer',
+                    amount: -amount, // Отрицательная сумма для отправителя
+                    recipient: recipient,
+                    sender: { id: this.bankState.playerId, username: this.getCurrentUserSync()?.username },
+                    description: `Перевод для ${recipient?.username || recipient?.name || 'игрока'}`
+                });
+                
                 this.resetTransferForm();
                 
                 // Перезагружаем данные с сервера
@@ -1113,6 +1256,14 @@ class BankModuleServer {
             
             if (result.success) {
                 this.showNotification(`Кредит $${this.formatNumber(amount)} взят успешно`, 'success');
+                
+                // Добавляем операцию в историю
+                this.addTransaction({
+                    type: 'credit',
+                    amount: amount,
+                    description: `Взят кредит на сумму $${this.formatNumber(amount)}`
+                });
+                
                 amountInput.value = '';
                 
                 // Перезагружаем данные с сервера
@@ -1166,6 +1317,14 @@ class BankModuleServer {
             
             if (result.success) {
                 this.showNotification(`Кредит погашен на $${this.formatNumber(amount)}`, 'success');
+                
+                // Добавляем операцию в историю
+                this.addTransaction({
+                    type: 'credit',
+                    amount: -amount, // Отрицательная сумма для погашения
+                    description: `Погашен кредит на сумму $${this.formatNumber(amount)}`
+                });
+                
                 amountInput.value = '';
                 
                 // Перезагружаем данные с сервера
@@ -1309,6 +1468,198 @@ class BankModuleServer {
         }, 3000);
     }
     
+    /**
+     * Загрузка истории операций с сервера
+     */
+    async loadTransactionsHistory() {
+        try {
+            const roomId = this.getRoomId();
+            if (!roomId) {
+                console.warn('⚠️ BankModuleServer: Room ID не найден для загрузки истории');
+                return;
+            }
+
+            // Получаем ID игрока
+            const playerId = this.bankState.playerId || this.getCurrentUserSync()?.id;
+            if (!playerId) {
+                console.warn('⚠️ BankModuleServer: Player ID не найден для загрузки истории');
+                this.bankState.transactions = [];
+                return;
+            }
+
+            // Загружаем историю операций с сервера
+            const response = await fetch(`/api/bank/transactions/${roomId}/${playerId}`);
+            if (!response.ok) {
+                console.warn('⚠️ BankModuleServer: Не удалось загрузить историю операций:', response.status);
+                this.bankState.transactions = [];
+                return;
+            }
+
+            const data = await response.json();
+            if (data.success && data.data && Array.isArray(data.data.transactions)) {
+                this.bankState.transactions = data.data.transactions;
+                console.log('📋 BankModuleServer: История операций загружена:', this.bankState.transactions.length);
+            } else if (data.success && Array.isArray(data.transactions)) {
+                // Fallback для старого формата
+                this.bankState.transactions = data.transactions;
+                console.log('📋 BankModuleServer: История операций загружена (fallback):', this.bankState.transactions.length);
+            } else {
+                this.bankState.transactions = [];
+            }
+        } catch (error) {
+            console.error('❌ BankModuleServer: Ошибка загрузки истории операций:', error);
+            this.bankState.transactions = [];
+        }
+    }
+
+    /**
+     * Обновление отображения истории операций
+     */
+    updateTransactionsHistory() {
+        const transactionsList = this.ui?.querySelector('#transactions-list-server');
+        if (!transactionsList) return;
+
+        // Очищаем список
+        transactionsList.innerHTML = '';
+
+        if (!this.bankState.transactions || this.bankState.transactions.length === 0) {
+            transactionsList.innerHTML = `
+                <div class="no-transactions">
+                    <div class="no-transactions-icon">📋</div>
+                    <div class="no-transactions-text">История операций пуста</div>
+                    <div class="no-transactions-subtext">Выполненные операции появятся здесь</div>
+                </div>
+            `;
+            return;
+        }
+
+        // Сортируем по дате (новые сначала)
+        const sortedTransactions = [...this.bankState.transactions].sort((a, b) => 
+            new Date(b.timestamp || b.createdAt || 0) - new Date(a.timestamp || a.createdAt || 0)
+        );
+
+        // Рендерим каждую операцию
+        sortedTransactions.forEach((transaction, index) => {
+            const transactionElement = this.createTransactionElement(transaction, index);
+            transactionsList.appendChild(transactionElement);
+        });
+
+        // Обновляем счетчик в заголовке
+        const badgeElement = this.ui?.querySelector('#new-transactions-server');
+        if (badgeElement) {
+            badgeElement.textContent = this.bankState.transactions.length.toString();
+        }
+
+        console.log(`📋 BankModuleServer: Отображено ${this.bankState.transactions.length} операций`);
+    }
+
+    /**
+     * Создание элемента операции для отображения
+     */
+    createTransactionElement(transaction, index) {
+        const div = document.createElement('div');
+        div.className = 'transaction-item';
+        
+        const { type, amount, recipient, sender, timestamp, description } = transaction;
+        
+        // Определяем иконку и цвет по типу операции
+        let icon = '💰';
+        let colorClass = '';
+        let typeText = '';
+        
+        switch (type) {
+            case 'transfer':
+            case 'перевод':
+                icon = '💸';
+                colorClass = 'transfer';
+                typeText = 'Перевод';
+                break;
+            case 'credit':
+            case 'кредит':
+                icon = '💳';
+                colorClass = amount > 0 ? 'credit-take' : 'credit-repay';
+                typeText = amount > 0 ? 'Взят кредит' : 'Погашен кредит';
+                break;
+            case 'payment':
+            case 'платеж':
+                icon = '💵';
+                colorClass = 'payment';
+                typeText = 'Платеж';
+                break;
+            default:
+                icon = '💰';
+                colorClass = 'default';
+                typeText = type || 'Операция';
+        }
+
+        // Форматируем дату и время
+        const date = new Date(timestamp || transaction.createdAt);
+        const timeStr = date.toLocaleString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Получаем информацию о получателе/отправителе
+        let participantText = '';
+        if (type === 'transfer' || type === 'перевод') {
+            if (recipient && this.bankState.playerId === recipient.id) {
+                participantText = `от ${sender?.username || sender?.name || 'Неизвестно'}`;
+                colorClass = 'transfer-in';
+            } else {
+                participantText = `для ${recipient?.username || recipient?.name || 'Неизвестно'}`;
+                colorClass = 'transfer-out';
+            }
+        }
+
+        const amountText = amount ? `$${this.formatNumber(Math.abs(amount))}` : '';
+        const amountClass = amount > 0 ? 'positive' : amount < 0 ? 'negative' : '';
+
+        div.innerHTML = `
+            <div class="transaction-header">
+                <div class="transaction-icon ${colorClass}">${icon}</div>
+                <div class="transaction-info">
+                    <div class="transaction-type">${typeText}</div>
+                    <div class="transaction-participant">${participantText}</div>
+                </div>
+                <div class="transaction-amount ${amountClass}">${amountText}</div>
+            </div>
+            <div class="transaction-details">
+                <div class="transaction-time">${timeStr}</div>
+                ${description ? `<div class="transaction-description">${description}</div>` : ''}
+            </div>
+        `;
+
+        return div;
+    }
+
+    /**
+     * Добавление новой операции в историю (для локального обновления)
+     */
+    addTransaction(transaction) {
+        if (!this.bankState.transactions) {
+            this.bankState.transactions = [];
+        }
+
+        // Добавляем timestamp если его нет
+        if (!transaction.timestamp && !transaction.createdAt) {
+            transaction.timestamp = new Date().toISOString();
+        }
+
+        this.bankState.transactions.unshift(transaction);
+        
+        // Ограничиваем количество операций в истории (например, последние 50)
+        if (this.bankState.transactions.length > 50) {
+            this.bankState.transactions = this.bankState.transactions.slice(0, 50);
+        }
+
+        // Обновляем отображение
+        this.updateTransactionsHistory();
+        
+        console.log('📋 BankModuleServer: Добавлена новая операция в историю:', transaction);
+    }
+
     /**
      * Уничтожение модуля
      */
