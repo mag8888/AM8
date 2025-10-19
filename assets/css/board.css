@@ -489,8 +489,8 @@
 }
 
 .logo-img {
-    width: 210px;
-    height: 210px;
+    width: 300px;
+    height: 300px;
     filter: drop-shadow(0 0 40px rgba(245, 245, 220, 0.9));
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;

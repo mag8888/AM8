@@ -221,93 +221,122 @@ class PlayersPanel {
     }
 
     /**
-     * Рендер компонента
+     * Рендер компонента - полностью переработанный дизайн
      */
     render() {
         if (!this.container) return;
         
         this.container.innerHTML = `
-            <div class="players-panel">
-                <div class="panel-grid">
-                    <!-- Основные игровые контролы -->
-                    <section class="game-controls">
-                        <!-- Активный игрок и статус хода -->
-                        <div class="current-turn-section">
-                            <div class="turn-header">
-                                <h4 class="section-title">🎮 Текущий ход</h4>
+            <div class="game-right-panel">
+                <!-- Заголовок панели -->
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="title-icon">🎮</span>
+                        <span class="title-text">Игровая панель</span>
+                    </div>
+                    <div class="panel-subtitle">Управление игрой</div>
+                </div>
+
+                <!-- Активный игрок -->
+                <div class="active-player-widget">
+                    <div class="widget-header">
+                        <span class="widget-icon">👤</span>
+                        <span class="widget-title">Активный игрок</span>
+                    </div>
+                    <div class="player-info-card" id="active-player-card">
+                        <div class="player-avatar-container">
+                            <div class="player-avatar" id="active-player-avatar">
+                                <span class="avatar-text">👤</span>
                             </div>
-                            <div class="active-player-card">
-                                <div class="player-avatar" id="active-player-avatar">👤</div>
-                                <div class="player-details">
-                                    <div class="player-name" id="current-player-name">Загрузка...</div>
-                                    <div class="player-status" id="turn-status">
-                                        <span class="turn-icon">⏳</span>
-                                        <span class="turn-text">Ожидание</span>
-                                    </div>
+                            <div class="player-status-indicator" id="player-status-indicator"></div>
+                        </div>
+                        <div class="player-details">
+                            <div class="player-name" id="current-player-name">Загрузка...</div>
+                            <div class="player-status" id="turn-status">
+                                <span class="status-icon">⏳</span>
+                                <span class="status-text">Ожидание данных</span>
+                            </div>
+                            <div class="player-timer" id="player-timer" style="display: none;">
+                                <div class="timer-ring">
+                                    <svg class="timer-svg" viewBox="0 0 36 36">
+                                        <path class="timer-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                                        <path class="timer-progress" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                                    </svg>
+                                    <span class="timer-text" id="timer-text">30</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Секция броска кубика -->
-                        <div class="dice-roll-section">
-                            <div class="dice-header">
-                                <h4 class="section-title">🎲 Бросок кубика</h4>
-                            </div>
-                            <div class="dice-container">
-                                <div class="dice-visual" id="dice-visual">
-                                    <div class="dice-face" id="dice-result-value">-</div>
-                                </div>
-                                <div class="dice-actions">
-                                    <button class="btn btn-primary btn-roll" id="roll-dice-btn" type="button">
-                                        <span class="btn-icon">🎲</span>
-                                        <span class="btn-text">Бросить кубик</span>
-                                    </button>
-                                </div>
-                                <div class="roll-history" id="roll-history">
-                                    <!-- Последние результаты будут показываться здесь -->
+                    </div>
+                </div>
+
+                <!-- Бросок кубика -->
+                <div class="dice-widget">
+                    <div class="widget-header">
+                        <span class="widget-icon">🎲</span>
+                        <span class="widget-title">Бросок кубика</span>
+                    </div>
+                    <div class="dice-container">
+                        <div class="dice-display" id="dice-display">
+                            <div class="dice-main" id="dice-result-value">
+                                <div class="dice-face">
+                                    <span class="dice-number">-</span>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Действия игрока -->
-                        <div class="player-actions">
-                            <div class="actions-header">
-                                <h4 class="section-title">⚡ Действия</h4>
-                            </div>
-                            <div class="action-buttons">
-                                <button class="btn btn-action btn-bank" id="open-bank" type="button">
-                                    <span class="btn-icon">🏦</span>
-                                    <span class="btn-text">Банк</span>
-                                </button>
-                                <button class="btn btn-action btn-pass" id="pass-turn" type="button" disabled>
-                                    <span class="btn-icon">➡️</span>
-                                    <span class="btn-text">Завершить ход</span>
-                                </button>
+                            <div class="dice-history" id="roll-history">
+                                <!-- История бросков будет здесь -->
                             </div>
                         </div>
-                    </section>
-                    
-                    <!-- Участники игры -->
-                    <section class="players-section">
-                        <div class="players-header">
-                            <h3 class="players-title">👥 Участники</h3>
-                            <span class="players-count" id="players-count">0/4</span>
+                        <div class="dice-controls">
+                            <button class="dice-btn primary" id="roll-dice-btn" type="button">
+                                <span class="btn-icon">🎲</span>
+                                <span class="btn-text">БРОСИТЬ</span>
+                                <div class="btn-glow"></div>
+                            </button>
                         </div>
-                        <div class="players-list" id="players-list">
-                            <!-- Игроки будут добавлены динамически -->
-                        </div>
-                    </section>
+                    </div>
+                </div>
+
+                <!-- Игровые действия -->
+                <div class="actions-widget">
+                    <div class="widget-header">
+                        <span class="widget-icon">⚡</span>
+                        <span class="widget-title">Действия</span>
+                    </div>
+                    <div class="actions-grid">
+                        <button class="action-btn bank-btn" id="open-bank" type="button">
+                            <div class="btn-icon">🏦</div>
+                            <div class="btn-label">Банк</div>
+                            <div class="btn-glow"></div>
+                        </button>
+                        <button class="action-btn pass-btn" id="pass-turn" type="button" disabled>
+                            <div class="btn-icon">➡️</div>
+                            <div class="btn-label">Следующий</div>
+                            <div class="btn-glow"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Список игроков -->
+                <div class="players-widget">
+                    <div class="widget-header">
+                        <span class="widget-icon">👥</span>
+                        <span class="widget-title">Игроки</span>
+                        <span class="players-count" id="players-count">0/4</span>
+                    </div>
+                    <div class="players-list" id="players-list">
+                        <!-- Игроки будут добавлены динамически -->
+                    </div>
                 </div>
             </div>
         `;
         
-        // Добавляем стили
-        this.addStyles();
+        // Добавляем новые стили
+        this.addNewStyles();
         
         // Настраиваем обработчики
         this.setupControls();
         
-        console.log('✅ PlayersPanel v2.0: Отрендерен');
+        console.log('✅ PlayersPanel v3.0: Новый дизайн отрендерен');
     }
     
     /**
@@ -489,54 +518,144 @@ class PlayersPanel {
     }
     
     /**
-     * Обновление информации об активном игроке
+     * Обновление информации об активном игроке - обновлен для новой структуры
      * @param {Object} activePlayer - Активный игрок
      */
     updateActivePlayerInfo(activePlayer) {
         const currentPlayerName = document.getElementById('current-player-name');
         const turnStatus = document.getElementById('turn-status');
         const playerAvatar = document.getElementById('active-player-avatar');
+        const playerTimer = document.getElementById('player-timer');
+        const statusIndicator = document.getElementById('player-status-indicator');
         
         if (currentPlayerName) {
             if (activePlayer) {
                 const displayName = PlayerStatusUtils.getPlayerDisplayName(activePlayer);
                 currentPlayerName.textContent = displayName;
                 
-                // Обновляем аватар с инициалами игрока
+                // Обновляем аватар с инициалами игрока или эмодзи
                 if (playerAvatar && displayName) {
                     const initials = displayName.split(' ')
                         .map(word => word.charAt(0))
                         .join('')
                         .toUpperCase()
                         .substring(0, 2);
-                    playerAvatar.textContent = initials || '👤';
+                    
+                    // Используем эмодзи для известных игроков
+                    const playerEmoji = this.getPlayerEmoji(displayName);
+                    const avatarText = playerAvatar.querySelector('.avatar-text');
+                    if (avatarText) {
+                        avatarText.textContent = playerEmoji || initials || '👤';
+                    }
                 }
             } else {
                 currentPlayerName.textContent = 'Загрузка...';
-                if (playerAvatar) {
-                    playerAvatar.textContent = '👤';
+                const avatarText = playerAvatar?.querySelector('.avatar-text');
+                if (avatarText) {
+                    avatarText.textContent = '👤';
                 }
             }
         }
         
         // Обновляем статус хода
-        if (turnStatus && activePlayer) {
-            const turnIcon = turnStatus.querySelector('.turn-icon');
-            const turnText = turnStatus.querySelector('.turn-text');
+        if (turnStatus) {
+            const statusIcon = turnStatus.querySelector('.status-icon');
+            const statusText = turnStatus.querySelector('.status-text');
             
-            if (turnIcon && turnText) {
-                // Проверяем, может ли игрок бросать кубик
-                const canRoll = this.gameStateManager?.getState()?.canRoll || false;
-                if (canRoll) {
-                    turnIcon.textContent = '🎲';
-                    turnText.textContent = 'Можно бросать';
-                    turnStatus.className = 'player-status active';
+            if (statusIcon && statusText) {
+                if (activePlayer) {
+                    // Проверяем, может ли игрок бросать кубик
+                    const canRoll = this.gameStateManager?.getState()?.canRoll || false;
+                    const currentUserId = this.getCurrentUserId();
+                    const isMyTurn = activePlayer && currentUserId && 
+                        (activePlayer.id === currentUserId || 
+                         activePlayer.userId === currentUserId || 
+                         activePlayer.username === currentUserId);
+                    
+                    if (isMyTurn) {
+                        if (canRoll) {
+                            statusIcon.textContent = '🎲';
+                            statusText.textContent = 'Можно бросать';
+                            statusIndicator.style.background = '#22c55e';
+                            this.showTimer(playerTimer, true);
+                        } else {
+                            statusIcon.textContent = '⏳';
+                            statusText.textContent = 'Ожидание действий';
+                            statusIndicator.style.background = '#f59e0b';
+                            this.showTimer(playerTimer, false);
+                        }
+                    } else {
+                        statusIcon.textContent = '👤';
+                        statusText.textContent = `${PlayerStatusUtils.getPlayerDisplayName(activePlayer)} ходит`;
+                        statusIndicator.style.background = '#6366f1';
+                        this.showTimer(playerTimer, false);
+                    }
                 } else {
-                    turnIcon.textContent = '⏳';
-                    turnText.textContent = 'Ожидание';
-                    turnStatus.className = 'player-status waiting';
+                    statusIcon.textContent = '⏳';
+                    statusText.textContent = 'Ожидание данных';
+                    statusIndicator.style.background = '#6b7280';
+                    this.showTimer(playerTimer, false);
                 }
             }
+        }
+    }
+
+    /**
+     * Получение эмодзи для игрока
+     */
+    getPlayerEmoji(playerName) {
+        const emojiMap = {
+            'admin': '👑',
+            'roman': '🎯',
+            'test': '🧪',
+            'player': '🎮'
+        };
+        
+        const name = playerName.toLowerCase();
+        return emojiMap[name] || null;
+    }
+
+    /**
+     * Показать/скрыть таймер
+     */
+    showTimer(timerElement, show) {
+        if (timerElement) {
+            timerElement.style.display = show ? 'flex' : 'none';
+            if (show) {
+                this.startTurnTimer(timerElement);
+            } else {
+                this.stopTurnTimer();
+            }
+        }
+    }
+
+    startTurnTimer(timerElement) {
+        this.stopTurnTimer();
+        const timerText = timerElement.querySelector('.timer-text');
+        if (!timerText) return;
+
+        let seconds = 30; // 30 секунд на ход
+        const updateTimer = () => {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            timerText.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            
+            if (seconds <= 0) {
+                this.stopTurnTimer();
+                return;
+            }
+            
+            seconds--;
+            this.timerId = setTimeout(updateTimer, 1000);
+        };
+        
+        updateTimer();
+    }
+
+    stopTurnTimer() {
+        if (this.timerId) {
+            clearTimeout(this.timerId);
+            this.timerId = null;
         }
     }
     
@@ -564,7 +683,7 @@ class PlayersPanel {
     }
     
     /**
-     * Обновление результата кубика
+     * Обновление результата кубика - обновлен для новой структуры
      * @param {number} result - Результат броска
      */
     updateDiceResult(result) {
@@ -575,21 +694,36 @@ class PlayersPanel {
             const numericValue = typeof result === 'object'
                 ? Number(result?.value ?? result?.total)
                 : Number(result);
+            
+            const diceFace = diceResult.querySelector('.dice-face');
+            const diceNumber = diceFace?.querySelector('.dice-number');
+            
             if (Number.isFinite(numericValue) && numericValue >= 1 && numericValue <= 6) {
-                diceResult.textContent = numericValue;
-                diceResult.className = 'dice-face active';
+                // Показываем результат
+                if (diceNumber) {
+                    diceNumber.textContent = numericValue;
+                }
+                
+                if (diceFace) {
+                    diceFace.classList.add('rolling');
+                    setTimeout(() => {
+                        diceFace.classList.remove('rolling');
+                    }, 600);
+                }
                 
                 // Добавляем результат в историю бросков
                 this.addToRollHistory(numericValue, rollHistory);
             } else {
-                diceResult.textContent = '-';
-                diceResult.className = 'dice-face';
+                // Возвращаем placeholder состояние
+                if (diceNumber) {
+                    diceNumber.textContent = '-';
+                }
             }
         }
     }
 
     /**
-     * Добавление результата в историю бросков
+     * Добавление результата в историю бросков - обновлено для новой структуры
      */
     addToRollHistory(value, rollHistoryElement) {
         if (!rollHistoryElement) return;
@@ -607,9 +741,9 @@ class PlayersPanel {
             this.rollHistory = this.rollHistory.slice(0, 5);
         }
         
-        // Обновляем отображение истории
+        // Обновляем отображение истории для новой структуры
         rollHistoryElement.innerHTML = this.rollHistory
-            .map(val => `<div class="roll-history-item">${val}</div>`)
+            .map(val => `<div class="roll-item">${val}</div>`)
             .join('');
     }
 
@@ -1155,9 +1289,39 @@ class PlayersPanel {
                 animation: pulse 2s infinite;
             }
 
+            .player-status.processing {
+                background: rgba(245, 158, 11, 0.2);
+                color: #f59e0b;
+                border: 1px solid rgba(245, 158, 11, 0.3);
+            }
+
+            .player-status.loading {
+                background: rgba(156, 163, 175, 0.15);
+                color: #94a3b8;
+                border: 1px solid rgba(156, 163, 175, 0.2);
+            }
+
+            .player-timer {
+                display: none;
+                align-items: center;
+                gap: 0.375rem;
+                padding: 0.25rem 0.5rem;
+                background: rgba(239, 68, 68, 0.15);
+                border-radius: 1rem;
+                font-size: 0.75rem;
+                color: #fca5a5;
+                border: 1px solid rgba(239, 68, 68, 0.3);
+                animation: timerPulse 1s infinite;
+            }
+
             @keyframes pulse {
                 0%, 100% { opacity: 1; }
                 50% { opacity: 0.7; }
+            }
+
+            @keyframes timerPulse {
+                0%, 100% { opacity: 0.8; }
+                50% { opacity: 1; }
             }
 
             /* Секция броска кубика */
@@ -1363,6 +1527,536 @@ class PlayersPanel {
     }
     
     /**
+     * Новые стили для переработанной правой панели v3.0
+     */
+    addNewStyles() {
+        if (document.getElementById('game-right-panel-styles')) return;
+        
+        const styles = document.createElement('style');
+        styles.id = 'game-right-panel-styles';
+        styles.textContent = `
+            /* Основной контейнер правой панели */
+            .game-right-panel {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+                height: 100vh;
+                padding: 1.5rem;
+                background: linear-gradient(180deg, 
+                    rgba(15, 23, 42, 0.95) 0%, 
+                    rgba(8, 13, 26, 0.98) 100%);
+                border-left: 1px solid rgba(99, 102, 241, 0.2);
+                backdrop-filter: blur(20px);
+                overflow-y: auto;
+                box-sizing: border-box;
+            }
+
+            /* Заголовок панели */
+            .panel-header {
+                text-align: center;
+                padding-bottom: 1rem;
+                border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            }
+
+            .panel-title {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.75rem;
+                font-size: 1.25rem;
+                font-weight: 700;
+                color: #f8fafc;
+                margin-bottom: 0.5rem;
+            }
+
+            .title-icon {
+                font-size: 1.5rem;
+            }
+
+            .panel-subtitle {
+                font-size: 0.875rem;
+                color: rgba(148, 163, 184, 0.8);
+                font-weight: 500;
+            }
+
+            /* Общие стили для виджетов */
+            .active-player-widget,
+            .dice-widget,
+            .actions-widget,
+            .players-widget {
+                background: rgba(255, 255, 255, 0.03);
+                border-radius: 1rem;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                padding: 1.25rem;
+                backdrop-filter: blur(10px);
+                box-shadow: 
+                    0 4px 20px rgba(0, 0, 0, 0.15),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                transition: all 0.3s ease;
+            }
+
+            .active-player-widget:hover,
+            .dice-widget:hover,
+            .actions-widget:hover,
+            .players-widget:hover {
+                border-color: rgba(99, 102, 241, 0.3);
+                box-shadow: 
+                    0 8px 30px rgba(0, 0, 0, 0.2),
+                    0 0 20px rgba(99, 102, 241, 0.1);
+            }
+
+            /* Заголовки виджетов */
+            .widget-header {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                margin-bottom: 1rem;
+                font-size: 1rem;
+                font-weight: 600;
+                color: #f8fafc;
+            }
+
+            .widget-icon {
+                font-size: 1.125rem;
+            }
+
+            .widget-title {
+                flex: 1;
+            }
+
+            /* Активный игрок */
+            .player-info-card {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 1rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 0.75rem;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                position: relative;
+            }
+
+            .player-avatar-container {
+                position: relative;
+                flex-shrink: 0;
+            }
+
+            .player-avatar {
+                width: 3.5rem;
+                height: 3.5rem;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                color: white;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .player-avatar::before {
+                content: '';
+                position: absolute;
+                inset: -2px;
+                border-radius: 50%;
+                background: linear-gradient(45deg, #6366f1, #8b5cf6, #ec4899);
+                z-index: -1;
+                animation: avatarGlow 3s ease-in-out infinite;
+            }
+
+            @keyframes avatarGlow {
+                0%, 100% { opacity: 0.7; }
+                50% { opacity: 1; }
+            }
+
+            .player-status-indicator {
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                width: 1rem;
+                height: 1rem;
+                border-radius: 50%;
+                background: #22c55e;
+                border: 2px solid rgba(15, 23, 42, 0.95);
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.1); opacity: 0.8; }
+            }
+
+            .player-details {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .player-name {
+                font-size: 1.125rem;
+                font-weight: 600;
+                color: #f8fafc;
+                margin-bottom: 0.25rem;
+                word-break: break-word;
+            }
+
+            .player-status {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.875rem;
+                color: rgba(148, 163, 184, 0.9);
+            }
+
+            .status-icon {
+                font-size: 1rem;
+            }
+
+            /* Таймер */
+            .player-timer {
+                position: absolute;
+                top: 0.5rem;
+                right: 0.5rem;
+            }
+
+            .timer-ring {
+                position: relative;
+                width: 2rem;
+                height: 2rem;
+            }
+
+            .timer-svg {
+                width: 100%;
+                height: 100%;
+                transform: rotate(-90deg);
+            }
+
+            .timer-bg {
+                fill: none;
+                stroke: rgba(148, 163, 184, 0.2);
+                stroke-width: 2;
+            }
+
+            .timer-progress {
+                fill: none;
+                stroke: #f59e0b;
+                stroke-width: 2;
+                stroke-linecap: round;
+                transition: stroke-dasharray 0.3s ease;
+            }
+
+            .timer-text {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #f59e0b;
+            }
+
+            /* Бросок кубика */
+            .dice-display {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .dice-main {
+                position: relative;
+            }
+
+            .dice-face {
+                width: 4rem;
+                height: 4rem;
+                background: linear-gradient(135deg, #ffffff, #f1f5f9);
+                border-radius: 0.75rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 2rem;
+                font-weight: 700;
+                color: #1e293b;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                box-shadow: 
+                    0 8px 20px rgba(0, 0, 0, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+                transition: all 0.3s ease;
+            }
+
+            .dice-face.rolling {
+                animation: diceRoll 0.6s ease-in-out;
+            }
+
+            @keyframes diceRoll {
+                0%, 100% { transform: rotate(0deg) scale(1); }
+                25% { transform: rotate(90deg) scale(1.1); }
+                50% { transform: rotate(180deg) scale(1); }
+                75% { transform: rotate(270deg) scale(1.1); }
+            }
+
+            .dice-number {
+                user-select: none;
+            }
+
+            .dice-history {
+                display: flex;
+                gap: 0.5rem;
+                max-width: 10rem;
+                overflow-x: auto;
+                padding: 0.5rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 0.5rem;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .roll-item {
+                min-width: 2rem;
+                height: 2rem;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 0.25rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: #f8fafc;
+            }
+
+            .dice-controls {
+                width: 100%;
+            }
+
+            .dice-btn {
+                width: 100%;
+                padding: 1rem 1.5rem;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                border: none;
+                border-radius: 0.75rem;
+                color: white;
+                font-size: 1rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                cursor: pointer;
+                position: relative;
+                overflow: hidden;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.75rem;
+            }
+
+            .dice-btn:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+            }
+
+            .dice-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .btn-glow {
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+                transform: translateX(-100%);
+                transition: transform 0.6s ease;
+            }
+
+            .dice-btn:hover .btn-glow {
+                transform: translateX(100%);
+            }
+
+            /* Игровые действия */
+            .actions-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+
+            .action-btn {
+                padding: 1.25rem 1rem;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 0.75rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+                text-align: center;
+            }
+
+            .action-btn:hover:not(:disabled) {
+                background: rgba(255, 255, 255, 0.08);
+                border-color: rgba(99, 102, 241, 0.3);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            }
+
+            .action-btn:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+
+            .bank-btn:hover:not(:disabled) {
+                border-color: rgba(34, 197, 94, 0.3);
+                box-shadow: 0 8px 20px rgba(34, 197, 94, 0.15);
+            }
+
+            .pass-btn:hover:not(:disabled) {
+                border-color: rgba(245, 158, 11, 0.3);
+                box-shadow: 0 8px 20px rgba(245, 158, 11, 0.15);
+            }
+
+            .btn-icon {
+                font-size: 1.5rem;
+            }
+
+            .btn-label {
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: #f8fafc;
+            }
+
+            /* Список игроков */
+            .players-count {
+                font-size: 0.875rem;
+                color: rgba(148, 163, 184, 0.8);
+                padding: 0.25rem 0.5rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 0.5rem;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .players-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                max-height: 20rem;
+                overflow-y: auto;
+            }
+
+            .player-item {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem;
+                background: rgba(255, 255, 255, 0.03);
+                border-radius: 0.5rem;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                transition: all 0.2s ease;
+            }
+
+            .player-item:hover {
+                background: rgba(255, 255, 255, 0.05);
+                border-color: rgba(255, 255, 255, 0.1);
+            }
+
+            .player-item.active {
+                border-color: rgba(99, 102, 241, 0.4);
+                background: rgba(99, 102, 241, 0.1);
+            }
+
+            .player-avatar-small {
+                width: 2rem;
+                height: 2rem;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.875rem;
+                color: white;
+                flex-shrink: 0;
+            }
+
+            .player-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .player-info-name {
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: #f8fafc;
+                word-break: break-word;
+            }
+
+            .player-info-balance {
+                font-size: 0.75rem;
+                color: rgba(148, 163, 184, 0.8);
+                margin-top: 0.125rem;
+            }
+
+            /* Адаптивность */
+            @media (max-width: 480px) {
+                .game-right-panel {
+                    padding: 1rem;
+                    gap: 1rem;
+                }
+
+                .player-info-card {
+                    padding: 0.75rem;
+                }
+
+                .player-avatar {
+                    width: 3rem;
+                    height: 3rem;
+                }
+
+                .dice-face {
+                    width: 3.5rem;
+                    height: 3.5rem;
+                    font-size: 1.75rem;
+                }
+
+                .actions-grid {
+                    gap: 0.75rem;
+                }
+
+                .action-btn {
+                    padding: 1rem 0.75rem;
+                }
+            }
+
+            /* Скроллбар */
+            .game-right-panel::-webkit-scrollbar,
+            .players-list::-webkit-scrollbar {
+                width: 4px;
+            }
+
+            .game-right-panel::-webkit-scrollbar-track,
+            .players-list::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 2px;
+            }
+
+            .game-right-panel::-webkit-scrollbar-thumb,
+            .players-list::-webkit-scrollbar-thumb {
+                background: rgba(99, 102, 241, 0.4);
+                border-radius: 2px;
+            }
+
+            .game-right-panel::-webkit-scrollbar-thumb:hover,
+            .players-list::-webkit-scrollbar-thumb:hover {
+                background: rgba(99, 102, 241, 0.6);
+            }
+        `;
+        
+        document.head.appendChild(styles);
+    }
+    
+    /**
      * Настройка элементов управления
      * Примечание: PlayersPanel теперь только отображает UI, управление ходами через TurnController
      */
@@ -1414,27 +2108,27 @@ class PlayersPanel {
         }
     }
 
-    // Анимация броска кубика для нового дизайна
+    // Анимация броска кубика для нового дизайна v3.0
     _showRollingAnimation() {
-        const diceFace = document.getElementById('dice-result-value');
-        const diceVisual = document.getElementById('dice-visual');
+        const diceResult = document.getElementById('dice-result-value');
         
-        if (diceFace) {
-            // Добавляем класс для анимации
-            diceFace.classList.add('rolling');
+        if (diceResult) {
+            const diceFace = diceResult.querySelector('.dice-face');
+            const diceNumber = diceFace?.querySelector('.dice-number');
             
-            const seq = ['1','2','3','4','5','6'];
-            let i = 0;
-            this._rollingTimer && clearInterval(this._rollingTimer);
-            this._rollingTimer = setInterval(() => {
-                diceFace.textContent = seq[i % seq.length];
-                i++;
-            }, 120);
-        }
-        
-        // Добавляем эффект дрожания для всего кубика
-        if (diceVisual) {
-            diceVisual.style.animation = 'diceRoll 0.15s infinite';
+            if (diceFace) {
+                diceFace.classList.add('rolling');
+            }
+            
+            if (diceNumber) {
+                const seq = ['1','2','3','4','5','6'];
+                let i = 0;
+                this._rollingTimer && clearInterval(this._rollingTimer);
+                this._rollingTimer = setInterval(() => {
+                    diceNumber.textContent = seq[i % seq.length];
+                    i++;
+                }, 120);
+            }
         }
     }
     
@@ -1445,15 +2139,12 @@ class PlayersPanel {
         }
         
         // Убираем классы анимации
-        const diceFace = document.getElementById('dice-result-value');
-        const diceVisual = document.getElementById('dice-visual');
-        
-        if (diceFace) {
-            diceFace.classList.remove('rolling');
-        }
-        
-        if (diceVisual) {
-            diceVisual.style.animation = '';
+        const diceResult = document.getElementById('dice-result-value');
+        if (diceResult) {
+            const diceFace = diceResult.querySelector('.dice-face');
+            if (diceFace) {
+                diceFace.classList.remove('rolling');
+            }
         }
     }
     
