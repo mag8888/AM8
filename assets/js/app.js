@@ -214,8 +214,15 @@ class App {
         // Обрабатываем текущий маршрут после настройки
         setTimeout(() => {
             const router = this.getRouter();
-            if (router && router.handleCurrentRoute) {
+            if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
                 router.handleCurrentRoute();
+            } else {
+                // Если роутер еще не готов, повторяем через больше времени
+                setTimeout(() => {
+                    if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
+                        router.handleCurrentRoute();
+                    }
+                }, 500);
             }
         }, 100);
     }

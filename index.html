@@ -479,9 +479,20 @@
                     setTimeout(() => {
                         if (window.app && window.app.getRouter) {
                             const router = window.app.getRouter();
-                            if (router && router.handleCurrentRoute) {
+                            if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
                                 console.log('🗺️ Обрабатываем игровой маршрут через роутер');
                                 router.handleCurrentRoute();
+                            } else {
+                                console.log('🗺️ Роутер еще не готов, повторяем через 500ms');
+                                setTimeout(() => {
+                                    if (window.app && window.app.getRouter) {
+                                        const router = window.app.getRouter();
+                                        if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
+                                            console.log('🗺️ Обрабатываем игровой маршрут через роутер (retry)');
+                                            router.handleCurrentRoute();
+                                        }
+                                    }
+                                }, 500);
                             }
                         }
                     }, 300);
@@ -738,9 +749,20 @@
                 setTimeout(() => {
                     if (window.app && window.app.getRouter) {
                         const router = window.app.getRouter();
-                        if (router && router.handleCurrentRoute) {
+                        if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
                             console.log('🗺️ Обрабатываем игровой маршрут:', hash);
                             router.handleCurrentRoute();
+                        } else {
+                            console.log('🗺️ Роутер еще не готов, повторяем через 500ms');
+                            setTimeout(() => {
+                                if (window.app && window.app.getRouter) {
+                                    const router = window.app.getRouter();
+                                    if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
+                                        console.log('🗺️ Обрабатываем игровой маршрут (retry):', hash);
+                                        router.handleCurrentRoute();
+                                    }
+                                }
+                            }, 500);
                         }
                     }
                 }, 200);

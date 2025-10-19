@@ -138,8 +138,15 @@ class Router {
         if (hash) {
             // Извлекаем путь из хеша (например, #game?roomId=123 -> /game)
             const hashPath = hash.split('?')[0].substring(1); // убираем #
-            if (hashPath && this.routes.has('/' + hashPath)) {
-                return '/' + hashPath;
+            const fullHashPath = '/' + hashPath;
+            // Проверяем, зарегистрирован ли маршрут, если нет - возвращаем default
+            if (hashPath && this.routes.has(fullHashPath)) {
+                return fullHashPath;
+            } else if (hashPath) {
+                // Если хеш есть, но маршрут еще не зарегистрирован, возвращаем его все равно
+                // Это позволит корректно обработать маршрут после регистрации
+                console.log(`🗺️ Router: Хеш маршрут ${fullHashPath} будет обработан после регистрации`);
+                return fullHashPath;
             }
         }
         
@@ -153,6 +160,12 @@ class Router {
     handleCurrentRoute() {
         const currentPath = this.getCurrentPath();
         
+        // Проверяем, есть ли зарегистрированные маршруты
+        if (this.routes.size === 0) {
+            console.log(`🗺️ Router: Маршруты еще не зарегистрированы, пропускаем обработку`);
+            return;
+        }
+        
         // Если маршрут не зарегистрирован, переходим на default
         if (!this.routes.has(currentPath)) {
             console.log(`🗺️ Router: Маршрут ${currentPath} не найден, переход на ${this.defaultRoute}`);
@@ -162,6 +175,7 @@ class Router {
                 this.navigate(this.defaultRoute);
             } else {
                 console.error(`❌ Router: Default маршрут ${this.defaultRoute} не зарегистрирован`);
+                console.log(`🗺️ Router: Доступные маршруты:`, Array.from(this.routes.keys()));
                 // Если нет доступных маршрутов, просто останавливаемся
             }
             return;
