@@ -29,7 +29,7 @@ class PlayerTokens {
         // Принудительно обновляем фишки через небольшую задержку
         setTimeout(() => {
             this.forceUpdate();
-        }, 1000);
+        }, 300); // Уменьшили с 1000ms до 300ms
         
         console.log('✅ PlayerTokens: Инициализирован');
     }

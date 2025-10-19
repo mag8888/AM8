@@ -32,19 +32,14 @@ class BankPreview {
         // Откладываем рендер, чтобы он произошел после CardDeckPanel
         setTimeout(() => {
             this.render();
-        }, 1000);
-        
-        // Также рендерим еще несколько раз с задержкой для гарантии
-        setTimeout(() => {
-            this.render();
-        }, 3000);
+        }, 500); // Уменьшили с 1000ms до 500ms
         
         // setupEventListeners будет вызван в render()
         
-        // Обновляем данные каждые 5 секунд
+        // Обновляем данные каждые 10 секунд (увеличили интервал с 5 сек до 10 сек)
         this.updateInterval = setInterval(() => {
             this.updatePreviewData();
-        }, 5000);
+        }, 10000);
         
         // Следим за изменениями в контейнере (если CardDeckPanel перезаписывает содержимое)
         this.observeContainer();
@@ -474,25 +469,33 @@ class BankPreview {
     observeContainer() {
         if (!this.container || !this.container.parentNode) return;
         
+        // Debounce для избежания слишком частых перерендеров
+        this.renderDebounceTimer = null;
+        
         // Используем MutationObserver для отслеживания изменений в контейнере
         this.observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList') {
-                    // Проверяем, не удалили ли наш элемент превью
-                    const hasPreview = this.container.querySelector('.bank-preview-card');
-                    if (!hasPreview && this.previewElement) {
-                        // Если превью было удалено, перерендериваем его
-                        setTimeout(() => {
-                            this.render();
-                        }, 50);
-                    }
+            // Проверяем только если есть изменения в дочерних элементах
+            const hasChildListChanges = mutations.some(mutation => mutation.type === 'childList');
+            if (!hasChildListChanges) return;
+            
+            // Проверяем, не удалили ли наш элемент превью
+            const hasPreview = this.container.querySelector('.bank-preview-card');
+            if (!hasPreview && this.previewElement) {
+                // Debounce перерендер
+                if (this.renderDebounceTimer) {
+                    clearTimeout(this.renderDebounceTimer);
                 }
-            });
+                this.renderDebounceTimer = setTimeout(() => {
+                    this.render();
+                    this.renderDebounceTimer = null;
+                }, 100);
+            }
         });
         
         this.observer.observe(this.container, {
             childList: true,
-            subtree: false
+            subtree: false,
+            attributes: false // Отключаем отслеживание атрибутов для производительности
         });
     }
 
@@ -502,6 +505,10 @@ class BankPreview {
     destroy() {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
+        }
+        
+        if (this.renderDebounceTimer) {
+            clearTimeout(this.renderDebounceTimer);
         }
         
         if (this.observer) {
