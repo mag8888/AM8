@@ -375,9 +375,11 @@
     color: var(--text-primary);
     cursor: pointer;
     pointer-events: auto;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Улучшена анимация */
+    transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out, background 0.2s ease-out; /* Специфичные переходы для избежания артефактов */
     backdrop-filter: blur(8px); /* Увеличен blur */
     font-weight: 700; /* Увеличена жирность шрифта */
+    will-change: transform; /* Оптимизация для GPU */
+    transform: translateZ(0); /* Принудительное использование GPU */
 }
 
 .outer-track .track-cell {
@@ -400,12 +402,9 @@
 
 .track-cell:hover {
     border-color: rgba(248, 250, 252, 0.5);
-    box-shadow:
-        0 28px 50px rgba(8, 13, 31, 0.75),
-        0 0 35px rgba(99, 102, 241, 0.5),
-        inset 0 2px 0 rgba(255, 255, 255, 0.15);
+    box-shadow: 0 28px 50px rgba(8, 13, 31, 0.75), 0 0 35px rgba(99, 102, 241, 0.5);
     background: linear-gradient(150deg, rgba(35, 48, 68, 0.95), rgba(20, 30, 45, 0.95));
-    transform: translateY(-2px); /* Добавлен подъем при наведении */
+    transform: translateZ(0) translateY(-1px) scale(1.02); /* Сохраняем translateZ(0) для GPU */
 }
 
 .track-cell:active,
