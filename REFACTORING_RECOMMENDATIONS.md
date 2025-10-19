@@ -2,6 +2,8 @@
 
 ## 📊 Текущее состояние
 
+> **Обновление**: Backup и refactored файлы удалены для упрощения кодовой базы. Все ссылки в документации обновлены для соответствия current API.
+
 ### ✅ Что работает:
 - Базовая функциональность отображения игроков
 - Передача хода между игроками
@@ -91,33 +93,36 @@ gameStateManager.on('turn:changed', (data) => {
 **Решение**: Обработка push-событий и обновление состояния
 
 ```javascript
-// assets/js/modules/PushClient.js
+// assets/js/modules/game/PushClient.js - ТЕКУЩИЙ API
 class PushClient {
-    constructor(gameStateManager) {
-        this.gameStateManager = gameStateManager;
-        this.setupEventSource();
+    constructor({ gameState, eventBus }) {
+        this.gameState = gameState;
+        this.eventBus = eventBus;
+        this.clientId = null;
+        this.isRegistered = false;
+        this.pollingIntervalMs = 5000; // 5 секунд интервал
+        this.init();
     }
     
-    setupEventSource() {
-        // Подключение к push-уведомлениям
-        this.eventSource = new EventSource('/api/push/stream');
-        
-        this.eventSource.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            this.handlePushEvent(data);
-        };
+    async init() {
+        // Генерируем уникальный ID клиента
+        this.clientId = this.generateClientId();
+        // Регистрируемся для получения push-уведомлений
+        await this.register();
+        // Запускаем polling для получения обновлений
+        this.startPolling();
     }
     
     handlePushEvent(data) {
         switch (data.type) {
             case 'turn_changed':
-                this.gameStateManager.updateFromServer(data.data);
+                this.gameState.updateFromServer(data.data);
                 break;
             case 'player_joined':
-                this.gameStateManager.addPlayer(data.data.player);
+                this.gameState.addPlayer(data.data.player);
                 break;
             case 'dice_rolled':
-                this.gameStateManager.updateDiceResult(data.data);
+                this.gameState.updateDiceResult(data.data);
                 break;
         }
     }
