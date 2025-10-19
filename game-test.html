@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Money - Тест игры</title>
+    <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+    <link rel="apple-touch-icon" href="assets/images/favicon.svg">
+    <link rel="stylesheet" href="assets/css/main.css?v=10">
+    <link rel="stylesheet" href="assets/css/board.css?v=10">
+    <link rel="stylesheet" href="assets/css/modals.css?v=10">
+    <link rel="stylesheet" href="assets/css/fixes.css?v=10">
+    <link rel="stylesheet" href="assets/css/navigation.css?v=10">
+    <style>
+        /* Прямая игровая страница - скрываем все лишнее */
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            overflow: hidden;
+        }
+        
+        /* Скрываем навигацию и другие элементы */
+        .nav-container,
+        #auth-page,
+        #rooms-page,
+        .notifications {
+            display: none !important;
+        }
+        
+        /* Игровая страница на весь экран */
+        #game-page {
+            display: block !important;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Игровая страница -->
+    <div id="game-page" class="game-page active">
+        <!-- Игровое поле будет загружено динамически -->
+    </div>
+
+    <!-- Загрузка всех необходимых скриптов -->
+    <script src="assets/js/modules/game/BoardConfig.js?v=7"></script>
+    <script src="assets/js/utils/ModalUtils.js?v=7"></script>
+    <script src="assets/js/modules/Router.js?v=7"></script>
+    <script src="assets/js/modules/game/BoardLayout.js?v=7"></script>
+    <script src="assets/js/modules/game/CardDeckPanel.js?v=7"></script>
+    <script src="assets/js/modules/EventBus.js?v=7"></script>
+    <script src="assets/js/modules/GameState.js?v=7"></script>
+    <script src="assets/js/modules/GameStateManager.js?v=7"></script>
+    <script src="assets/js/utils/PlayerStatusUtils.js?v=7"></script>
+    <script src="assets/js/components/PlayerList.js?v=7"></script>
+    <script src="assets/js/modules/game/RoomApi.js?v=7"></script>
+    <script src="assets/js/modules/game/DiceService.js?v=7"></script>
+    <script src="assets/js/modules/game/MovementService.js?v=7"></script>
+    <script src="assets/js/modules/game/CellInteractionService.js?v=7"></script>
+    <script src="assets/js/modules/game/ModalService.js?v=7"></script>
+    <script src="assets/js/modules/game/TurnService.js?v=7"></script>
+    <script src="assets/js/modules/game/TurnSyncService.js?v=7"></script>
+    <script src="assets/js/modules/game/PlayerTokenRenderer.js?v=7"></script>
+    <script src="assets/js/modules/game/TurnController.js?v=7"></script>
+    <script src="assets/js/modules/game/BalanceManager.js?v=7"></script>
+    <script src="assets/js/modules/game/PlayersPanel.js?v=8"></script>
+    <script src="assets/js/modules/game/PlayerTokens.js?v=7"></script>
+    <script src="assets/js/modules/game/DiceDisplay.js?v=7"></script>
+    <script src="assets/js/modules/game/ProfessionSystem.js?v=7"></script>
+    <script src="assets/js/modules/game/PlayerBalanceDisplay.js?v=7"></script>
+    <script src="assets/js/modules/game/BankModule.js?v=7"></script>
+    <script src="assets/js/modules/game/BankModuleServer.js?v=8"></script>
+    <script src="assets/js/modules/game/BankPreview.js?v=7"></script>
+    <script src="assets/js/modules/game/DealModule.js?v=7"></script>
+    <script src="assets/js/modules/game/CellPopup.js?v=7"></script>
+    <script src="assets/js/modules/game/PushClient.js?v=7"></script>
+    <script src="assets/js/modules/ProfessionModule.js?v=7"></script>
+    <script src="assets/js/navigation.js?v=7"></script>
+    <script src="assets/js/app.js?v=8"></script>
+
+    <script>
+        // Автоматическая инициализация игры с заданным roomId
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎮 Game Test Page: Инициализация прямой игровой страницы');
+            
+            // Получаем roomId из URL или используем тестовый
+            const urlParams = new URLSearchParams(window.location.search);
+            let roomId = urlParams.get('roomId');
+            
+            if (!roomId) {
+                // Используем roomId из изображения как дефолтный
+                roomId = '206df84a-d07c-433a-ab68-958b02a53fe2';
+                console.log('🎮 Game Test: RoomId не указан, используем тестовый:', roomId);
+            }
+            
+            // Устанавливаем hash для корректной работы роутера
+            window.location.hash = `#game?roomId=${roomId}`;
+            
+            // Создаем тестового пользователя для корректной работы
+            const testUser = {
+                id: 'test-user-123',
+                username: 'Тестовый игрок',
+                email: 'test@example.com',
+                isLoggedIn: true
+            };
+            localStorage.setItem('currentUser', JSON.stringify(testUser));
+            sessionStorage.setItem('currentUser', JSON.stringify(testUser));
+            
+            console.log('✅ Game Test: Пользователь настроен, roomId:', roomId);
+            console.log('✅ Game Test: Hash установлен:', window.location.hash);
+            
+            // Инициализируем приложение
+            if (window.App) {
+                setTimeout(() => {
+                    window.app = new App();
+                    console.log('✅ Game Test: App инициализирован');
+                }, 100);
+            } else {
+                console.error('❌ Game Test: App класс не найден');
+            }
+        });
+    </script>
+</body>
+</html>
