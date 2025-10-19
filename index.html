@@ -429,6 +429,20 @@
         // Если пришли по ссылке вида #game?roomId=..., сразу открываем страницу комнаты
         const isGameHash = window.location.hash && window.location.hash.includes('game');
         if (isGameHash) {
+            // Сразу скрываем placeholder страницу и показываем игровую
+            const placeholderPage = document.getElementById('placeholder-page');
+            if (placeholderPage) {
+                placeholderPage.style.display = 'none';
+                placeholderPage.classList.remove('active');
+            }
+            
+            const gamePage = document.getElementById('game-page');
+            if (gamePage) {
+                gamePage.style.display = 'block';
+                gamePage.classList.add('active');
+                console.log('✅ Index: Принудительно показана игровая страница');
+            }
+            
             try {
                 const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
                 const roomId = params.get('roomId');
@@ -445,58 +459,6 @@
                         window.location.href = '/auth';
                         return;
                     }
-                    
-                    // Сразу показываем игровую страницу
-                    console.log('🎮 Показываем игровую страницу для roomId:', roomId);
-                    setTimeout(() => {
-                        // Скрываем все страницы
-                        document.querySelectorAll('.page').forEach(page => {
-                            page.style.display = 'none';
-                            page.classList.remove('active');
-                        });
-                        
-                        // Показываем игровую страницу
-                        const gamePage = document.getElementById('game-page');
-                        if (gamePage) {
-                            gamePage.style.display = 'block';
-                            gamePage.classList.add('active');
-                            console.log('✅ Игровая страница активирована');
-                        }
-                    }, 50);
-                    
-                    // Инициализируем App если еще не инициализировано
-                    if (!window.app && window.App) {
-                        try {
-                            window.app = new window.App();
-                            window.app.init();
-                            console.log('✅ App: Инициализирован для игрового маршрута');
-                        } catch (error) {
-                            console.error('❌ App: Ошибка инициализации для игрового маршрута:', error);
-                        }
-                    }
-                    
-                    // Обрабатываем маршрут через роутер
-                    setTimeout(() => {
-                        if (window.app && window.app.getRouter) {
-                            const router = window.app.getRouter();
-                            if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
-                                console.log('🗺️ Обрабатываем игровой маршрут через роутер');
-                                router.handleCurrentRoute();
-                            } else {
-                                console.log('🗺️ Роутер еще не готов, повторяем через 500ms');
-                                setTimeout(() => {
-                                    if (window.app && window.app.getRouter) {
-                                        const router = window.app.getRouter();
-                                        if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
-                                            console.log('🗺️ Обрабатываем игровой маршрут через роутер (retry)');
-                                            router.handleCurrentRoute();
-                                        }
-                                    }
-                                }, 500);
-                            }
-                        }
-                    }, 300);
-                    
                     // Попытка инициализировать игровое состояние из sessionStorage
                     try {
                         const bundleRaw = sessionStorage.getItem('am_player_bundle');
@@ -506,6 +468,14 @@
                             if (!window.app) {
                                 window.app = new window.App();
                                 window.app.init?.();
+                                
+                                // Инициализируем роутер после создания App
+                                setTimeout(() => {
+                                    const router = window.app.getRouter();
+                                    if (router && router.handleCurrentRoute) {
+                                        router.handleCurrentRoute();
+                                    }
+                                }, 100);
                             }
                             
                             // Инициализируем GameState если его нет
@@ -516,7 +486,10 @@
                             }
                             // Форсируем показ страницы геймборда и загрузку игровых модулей
                             try {
-                                if (window.app && window.app._showPage) {
+                                if (window.app && window.app._showGamePage) {
+                                    window.app._showGamePage(roomId);
+                                } else if (window.app && window.app._showPage) {
+                                    // Fallback на старый метод
                                     window.app._showPage('game-page');
                                 }
                                 
@@ -727,47 +700,6 @@
             }
         });
         })();
-        
-        // Основная инициализация приложения
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 DOM загружен, инициализируем приложение');
-            
-            // Инициализируем App если еще не инициализировано
-            if (!window.app && window.App) {
-                try {
-                    window.app = new window.App();
-                    window.app.init();
-                    console.log('✅ App: Основная инициализация завершена');
-                } catch (error) {
-                    console.error('❌ App: Ошибка инициализации:', error);
-                }
-            }
-            
-            // Если мы на игровой странице, обрабатываем маршрут
-            const hash = window.location.hash;
-            if (hash && hash.includes('game')) {
-                setTimeout(() => {
-                    if (window.app && window.app.getRouter) {
-                        const router = window.app.getRouter();
-                        if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
-                            console.log('🗺️ Обрабатываем игровой маршрут:', hash);
-                            router.handleCurrentRoute();
-                        } else {
-                            console.log('🗺️ Роутер еще не готов, повторяем через 500ms');
-                            setTimeout(() => {
-                                if (window.app && window.app.getRouter) {
-                                    const router = window.app.getRouter();
-                                    if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
-                                        console.log('🗺️ Обрабатываем игровой маршрут (retry):', hash);
-                                        router.handleCurrentRoute();
-                                    }
-                                }
-                            }, 500);
-                        }
-                    }
-                }, 200);
-            }
-        });
     </script>
 </body>
 </html>
