@@ -246,12 +246,18 @@ class BankPreview {
         
         if (!currentPlayer) return null;
         
-        // Получаем баланс, учитывая что 0 может быть валидным значением
-        const balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
+        // Получаем баланс с fallback на 5000 если он 0 или undefined
+        let balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
             ? currentPlayer.money 
             : ((currentPlayer.balance !== undefined && currentPlayer.balance !== null) 
                 ? currentPlayer.balance 
-                : 5000); // fallback только если значения undefined/null
+                : 5000);
+        
+        // Если баланс 0, устанавливаем стартовый баланс 5000
+        if (balance === 0) {
+            balance = 5000;
+            console.log('💰 BankPreview: Баланс был 0, устанавливаем стартовый баланс 5000');
+        }
         
         // Используем данные предпринимателя по умолчанию если это предприниматель
         if (currentPlayer.profession === 'Предприниматель' || !currentPlayer.profession) {

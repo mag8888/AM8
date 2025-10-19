@@ -180,12 +180,20 @@ class BankModuleServer {
         // Обновляем состояние банка
         this.bankState.roomId = this.getRoomId();
         this.bankState.playerId = currentPlayer.id;
-        // Получаем баланс, учитывая что 0 может быть валидным значением
-        this.bankState.balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
+        // Получаем баланс с fallback на 5000 если он 0 или undefined
+        let balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
             ? currentPlayer.money 
             : ((currentPlayer.balance !== undefined && currentPlayer.balance !== null) 
                 ? currentPlayer.balance 
-                : 5000); // fallback только если значения undefined/null
+                : 5000);
+        
+        // Если баланс 0, устанавливаем стартовый баланс 5000
+        if (balance === 0) {
+            balance = 5000;
+            console.log('💰 BankModuleServer: Баланс был 0, устанавливаем стартовый баланс 5000');
+        }
+        
+        this.bankState.balance = balance;
         this.bankState.players = gameState.players || [];
         
         // Получаем данные профессии для расчета максимального кредита
@@ -1140,7 +1148,16 @@ class BankModuleServer {
      * Открытие банк модуля
      */
     async open() {
-        if (!this.ui) return;
+        // Проверяем и создаем UI если нужно
+        if (!this.ui) {
+            console.log('🏦 BankModuleServer: UI не найден, создаем...');
+            this.createUI();
+        }
+        
+        if (!this.ui) {
+            console.error('❌ BankModuleServer: Не удалось создать UI');
+            return;
+        }
         
         this.ui.style.display = 'flex';
         this.isOpen = true;

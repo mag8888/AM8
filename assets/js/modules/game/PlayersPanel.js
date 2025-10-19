@@ -251,17 +251,22 @@ class PlayersPanel {
                             <div class="player-status-indicator" id="player-status-indicator"></div>
                         </div>
                         <div class="player-details">
-                            <div class="player-name" id="current-player-name">Загрузка...</div>
-                            <div class="player-status" id="turn-status">
-                                <span class="status-icon">⏳</span>
-                                <span class="status-text">Ожидание данных</span>
-                                <div class="player-timer" id="player-timer" style="display: none;">
-                                    <div class="timer-ring">
-                                        <svg class="timer-svg" viewBox="0 0 36 36">
-                                            <path class="timer-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
-                                            <path class="timer-progress" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
-                                        </svg>
-                                        <span class="timer-text" id="timer-text">30</span>
+                            <div class="player-info-line">
+                                <div class="player-name-container">
+                                    <span class="player-token" id="current-player-token">🎯</span>
+                                    <div class="player-name" id="current-player-name">Загрузка...</div>
+                                </div>
+                                <div class="player-status" id="turn-status">
+                                    <span class="status-icon">⏳</span>
+                                    <span class="status-text">Ожидание данных</span>
+                                    <div class="player-timer" id="player-timer" style="display: none;">
+                                        <div class="timer-ring">
+                                            <svg class="timer-svg" viewBox="0 0 36 36">
+                                                <path class="timer-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                                                <path class="timer-progress" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                                            </svg>
+                                            <span class="timer-text" id="timer-text">30</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -527,11 +532,17 @@ class PlayersPanel {
         const playerAvatar = document.getElementById('active-player-avatar');
         const playerTimer = document.getElementById('player-timer');
         const statusIndicator = document.getElementById('player-status-indicator');
+        const currentPlayerToken = document.getElementById('current-player-token');
         
         if (currentPlayerName) {
             if (activePlayer) {
                 const displayName = PlayerStatusUtils.getPlayerDisplayName(activePlayer);
                 currentPlayerName.textContent = displayName;
+                
+                // Обновляем фишку игрока
+                if (currentPlayerToken && typeof PlayerStatusUtils.getPlayerToken === 'function') {
+                    currentPlayerToken.textContent = PlayerStatusUtils.getPlayerToken(activePlayer);
+                }
                 
                 // Обновляем аватар с инициалами игрока или эмодзи
                 if (playerAvatar && displayName) {
@@ -550,6 +561,9 @@ class PlayersPanel {
                 }
             } else {
                 currentPlayerName.textContent = 'Загрузка...';
+                if (currentPlayerToken) {
+                    currentPlayerToken.textContent = '🎯';
+                }
                 const avatarText = playerAvatar?.querySelector('.avatar-text');
                 if (avatarText) {
                     avatarText.textContent = '👤';
@@ -1697,13 +1711,31 @@ class PlayersPanel {
                 position: relative;
             }
 
+            .player-info-line {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                width: 100%;
+            }
+
+            .player-name-container {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                flex-shrink: 0;
+            }
+
+            .player-token {
+                font-size: 1.25rem;
+                line-height: 1;
+            }
+
             .player-name {
                 font-size: 1.125rem;
                 font-weight: 600;
                 color: #f8fafc;
                 line-height: 1.2;
                 word-break: break-word;
-                display: block;
             }
 
             .player-status {
@@ -1713,7 +1745,7 @@ class PlayersPanel {
                 font-size: 0.875rem;
                 color: rgba(148, 163, 184, 0.9);
                 line-height: 1.2;
-                width: 100%;
+                flex: 1;
             }
 
             .status-icon {
