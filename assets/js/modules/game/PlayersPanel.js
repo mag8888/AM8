@@ -255,14 +255,14 @@ class PlayersPanel {
                             <div class="player-status" id="turn-status">
                                 <span class="status-icon">⏳</span>
                                 <span class="status-text">Ожидание данных</span>
-                            </div>
-                            <div class="player-timer" id="player-timer" style="display: none;">
-                                <div class="timer-ring">
-                                    <svg class="timer-svg" viewBox="0 0 36 36">
-                                        <path class="timer-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
-                                        <path class="timer-progress" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
-                                    </svg>
-                                    <span class="timer-text" id="timer-text">30</span>
+                                <div class="player-timer" id="player-timer" style="display: none;">
+                                    <div class="timer-ring">
+                                        <svg class="timer-svg" viewBox="0 0 36 36">
+                                            <path class="timer-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                                            <path class="timer-progress" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+                                        </svg>
+                                        <span class="timer-text" id="timer-text">30</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -616,11 +616,11 @@ class PlayersPanel {
     }
 
     /**
-     * Показать/скрыть таймер
+     * Показать/скрыть таймер - обновлено для новой структуры
      */
     showTimer(timerElement, show) {
         if (timerElement) {
-            timerElement.style.display = show ? 'flex' : 'none';
+            timerElement.style.display = show ? 'block' : 'none';
             if (show) {
                 this.startTurnTimer(timerElement);
             } else {
@@ -1691,14 +1691,19 @@ class PlayersPanel {
             .player-details {
                 flex: 1;
                 min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                position: relative;
             }
 
             .player-name {
                 font-size: 1.125rem;
                 font-weight: 600;
                 color: #f8fafc;
-                margin-bottom: 0.25rem;
+                line-height: 1.2;
                 word-break: break-word;
+                display: block;
             }
 
             .player-status {
@@ -1707,6 +1712,8 @@ class PlayersPanel {
                 gap: 0.5rem;
                 font-size: 0.875rem;
                 color: rgba(148, 163, 184, 0.9);
+                line-height: 1.2;
+                width: 100%;
             }
 
             .status-icon {
@@ -1715,9 +1722,8 @@ class PlayersPanel {
 
             /* Таймер */
             .player-timer {
-                position: absolute;
-                top: 0.5rem;
-                right: 0.5rem;
+                margin-left: auto;
+                margin-right: 0;
             }
 
             .timer-ring {
