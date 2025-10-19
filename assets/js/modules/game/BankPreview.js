@@ -246,12 +246,12 @@ class BankPreview {
         
         if (!currentPlayer) return null;
         
-        // Получаем баланс с fallback на 5000 если он 0 или undefined
+        // Получаем баланс с fallback на стартовый баланс
         let balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
             ? currentPlayer.money 
             : ((currentPlayer.balance !== undefined && currentPlayer.balance !== null) 
                 ? currentPlayer.balance 
-                : 5000);
+                : 5000); // fallback только если значения undefined/null
         
         // Если баланс 0, устанавливаем стартовый баланс 5000
         if (balance === 0) {

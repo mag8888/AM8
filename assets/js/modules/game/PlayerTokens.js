@@ -266,6 +266,29 @@ class PlayerTokens {
     }
     
     /**
+     * Получить токен по умолчанию для игрока
+     */
+    getDefaultTokenForPlayer(player, index) {
+        // Если у игрока уже есть выбранный токен, используем его
+        if (player.token) {
+            return player.token;
+        }
+        
+        // Попробуем получить токен из localStorage если пользователь выбирал его
+        const savedToken = localStorage.getItem(`player_token_${player.username || player.id}`);
+        if (savedToken) {
+            return savedToken;
+        }
+        
+        // Массив доступных токенов по умолчанию
+        const defaultTokens = ['lion', 'eagle', 'fox', 'bear', 'tiger', 'wolf', 'elephant', 'shark', 'owl', 'dolphin'];
+        
+        // Используем индекс игрока для выбора токена
+        const tokenIndex = index % defaultTokens.length;
+        return defaultTokens[tokenIndex];
+    }
+    
+    /**
      * Расчет смещения для множественных фишек
      */
     calculateOffset(index, totalPlayers) {
@@ -795,7 +818,8 @@ class PlayerTokens {
                 ...player,
                 id: player.id || player.userId || key,
                 position: Number(player.position) || 0,
-                isInner: Boolean(player.isInner)
+                isInner: Boolean(player.isInner),
+                token: player.token || this.getDefaultTokenForPlayer(player, idx)
             });
         });
         
