@@ -361,8 +361,10 @@ class App {
             const roomId = state?.roomId || roomIdFromHash;
 
             if (roomId) {
-                // Перенаправляем на полноценную страницу комнаты
-                window.location.href = `pages/room.html?id=${roomId}`;
+                // Инициализируем игру прямо на главной странице
+                console.log('🎮 App: Инициализация игры для комнаты:', roomId);
+                this._showPage('game-page');
+                this._initializeGameModules(roomId);
                 return;
             }
 
@@ -384,11 +386,11 @@ class App {
      */
     _showPage(pageId) {
         const pages = document.querySelectorAll('.page');
-        pages.forEach(page => page.style.display = 'none');
+        pages.forEach(page => page.classList.remove('active'));
         
         const targetPage = document.getElementById(pageId);
         if (targetPage) {
-            targetPage.style.display = 'block';
+            targetPage.classList.add('active');
             this.logger?.debug(`Показана страница: ${pageId}`, null, 'App');
         }
     }
