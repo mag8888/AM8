@@ -568,15 +568,14 @@ class App {
         initBankPreview();
         initCardDeckPanel();
 
-        // Если не получилось, пробуем через задержки
+        // Оптимизированная инициализация без множественных setTimeout
         if (!this.modules.get('bankPreview')) {
-            setTimeout(initBankPreview, 100);
-            setTimeout(initBankPreview, 1000);
+            // Единый setTimeout вместо множественных
+            setTimeout(initBankPreview, 300);
         }
         
         if (!this.modules.get('cardDeckPanel')) {
-            setTimeout(initCardDeckPanel, 200);
-            setTimeout(initCardDeckPanel, 1200);
+            setTimeout(initCardDeckPanel, 400);
         }
         
         // Инициализируем DealModule (микромодуль сделок)
@@ -716,15 +715,14 @@ class App {
             console.warn('⚠️ App: TurnService не найден в window');
         }
         
-        // Инициализируем TurnController с GameStateManager (после PlayersPanel)
-        // Устанавливаем задержку, чтобы PlayersPanel успел отрендериться
+        // Оптимизированная инициализация TurnController - сокращена задержка
         setTimeout(() => {
             if (window.TurnController) {
                 const turnService = this.modules.get('turnService');
                 const playerTokensModule = this.modules.get('playerTokens');
                 if (turnService && gameStateManager) {
                     try {
-                        console.log('🎯 App: Инициализируем TurnController (с задержкой для PlayersPanel)...');
+                        console.log('🎯 App: Инициализируем TurnController (оптимизированно)...');
                         const turnController = new window.TurnController(
                             turnService,
                             playerTokensModule,
@@ -733,23 +731,16 @@ class App {
                         );
                         this.modules.set('turnController', turnController);
                         
-                        // Теперь вызываем init() для TurnController - PlayersPanel уже отрендерился
                         if (typeof turnController.init === 'function') {
                             turnController.init();
                             console.log('🎯 TurnController: init() вызван успешно');
-                        } else {
-                            console.warn('⚠️ TurnController: init() метод не найден');
                         }
                     } catch (e) {
                         console.error('❌ App: Ошибка инициализации TurnController', e);
                     }
-                } else {
-                    console.warn('⚠️ App: Пропускаем TurnController — нет turnService или gameStateManager');
                 }
-            } else {
-                console.warn('⚠️ App: TurnController не найден в window');
             }
-        }, 200); // Задержка для завершения рендера PlayersPanel
+        }, 100); // Сокращена задержка с 200ms до 100ms
         
         // Инициализируем TurnSyncService для синхронизации ходов (временно отключен)
         if (false && window.TurnSyncService) {
@@ -777,55 +768,17 @@ class App {
         
         this.logger?.info('Игровые модули инициализированы', null, 'App');
         
-        // Принудительно обновляем фишки игроков после инициализации
+        // Оптимизированное обновление фишек игроков - сокращена задержка
         setTimeout(() => {
             const playerTokens = this.modules.get('playerTokens');
             if (playerTokens) {
-                console.log('🎯 App: Принудительное обновление фишек игроков...');
+                console.log('🎯 App: Обновление фишек игроков...');
                 playerTokens.forceUpdate();
             }
-        }, 2000);
+        }, 500); // Сокращена задержка с 2000ms до 500ms
 
-        // Отложенная проверка и доинициализация недостающих модулей
-        setTimeout(() => {
-            try {
-                if (!this.getModule('turnService') && window.TurnService && this.getModule('gameState')) {
-                    console.log('🔄 App: Доинициализация TurnService (retry)');
-                    let roomApi = this.modules.get('roomApi');
-                    if (!roomApi && window.RoomApi) {
-                        roomApi = new window.RoomApi();
-                        this.modules.set('roomApi', roomApi);
-                    }
-                    const turnService = new window.TurnService({
-                        gameState: this.getModule('gameState'),
-                        state: this.getModule('gameState'),
-                        eventBus: this.getEventBus(),
-                        roomApi,
-                        diceService: this.modules.get('diceService') || null,
-                        gameStateManager: this.getGameStateManager()
-                    });
-                    this.modules.set('turnService', turnService);
-                }
-                if (!this.getModule('turnController') && window.TurnController && this.getModule('turnService')) {
-                    console.log('🔄 App: Доинициализация TurnController (retry)');
-                    const turnController = new window.TurnController(
-                        this.getModule('turnService'),
-                        this.getModule('playerTokens'),
-                        this.getGameStateManager(),
-                        this.getEventBus()
-                    );
-                    this.modules.set('turnController', turnController);
-                    
-                    // Вызываем init() для правильной инициализации
-                    if (typeof turnController.init === 'function') {
-                        turnController.init();
-                        console.log('🔄 TurnController: init() вызван (retry)');
-                    }
-                }
-            } catch (e) {
-                console.warn('⚠️ App: Ошибка в отложенной доинициализации модулей', e);
-            }
-        }, 800);
+        // Удален избыточный retry механизм - вызывает множественную инициализацию модулей
+        // setTimeout(() => { /* retry logic */ }, 800); // REMOVED для оптимизации
     }
 
     /**

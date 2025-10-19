@@ -89,17 +89,33 @@ class BankModuleServer {
      * Загрузка состояния игры с сервера
      */
     async fetchGameState(roomId) {
-        const response = await fetch(`/api/rooms/${roomId}/game-state`);
-        if (!response.ok) {
-            throw new Error(`Ошибка загрузки состояния игры: ${response.status}`);
-        }
+        // Добавляем таймаут для предотвращения блокировки UI
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут
         
-        const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.message || 'Ошибка получения данных игры');
+        try {
+            const response = await fetch(`/api/rooms/${roomId}/game-state`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`Ошибка загрузки состояния игры: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Ошибка получения данных игры');
+            }
+            
+            return data.state;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error('Таймаут загрузки данных (5 сек)');
+            }
+            throw error;
         }
-        
-        return data.state;
     }
     
     /**
