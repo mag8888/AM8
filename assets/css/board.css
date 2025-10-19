@@ -18,22 +18,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: min(1vmin, 10px); /* Минимальные отступы */
-    margin: 0; /* Убираем все отступы */
-    min-height: 100vh; /* Полная высота экрана */
+    padding: min(1vmin, 10px);
+    margin: 0;
     position: relative;
     flex: 1;
-    order: 1; /* Игровое поле должно быть первым */
-}
-
-.card-decks-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem; /* Уменьшаем отступы между карточками */
-    padding: 0.5rem 0;
-    max-width: 300px; /* Уменьшаем ширину для одной колонки */
-    max-height: 600px; /* Увеличиваем высоту для 4 карточек */
-    overflow-y: auto; /* Добавляем скролл если нужно */
+    /* height и min-height теперь определены в main.css */
 }
 
 .card-decks-container .card-decks-empty,
@@ -326,13 +315,16 @@
 
 .board-wrapper {
     position: relative;
-    width: min(95vmin, 950px); /* Уменьшаем размер чтобы поместилось на экране */
-    height: min(95vmin, 950px);
+    /* Используем высоту экрана минус небольшой отступ для максимального размера */
+    height: min(95vh, 95vw);
+    width: min(95vh, 95vw);
     overflow: visible;
     isolation: isolate;
     display: grid;
     place-items: center;
     grid-template-areas: "board";
+    /* Гарантируем квадратную форму */
+    aspect-ratio: 1;
 }
 
 
@@ -675,30 +667,52 @@
 /* Responsive adjustments */
 @media (max-width: 1024px) {
     .board-wrapper {
-        width: min(90vmin, 850px); /* Уменьшаем размер */
-        height: min(90vmin, 850px);
+        height: min(90vh, 90vw);
+        width: min(90vh, 90vw);
     }
 }
 
 @media (max-width: 768px) {
     .game-board-container {
-        padding: min(1vmin, 8px); /* Минимальные отступы */
-        margin: 0; /* Убираем все отступы */
+        padding: min(1vmin, 8px);
+        margin: 0;
     }
     .board-wrapper {
-        width: min(88vmin, 520px); /* Уменьшаем размер */
-        height: min(88vmin, 520px);
+        height: min(85vh, 85vw);
+        width: min(85vh, 85vw);
+    }
+    
+    /* На мобильных устройствах уменьшаем размер боковых панелей */
+    .card-decks-container {
+        min-width: 200px;
+        max-width: 250px;
+    }
+    
+    .players-panel-container {
+        min-width: 220px;
+        max-width: 280px;
     }
 }
 
 @media (max-width: 480px) {
     .game-board-container {
-        margin: 0; /* Убираем все отступы */
-        padding: min(0.5vmin, 5px); /* Минимальные отступы */
+        margin: 0;
+        padding: min(0.5vmin, 5px);
     }
     .board-wrapper {
-        width: min(85vmin, 400px); /* Уменьшаем размер */
-        height: min(85vmin, 400px);
+        height: min(80vh, 80vw);
+        width: min(80vh, 80vw);
+    }
+    
+    /* Еще больше уменьшаем боковые панели на маленьких экранах */
+    .card-decks-container {
+        min-width: 150px;
+        max-width: 200px;
+    }
+    
+    .players-panel-container {
+        min-width: 180px;
+        max-width: 220px;
     }
     
     /* Уменьшаем размеры клеток на мобильных */
