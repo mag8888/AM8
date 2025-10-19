@@ -214,15 +214,8 @@ class App {
         // Обрабатываем текущий маршрут после настройки
         setTimeout(() => {
             const router = this.getRouter();
-            if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
+            if (router && router.handleCurrentRoute) {
                 router.handleCurrentRoute();
-            } else {
-                // Если роутер еще не готов, повторяем через больше времени
-                setTimeout(() => {
-                    if (router && router.handleCurrentRoute && router.routes && router.routes.size > 0) {
-                        router.handleCurrentRoute();
-                    }
-                }, 500);
             }
         }, 100);
     }
@@ -445,6 +438,11 @@ class App {
             setTimeout(() => {
                 this._initializeGameModules(roomId);
             }, 100);
+            
+            // Принудительно инициализируем левую панель после показа страницы
+            setTimeout(() => {
+                this._initializeLeftPanel();
+            }, 500);
             
             // Обновляем URL без перезагрузки
             window.history.replaceState(null, '', `#game?roomId=${roomId}`);
@@ -828,6 +826,64 @@ class App {
                 console.warn('⚠️ App: Ошибка в отложенной доинициализации модулей', e);
             }
         }, 800);
+    }
+
+    /**
+     * Принудительная инициализация левой панели (BankPreview и CardDeckPanel)
+     */
+    _initializeLeftPanel() {
+        console.log('🎯 App: Принудительная инициализация левой панели...');
+        
+        // Проверяем наличие контейнера
+        const container = document.querySelector('#card-decks-panel');
+        if (!container) {
+            console.warn('⚠️ App: Контейнер #card-decks-panel не найден');
+            return;
+        }
+        
+        // Инициализируем BankPreview если еще не инициализирован
+        if (!this.modules.get('bankPreview') && window.BankPreview) {
+            console.log('🏦 App: Инициализируем BankPreview...');
+            try {
+                const bankPreview = new window.BankPreview({
+                    containerSelector: '#card-decks-panel',
+                    eventBus: this.getEventBus(),
+                    gameStateManager: this.getGameStateManager()
+                });
+                this.modules.set('bankPreview', bankPreview);
+                console.log('✅ BankPreview: Инициализирован принудительно');
+            } catch (error) {
+                console.error('❌ App: Ошибка инициализации BankPreview:', error);
+            }
+        }
+        
+        // Инициализируем CardDeckPanel если еще не инициализирован
+        if (!this.modules.get('cardDeckPanel') && window.CardDeckPanel) {
+            console.log('🃏 App: Инициализируем CardDeckPanel...');
+            try {
+                const cardDeckPanel = new window.CardDeckPanel({
+                    containerSelector: '#card-decks-panel',
+                    eventBus: this.getEventBus()
+                });
+                this.modules.set('cardDeckPanel', cardDeckPanel);
+                console.log('✅ CardDeckPanel: Инициализирован принудительно');
+            } catch (error) {
+                console.error('❌ App: Ошибка инициализации CardDeckPanel:', error);
+            }
+        }
+        
+        // Принудительно обновляем данные
+        setTimeout(() => {
+            const bankPreview = this.modules.get('bankPreview');
+            if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
+                bankPreview.updatePreviewData();
+            }
+            
+            const cardDeckPanel = this.modules.get('cardDeckPanel');
+            if (cardDeckPanel && typeof cardDeckPanel.loadDecks === 'function') {
+                cardDeckPanel.loadDecks();
+            }
+        }, 100);
     }
 
     /**
