@@ -177,9 +177,12 @@ function initializeServices() {
         // Получаем роутер из глобальной области
         if (window.router) {
             router = window.router;
+        } else if (window.Router) {
+            console.log('✅ Rooms: Используем глобальный класс Router');
+            router = new window.Router();
         } else {
-            console.warn('⚠️ Rooms: Роутер не найден, создаем локальный');
-            router = new Router();
+            console.warn('⚠️ Rooms: Класс Router не найден, создаем пустой объект');
+            router = { navigate: () => {}, route: () => {} }; // Fallback
         }
         
         console.log('✅ Rooms: Сервисы инициализированы');
