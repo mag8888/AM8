@@ -79,12 +79,13 @@ class CellPopup {
             }
         });
         
-        // Закрытие по Escape
-        document.addEventListener('keydown', (e) => {
+        // Закрытие по Escape - сохраняем ссылку для удаления
+        this.boundHandleKeydown = (e) => {
             if (e.key === 'Escape' && this.isVisible) {
                 this.hide();
             }
-        });
+        };
+        document.addEventListener('keydown', this.boundHandleKeydown);
     }
     
     /**
@@ -561,6 +562,35 @@ class CellPopup {
         if (this.eventBus) {
             this.eventBus.emit('cell:professionAction', this.currentCellData);
         }
+    }
+    
+    /**
+     * Уничтожение компонента - удаление всех слушателей и DOM элементов
+     */
+    destroy() {
+        console.log('🗑️ CellPopup: Уничтожение компонента');
+        
+        // Удаляем обработчик Escape клавиши
+        if (this.boundHandleKeydown) {
+            document.removeEventListener('keydown', this.boundHandleKeydown);
+            this.boundHandleKeydown = null;
+        }
+        
+        // Скрываем попап если он виден
+        if (this.isVisible) {
+            this.hide();
+        }
+        
+        // Удаляем DOM элемент
+        if (this.popupElement && this.popupElement.parentNode) {
+            this.popupElement.parentNode.removeChild(this.popupElement);
+        }
+        
+        // Очищаем все ссылки
+        this.popupElement = null;
+        this.isVisible = false;
+        this.currentCellData = null;
+        this.eventBus = null;
     }
 }
 
