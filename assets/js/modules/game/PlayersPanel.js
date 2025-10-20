@@ -61,9 +61,8 @@ class PlayersPanel {
         // Показываем состояние загрузки сразу при инициализации
         this.showLoadingState();
         
-        // Используем только forceLoadPlayers для избежания конфликта запросов
-        // preloadGameData будет вызван после успешной загрузки основных данных
-        this.forceLoadPlayers();
+        // Используем GameStateManager для загрузки данных вместо прямых API вызовов
+        this.loadPlayersViaGameStateManager();
         
         console.log('✅ PlayersPanel v2.0: Инициализирован');
     }
@@ -381,18 +380,119 @@ class PlayersPanel {
             } else {
                 console.log('⚠️ PlayersPanel: Пустой массив игроков в состоянии');
                 this.showLoadingState();
-                // Немедленная загрузка игроков для ускорения
-                this.forceLoadPlayers();
+                // Немедленная загрузка игроков через GameStateManager
+                this.loadPlayersViaGameStateManager();
             }
         } else {
-            console.log('⚠️ PlayersPanel: Нет данных об игроках в состоянии, принудительная загрузка');
-            // Если игроки не переданы или невалидные, пытаемся получить их принудительно
-            this.forceLoadPlayers();
+            console.log('⚠️ PlayersPanel: Нет данных об игроках в состоянии, загружаем через GameStateManager');
+            // Если игроки не переданы или невалидные, используем GameStateManager
+            this.loadPlayersViaGameStateManager();
         }
     }
     
     /**
-     * Принудительная загрузка игроков
+     * Загрузка игроков через GameStateManager (новый рефакторенный метод)
+     */
+    async loadPlayersViaGameStateManager() {
+        const roomId = this.getCurrentRoomId();
+        
+        if (!roomId) {
+            console.warn('⚠️ PlayersPanel: roomId не найден, пропускаем загрузку');
+            this.showErrorState('Комната не найдена');
+            return;
+        }
+
+        // Проверяем кэш для ускорения
+        const now = Date.now();
+        const cacheKey = `players_${roomId}`;
+        const cachedData = this._playersCache.get(cacheKey);
+        
+        if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
+            console.log('🚀 PlayersPanel: Используем кэшированные данные через GameStateManager');
+            this.updatePlayersList(cachedData);
+            
+            // Обновляем GameStateManager с кэшированными данными
+            if (this.gameStateManager) {
+                this.gameStateManager.updateFromServer({ players: cachedData });
+            }
+            
+            // Запускаем периодические обновления через GameStateManager
+            this.startPeriodicUpdatesViaGameStateManager(roomId);
+            return;
+        }
+
+        // Используем GameStateManager для безопасного запроса
+        if (this.gameStateManager && typeof this.gameStateManager.fetchGameState === 'function') {
+            console.log('🔄 PlayersPanel: Загружаем данные через GameStateManager');
+            try {
+                const state = await this.gameStateManager.fetchGameState(roomId);
+                if (state && state.players) {
+                    // Кэшируем данные
+                    this._playersCache.set(cacheKey, state.players);
+                    this._lastFetchTime = Date.now();
+                    
+                    this.updatePlayersList(state.players);
+                    
+                    // Запускаем периодические обновления
+                    this.startPeriodicUpdatesViaGameStateManager(roomId);
+                } else {
+                    console.warn('⚠️ PlayersPanel: Данные игроков не получены через GameStateManager');
+                    this.showEmptyState();
+                }
+            } catch (error) {
+                console.error('❌ PlayersPanel: Ошибка загрузки через GameStateManager:', error);
+                this.showErrorState(`Ошибка загрузки: ${error.message}`);
+            }
+        } else {
+            console.warn('⚠️ PlayersPanel: GameStateManager недоступен, fallback к forceLoadPlayers');
+            this.forceLoadPlayers();
+        }
+    }
+
+    /**
+     * Запуск периодических обновлений через GameStateManager
+     */
+    startPeriodicUpdatesViaGameStateManager(roomId) {
+        if (this.gameStateManager && typeof this.gameStateManager.startPeriodicUpdates === 'function') {
+            console.log('🔄 PlayersPanel: Запуск периодических обновлений через GameStateManager');
+            this.gameStateManager.startPeriodicUpdates(roomId, 45000); // 45 секунд интервал
+        }
+    }
+
+    /**
+     * Получение текущего roomId
+     */
+    getCurrentRoomId() {
+        // Способ 1: из hash
+        const hash = window.location.hash;
+        const hashMatch = hash.match(/roomId=([^&]+)/);
+        if (hashMatch) {
+            return hashMatch[1];
+        }
+        
+        // Способ 2: из URL search params
+        const urlParams = new URLSearchParams(window.location.search);
+        let roomId = urlParams.get('roomId');
+        if (roomId) {
+            return roomId;
+        }
+        
+        // Способ 3: из sessionStorage
+        try {
+            const roomData = sessionStorage.getItem('am_room_data');
+            if (roomData) {
+                const parsed = JSON.parse(roomData);
+                return parsed.roomId || parsed.id;
+            }
+        } catch (e) {
+            console.warn('PlayersPanel: Ошибка чтения roomId из sessionStorage:', e);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Принудительная загрузка игроков (deprecated - использовать loadPlayersViaGameStateManager)
      */
     forceLoadPlayers() {
         // Улучшенное извлечение roomId из разных источников
@@ -507,7 +607,8 @@ class PlayersPanel {
     }
     
     /**
-     * Основная загрузка игроков с API
+     * Основная загрузка игроков с API 
+     * @deprecated Используйте loadPlayersViaGameStateManager() вместо этого
      */
     _fetchPlayersFromAPI(roomId) {
         // Атомарная проверка и установка pending флага для предотвращения race condition
