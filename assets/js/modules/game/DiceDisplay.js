@@ -19,26 +19,54 @@ class DiceDisplay {
      * Инициализация компонента
      */
     init() {
+        // Удаляем все существующие кубики при инициализации
+        this.removeAllDiceElements();
+        
         this.setupContainer();
         this.addStyles();
         this.setupEventListeners();
         
-        console.log('✅ DiceDisplay: Инициализирован');
+        console.log('✅ DiceDisplay: Инициализирован (кубики заблокированы)');
+    }
+    
+    /**
+     * Удаление всех элементов кубиков со страницы
+     */
+    removeAllDiceElements() {
+        // Удаляем все возможные контейнеры кубиков
+        const selectors = [
+            '#dice-display',
+            '.dice-display-container',
+            '[id*="dice"]',
+            '[class*="dice-display"]'
+        ];
+        
+        selectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                if (element && element.parentNode) {
+                    element.remove();
+                }
+            });
+        });
+        
+        console.log('🗑️ DiceDisplay: Все существующие кубики удалены');
     }
     
     /**
      * Настройка контейнера
      */
     setupContainer() {
-        this.container = document.querySelector(this.containerSelector);
+        // Полностью блокируем создание контейнера кубиков
+        this.container = null;
         
-        if (!this.container) {
-            // Создаем контейнер если его нет, но не добавляем в DOM
-            this.container = document.createElement('div');
-            this.container.id = 'dice-display';
-            this.container.className = 'dice-display-container';
-            // Контейнер кубиков удален - не добавляем в DOM
+        // Также удаляем существующие элементы кубиков если они есть
+        const existingContainer = document.querySelector(this.containerSelector);
+        if (existingContainer) {
+            existingContainer.remove();
         }
+        
+        console.log('🚫 DiceDisplay: Контейнер кубиков полностью заблокирован');
     }
     
     /**
@@ -50,13 +78,19 @@ class DiceDisplay {
         const styles = document.createElement('style');
         styles.id = 'dice-display-styles';
         styles.textContent = `
-            .dice-display-container {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 1000;
-                pointer-events: none;
-                display: none !important; /* Кубики скрыты */
+            /* Полная блокировка всех кубиков */
+            .dice-display-container,
+            #dice-display,
+            [id*="dice"],
+            [class*="dice-display"],
+            .dice-result {
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+                position: absolute !important;
+                left: -9999px !important;
+                top: -9999px !important;
             }
             
             .dice-result {
@@ -258,7 +292,9 @@ class DiceDisplay {
      * Принудительное отображение результата
      */
     forceDisplay(rollResult) {
-        this.displayRoll(rollResult);
+        // Кубики удалены - блокируем принудительное отображение
+        console.log('🚫 DiceDisplay: Принудительное отображение заблокировано');
+        return;
     }
     
     /**
