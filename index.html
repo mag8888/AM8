@@ -512,12 +512,23 @@
                                     
                                     let isSyncing = false;
                                     let pendingSync = false;
+                                    let lastSyncTime = 0;
+                                    const MIN_SYNC_INTERVAL = 5000; // Минимум 5 секунд между синхронизациями
                                     const syncWithServer = () => {
                                         if (isSyncing) {
                                             pendingSync = true;
                                             return;
                                         }
+                                        
+                                        // Проверяем минимальный интервал между синхронизациями
+                                        const now = Date.now();
+                                        if (now - lastSyncTime < MIN_SYNC_INTERVAL) {
+                                            console.log(`🔄 syncWithServer: Слишком рано для синхронизации (${now - lastSyncTime}ms < ${MIN_SYNC_INTERVAL}ms)`);
+                                            return;
+                                        }
+                                        
                                         isSyncing = true;
+                                        lastSyncTime = now;
                                         
                                         api.getGameState(roomId)
                                             .then(gs => {
@@ -581,7 +592,7 @@
                                     window.requestRoomSync = syncWithServer;
                                     
                                     syncWithServer();
-                                    const syncInterval = setInterval(syncWithServer, 10000); // Увеличиваем интервал до 10 секунд
+                                    const syncInterval = setInterval(syncWithServer, 15000); // Увеличиваем интервал до 15 секунд
                                     
                                     const handleVisibility = () => {
                                         if (!document.hidden) {

@@ -12,7 +12,7 @@ class PushClient {
         this.isRegistered = false;
         this.pollingInterval = null;
         // Увеличиваем интервал для предотвращения 429 ошибок
-        this.pollingIntervalMs = 15000; // Увеличиваем до 15 секунд
+        this.pollingIntervalMs = 20000; // Увеличиваем до 20 секунд для предотвращения 429 ошибок
         this.retryCount = 0;
         this.maxRetries = 5;
         
