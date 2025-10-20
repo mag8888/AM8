@@ -1168,15 +1168,21 @@ class BankModule {
             this.ui.style.display = 'flex';
             this.isOpen = true;
             
-            // Принудительно обновляем данные дважды для надежности
+            // Принудительно обновляем данные и загружаем с сервера
+            console.log('🔄 BankModule: Начинаем загрузку данных банка...');
             await this.updateBankData();
             await this.loadPlayers();
             
-            // Дополнительное обновление через небольшую задержку
+            // Принудительно обновляем UI элементы сразу
+            this.forceUpdateBankUI(currentPlayer);
+            
+            // Дополнительное обновление через небольшую задержку для надежности
             setTimeout(async () => {
                 if (this.isOpen) {
+                    console.log('🔄 BankModule: Выполняем дополнительное обновление данных...');
                     await this.updateBankData();
-                    console.log('🔄 BankModule: Дополнительное обновление данных выполнено');
+                    this.forceUpdateBankUI(currentPlayer);
+                    console.log('✅ BankModule: Дополнительное обновление данных выполнено');
                 }
             }, 500);
             
@@ -1206,17 +1212,51 @@ class BankModule {
      * Обновление данных банка
      */
     async updateBankData() {
-        if (!this.gameState) return;
+        if (!this.gameState) {
+            console.warn('⚠️ BankModule: GameState недоступен для обновления данных');
+            return;
+        }
         
         // Получаем текущего пользователя браузера, а не активного игрока
         let currentPlayer = await this.getCurrentUserPlayer();
         if (!currentPlayer) {
+            console.log('🔧 BankModule: getCurrentUserPlayer вернул null, пробуем fallback...');
             currentPlayer = await this.getCurrentUserPlayerWithFallback();
         }
         
         if (!currentPlayer) {
-            console.warn('⚠️ BankModule: Текущий пользователь не найден - пропускаем обновление');
-            return;
+            console.warn('⚠️ BankModule: Текущий пользователь не найден - пробуем получить из GameStateManager...');
+            
+            // Пробуем получить данные из GameStateManager напрямую
+            const gameStateManager = window.app?.services?.get('gameStateManager');
+            if (gameStateManager) {
+                const state = gameStateManager.getState();
+                const players = state?.players || [];
+                
+                // Ищем по username из localStorage
+                try {
+                    const userData = localStorage.getItem('currentUser') || sessionStorage.getItem('am_player_bundle');
+                    if (userData) {
+                        const userDataParsed = JSON.parse(userData);
+                        const username = userDataParsed?.username || userDataParsed?.currentUser?.username;
+                        
+                        if (username) {
+                            currentPlayer = players.find(p => p.username === username);
+                            if (currentPlayer) {
+                                console.log('✅ BankModule: Найден игрок через GameStateManager:', currentPlayer.username);
+                                this.currentUserId = currentPlayer.id;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('⚠️ BankModule: Ошибка получения данных из GameStateManager:', e);
+                }
+            }
+            
+            if (!currentPlayer) {
+                console.warn('⚠️ BankModule: Не удалось получить текущего пользователя - пропускаем обновление');
+                return;
+            }
         }
         
         // Получаем roomId для серверных запросов
@@ -1278,7 +1318,15 @@ class BankModule {
             username: currentPlayer.username,
             money: currentPlayer.money,
             balance: currentPlayer.balance,
-            currentLoan: currentPlayer.currentLoan || 0
+            currentLoan: currentPlayer.currentLoan || 0,
+            rawData: {
+                balance: currentPlayer.balance,
+                money: currentPlayer.money,
+                cash: currentPlayer.cash,
+                totalIncome: currentPlayer.totalIncome,
+                salary: currentPlayer.salary,
+                monthlyExpenses: currentPlayer.monthlyExpenses
+            }
         });
         
         // Получаем данные профессии
@@ -1299,7 +1347,9 @@ class BankModule {
             const displayBalance = Math.max(0, playerBalance); // Убеждаемся, что баланс не отрицательный
             balanceElement.textContent = `$${this.formatNumber(displayBalance)}`;
             balanceElement.style.color = displayBalance >= 0 ? '#10b981' : '#ef4444'; // Зеленый/красный
-            console.log('💰 BankModule: Обновлен баланс:', displayBalance);
+            console.log('💰 BankModule: Обновлен баланс:', displayBalance, 'Элемент найден:', !!balanceElement);
+        } else {
+            console.warn('⚠️ BankModule: Элемент #bank-balance не найден в UI');
         }
         
         // Обновляем доходы (из профессии или из игрока)
@@ -2431,6 +2481,52 @@ class BankModule {
                 notification.parentNode.removeChild(notification);
             }
         }, 3000);
+    }
+    
+    /**
+     * Принудительное обновление UI банка
+     */
+    forceUpdateBankUI(currentPlayer) {
+        if (!this.ui || !currentPlayer) {
+            console.warn('⚠️ BankModule: Нельзя обновить UI - нет элементов или данных игрока');
+            return;
+        }
+        
+        console.log('🔄 BankModule: Принудительное обновление UI для:', currentPlayer.username);
+        
+        // Принудительно обновляем баланс
+        const balanceElement = this.ui.querySelector('#bank-balance');
+        if (balanceElement) {
+            const balance = currentPlayer.balance ?? currentPlayer.money ?? currentPlayer.cash ?? 0;
+            balanceElement.textContent = `$${this.formatNumber(balance)}`;
+            balanceElement.style.color = balance >= 0 ? '#10b981' : '#ef4444';
+            console.log('💰 forceUpdateBankUI: Обновлен баланс:', balance);
+        }
+        
+        // Принудительно обновляем доходы
+        const incomeElement = this.ui.querySelector('#bank-income');
+        if (incomeElement) {
+            const income = currentPlayer.totalIncome ?? currentPlayer.salary ?? 0;
+            incomeElement.textContent = `$${this.formatNumber(income)}`;
+            console.log('📈 forceUpdateBankUI: Обновлен доход:', income);
+        }
+        
+        // Принудительно обновляем расходы
+        const expensesElement = this.ui.querySelector('#bank-expenses');
+        if (expensesElement) {
+            const expenses = currentPlayer.monthlyExpenses ?? 0;
+            expensesElement.textContent = `$${this.formatNumber(expenses)}`;
+            console.log('📉 forceUpdateBankUI: Обновлены расходы:', expenses);
+        }
+        
+        // Принудительно обновляем кредит
+        const creditElement = this.ui.querySelector('#bank-credit');
+        if (creditElement) {
+            const credit = currentPlayer.currentLoan ?? 0;
+            creditElement.textContent = `$${this.formatNumber(credit)}`;
+            creditElement.style.color = credit > 0 ? '#ef4444' : '#10b981';
+            console.log('💳 forceUpdateBankUI: Обновлен кредит:', credit);
+        }
     }
     
     /**
