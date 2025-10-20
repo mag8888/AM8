@@ -223,37 +223,20 @@ class BankPreview {
             if (this.bankModule && this.bankModule.bankState) {
                 bankData = this.bankModule.bankState;
             } else {
-                // Fallback: получаем данные с сервера напрямую
+                // Fallback: используем GameStateManager для безопасного запроса
                 const roomId = this.getCurrentRoomId();
-                if (roomId && window.CommonUtils) {
-                    // Атомарная проверка и установка pending флага
-                    if (!window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                        console.log('🚫 BankPreview: Пропускаем запрос из-за глобального rate limiting или concurrent request');
-                        return;
-                    }
-                    
+                if (roomId && this.gameStateManager && typeof this.gameStateManager.fetchGameState === 'function') {
+                    console.log('🔄 BankPreview: Используем GameStateManager для получения данных');
                     try {
-                        const response = await fetch(`/api/rooms/${roomId}/game-state`, {
-                            headers: {
-                                'Cache-Control': 'no-cache',
-                                'Pragma': 'no-cache'
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            const gameStateData = await response.json();
-                            if (gameStateData.success && gameStateData.state?.players) {
-                                bankData = this.extractBankDataFromGameState(gameStateData.state);
-                            }
-                        } else {
-                            console.warn('⚠️ BankPreview: Неудачный запрос game-state:', response.status);
+                        const gameState = await this.gameStateManager.fetchGameState(roomId);
+                        if (gameState && gameState.players) {
+                            bankData = this.extractBankDataFromGameState(gameState);
                         }
                     } catch (error) {
-                        console.warn('⚠️ BankPreview: Ошибка запроса game-state:', error);
-                    } finally {
-                        // Очищаем флаг pending в глобальном limiter
-                        window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+                        console.warn('⚠️ BankPreview: Ошибка получения данных через GameStateManager:', error);
                     }
+                } else if (roomId && !this.gameStateManager) {
+                    console.warn('⚠️ BankPreview: GameStateManager недоступен, пропускаем fallback запрос');
                 }
             }
             
