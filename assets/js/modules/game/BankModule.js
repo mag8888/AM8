@@ -29,6 +29,16 @@ class BankModule {
         this.ui = null;
         this.isOpen = false;
         
+        // Кэш DOM элементов для производительности
+        this.domCache = {
+            balanceElement: null,
+            incomeElement: null,
+            expensesElement: null,
+            creditElement: null,
+            transactionsList: null,
+            newBadge: null
+        };
+        
         console.log('🏦 BankModule: Инициализирован');
         this.init();
     }
@@ -287,6 +297,9 @@ class BankModule {
         // Добавляем HTML в body
         document.body.insertAdjacentHTML('beforeend', bankModuleHTML);
         this.ui = document.getElementById('bank-module');
+        
+        // Инициализируем кэш DOM элементов для производительности
+        this.initializeDOMCache();
         
         // Добавляем стили
         this.addStyles();
@@ -863,6 +876,23 @@ class BankModule {
         `;
         
         document.head.appendChild(style);
+    }
+    
+    /**
+     * Инициализация кэша DOM элементов для производительности
+     */
+    initializeDOMCache() {
+        if (!this.ui) return;
+        
+        // Кэшируем часто используемые элементы
+        this.domCache.balanceElement = this.ui.querySelector('#bank-balance');
+        this.domCache.incomeElement = this.ui.querySelector('#bank-income');
+        this.domCache.expensesElement = this.ui.querySelector('#bank-expenses');
+        this.domCache.creditElement = this.ui.querySelector('#bank-credit');
+        this.domCache.transactionsList = this.ui.querySelector('#transactions-list');
+        this.domCache.newBadge = this.ui.querySelector('#new-transactions');
+        
+        console.log('🏦 BankModule: DOM кэш инициализирован');
     }
     
     /**
@@ -2030,10 +2060,9 @@ class BankModule {
             this.bankState.transactions = this.bankState.transactions.slice(0, 50);
         }
         
-        // Обновляем счетчик новых транзакций
-        const newBadge = this.ui.querySelector('#new-transactions');
-        if (newBadge) {
-            newBadge.textContent = String(this.bankState.transactions.length);
+        // Обновляем счетчик новых транзакций (используем кэш)
+        if (this.domCache.newBadge) {
+            this.domCache.newBadge.textContent = String(this.bankState.transactions.length);
         }
         
         // Перерисовываем список из состояния (во избежание дублей)
@@ -2048,7 +2077,8 @@ class BankModule {
     loadTransactions() {
         if (!this.ui) return;
         
-        const transactionsList = this.ui.querySelector('#transactions-list');
+        // Используем кэшированный элемент
+        const transactionsList = this.domCache.transactionsList || this.ui.querySelector('#transactions-list');
         if (!transactionsList) return;
         
         // Очищаем существующие транзакции полностью
@@ -2493,37 +2523,33 @@ class BankModule {
         
         console.log('🔄 BankModule: Принудительное обновление UI для:', currentPlayer.username);
         
-        // Принудительно обновляем баланс
-        const balanceElement = this.ui.querySelector('#bank-balance');
-        if (balanceElement) {
+        // Принудительно обновляем баланс (используем кэш)
+        if (this.domCache.balanceElement) {
             const balance = currentPlayer.balance ?? currentPlayer.money ?? currentPlayer.cash ?? 0;
-            balanceElement.textContent = `$${this.formatNumber(balance)}`;
-            balanceElement.style.color = balance >= 0 ? '#10b981' : '#ef4444';
+            this.domCache.balanceElement.textContent = `$${this.formatNumber(balance)}`;
+            this.domCache.balanceElement.style.color = balance >= 0 ? '#10b981' : '#ef4444';
             console.log('💰 forceUpdateBankUI: Обновлен баланс:', balance);
         }
         
-        // Принудительно обновляем доходы
-        const incomeElement = this.ui.querySelector('#bank-income');
-        if (incomeElement) {
+        // Принудительно обновляем доходы (используем кэш)
+        if (this.domCache.incomeElement) {
             const income = currentPlayer.totalIncome ?? currentPlayer.salary ?? 0;
-            incomeElement.textContent = `$${this.formatNumber(income)}`;
+            this.domCache.incomeElement.textContent = `$${this.formatNumber(income)}`;
             console.log('📈 forceUpdateBankUI: Обновлен доход:', income);
         }
         
-        // Принудительно обновляем расходы
-        const expensesElement = this.ui.querySelector('#bank-expenses');
-        if (expensesElement) {
+        // Принудительно обновляем расходы (используем кэш)
+        if (this.domCache.expensesElement) {
             const expenses = currentPlayer.monthlyExpenses ?? 0;
-            expensesElement.textContent = `$${this.formatNumber(expenses)}`;
+            this.domCache.expensesElement.textContent = `$${this.formatNumber(expenses)}`;
             console.log('📉 forceUpdateBankUI: Обновлены расходы:', expenses);
         }
         
-        // Принудительно обновляем кредит
-        const creditElement = this.ui.querySelector('#bank-credit');
-        if (creditElement) {
+        // Принудительно обновляем кредит (используем кэш)
+        if (this.domCache.creditElement) {
             const credit = currentPlayer.currentLoan ?? 0;
-            creditElement.textContent = `$${this.formatNumber(credit)}`;
-            creditElement.style.color = credit > 0 ? '#ef4444' : '#10b981';
+            this.domCache.creditElement.textContent = `$${this.formatNumber(credit)}`;
+            this.domCache.creditElement.style.color = credit > 0 ? '#ef4444' : '#10b981';
             console.log('💳 forceUpdateBankUI: Обновлен кредит:', credit);
         }
     }

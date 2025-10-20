@@ -23,6 +23,9 @@ class PlayersPanel {
         this._lastFetchTime = 0;
         this._cacheTimeout = 2000; // 2 секунды кэш
         
+        // AbortController для отмены предыдущих запросов
+        this._currentAbortController = null;
+        
         console.log('👥 PlayersPanel v2.0: Инициализация');
         this.init();
     }
@@ -462,7 +465,17 @@ class PlayersPanel {
      * Основная загрузка игроков с API
      */
     _fetchPlayersFromAPI(roomId) {
-        fetch(`/api/rooms/${roomId}/game-state`)
+        // Отменяем предыдущий запрос если он есть
+        if (this._currentAbortController) {
+            this._currentAbortController.abort();
+        }
+        
+        // Создаем новый AbortController
+        this._currentAbortController = new AbortController();
+        
+        fetch(`/api/rooms/${roomId}/game-state`, {
+            signal: this._currentAbortController.signal
+        })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -499,8 +512,16 @@ class PlayersPanel {
                 }
             })
             .catch(err => {
+                // Игнорируем ошибки отмены запроса
+                if (err.name === 'AbortError') {
+                    return;
+                }
                 console.error('❌ PlayersPanel: Ошибка принудительной загрузки игроков:', err);
                 this.showErrorState(`Ошибка загрузки: ${err.message}`);
+            })
+            .finally(() => {
+                // Очищаем ссылку на AbortController
+                this._currentAbortController = null;
             });
     }
     

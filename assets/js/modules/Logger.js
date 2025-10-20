@@ -46,8 +46,8 @@ class Logger {
                            !window.location.hostname.includes('127.0.0.1');
         
         this.config = {
-            level: isProduction ? this.levels.WARN : this.levels.DEBUG,
-            enableConsole: true,
+            level: isProduction ? this.levels.ERROR : this.levels.DEBUG, // В продакшене только ERROR
+            enableConsole: !isProduction, // Отключаем console в продакшене
             enablePerformance: !isProduction,
             maxLogEntries: 1000,
             contextMaxLength: 50
