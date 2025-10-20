@@ -32,38 +32,87 @@ document.addEventListener('DOMContentLoaded', function() {
  * Запуск периодического обновления списка комнат
  */
 function startRoomsPolling() {
+    let lastRefreshAttempt = 0;
+    const minRefreshInterval = 5000; // Минимум 5 секунд между обновлениями
+    
     // Обновляем список комнат каждые 30 секунд для снижения нагрузки
     setInterval(async () => {
+        const now = Date.now();
+        if (now - lastRefreshAttempt < minRefreshInterval) {
+            console.log('⏳ Rooms: Пропускаем обновление - слишком часто');
+            return;
+        }
+        
         try {
+            lastRefreshAttempt = now;
             await refreshRoomsList();
         } catch (error) {
             console.error('❌ Rooms: Ошибка периодического обновления:', error);
+            handleRefreshError(error);
         }
     }, 30000);
     
     // Также обновляем при фокусе на окне (когда пользователь возвращается)
     window.addEventListener('focus', async () => {
+        const now = Date.now();
+        if (now - lastRefreshAttempt < minRefreshInterval) {
+            console.log('⏳ Rooms: Пропускаем обновление при фокусе - слишком часто');
+            return;
+        }
+        
         try {
             console.log('🔄 Rooms: Обновление при фокусе окна');
+            lastRefreshAttempt = now;
             await refreshRoomsList();
         } catch (error) {
             console.error('❌ Rooms: Ошибка обновления при фокусе:', error);
+            handleRefreshError(error);
         }
     });
     
     // Обновляем при видимости страницы (когда пользователь переключается между вкладками)
     document.addEventListener('visibilitychange', async () => {
         if (!document.hidden) {
+            const now = Date.now();
+            if (now - lastRefreshAttempt < minRefreshInterval) {
+                console.log('⏳ Rooms: Пропускаем обновление при видимости - слишком часто');
+                return;
+            }
+            
             try {
                 console.log('🔄 Rooms: Обновление при возвращении на вкладку');
+                lastRefreshAttempt = now;
                 await refreshRoomsList();
             } catch (error) {
                 console.error('❌ Rooms: Ошибка обновления при видимости:', error);
+                handleRefreshError(error);
             }
         }
     });
     
     console.log('🔄 Rooms: Запущено периодическое обновление списка комнат');
+}
+
+/**
+ * Обработка ошибок обновления с акцентом на 429 (Rate Limited)
+ */
+function handleRefreshError(error) {
+    if (error.message && error.message.includes('429')) {
+        console.warn('⏳ Rooms: Rate limited - слишком много запросов. Используем кэшированные данные.');
+        
+        // Показываем предупреждение пользователю только один раз
+        if (!window.rateLimitWarningShown) {
+            showNotification('Сервер временно перегружен. Данные могут быть устаревшими.', 'warning');
+            window.rateLimitWarningShown = true;
+            
+            // Сбрасываем предупреждение через 30 секунд
+            setTimeout(() => {
+                window.rateLimitWarningShown = false;
+            }, 30000);
+        }
+    } else if (error.message && error.message.includes('Rate limited')) {
+        console.warn('⏳ Rooms: Rate limited с backoff. Ждем...');
+    }
 }
 
 /**
@@ -98,7 +147,12 @@ async function refreshRoomsList() {
             }
             
             // Обновляем статистику
-            await loadStats();
+            try {
+                await loadStats();
+            } catch (statsError) {
+                console.warn('⚠️ Rooms: Ошибка обновления статистики:', statsError);
+                // Игнорируем ошибки статистики при обновлении списка комнат
+            }
             
             // Показываем уведомления
             if (hasChanges.hasNewRooms) {
@@ -121,6 +175,12 @@ async function refreshRoomsList() {
         
     } catch (error) {
         console.error('❌ Rooms: Ошибка обновления списка комнат:', error);
+        
+        // При ошибке 429 не обновляем UI, просто логируем
+        if (error.message && (error.message.includes('429') || error.message.includes('Rate limited'))) {
+            console.warn('⏳ Rooms: Обновление пропущено из-за rate limiting');
+            // Не показываем ошибку пользователю при периодическом обновлении
+        }
     }
 }
 
@@ -419,6 +479,19 @@ async function loadStats() {
         renderStats(stats);
     } catch (error) {
         console.error('❌ Rooms: Ошибка загрузки статистики:', error);
+        
+        // При ошибке 429 не показываем пользователю ошибку для статистики
+        // просто используем значения по умолчанию
+        if (error.message && (error.message.includes('429') || error.message.includes('Rate limited'))) {
+            console.warn('⏳ Rooms: Статистика недоступна из-за rate limiting');
+            // Используем статистику по умолчанию
+            renderStats({
+                totalRooms: 0,
+                activeRooms: 0,
+                gamesInProgress: 0,
+                playersOnline: 0
+            });
+        }
     }
 }
 
@@ -872,7 +945,17 @@ async function handleCreateRoom(event) {
         
     } catch (error) {
         console.error('❌ Rooms: Ошибка создания комнаты:', error);
-        showNotification(error.message || 'Ошибка создания комнаты', 'error');
+        
+        // Специальная обработка для 429 ошибок
+        if (error.message && error.message.includes('429')) {
+            showNotification('Сервер перегружен. Попробуйте создать комнату через несколько секунд.', 'error');
+        } else if (error.message && error.message.includes('Rate limited')) {
+            const retryTime = error.message.match(/(\d+)ms/);
+            const time = retryTime ? Math.ceil(parseInt(retryTime[1]) / 1000) : 5;
+            showNotification(`Слишком много запросов. Повторите через ${time} секунд.`, 'error');
+        } else {
+            showNotification(error.message || 'Ошибка создания комнаты', 'error');
+        }
     } finally {
         showButtonLoading('create-room-submit', false);
     }

@@ -51,6 +51,15 @@ class RoomService {
             error: null
         };
         this.roomsCacheKey = 'am_rooms_cache_v1';
+        
+        // Rate limiting для предотвращения HTTP 429
+        this.requestQueue = {
+            lastRequest: 0,
+            minInterval: 2000, // Минимум 2 секунды между запросами
+            backoffMultiplier: 2,
+            maxBackoff: 30000, // Максимум 30 секунд
+            currentBackoff: 0
+        };
     }
 
     /**
@@ -283,19 +292,30 @@ class RoomService {
     }
 
     /**
-     * Получение комнат с API
+     * Получение комнат с API с защитой от rate limiting
      * @private
      */
     async _fetchRoomsFromAPI() {
+        // Проверяем rate limiting
+        await this._waitForRateLimit();
+        
         const response = await fetch(this.config.baseUrl, {
                 method: 'GET',
             headers: { 'Content-Type': 'application/json' }
             });
 
             if (!response.ok) {
+                if (response.status === 429) {
+                    // Увеличиваем backoff при 429 ошибке
+                    this._increaseBackoff();
+                    console.warn('⚠️ RoomService: HTTP 429, увеличиваем задержку до', this.requestQueue.currentBackoff, 'мс');
+                    throw new Error(`Rate limited! Retry after ${this.requestQueue.currentBackoff}ms`);
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
+            // Сбрасываем backoff при успешном запросе
+            this.requestQueue.currentBackoff = 0;
             const data = await response.json();
             
         if (!data.success) {
@@ -319,6 +339,39 @@ class RoomService {
             createdAt: room.createdAt,
             updatedAt: room.updatedAt
         }));
+    }
+
+    /**
+     * Ожидание для соблюдения rate limit
+     * @private
+     */
+    async _waitForRateLimit() {
+        const now = Date.now();
+        const timeSinceLastRequest = now - this.requestQueue.lastRequest;
+        const minWait = this.requestQueue.minInterval + this.requestQueue.currentBackoff;
+        
+        if (timeSinceLastRequest < minWait) {
+            const waitTime = minWait - timeSinceLastRequest;
+            console.log(`⏳ RoomService: Ожидание ${waitTime}мс для соблюдения rate limit`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        
+        this.requestQueue.lastRequest = Date.now();
+    }
+
+    /**
+     * Увеличение backoff при ошибках
+     * @private
+     */
+    _increaseBackoff() {
+        if (this.requestQueue.currentBackoff === 0) {
+            this.requestQueue.currentBackoff = this.requestQueue.minInterval;
+        } else {
+            this.requestQueue.currentBackoff = Math.min(
+                this.requestQueue.currentBackoff * this.requestQueue.backoffMultiplier,
+                this.requestQueue.maxBackoff
+            );
+        }
     }
 
     // КЭШ комнат
@@ -517,10 +570,13 @@ class RoomService {
     }
 
     /**
-     * Создание комнаты через API
+     * Создание комнаты через API с защитой от rate limiting
      * @private
      */
     async _createRoomViaAPI(roomData, creator) {
+        // Проверяем rate limiting
+        await this._waitForRateLimit();
+        
         const requestData = {
             name: roomData.name,
             description: roomData.description || '',
@@ -537,10 +593,18 @@ class RoomService {
         });
 
         if (!response.ok) {
+            if (response.status === 429) {
+                // Увеличиваем backoff при 429 ошибке
+                this._increaseBackoff();
+                console.warn('⚠️ RoomService: HTTP 429 при создании комнаты, увеличиваем задержку');
+                throw new Error(`Rate limited! Retry after ${this.requestQueue.currentBackoff}ms`);
+            }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-            const data = await response.json();
+        // Сбрасываем backoff при успешном запросе
+        this.requestQueue.currentBackoff = 0;
+        const data = await response.json();
             
         if (!data.success) {
             throw new Error(data.message || 'Ошибка создания комнаты');
@@ -748,10 +812,13 @@ class RoomService {
     }
 
     /**
-     * Получение статистики с API
+     * Получение статистики с API с защитой от rate limiting
      * @private
      */
     async _fetchStatsFromAPI() {
+        // Проверяем rate limiting
+        await this._waitForRateLimit();
+        
         // Используем новый endpoint для статистики
         const baseUrl = this.config.baseUrl.replace('/api/rooms', '/api/stats');
         
@@ -761,9 +828,17 @@ class RoomService {
         });
 
         if (!response.ok) {
+            if (response.status === 429) {
+                // Увеличиваем backoff при 429 ошибке
+                this._increaseBackoff();
+                console.warn('⚠️ RoomService: HTTP 429 при получении статистики, увеличиваем задержку');
+                throw new Error(`Rate limited! Retry after ${this.requestQueue.currentBackoff}ms`);
+            }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // Сбрасываем backoff при успешном запросе
+        this.requestQueue.currentBackoff = 0;
         const data = await response.json();
         
         if (!data.success) {
