@@ -34,10 +34,28 @@ class BankPreview {
         
         // setupEventListeners будет вызван в render()
         
-        // Обновляем данные каждые 30 секунд для снижения нагрузки
+        // Обновляем данные каждые 45 секунд для снижения нагрузки на сервер
         this.updateInterval = setInterval(() => {
             this.updatePreviewData();
-        }, 30000);
+        }, 45000);
+        
+        // Очищаем зависшие запросы каждые 60 секунд
+        this.cleanupInterval = setInterval(() => {
+            if (window.CommonUtils && window.CommonUtils.gameStateLimiter.clearStaleRequests) {
+                const clearedCount = window.CommonUtils.gameStateLimiter.clearStaleRequests();
+                if (clearedCount > 0) {
+                    console.log(`🧹 BankPreview: Очищено ${clearedCount} зависших запросов`);
+                }
+            }
+        }, 60000);
+        
+        // Debounced версия updatePreviewData для предотвращения множественных вызовов
+        this.updatePreviewDataDebounced = null;
+        if (window.CommonUtils && window.CommonUtils.debounce) {
+            this.updatePreviewDataDebounced = window.CommonUtils.debounce(() => {
+                this.updatePreviewData();
+            }, 2000);
+        }
         
         // Следим за изменениями в контейнере (если CardDeckPanel перезаписывает содержимое)
         this.observeContainer();
@@ -131,7 +149,12 @@ class BankPreview {
         // Подписываемся на события банка если есть eventBus
         if (this.eventBus) {
             this.eventBus.on('bank:updated', () => {
-                this.updatePreviewData();
+                // Используем debounced версию для предотвращения спама
+                if (this.updatePreviewDataDebounced) {
+                    this.updatePreviewDataDebounced();
+                } else {
+                    this.updatePreviewData();
+                }
             });
             
             // Подписываемся на события обновления карт, чтобы перерендерить превью (убрана задержка)
@@ -179,6 +202,13 @@ class BankPreview {
     async updatePreviewData() {
         if (!this.previewElement) return;
         
+        // Предотвращаем множественные одновременные вызовы
+        if (this._isUpdating) {
+            return;
+        }
+        
+        this._isUpdating = true;
+        
         try {
             // Пытаемся получить данные из BankModuleServer
             let bankData = null;
@@ -195,32 +225,34 @@ class BankPreview {
             } else {
                 // Fallback: получаем данные с сервера напрямую
                 const roomId = this.getCurrentRoomId();
-                if (roomId) {
-                    // Проверяем глобальный rate limiter для game-state
-                    if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
-                        console.log('🚫 BankPreview: Пропускаем запрос из-за глобального rate limiting');
-                        return;
-                    }
-                    
-                    // Устанавливаем флаг pending в глобальном limiter
-                    if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                        console.log('🚫 BankPreview: Не удалось установить pending (race condition)');
+                if (roomId && window.CommonUtils) {
+                    // Атомарная проверка и установка pending флага
+                    if (!window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+                        console.log('🚫 BankPreview: Пропускаем запрос из-за глобального rate limiting или concurrent request');
                         return;
                     }
                     
                     try {
-                        const response = await fetch(`/api/rooms/${roomId}/game-state`);
+                        const response = await fetch(`/api/rooms/${roomId}/game-state`, {
+                            headers: {
+                                'Cache-Control': 'no-cache',
+                                'Pragma': 'no-cache'
+                            }
+                        });
+                        
                         if (response.ok) {
                             const gameStateData = await response.json();
                             if (gameStateData.success && gameStateData.state?.players) {
                                 bankData = this.extractBankDataFromGameState(gameStateData.state);
                             }
+                        } else {
+                            console.warn('⚠️ BankPreview: Неудачный запрос game-state:', response.status);
                         }
+                    } catch (error) {
+                        console.warn('⚠️ BankPreview: Ошибка запроса game-state:', error);
                     } finally {
                         // Очищаем флаг pending в глобальном limiter
-                        if (window.CommonUtils) {
-                            window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
-                        }
+                        window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
                     }
                 }
             }
@@ -240,6 +272,8 @@ class BankPreview {
             }
         } catch (error) {
             console.warn('⚠️ BankPreview: Ошибка обновления данных:', error);
+        } finally {
+            this._isUpdating = false;
         }
     }
 
@@ -524,6 +558,10 @@ class BankPreview {
             clearInterval(this.updateInterval);
         }
         
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+        }
+        
         if (this.renderDebounceTimer) {
             clearTimeout(this.renderDebounceTimer);
         }
@@ -531,6 +569,9 @@ class BankPreview {
         if (this.observer) {
             this.observer.disconnect();
         }
+        
+        // Сбрасываем флаг обновления
+        this._isUpdating = false;
         
         if (this.previewElement && this.previewElement.parentNode) {
             this.previewElement.parentNode.removeChild(this.previewElement);

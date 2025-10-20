@@ -256,7 +256,7 @@ class CommonUtils {
      */
     static gameStateLimiter = {
         _lastRequestTime: 0,
-        _minInterval: 5000, // Минимальный интервал 5 секунд для game-state
+        _minInterval: 8000, // Увеличено до 8 секунд для game-state
         _pendingRequests: new Map(),
         
         canMakeRequest(roomId = 'default') {
@@ -265,8 +265,16 @@ class CommonUtils {
             
             // Проверяем, не выполняется ли уже запрос для этой комнаты
             if (this._pendingRequests.has(key)) {
-                console.log(`⏳ GameStateLimiter: Запрос уже выполняется для комнаты ${roomId}`);
-                return false;
+                const pendingTime = this._pendingRequests.get(key);
+                const elapsedSincePending = now - pendingTime;
+                // Если запрос висит больше 30 секунд, считаем его "зависшим" и очищаем
+                if (elapsedSincePending > 30000) {
+                    console.log(`⚠️ GameStateLimiter: Очищаем зависший запрос для комнаты ${roomId} (${elapsedSincePending}ms)`);
+                    this._pendingRequests.delete(key);
+                } else {
+                    console.log(`⏳ GameStateLimiter: Запрос уже выполняется для комнаты ${roomId} (${elapsedSincePending}ms)`);
+                    return false;
+                }
             }
             
             // Проверяем временной интервал
@@ -275,7 +283,6 @@ class CommonUtils {
                 return false;
             }
             
-            // Если все проверки прошли, НЕ устанавливаем время здесь - это будет сделано в setRequestPending
             return true;
         },
         
@@ -283,25 +290,55 @@ class CommonUtils {
             const now = Date.now();
             const key = `gamestate_${roomId}`;
             
-            // Двойная проверка на случай race condition
+            // Атомарная проверка и установка pending флага
             if (this._pendingRequests.has(key)) {
-                console.log(`⏳ GameStateLimiter: Запрос уже выполняется для комнаты ${roomId} (race condition detected)`);
-                return false;
+                const pendingTime = this._pendingRequests.get(key);
+                const elapsedSincePending = now - pendingTime;
+                // Если запрос висит больше 30 секунд, перезаписываем его
+                if (elapsedSincePending > 30000) {
+                    console.log(`⚠️ GameStateLimiter: Перезаписываем зависший запрос для комнаты ${roomId}`);
+                } else {
+                    console.log(`⏳ GameStateLimiter: Запрос уже выполняется для комнаты ${roomId} (race condition detected)`);
+                    return false;
+                }
             }
             
             // Устанавливаем pending и время одновременно для атомарности
             this._pendingRequests.set(key, now);
-            this._lastRequestTime = now; // Устанавливаем время здесь для атомарности
+            this._lastRequestTime = now;
             return true;
         },
         
         clearRequestPending(roomId = 'default') {
             const key = `gamestate_${roomId}`;
+            const wasPending = this._pendingRequests.has(key);
             this._pendingRequests.delete(key);
+            if (wasPending) {
+                console.log(`✅ GameStateLimiter: Очищен pending запрос для комнаты ${roomId}`);
+            }
         },
         
         setInterval(ms) {
             this._minInterval = ms;
+        },
+        
+        // Метод для очистки всех зависших запросов
+        clearStaleRequests() {
+            const now = Date.now();
+            const staleKeys = [];
+            
+            for (const [key, timestamp] of this._pendingRequests.entries()) {
+                if (now - timestamp > 30000) {
+                    staleKeys.push(key);
+                }
+            }
+            
+            staleKeys.forEach(key => {
+                console.log(`🧹 GameStateLimiter: Очищен зависший запрос ${key}`);
+                this._pendingRequests.delete(key);
+            });
+            
+            return staleKeys.length;
         }
     };
 
