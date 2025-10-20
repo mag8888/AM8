@@ -38,6 +38,9 @@
             this.abortController = null;
             this.autoRefreshTimer = null;
             this.latestUpdatedAt = null;
+            this.lastKnownDecks = [];
+            this.rateLimitUntil = 0;
+            this.rateLimitBackoff = 0;
 
             this.handleContainerClick = this.handleContainerClick.bind(this);
 
@@ -57,7 +60,11 @@
 
             this.renderLoading();
             this.loadDecks().catch((error) => {
-                this.renderError(error);
+                if (error?.isRateLimit && this.lastKnownDecks.length) {
+                    this.renderDecks(this.lastKnownDecks);
+                } else {
+                    this.renderError(error);
+                }
             });
             this.setupEventListeners();
             this.setupAutoRefresh();
@@ -113,6 +120,14 @@
          * Загружает данные колод с API
          */
         async loadDecks() {
+            if (this._isRateLimited()) {
+                console.warn('⚠️ CardDeckPanel: Пропускаем загрузку — действует rate limit');
+                if (this.lastKnownDecks.length) {
+                    this.renderDecks(this.lastKnownDecks);
+                }
+                return;
+            }
+
             this.cancelPendingRequest();
             this.setLoadingState(true);
 
@@ -129,6 +144,15 @@
 
             try {
                 const response = await fetch(this.apiBaseUrl, requestInit);
+
+                if (response.status === 429) {
+                    const retryAfter = this._applyRateLimitFromResponse(response);
+                    const error = new Error(`Не удалось загрузить карточные колоды (HTTP 429)`);
+                    error.isRateLimit = true;
+                    error.retryAfter = retryAfter;
+                    throw error;
+                }
+
                 if (!response.ok) {
                     throw new Error(`Не удалось загрузить карточные колоды (HTTP ${response.status})`);
                 }
@@ -143,13 +167,19 @@
                 this.latestUpdatedAt = payload.data?.updatedAt || null;
 
                 const normalized = this.mergeWithDefaults(decks, stats);
+                this.lastKnownDecks = normalized;
+                this._resetRateLimit();
                 this.renderDecks(normalized);
             } catch (error) {
                 if (error.name === 'AbortError') {
                     return;
                 }
                 console.error('❌ CardDeckPanel: Ошибка загрузки данных колод:', error);
-                this.renderError(error);
+                if (error?.isRateLimit && this.lastKnownDecks.length) {
+                    this.renderDecks(this.lastKnownDecks);
+                } else {
+                    this.renderError(error);
+                }
                 throw error;
             } finally {
                 this.setLoadingState(false);
@@ -161,8 +191,17 @@
          * Обновляет данные вручную
          */
         refresh() {
+            if (this._isRateLimited()) {
+                console.warn('⚠️ CardDeckPanel: Обновление пропущено из-за rate limit');
+                return;
+            }
+
             this.loadDecks().catch((error) => {
-                console.warn('⚠️ CardDeckPanel: Ошибка обновления:', error);
+                if (error?.isRateLimit) {
+                    console.warn(`⚠️ CardDeckPanel: Rate limit. Повторим через ${error.retryAfter || this.rateLimitBackoff}мс`);
+                } else {
+                    console.warn('⚠️ CardDeckPanel: Ошибка обновления:', error);
+                }
             });
         }
 
@@ -326,6 +365,37 @@
                 this.abortController.abort();
                 this.abortController = null;
             }
+        }
+
+        _isRateLimited() {
+            return this.rateLimitUntil && Date.now() < this.rateLimitUntil;
+        }
+
+        _applyRateLimitFromResponse(response) {
+            const retryAfterHeader = response.headers?.get?.('Retry-After') || response.headers?.get?.('retry-after');
+            let retryAfterMs = 0;
+
+            if (retryAfterHeader) {
+                const seconds = Number(retryAfterHeader);
+                if (!Number.isNaN(seconds)) {
+                    retryAfterMs = seconds * 1000;
+                }
+            }
+
+            if (!retryAfterMs) {
+                this.rateLimitBackoff = this.rateLimitBackoff ? Math.min(this.rateLimitBackoff * 2, 60000) : 5000;
+                retryAfterMs = this.rateLimitBackoff;
+            } else {
+                this.rateLimitBackoff = retryAfterMs;
+            }
+
+            this.rateLimitUntil = Date.now() + retryAfterMs;
+            return retryAfterMs;
+        }
+
+        _resetRateLimit() {
+            this.rateLimitBackoff = 0;
+            this.rateLimitUntil = 0;
         }
 
         /**

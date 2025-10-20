@@ -12,7 +12,13 @@ class RoomApi {
         
         // Защита от множественных одновременных запросов
         this.pendingRequests = new Map();
-        
+
+        // Глобальный контроль частоты запросов к API комнаты
+        this.minInterval = 2000; // минимум 2 секунды между запросами
+        this.lastRequestAt = 0;
+        this.rateLimitUntil = 0;
+        this.rateLimitBackoff = 0;
+
         console.log('🌐 RoomApi: Инициализирован');
     }
     
@@ -39,18 +45,34 @@ class RoomApi {
             headers: this.getHeaders(),
             ...options
         };
-        
+
         try {
+            await this._respectRateLimitWindow();
+
             const response = await fetch(url, config);
-            
+
+            if (response.status === 429) {
+                const retryAfter = this._applyRateLimitFromResponse(response);
+                const error = new Error(`HTTP 429: ${response.statusText || 'Rate limited'}`);
+                error.isRateLimit = true;
+                error.retryAfter = retryAfter;
+                throw error;
+            }
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
+            this._resetRateLimit();
+
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error(`❌ RoomApi: Ошибка запроса ${endpoint}:`, error);
+            if (error.isRateLimit) {
+                console.warn(`⏳ RoomApi: Получен HTTP 429, повторная попытка через ${error.retryAfter}мс`);
+            } else {
+                console.error(`❌ RoomApi: Ошибка запроса ${endpoint}:`, error);
+            }
             throw error;
         }
     }
@@ -170,13 +192,66 @@ class RoomApi {
             
             return result;
         } catch (error) {
-            // При ошибке 429 возвращаем кэшированные данные, если есть
-            if (error.message && error.message.includes('429') && cached) {
+            // При rate-limit возвращаем кэшированные данные, если есть
+            if (error.isRateLimit && cached) {
                 console.log(`📊 RoomApi: HTTP 429, используем кэшированные данные`);
                 return cached.data;
             }
             throw error;
         }
+    }
+
+    /**
+     * Учитываем временное окно rate limit
+     * @private
+     */
+    async _respectRateLimitWindow() {
+        const now = Date.now();
+
+        const nextAllowedByInterval = this.lastRequestAt + this.minInterval;
+        const nextAllowed = Math.max(nextAllowedByInterval, this.rateLimitUntil || 0);
+
+        if (now < nextAllowed) {
+            const waitTime = nextAllowed - now;
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+
+        this.lastRequestAt = Date.now();
+    }
+
+    /**
+     * Применяем данные rate limit из ответа сервера
+     * @private
+     */
+    _applyRateLimitFromResponse(response) {
+        const retryAfterHeader = response.headers?.get?.('Retry-After') || response.headers?.get?.('retry-after');
+        let retryAfterMs = 0;
+
+        if (retryAfterHeader) {
+            const retrySeconds = Number(retryAfterHeader);
+            if (!Number.isNaN(retrySeconds)) {
+                retryAfterMs = retrySeconds * 1000;
+            }
+        }
+
+        if (!retryAfterMs) {
+            this.rateLimitBackoff = this.rateLimitBackoff ? Math.min(this.rateLimitBackoff * 2, 60000) : 5000;
+            retryAfterMs = this.rateLimitBackoff;
+        } else {
+            this.rateLimitBackoff = retryAfterMs;
+        }
+
+        this.rateLimitUntil = Date.now() + retryAfterMs;
+        return retryAfterMs;
+    }
+
+    /**
+     * Сбрасываем состояние rate limit после успешного запроса
+     * @private
+     */
+    _resetRateLimit() {
+        this.rateLimitBackoff = 0;
+        this.rateLimitUntil = 0;
     }
     
     /**

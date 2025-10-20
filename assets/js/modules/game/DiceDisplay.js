@@ -33,14 +33,11 @@ class DiceDisplay {
         this.container = document.querySelector(this.containerSelector);
         
         if (!this.container) {
-            // Создаем контейнер если его нет
+            // Создаем контейнер если его нет, но не добавляем в DOM
             this.container = document.createElement('div');
             this.container.id = 'dice-display';
             this.container.className = 'dice-display-container';
-            
-            // Добавляем в игровую область
-            const gameBoard = document.querySelector('#game-page') || document.body;
-            gameBoard.appendChild(this.container);
+            // Контейнер кубиков удален - не добавляем в DOM
         }
     }
     
@@ -59,6 +56,7 @@ class DiceDisplay {
                 right: 20px;
                 z-index: 1000;
                 pointer-events: none;
+                display: none !important; /* Кубики скрыты */
             }
             
             .dice-result {
@@ -210,71 +208,9 @@ class DiceDisplay {
     displayRoll(rollResult) {
         if (!rollResult) return;
         
-        // Убираем предыдущий результат
-        this.hideDisplay();
-        
-        // Создаем новый элемент
-        const diceElement = document.createElement('div');
-        diceElement.className = 'dice-result appearing';
-        
-        // Заголовок
-        const title = document.createElement('div');
-        title.className = 'dice-title';
-        title.textContent = rollResult.diceCount === 1 ? 'Бросок кубика' : 'Бросок кубиков';
-        diceElement.appendChild(title);
-        
-        // Значения кубиков
-        const valuesContainer = document.createElement('div');
-        valuesContainer.className = 'dice-values';
-        
-        rollResult.results.forEach((value, index) => {
-            const valueElement = document.createElement('div');
-            valueElement.className = 'dice-value';
-            valueElement.textContent = value;
-            valueElement.style.animationDelay = `${index * 0.1}s`;
-            valuesContainer.appendChild(valueElement);
-        });
-        
-        diceElement.appendChild(valuesContainer);
-        
-        // Общая сумма
-        if (rollResult.diceCount > 1) {
-            const totalElement = document.createElement('div');
-            totalElement.className = 'dice-total';
-            totalElement.textContent = `= ${rollResult.total}`;
-            diceElement.appendChild(totalElement);
-        }
-        
-        // Специальные эффекты
-        if (rollResult.isDouble) {
-            const specialElement = document.createElement('div');
-            specialElement.className = 'dice-special';
-            specialElement.textContent = '🎯 ДУБЛЬ!';
-            diceElement.appendChild(specialElement);
-        }
-        
-        if (rollResult.maxDoublesReached) {
-            const penaltyElement = document.createElement('div');
-            penaltyElement.className = 'dice-penalty';
-            penaltyElement.textContent = '⚠️ ПРОПУСК ХОДА!';
-            diceElement.appendChild(penaltyElement);
-        }
-        
-        // Добавляем в контейнер
-        this.container.appendChild(diceElement);
-        this.currentDisplay = diceElement;
-        
-        // Показываем с анимацией
-        setTimeout(() => {
-            diceElement.classList.add('show');
-        }, 100);
-        
-        // Автоматически скрываем через 3 секунды
-        setTimeout(() => {
-            this.hideDisplay();
-        }, 3000);
-        
-        console.log('🎲 DiceDisplay: Отображен результат броска:', rollResult);
+        // Кубики удалены - не отображаем их
+        console.log('🎲 DiceDisplay: Кубики удалены, результат не отображается:', rollResult);
+        return;
     }
     
     /**

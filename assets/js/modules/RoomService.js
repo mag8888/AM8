@@ -58,7 +58,8 @@ class RoomService {
             minInterval: 2000, // Минимум 2 секунды между запросами
             backoffMultiplier: 2,
             maxBackoff: 30000, // Максимум 30 секунд
-            currentBackoff: 0
+            currentBackoff: 0,
+            rateLimitedUntil: 0
         };
     }
 
@@ -306,16 +307,16 @@ class RoomService {
 
             if (!response.ok) {
                 if (response.status === 429) {
-                    // Увеличиваем backoff при 429 ошибке
-                    this._increaseBackoff();
-                    console.warn('⚠️ RoomService: HTTP 429, увеличиваем задержку до', this.requestQueue.currentBackoff, 'мс');
-                    throw new Error(`Rate limited! Retry after ${this.requestQueue.currentBackoff}ms`);
+                    const retryAfter = this._parseRetryAfter(response);
+                    const backoff = this._increaseBackoff(retryAfter);
+                    console.warn('⚠️ RoomService: HTTP 429, увеличиваем задержку до', backoff, 'мс');
+                    throw new Error(`Rate limited! Retry after ${backoff}ms`);
                 }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             // Сбрасываем backoff при успешном запросе
-            this.requestQueue.currentBackoff = 0;
+            this._resetBackoff();
             const data = await response.json();
             
         if (!data.success) {
@@ -347,15 +348,17 @@ class RoomService {
      */
     async _waitForRateLimit() {
         const now = Date.now();
-        const timeSinceLastRequest = now - this.requestQueue.lastRequest;
-        const minWait = this.requestQueue.minInterval + this.requestQueue.currentBackoff;
-        
-        if (timeSinceLastRequest < minWait) {
-            const waitTime = minWait - timeSinceLastRequest;
+        const dynamicBackoff = this.requestQueue.minInterval + this.requestQueue.currentBackoff;
+        const nextAllowedByInterval = this.requestQueue.lastRequest + dynamicBackoff;
+        const nextAllowedByRateLimit = this.requestQueue.rateLimitedUntil || 0;
+        const nextAllowed = Math.max(nextAllowedByInterval, nextAllowedByRateLimit);
+
+        if (now < nextAllowed) {
+            const waitTime = nextAllowed - now;
             console.log(`⏳ RoomService: Ожидание ${waitTime}мс для соблюдения rate limit`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
         }
-        
+
         this.requestQueue.lastRequest = Date.now();
     }
 
@@ -363,8 +366,10 @@ class RoomService {
      * Увеличение backoff при ошибках
      * @private
      */
-    _increaseBackoff() {
-        if (this.requestQueue.currentBackoff === 0) {
+    _increaseBackoff(preferredMs = 0) {
+        if (preferredMs && preferredMs > 0) {
+            this.requestQueue.currentBackoff = Math.min(preferredMs, this.requestQueue.maxBackoff);
+        } else if (this.requestQueue.currentBackoff === 0) {
             this.requestQueue.currentBackoff = this.requestQueue.minInterval;
         } else {
             this.requestQueue.currentBackoff = Math.min(
@@ -372,6 +377,28 @@ class RoomService {
                 this.requestQueue.maxBackoff
             );
         }
+
+        this.requestQueue.rateLimitedUntil = Date.now() + this.requestQueue.currentBackoff;
+        return this.requestQueue.currentBackoff;
+    }
+
+    _resetBackoff() {
+        this.requestQueue.currentBackoff = 0;
+        this.requestQueue.rateLimitedUntil = 0;
+    }
+
+    _parseRetryAfter(response) {
+        const header = response.headers?.get?.('Retry-After') || response.headers?.get?.('retry-after');
+        if (!header) {
+            return 0;
+        }
+
+        const retrySeconds = Number(header);
+        if (Number.isNaN(retrySeconds)) {
+            return 0;
+        }
+
+        return retrySeconds * 1000;
     }
 
     // КЭШ комнат
@@ -432,14 +459,24 @@ class RoomService {
      * @private
      */
     async _fetchRoomFromAPI(roomId) {
+        await this._waitForRateLimit();
+
         const response = await fetch(`${this.config.baseUrl}/${roomId}`, {
                 method: 'GET',
             headers: { 'Content-Type': 'application/json' }
             });
 
             if (!response.ok) {
+                if (response.status === 429) {
+                    const retryAfter = this._parseRetryAfter(response);
+                    const backoff = this._increaseBackoff(retryAfter);
+                    console.warn('⚠️ RoomService: HTTP 429 при получении комнаты, увеличиваем задержку до', backoff, 'мс');
+                    throw new Error(`Rate limited! Retry after ${backoff}ms`);
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            this._resetBackoff();
 
             const data = await response.json();
             
@@ -594,16 +631,19 @@ class RoomService {
 
         if (!response.ok) {
             if (response.status === 429) {
-                // Увеличиваем backoff при 429 ошибке
-                this._increaseBackoff();
-                console.warn('⚠️ RoomService: HTTP 429 при создании комнаты, увеличиваем задержку');
-                throw new Error(`Rate limited! Retry after ${this.requestQueue.currentBackoff}ms`);
+                const retryAfter = this._parseRetryAfter(response);
+                const backoff = this._increaseBackoff(retryAfter);
+                console.warn('⚠️ RoomService: HTTP 429 при создании комнаты, увеличиваем задержку до', backoff, 'мс');
+                throw new Error(`Rate limited! Retry after ${backoff}ms`);
             }
+        }
+
+        if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         // Сбрасываем backoff при успешном запросе
-        this.requestQueue.currentBackoff = 0;
+        this._resetBackoff();
         const data = await response.json();
             
         if (!data.success) {
@@ -734,6 +774,8 @@ class RoomService {
      * @private
      */
     async _joinRoomViaAPI(roomId, player) {
+        await this._waitForRateLimit();
+
         const requestData = {
             player: {
                 userId: player.userId,
@@ -753,11 +795,19 @@ class RoomService {
         });
 
         if (!response.ok) {
+            if (response.status === 429) {
+                const retryAfter = this._parseRetryAfter(response);
+                const backoff = this._increaseBackoff(retryAfter);
+                console.warn('⚠️ RoomService: HTTP 429 при присоединении к комнате, увеличиваем задержку до', backoff, 'мс');
+                throw new Error(`Rate limited! Retry after ${backoff}ms`);
+            }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        this._resetBackoff();
+
         const data = await response.json();
-        
+
         if (!data.success) {
             throw new Error(data.message || 'Ошибка присоединения к комнате');
         }
@@ -829,16 +879,16 @@ class RoomService {
 
         if (!response.ok) {
             if (response.status === 429) {
-                // Увеличиваем backoff при 429 ошибке
-                this._increaseBackoff();
-                console.warn('⚠️ RoomService: HTTP 429 при получении статистики, увеличиваем задержку');
-                throw new Error(`Rate limited! Retry after ${this.requestQueue.currentBackoff}ms`);
+                const retryAfter = this._parseRetryAfter(response);
+                const backoff = this._increaseBackoff(retryAfter);
+                console.warn('⚠️ RoomService: HTTP 429 при получении статистики, увеличиваем задержку до', backoff, 'мс');
+                throw new Error(`Rate limited! Retry after ${backoff}ms`);
             }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         // Сбрасываем backoff при успешном запросе
-        this.requestQueue.currentBackoff = 0;
+        this._resetBackoff();
         const data = await response.json();
         
         if (!data.success) {
@@ -865,12 +915,25 @@ class RoomService {
     async startGame(roomId, userId) {
         try {
             console.log('🏠 RoomService: Запуск игры в комнате:', roomId);
+            await this._waitForRateLimit();
             
             const response = await fetch(`${this.config.baseUrl}/${roomId}/start`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId })
             });
+
+            if (!response.ok) {
+                if (response.status === 429) {
+                    const retryAfter = this._parseRetryAfter(response);
+                    const backoff = this._increaseBackoff(retryAfter);
+                    console.warn('⚠️ RoomService: HTTP 429 при запуске игры, увеличиваем задержку до', backoff, 'мс');
+                    throw new Error(`Rate limited! Retry after ${backoff}ms`);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            this._resetBackoff();
 
             const data = await response.json();
             
@@ -896,12 +959,25 @@ class RoomService {
     async updateRoom(roomId, updates) {
         try {
             console.log('🏠 RoomService: Обновление комнаты:', roomId);
+            await this._waitForRateLimit();
             
             const response = await fetch(`${this.config.baseUrl}/${roomId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ updates })
             });
+
+            if (!response.ok) {
+                if (response.status === 429) {
+                    const retryAfter = this._parseRetryAfter(response);
+                    const backoff = this._increaseBackoff(retryAfter);
+                    console.warn('⚠️ RoomService: HTTP 429 при обновлении комнаты, увеличиваем задержку до', backoff, 'мс');
+                    throw new Error(`Rate limited! Retry after ${backoff}ms`);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            this._resetBackoff();
 
             const data = await response.json();
             
@@ -926,11 +1002,24 @@ class RoomService {
     async deleteRoom(roomId) {
         try {
             console.log('🏠 RoomService: Удаление комнаты:', roomId);
+            await this._waitForRateLimit();
             
             const response = await fetch(`${this.config.baseUrl}/${roomId}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' }
             });
+
+            if (!response.ok) {
+                if (response.status === 429) {
+                    const retryAfter = this._parseRetryAfter(response);
+                    const backoff = this._increaseBackoff(retryAfter);
+                    console.warn('⚠️ RoomService: HTTP 429 при удалении комнаты, увеличиваем задержку до', backoff, 'мс');
+                    throw new Error(`Rate limited! Retry after ${backoff}ms`);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            this._resetBackoff();
 
             const data = await response.json();
             
@@ -966,15 +1055,17 @@ class RoomService {
                 return this._updatePlayerInMockRoom(roomId, playerData);
             }
             
-        // Принимаем единый PlayerBundle с полями { userId, username, token, dream{ id,title,description,cost }, isReady }
-        const requestData = {
-            username: playerData.username || playerData.name || 'unknown',
-            token: playerData.token || '',
-            dream: playerData.dream?.id || '',
-            dreamCost: playerData.dream?.cost || 0,
-            dreamDescription: playerData.dream?.description || '',
-            isReady: !!playerData.isReady
-        };
+            // Принимаем единый PlayerBundle с полями { userId, username, token, dream{ id,title,description,cost }, isReady }
+            const requestData = {
+                username: playerData.username || playerData.name || 'unknown',
+                token: playerData.token || '',
+                dream: playerData.dream?.id || '',
+                dreamCost: playerData.dream?.cost || 0,
+                dreamDescription: playerData.dream?.description || '',
+                isReady: !!playerData.isReady
+            };
+
+            await this._waitForRateLimit();
 
             const response = await fetch(`${this.config.baseUrl}/${roomId}/player`, {
                 method: 'PUT',
@@ -983,8 +1074,16 @@ class RoomService {
             });
 
             if (!response.ok) {
+                if (response.status === 429) {
+                    const retryAfter = this._parseRetryAfter(response);
+                    const backoff = this._increaseBackoff(retryAfter);
+                    console.warn('⚠️ RoomService: HTTP 429 при обновлении игрока, увеличиваем задержку до', backoff, 'мс');
+                    throw new Error(`Rate limited! Retry after ${backoff}ms`);
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            this._resetBackoff();
 
             const data = await response.json();
             
