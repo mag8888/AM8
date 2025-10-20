@@ -570,12 +570,12 @@ class App {
 
         // Оптимизированная инициализация без множественных setTimeout
         if (!this.modules.get('bankPreview')) {
-            // Единый setTimeout вместо множественных
-            setTimeout(initBankPreview, 300);
+            // Сокращаем задержки для ускорения загрузки
+            setTimeout(initBankPreview, 100);
         }
         
         if (!this.modules.get('cardDeckPanel')) {
-            setTimeout(initCardDeckPanel, 400);
+            setTimeout(initCardDeckPanel, 150);
         }
         
         // Инициализируем DealModule (микромодуль сделок)
