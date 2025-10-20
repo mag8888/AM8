@@ -661,10 +661,11 @@ class BankModuleServer {
         document.body.insertAdjacentHTML('beforeend', bankModuleHTML);
         this.ui = document.getElementById('bank-module-server');
         
-        // Добавляем стили
-        this.addStyles();
-        
-        console.log('🏦 BankModuleServer: UI создан');
+        // Добавляем стили в следующем кадре для избежания блокировки
+        requestAnimationFrame(() => {
+            this.addStyles();
+            console.log('🏦 BankModuleServer: UI создан');
+        });
     }
     
     /**
@@ -1214,11 +1215,18 @@ class BankModuleServer {
         if (!this.ui) {
             console.log('🏦 BankModuleServer: UI не найден, создаем...');
             this.createUI();
-        }
-        
-        if (!this.ui) {
-            console.error('❌ BankModuleServer: Не удалось создать UI');
-            return;
+            
+            // Ждем создания UI с небольшим таймаутом
+            let attempts = 0;
+            while (!this.ui && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+                attempts++;
+            }
+            
+            if (!this.ui) {
+                console.error('❌ BankModuleServer: Не удалось создать UI');
+                return;
+            }
         }
         
         this.ui.style.display = 'flex';

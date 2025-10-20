@@ -74,38 +74,40 @@ class PlayersPanel {
             return; // Уже создан
         }
         
-        // Оптимизация: используем только BankModuleServer, убираем дублирование
-        if (window.BankModuleServer) {
-            try {
-                const app = window.app;
-                if (!app) {
-                    console.warn('⚠️ PlayersPanel: App не найден');
-                    return;
+        // Делаем создание неблокирующим
+        requestAnimationFrame(() => {
+            if (window.BankModuleServer) {
+                try {
+                    const app = window.app;
+                    if (!app) {
+                        console.warn('⚠️ PlayersPanel: App не найден');
+                        return;
+                    }
+                    
+                    const gameState = app.getModule('gameState');
+                    const eventBus = app.getEventBus();
+                    const roomApi = app.getModule('roomApi');
+                    const professionSystem = app.getModule('professionSystem');
+                    
+                    this.bankModule = new window.BankModuleServer({
+                        gameState: gameState,
+                        eventBus: eventBus,
+                        roomApi: roomApi,
+                        professionSystem: professionSystem,
+                        gameStateManager: this.gameStateManager
+                    });
+                    
+                    // Убираем дублирование - сохраняем только как bankModuleServer
+                    app.modules.set('bankModuleServer', this.bankModule);
+                    
+                    console.log('🏦 PlayersPanel: BankModuleServer создан (оптимизированно)');
+                } catch (error) {
+                    console.error('❌ PlayersPanel: Ошибка создания BankModuleServer:', error);
                 }
-                
-                const gameState = app.getModule('gameState');
-                const eventBus = app.getEventBus();
-                const roomApi = app.getModule('roomApi');
-                const professionSystem = app.getModule('professionSystem');
-                
-                this.bankModule = new window.BankModuleServer({
-                    gameState: gameState,
-                    eventBus: eventBus,
-                    roomApi: roomApi,
-                    professionSystem: professionSystem,
-                    gameStateManager: this.gameStateManager
-                });
-                
-                // Убираем дублирование - сохраняем только как bankModuleServer
-                app.modules.set('bankModuleServer', this.bankModule);
-                
-                console.log('🏦 PlayersPanel: BankModuleServer создан (оптимизированно)');
-            } catch (error) {
-                console.error('❌ PlayersPanel: Ошибка создания BankModuleServer:', error);
+            } else {
+                console.warn('⚠️ PlayersPanel: BankModuleServer не найден');
             }
-        } else {
-            console.warn('⚠️ PlayersPanel: BankModuleServer не найден');
-        }
+        });
     }
     
     
@@ -933,23 +935,34 @@ class PlayersPanel {
      * Открытие банк модуля
      */
     openBankModule() {
-        try {
-            // Используем уже созданный BankModule
-            if (this.bankModule) {
-                this.bankModule.open();
-                console.log('🏦 PlayersPanel: Банк модуль открыт');
-            } else {
-                console.warn('⚠️ PlayersPanel: BankModule не создан, создаем...');
-                this.createBankModule();
+        // Делаем открытие неблокирующим
+        requestAnimationFrame(async () => {
+            try {
+                // Используем уже созданный BankModule
                 if (this.bankModule) {
-                    this.bankModule.open();
+                    await this.bankModule.open();
+                    console.log('🏦 PlayersPanel: Банк модуль открыт');
                 } else {
-                    console.error('❌ PlayersPanel: Не удалось создать BankModule');
+                    console.warn('⚠️ PlayersPanel: BankModule не создан, создаем...');
+                    this.createBankModule();
+                    
+                    // Ждем создания BankModule
+                    let attempts = 0;
+                    while (!this.bankModule && attempts < 20) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+                    
+                    if (this.bankModule) {
+                        await this.bankModule.open();
+                    } else {
+                        console.error('❌ PlayersPanel: Не удалось создать BankModule');
+                    }
                 }
+            } catch (error) {
+                console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
             }
-        } catch (error) {
-            console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
-        }
+        });
     }
     
     /**
