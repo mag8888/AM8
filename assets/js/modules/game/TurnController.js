@@ -21,7 +21,11 @@ class TurnController {
         // Создаем PlayerList для отображения игроков
         this.playerList = null;
         
-        console.log('🎮 TurnController v2.0: Инициализация, isMobile:', this.isMobile, 'window.innerWidth:', window.innerWidth);
+        if (window.logWithStack) {
+            window.logWithStack('🎮 TurnController v2.0: Инициализация, isMobile: ' + this.isMobile + ', window.innerWidth: ' + window.innerWidth, null, 'log');
+        } else {
+            console.log('🎮 TurnController v2.0: Инициализация, isMobile:', this.isMobile, 'window.innerWidth:', window.innerWidth);
+        }
         
         // НЕ вызываем this.init() сразу в конструкторе
         // Это позволит PlayersPanel сначала отрендериться
@@ -396,6 +400,42 @@ class TurnController {
      * @param {Object} state - Состояние игры
      */
     updateTurnInfo(state) {
+        // Проверяем, что UI доступен
+        if (!this.ui) {
+            // Пытаемся найти элементы напрямую в DOM как fallback
+            const turnInfo = document.querySelector('.turn-info');
+            if (!turnInfo) {
+                return; // Элемент не найден, выходим
+            }
+            
+            // Обновляем найденный элемент напрямую с помощью существующей логики
+            const currentUserId = this.getCurrentUserId();
+            const currentUsername = this.getCurrentUsername();
+            const isMyTurn = state.activePlayer && (
+                state.activePlayer.id === currentUserId ||
+                (state.activePlayer.username && currentUsername && state.activePlayer.username === currentUsername)
+            );
+            const playerToken = this.getPlayerToken(state.activePlayer);
+            
+            if (isMyTurn) {
+                turnInfo.innerHTML = `${playerToken} 🎯 ВАШ ХОД`;
+                turnInfo.classList.add('my-turn');
+                turnInfo.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+                turnInfo.style.animation = 'pulse 2s infinite';
+            } else if (state.activePlayer) {
+                turnInfo.innerHTML = `${playerToken} Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
+                turnInfo.classList.remove('my-turn');
+                turnInfo.style.background = 'rgba(255,255,255,0.08)';
+                turnInfo.style.animation = 'none';
+            } else {
+                turnInfo.innerHTML = '⏳ Ожидание...';
+                turnInfo.classList.remove('my-turn');
+                turnInfo.style.background = 'rgba(255,255,255,0.08)';
+                turnInfo.style.animation = 'none';
+            }
+            return;
+        }
+        
         const turnInfo = this.ui.querySelector('.turn-info');
         if (turnInfo) {
             const currentUserId = this.getCurrentUserId();
@@ -414,7 +454,7 @@ class TurnController {
                 turnInfo.style.animation = 'pulse 2s infinite';
                 
                 // Подсвечиваем кнопку броска и делаем активной
-                const rollBtn = this.ui.querySelector('.btn-dice');
+                const rollBtn = this.safeQuerySelector('.btn-dice');
                 if (rollBtn) {
                     rollBtn.classList.add('my-turn');
                     rollBtn.style.boxShadow = '0 0 0 2px rgba(34,197,94,0.35), 0 10px 22px rgba(34,197,94,0.45)';
@@ -427,7 +467,7 @@ class TurnController {
                 turnInfo.style.animation = 'none';
                 
                 // Убираем подсветку кнопки и делаем неактивной
-                const rollBtn = this.ui.querySelector('.btn-dice');
+                const rollBtn = this.safeQuerySelector('.btn-dice');
                 if (rollBtn) {
                     rollBtn.classList.remove('my-turn');
                     rollBtn.style.boxShadow = '';
@@ -439,7 +479,7 @@ class TurnController {
                 turnInfo.style.background = 'rgba(255,255,255,0.08)';
                 turnInfo.style.animation = 'none';
                 
-                const rollBtn = this.ui.querySelector('.btn-dice');
+                const rollBtn = this.safeQuerySelector('.btn-dice');
                 if (rollBtn) {
                     rollBtn.classList.remove('my-turn');
                     rollBtn.style.boxShadow = '';
@@ -463,7 +503,7 @@ class TurnController {
         const currentUsername = this.getCurrentUsername();
         
         // Обновляем все элементы игроков
-        const playerItems = this.ui.querySelectorAll('.player-item');
+        const playerItems = this.ui ? this.ui.querySelectorAll('.player-item') : document.querySelectorAll('.player-item');
         playerItems.forEach(item => {
             const playerName = item.querySelector('.player-name');
             if (!playerName) return;
@@ -964,16 +1004,29 @@ class TurnController {
      */
     updateStatus(message) {
         // Обновляем статус в секции игрока
-        const playerStatus = this.ui.querySelector('.player-status');
+        const playerStatus = this.safeQuerySelector('.player-status');
         if (playerStatus) {
             playerStatus.textContent = message;
         }
         
         // Обновляем статус в обзоре игры
-        const turnInfo = this.ui.querySelector('.turn-info');
+        const turnInfo = this.safeQuerySelector('.turn-info');
         if (turnInfo) {
             turnInfo.textContent = message;
         }
+    }
+    
+    /**
+     * Безопасный поиск элемента с проверкой на null
+     * @param {string} selector - CSS селектор
+     * @returns {Element|null}
+     */
+    safeQuerySelector(selector) {
+        if (!this.ui) {
+            // Fallback: поиск по всему документу
+            return document.querySelector(selector);
+        }
+        return this.ui.querySelector(selector);
     }
     
     /**
