@@ -275,13 +275,24 @@ class CommonUtils {
                 return false;
             }
             
-            this._lastRequestTime = now;
+            // Если все проверки прошли, НЕ устанавливаем время здесь - это будет сделано в setRequestPending
             return true;
         },
         
         setRequestPending(roomId = 'default') {
+            const now = Date.now();
             const key = `gamestate_${roomId}`;
-            this._pendingRequests.set(key, Date.now());
+            
+            // Двойная проверка на случай race condition
+            if (this._pendingRequests.has(key)) {
+                console.log(`⏳ GameStateLimiter: Запрос уже выполняется для комнаты ${roomId} (race condition detected)`);
+                return false;
+            }
+            
+            // Устанавливаем pending и время одновременно для атомарности
+            this._pendingRequests.set(key, now);
+            this._lastRequestTime = now; // Устанавливаем время здесь для атомарности
+            return true;
         },
         
         clearRequestPending(roomId = 'default') {

@@ -152,8 +152,13 @@ class RoomApi {
         console.log(`📊 RoomApi: Получение состояния игры в комнате ${roomId}`);
         
         // Устанавливаем флаг pending в глобальном limiter
-        if (window.CommonUtils) {
-            window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+        if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+            console.log(`📊 RoomApi: Не удалось установить pending для ${roomId} (race condition)`);
+            // Возвращаем кэшированные данные если они есть
+            if (cached) {
+                return cached.data;
+            }
+            throw new Error('Rate limited by race condition');
         }
         
         const requestPromise = this._executeGameStateRequest(endpoint, cacheKey, cached, now);
@@ -176,9 +181,30 @@ class RoomApi {
      */
     async _executeGameStateRequest(endpoint, cacheKey, cached, now) {
         try {
-            const result = await this.request(endpoint, {
+            // Специальный запрос для game-state без внутреннего rate limiting
+            // так как глобальный limiter уже проверил и дал разрешение
+            const url = `${this.baseUrl}${endpoint}`;
+            const config = {
+                headers: this.getHeaders(),
                 method: 'GET'
-            });
+            };
+
+            const response = await fetch(url, config);
+
+            if (response.status === 429) {
+                const retryAfter = this._applyRateLimitFromResponse(response);
+                const error = new Error(`HTTP 429: ${response.statusText || 'Rate limited'}`);
+                error.isRateLimit = true;
+                error.retryAfter = retryAfter;
+                throw error;
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            this._resetRateLimit();
+            const result = await response.json();
             
             // Сохраняем в кэш
             if (!this.cache) {

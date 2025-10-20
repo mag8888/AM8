@@ -1302,8 +1302,9 @@ class BankModule {
             }
             
             // Устанавливаем флаг pending в глобальном limiter
-            if (window.CommonUtils) {
-                window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+            if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+                console.log('🚫 BankModule: Не удалось установить pending (race condition)');
+                return;
             }
             
             try {
@@ -1624,8 +1625,9 @@ class BankModule {
             }
             
             // Устанавливаем флаг pending в глобальном limiter
-            if (window.CommonUtils) {
-                window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+            if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+                console.log('🚫 BankModule: Не удалось установить pending (race condition)');
+                return;
             }
             
             try {

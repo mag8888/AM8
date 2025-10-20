@@ -119,8 +119,9 @@ class BankModuleServer {
         }
         
         // Устанавливаем флаг pending в глобальном limiter
-        if (window.CommonUtils) {
-            window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+        if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+            console.log('🚫 BankModuleServer: Не удалось установить pending (race condition)');
+            return null;
         }
         
         // Добавляем таймаут для предотвращения блокировки UI

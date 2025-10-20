@@ -478,8 +478,9 @@ class PlayersPanel {
         this._lastApiRequestTime = now;
         
         // Устанавливаем флаг pending в глобальном limiter
-        if (window.CommonUtils) {
-            window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+        if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+            console.log('🚫 PlayersPanel: Не удалось установить pending (race condition)');
+            return;
         }
         
         fetch(`/api/rooms/${roomId}/game-state`)
@@ -535,8 +536,9 @@ class PlayersPanel {
         this._lastApiRequestTime = now;
         
         // Устанавливаем флаг pending в глобальном limiter
-        if (window.CommonUtils) {
-            window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+        if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+            console.log('🚫 PlayersPanel: Не удалось установить pending (race condition)');
+            return;
         }
         
         fetch(`/api/rooms/${roomId}/game-state`, {
@@ -650,8 +652,9 @@ class PlayersPanel {
             const timeoutId = setTimeout(() => this._currentAbortController.abort(), 3000); // 3 секунды вместо 5
             
             // Устанавливаем флаг pending в глобальном limiter
-            if (window.CommonUtils) {
-                window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+            if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+                console.log('🚫 PlayersPanel: Не удалось установить pending (race condition)');
+                return;
             }
             
             fetch(`/api/rooms/${roomId}/game-state`, {
