@@ -547,3 +547,46 @@ a {
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
 }
+
+/* Стили для состояний загрузки игроков */
+.loading-placeholder,
+.empty-placeholder,
+.error-placeholder {
+    padding: 20px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+    border-radius: 8px;
+    margin: 10px 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.loading-placeholder {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.loading-placeholder::before {
+    content: "⏳ ";
+    margin-right: 8px;
+}
+
+.empty-placeholder {
+    color: #64748b;
+}
+
+.empty-placeholder::before {
+    content: "👥 ";
+    margin-right: 8px;
+}
+
+.error-placeholder {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.error-placeholder::before {
+    content: "❌ ";
+    margin-right: 8px;
+}
