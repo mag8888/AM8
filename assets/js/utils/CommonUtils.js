@@ -329,7 +329,7 @@ class CommonUtils {
                 return false;
             }
             
-            this._lastRoomsRequest = now;
+            // Если все проверки прошли, НЕ устанавливаем время здесь - это будет сделано в setRequestPending
             return true;
         },
         
@@ -349,13 +349,21 @@ class CommonUtils {
                 return false;
             }
             
-            this._lastStatsRequest = now;
+            // Если все проверки прошли, НЕ устанавливаем время здесь - это будет сделано в setRequestPending
             return true;
         },
         
         setRequestPending(type) {
             const key = `${type}_request`;
-            this._pendingRequests.set(key, Date.now());
+            const now = Date.now();
+            this._pendingRequests.set(key, now);
+            
+            // Устанавливаем время последнего запроса для данного типа
+            if (type === 'rooms') {
+                this._lastRoomsRequest = now;
+            } else if (type === 'stats') {
+                this._lastStatsRequest = now;
+            }
         },
         
         clearRequestPending(type) {

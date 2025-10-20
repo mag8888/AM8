@@ -309,9 +309,7 @@ class RoomService {
         }
         
         try {
-            // Проверяем локальный rate limiting
-            await this._waitForRateLimit();
-            
+            // Глобальный limiter уже проверил и дал разрешение, делаем запрос напрямую
             const response = await fetch(this.config.baseUrl, {
                 method: 'GET',
             headers: { 'Content-Type': 'application/json' }
@@ -896,9 +894,7 @@ class RoomService {
         }
         
         try {
-            // Проверяем локальный rate limiting
-            await this._waitForRateLimit();
-            
+            // Глобальный limiter уже проверил и дал разрешение, делаем запрос напрямую
             // Используем новый endpoint для статистики
             const baseUrl = this.config.baseUrl.replace('/api/rooms', '/api/stats');
             
