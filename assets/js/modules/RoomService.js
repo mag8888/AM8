@@ -297,10 +297,22 @@ class RoomService {
      * @private
      */
     async _fetchRoomsFromAPI() {
-        // Проверяем rate limiting
-        await this._waitForRateLimit();
+        // Проверяем глобальный rate limiter для RoomService
+        if (window.CommonUtils && !window.CommonUtils.canMakeRoomsRequest()) {
+            console.log('🚫 RoomService: Пропускаем запрос к rooms из-за глобального rate limiting');
+            throw new Error('Rate limited by global limiter');
+        }
         
-        const response = await fetch(this.config.baseUrl, {
+        // Устанавливаем флаг pending в глобальном limiter
+        if (window.CommonUtils) {
+            window.CommonUtils.roomServiceLimiter.setRequestPending('rooms');
+        }
+        
+        try {
+            // Проверяем локальный rate limiting
+            await this._waitForRateLimit();
+            
+            const response = await fetch(this.config.baseUrl, {
                 method: 'GET',
             headers: { 'Content-Type': 'application/json' }
             });
@@ -340,6 +352,12 @@ class RoomService {
             createdAt: room.createdAt,
             updatedAt: room.updatedAt
         }));
+        } finally {
+            // Очищаем флаг pending в глобальном limiter
+            if (window.CommonUtils) {
+                window.CommonUtils.roomServiceLimiter.clearRequestPending('rooms');
+            }
+        }
     }
 
     /**
@@ -866,13 +884,25 @@ class RoomService {
      * @private
      */
     async _fetchStatsFromAPI() {
-        // Проверяем rate limiting
-        await this._waitForRateLimit();
+        // Проверяем глобальный rate limiter для RoomService
+        if (window.CommonUtils && !window.CommonUtils.canMakeStatsRequest()) {
+            console.log('🚫 RoomService: Пропускаем запрос к stats из-за глобального rate limiting');
+            throw new Error('Rate limited by global limiter');
+        }
         
-        // Используем новый endpoint для статистики
-        const baseUrl = this.config.baseUrl.replace('/api/rooms', '/api/stats');
+        // Устанавливаем флаг pending в глобальном limiter
+        if (window.CommonUtils) {
+            window.CommonUtils.roomServiceLimiter.setRequestPending('stats');
+        }
         
-        const response = await fetch(baseUrl, {
+        try {
+            // Проверяем локальный rate limiting
+            await this._waitForRateLimit();
+            
+            // Используем новый endpoint для статистики
+            const baseUrl = this.config.baseUrl.replace('/api/rooms', '/api/stats');
+            
+            const response = await fetch(baseUrl, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -904,6 +934,12 @@ class RoomService {
             playersOnline: serverStats.playersOnline || 0,
             totalUsers: serverStats.totalUsers || 0
         };
+        } finally {
+            // Очищаем флаг pending в глобальном limiter
+            if (window.CommonUtils) {
+                window.CommonUtils.roomServiceLimiter.clearRequestPending('stats');
+            }
+        }
     }
 
     /**

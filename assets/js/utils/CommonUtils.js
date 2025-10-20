@@ -302,6 +302,83 @@ class CommonUtils {
     static canMakeGameStateRequest(roomId = 'default') {
         return this.gameStateLimiter.canMakeRequest(roomId);
     }
+
+    /**
+     * Глобальный rate limiter для всех RoomService API запросов
+     * Предотвращает множественные одновременные запросы к /api/rooms и /api/stats
+     */
+    static roomServiceLimiter = {
+        _lastRoomsRequest: 0,
+        _lastStatsRequest: 0,
+        _minInterval: 20000, // Минимальный интервал 20 секунд для RoomService запросов
+        _pendingRequests: new Map(),
+        
+        canMakeRoomsRequest() {
+            const now = Date.now();
+            const key = 'rooms_request';
+            
+            // Проверяем, не выполняется ли уже запрос
+            if (this._pendingRequests.has(key)) {
+                console.log('⏳ RoomServiceLimiter: Запрос к rooms уже выполняется');
+                return false;
+            }
+            
+            // Проверяем временной интервал
+            if (now - this._lastRoomsRequest < this._minInterval) {
+                console.log(`⏳ RoomServiceLimiter: Слишком рано для запроса к rooms (${now - this._lastRoomsRequest}ms < ${this._minInterval}ms)`);
+                return false;
+            }
+            
+            this._lastRoomsRequest = now;
+            return true;
+        },
+        
+        canMakeStatsRequest() {
+            const now = Date.now();
+            const key = 'stats_request';
+            
+            // Проверяем, не выполняется ли уже запрос
+            if (this._pendingRequests.has(key)) {
+                console.log('⏳ RoomServiceLimiter: Запрос к stats уже выполняется');
+                return false;
+            }
+            
+            // Проверяем временной интервал
+            if (now - this._lastStatsRequest < this._minInterval) {
+                console.log(`⏳ RoomServiceLimiter: Слишком рано для запроса к stats (${now - this._lastStatsRequest}ms < ${this._minInterval}ms)`);
+                return false;
+            }
+            
+            this._lastStatsRequest = now;
+            return true;
+        },
+        
+        setRequestPending(type) {
+            const key = `${type}_request`;
+            this._pendingRequests.set(key, Date.now());
+        },
+        
+        clearRequestPending(type) {
+            const key = `${type}_request`;
+            this._pendingRequests.delete(key);
+        }
+    };
+
+    /**
+     * Проверка возможности сделать запрос к rooms endpoint
+     * @returns {boolean} true если можно делать запрос
+     */
+    static canMakeRoomsRequest() {
+        return this.roomServiceLimiter.canMakeRoomsRequest();
+    }
+
+    /**
+     * Проверка возможности сделать запрос к stats endpoint
+     * @returns {boolean} true если можно делать запрос
+     */
+    static canMakeStatsRequest() {
+        return this.roomServiceLimiter.canMakeStatsRequest();
+    }
 }
 
 // Экспорт для использования в других модулях
