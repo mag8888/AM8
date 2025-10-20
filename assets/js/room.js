@@ -689,7 +689,7 @@ function updatePlayersList() {
         // Используем name или username для отображения
         const playerName = player.name || player.username || 'Неизвестный игрок';
         const avatar = player.avatar || playerName.charAt(0).toUpperCase();
-        const status = player.isReady ? 'Готов' : 'Готовится';
+        const status = Boolean(player.isReady) ? 'Готов' : 'Готовится';
         
         playerItem.innerHTML = `
             <div class="player-avatar">${avatar}</div>
@@ -700,9 +700,7 @@ function updatePlayersList() {
         `;
         
         // Кнопка удаления для хоста (кроме себя)
-        const isHost = currentRoom.creatorId === currentUser?.id ||
-                       currentRoom.creator === currentUser?.username ||
-                       currentRoom.players.some(p => (p.userId === currentUser?.id || p.username === currentUser?.username) && (p.isCreator || p.isHost || p.role === 'creator'));
+        const isHost = isCurrentUserHost();
         const isSelf = player.userId === currentUser?.id || player.username === currentUser?.username;
         if (isHost && !isSelf) {
             const kickBtn = document.createElement('button');
@@ -741,6 +739,38 @@ async function kickPlayer(player) {
 }
 
 /**
+ * Проверка, является ли текущий пользователь хостом комнаты
+ */
+function isCurrentUserHost() {
+    if (!currentRoom || !currentUser) {
+        return false;
+    }
+    
+    // Первый приоритет: проверим по creatorId
+    if (currentRoom.creatorId === currentUser.id || currentRoom.creator_id === currentUser.id) {
+        return true;
+    }
+    
+    // Второй приоритет: проверим по username/name в creator
+    if (currentRoom.creator === currentUser.username || currentRoom.creator === currentUser.name) {
+        return true;
+    }
+    
+    // Третий приоритет: проверим по флагам isHost в players
+    if (currentRoom.players) {
+        const hostPlayer = currentRoom.players.find(p => 
+            (p.userId === currentUser.id || p.id === currentUser.id || p.username === currentUser.username) && 
+            (p.isHost === true || p.isCreator === true || p.role === 'creator')
+        );
+        if (hostPlayer) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+/**
  * Обновление кнопки "Начать игру"
  */
 function updateStartGameButton() {
@@ -753,21 +783,15 @@ function updateStartGameButton() {
         return;
     }
     
-    // Проверяем, является ли пользователь создателем комнаты
-    const isHost = currentRoom.creatorId === currentUser.id || 
-                   currentRoom.creator_id === currentUser.id ||
-                   currentRoom.creator === currentUser.username ||
-                   currentRoom.creator === currentUser.name ||
-                   (currentRoom.players && currentRoom.players.some(p => 
-                       (p.userId === currentUser.id || p.id === currentUser.id || p.username === currentUser.username) && 
-                       (p.isCreator || p.role === 'creator' || p.isHost)
-                   ));
+    // Проверяем, является ли пользователь создателем комнаты/хостом
+    const isHost = isCurrentUserHost();
     const playersCount = currentRoom.players.length;
-    const readyCount = currentRoom.players.filter(p => p.isReady).length;
-    const minPlayers = currentRoom.minPlayers || 1; // Тестовый режим: достаточно 1 игрока
-    const allPlayersReady = currentRoom.players.every(player => player.isReady);
-    // Тестовый режим: разрешаем старт при наличии хотя бы 1 готового игрока
-    const canStart = (playersCount >= 1 && readyCount >= 1) || (playersCount >= minPlayers && allPlayersReady);
+    // Правильно обрабатываем isReady - может быть boolean, string, или undefined
+    const readyCount = currentRoom.players.filter(p => Boolean(p.isReady)).length;
+    const minPlayers = currentRoom.minPlayers || 2; // Минимум 2 игрока для старта
+    const allPlayersReady = currentRoom.players.every(player => Boolean(player.isReady));
+    // Игра может начаться только если есть минимум игроков и хотя бы один готов
+    const canStart = playersCount >= minPlayers && readyCount >= 1;
     
     // Дополнительная отладка
     console.log('🔍 Room: Отладка кнопки "Начать игру":', {
@@ -1183,8 +1207,8 @@ function updateReadyStatus() {
     
     // Если игрок не найден в комнате, считаем что он не готов
     const playerExists = currentPlayer !== null;
-    // actualReadyState должно быть true только если игрок действительно готов И может быть готов
-    const actualReadyState = playerExists && canBeReady ? isCurrentlyReady : false;
+    // actualReadyState - реальное состояние готовности игрока в комнате
+    const actualReadyState = playerExists ? Boolean(currentPlayer.isReady) : false;
     
     // Отладочная информация
     console.log('🔍 Room: Обновление кнопки готовности:', {
@@ -1250,19 +1274,21 @@ function updateReadyStatus() {
     });
     
     if (canBeReady === true) {
+        // Если игрок может быть готов, показываем соответствующую кнопку
         if (actualReadyState === true) {
             readyButton.innerHTML = '❌ Не готов';
             readyButton.className = 'btn btn-secondary btn-large';
-            console.log('🔍 Room: Показываем "Не готов"');
+            console.log('🔍 Room: Показываем "Не готов" - игрок готов');
         } else {
             readyButton.innerHTML = '✅ Готов к игре!';
             readyButton.className = 'btn btn-success btn-large';
-            console.log('🔍 Room: Показываем "Готов к игре"');
+            console.log('🔍 Room: Показываем "Готов к игре" - игрок не готов');
         }
     } else {
+        // Если игрок не может быть готов (не выбрал мечту или фишку)
         readyButton.innerHTML = '⏳ Выберите мечту и фишку';
         readyButton.className = 'btn btn-secondary btn-large';
-        console.log('🔍 Room: Показываем "Выберите мечту и фишку"');
+        console.log('🔍 Room: Показываем "Выберите мечту и фишку" - не все выбрано');
     }
     
     const hint = document.querySelector('.ready-hint');
@@ -1825,7 +1851,7 @@ function handlePushNotification(notification) {
  * Обработка уведомления о готовности игрока
  */
 function handlePlayerReadyNotification(data) {
-    const isHost = currentRoom && currentRoom.creatorId === currentUser.id;
+    const isHost = isCurrentUserHost();
     if (!isHost) return;
     
     // Обновляем кнопку "Начать игру"
