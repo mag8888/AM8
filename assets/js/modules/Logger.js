@@ -95,6 +95,61 @@ class Logger {
     }
 
     /**
+     * Получение информации о стеке вызовов
+     * @returns {Object} Информация о вызывающей функции
+     * @private
+     */
+    _getCallerInfo() {
+        try {
+            const stack = new Error().stack;
+            if (!stack) return { file: '', function: '', line: '' };
+
+            const lines = stack.split('\n');
+            // Пропускаем первые строки (Error, _getCallerInfo, _log)
+            const callerLine = lines[3] || lines[2] || lines[1];
+            
+            if (!callerLine) {
+                return { file: '', function: '', line: '' };
+            }
+
+            // Парсим строку стека для разных форматов
+            // Chrome: "    at ClassName.methodName (file.js:line:col)"
+            // Firefox: "methodName@file.js:line:col"
+            let fileName = '';
+            let functionName = '';
+            let lineNumber = '';
+
+            const chromeMatch = callerLine.match(/\s+at\s+(?:([^@\s]+)\s+\()?([^)]+):(\d+):\d+\)?$/);
+            const firefoxMatch = callerLine.match(/([^@]+)@(.+):(\d+):\d+$/);
+            const simpleMatch = callerLine.match(/([^:]+):(\d+):(\d+)/);
+
+            if (chromeMatch) {
+                functionName = chromeMatch[1] || '';
+                fileName = chromeMatch[2].replace(window.location.origin, '').replace(location.pathname.replace(/[^/]*$/, ''), '') || chromeMatch[2];
+                lineNumber = chromeMatch[3] || '';
+            } else if (firefoxMatch) {
+                functionName = firefoxMatch[1] || '';
+                fileName = firefoxMatch[2].replace(window.location.origin, '').replace(location.pathname.replace(/[^/]*$/, ''), '') || firefoxMatch[2];
+                lineNumber = firefoxMatch[3] || '';
+            } else if (simpleMatch) {
+                fileName = simpleMatch[1].replace(window.location.origin, '').replace(location.pathname.replace(/[^/]*$/, ''), '') || simpleMatch[1];
+                lineNumber = simpleMatch[2] || '';
+            }
+
+            // Очищаем имена файлов от лишних путей
+            fileName = fileName.replace(/^.*\/([^\/]+)$/, '$1');
+
+            return {
+                file: fileName,
+                function: functionName || '',
+                line: lineNumber
+            };
+        } catch (error) {
+            return { file: '', function: '', line: '' };
+        }
+    }
+
+    /**
      * Основной метод логирования
      * @param {string} level - Уровень логирования
      * @param {string} message - Сообщение
@@ -108,12 +163,15 @@ class Logger {
         }
 
         const timestamp = new Date().toISOString();
+        const callerInfo = this._getCallerInfo();
+        
         const logEntry = {
             timestamp,
             level,
             message,
             data,
-            context: context.substring(0, this.config.contextMaxLength)
+            context: context.substring(0, this.config.contextMaxLength),
+            caller: callerInfo
         };
 
         // Сохраняем запись
@@ -124,7 +182,7 @@ class Logger {
 
         // Выводим в консоль
         if (this.config.enableConsole) {
-            this._consoleLog(level, message, data, context, timestamp);
+            this._consoleLog(level, message, data, context, timestamp, callerInfo);
         }
     }
 
@@ -132,13 +190,23 @@ class Logger {
      * Вывод в консоль с форматированием
      * @private
      */
-    _consoleLog(level, message, data, context, timestamp) {
+    _consoleLog(level, message, data, context, timestamp, callerInfo) {
         const icon = this.icons[level];
         const color = this.colors[level];
         const contextStr = context ? `[${context}]` : '';
         const timeStr = timestamp.split('T')[1].split('.')[0];
         
-        const prefix = `%c${icon} ${timeStr} ${contextStr}`;
+        // Формируем информацию о месте вызова
+        let callerStr = '';
+        if (callerInfo.file || callerInfo.function || callerInfo.line) {
+            const parts = [];
+            if (callerInfo.function) parts.push(callerInfo.function);
+            if (callerInfo.file) parts.push(callerInfo.file);
+            if (callerInfo.line) parts.push(`:${callerInfo.line}`);
+            callerStr = `(${parts.join('@')})`;
+        }
+        
+        const prefix = `%c${icon} ${timeStr} ${contextStr} ${callerStr}`;
         const style = `color: ${color}; font-weight: bold;`;
         
         if (data !== null && data !== undefined) {
@@ -374,6 +442,62 @@ class Logger {
 
 // Создаем глобальный экземпляр
 const logger = new Logger();
+
+/**
+ * Глобальная утилитарная функция для логирования с информацией о стеке вызовов
+ * @param {string} message - Сообщение
+ * @param {*} data - Данные
+ * @param {string} level - Уровень логирования (log, info, warn, error)
+ */
+window.logWithStack = function(message, data = null, level = 'log') {
+    try {
+        const stack = new Error().stack;
+        if (!stack) {
+            console[level](message, data);
+            return;
+        }
+
+        const lines = stack.split('\n');
+        // Пропускаем первые строки (Error, logWithStack)
+        const callerLine = lines[2] || lines[1];
+        
+        if (!callerLine) {
+            console[level](message, data);
+            return;
+        }
+
+        // Парсим информацию о вызывающей функции
+        let fileName = '';
+        let functionName = '';
+        let lineNumber = '';
+
+        const chromeMatch = callerLine.match(/\s+at\s+(?:([^@\s]+)\s+\()?([^)]+):(\d+):\d+\)?$/);
+        const firefoxMatch = callerLine.match(/([^@]+)@(.+):(\d+):\d+$/);
+
+        if (chromeMatch) {
+            functionName = chromeMatch[1] || '';
+            fileName = chromeMatch[2].split('/').pop() || chromeMatch[2];
+            lineNumber = chromeMatch[3] || '';
+        } else if (firefoxMatch) {
+            functionName = firefoxMatch[1] || '';
+            fileName = firefoxMatch[2].split('/').pop() || firefoxMatch[2];
+            lineNumber = firefoxMatch[3] || '';
+        }
+
+        // Формируем строку с информацией о месте вызова
+        const callerInfo = [];
+        if (functionName) callerInfo.push(functionName);
+        if (fileName) callerInfo.push(fileName);
+        if (lineNumber) callerInfo.push(`:${lineNumber}`);
+        
+        const callerStr = callerInfo.length > 0 ? ` (${callerInfo.join('@')})` : '';
+        const fullMessage = `${message}${callerStr}`;
+        
+        console[level](fullMessage, data || '');
+    } catch (error) {
+        console[level](message, data);
+    }
+};
 
 // Экспорт
 if (typeof window !== 'undefined') {
