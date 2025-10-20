@@ -161,7 +161,9 @@ class App {
                 outerTrackSelector: '#outer-track',
                 innerTrackSelector: '#inner-track',
                 gameState: this.modules.get('gameState'),
-                eventBus: this.getEventBus()
+                eventBus: this.getEventBus(),
+                logger: this.logger,
+                debug: this.config?.get?.('logging.boardLayoutDebug', false)
             });
             this.modules.set('boardLayout', boardLayout);
             this.logger?.debug('BoardLayout модуль загружен', null, 'App');
@@ -211,13 +213,11 @@ class App {
             window.history.forward();
         });
 
-        // Обрабатываем текущий маршрут после настройки
-        setTimeout(() => {
-            const router = this.getRouter();
-            if (router && router.handleCurrentRoute) {
-                router.handleCurrentRoute();
-            }
-        }, 100);
+        // Обрабатываем текущий маршрут мгновенно для быстрой навигации
+        const router = this.getRouter();
+        if (router && router.handleCurrentRoute) {
+            router.handleCurrentRoute();
+        }
     }
 
     /**
@@ -426,23 +426,13 @@ class App {
                 console.error('❌ App: Элемент game-page не найден');
             }
             
-            // Скрываем placeholder страницу
-            const placeholderPage = document.getElementById('placeholder-page');
-            if (placeholderPage) {
-                placeholderPage.style.display = 'none';
-                placeholderPage.classList.remove('active');
-                console.log('✅ App: Placeholder страница скрыта');
-            }
+            // Инициализируем игровые модули для этой комнаты сразу (убрана задержка)
+            this._initializeGameModules(roomId);
             
-            // Инициализируем игровые модули для этой комнаты
-            setTimeout(() => {
-                this._initializeGameModules(roomId);
-            }, 100);
-            
-            // Принудительно инициализируем левую панель после показа страницы
+            // Принудительно инициализируем левую панель (оптимизированно)
             setTimeout(() => {
                 this._initializeLeftPanel();
-            }, 500);
+            }, 50); // Сокращена задержка с 500ms до 50ms
             
             // Обновляем URL без перезагрузки
             window.history.replaceState(null, '', `#game?roomId=${roomId}`);
@@ -528,7 +518,9 @@ class App {
                     outerTrackSelector: '#outer-track',
                     innerTrackSelector: '#inner-track',
                     gameState: this.getModule('gameState'),
-                    eventBus: this.getEventBus()
+                    eventBus: this.getEventBus(),
+                    logger: this.logger,
+                    debug: this.config?.get?.('logging.boardLayoutDebug', false)
                 });
                 this.modules.set('boardLayout', boardLayout);
                 console.log('🎯 BoardLayout: Инициализирован успешно');
@@ -564,19 +556,17 @@ class App {
             }
         };
 
-        // Сначала инициализируем BankPreview, затем CardDeckPanel
-        initBankPreview();
-        initCardDeckPanel();
-
-        // Оптимизированная инициализация без множественных setTimeout
+        // Инициализируем BankPreview первым, затем CardDeckPanel для правильного порядка
         if (!this.modules.get('bankPreview')) {
-            // Сокращаем задержки для ускорения загрузки
-            setTimeout(initBankPreview, 100);
+            initBankPreview(); // Инициализация BankPreview
         }
         
-        if (!this.modules.get('cardDeckPanel')) {
-            setTimeout(initCardDeckPanel, 150);
-        }
+        // Небольшая задержка для BankPreview перед инициализацией CardDeckPanel
+        setTimeout(() => {
+            if (!this.modules.get('cardDeckPanel')) {
+                initCardDeckPanel(); // Инициализация CardDeckPanel после BankPreview
+            }
+        }, 200);
         
         // Инициализируем DealModule (микромодуль сделок)
         if (window.DealModule) {
@@ -715,32 +705,30 @@ class App {
             console.warn('⚠️ App: TurnService не найден в window');
         }
         
-        // Оптимизированная инициализация TurnController - сокращена задержка
-        setTimeout(() => {
-            if (window.TurnController) {
-                const turnService = this.modules.get('turnService');
-                const playerTokensModule = this.modules.get('playerTokens');
-                if (turnService && gameStateManager) {
-                    try {
-                        console.log('🎯 App: Инициализируем TurnController (оптимизированно)...');
-                        const turnController = new window.TurnController(
-                            turnService,
-                            playerTokensModule,
-                            gameStateManager,
-                            this.getEventBus()
-                        );
-                        this.modules.set('turnController', turnController);
-                        
-                        if (typeof turnController.init === 'function') {
-                            turnController.init();
-                            console.log('🎯 TurnController: init() вызван успешно');
-                        }
-                    } catch (e) {
-                        console.error('❌ App: Ошибка инициализации TurnController', e);
+        // Оптимизированная инициализация TurnController - убрана задержка для мгновенной загрузки
+        if (window.TurnController) {
+            const turnService = this.modules.get('turnService');
+            const playerTokensModule = this.modules.get('playerTokens');
+            if (turnService && gameStateManager) {
+                try {
+                    console.log('🎯 App: Инициализируем TurnController (мгновенно)...');
+                    const turnController = new window.TurnController(
+                        turnService,
+                        playerTokensModule,
+                        gameStateManager,
+                        this.getEventBus()
+                    );
+                    this.modules.set('turnController', turnController);
+                    
+                    if (typeof turnController.init === 'function') {
+                        turnController.init();
+                        console.log('🎯 TurnController: init() вызван успешно');
                     }
+                } catch (e) {
+                    console.error('❌ App: Ошибка инициализации TurnController', e);
                 }
             }
-        }, 100); // Сокращена задержка с 200ms до 100ms
+        }
         
         // Инициализируем TurnSyncService для синхронизации ходов (временно отключен)
         if (false && window.TurnSyncService) {
@@ -768,14 +756,12 @@ class App {
         
         this.logger?.info('Игровые модули инициализированы', null, 'App');
         
-        // Оптимизированное обновление фишек игроков - сокращена задержка
-        setTimeout(() => {
-            const playerTokens = this.modules.get('playerTokens');
-            if (playerTokens) {
-                console.log('🎯 App: Обновление фишек игроков...');
-                playerTokens.forceUpdate();
-            }
-        }, 500); // Сокращена задержка с 2000ms до 500ms
+        // Оптимизированное обновление фишек игроков - убрана задержка для мгновенного обновления
+        const playerTokens = this.modules.get('playerTokens');
+        if (playerTokens) {
+            console.log('🎯 App: Обновление фишек игроков...');
+            playerTokens.forceUpdate();
+        }
 
         // Удален избыточный retry механизм - вызывает множественную инициализацию модулей
         // setTimeout(() => { /* retry logic */ }, 800); // REMOVED для оптимизации
@@ -825,18 +811,16 @@ class App {
             }
         }
         
-        // Принудительно обновляем данные
-        setTimeout(() => {
-            const bankPreview = this.modules.get('bankPreview');
-            if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
-                bankPreview.updatePreviewData();
-            }
-            
-            const cardDeckPanel = this.modules.get('cardDeckPanel');
-            if (cardDeckPanel && typeof cardDeckPanel.loadDecks === 'function') {
-                cardDeckPanel.loadDecks();
-            }
-        }, 100);
+        // Принудительно обновляем данные мгновенно (убрана задержка)
+        const bankPreview = this.modules.get('bankPreview');
+        if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
+            bankPreview.updatePreviewData();
+        }
+        
+        const cardDeckPanel = this.modules.get('cardDeckPanel');
+        if (cardDeckPanel && typeof cardDeckPanel.loadDecks === 'function') {
+            cardDeckPanel.loadDecks();
+        }
     }
 
     /**
@@ -1000,7 +984,9 @@ class App {
                 outerTrackSelector: '#outer-track',
                 innerTrackSelector: '#inner-track',
                 gameState: gameState,
-                eventBus: this.services.get('eventBus')
+                eventBus: this.services.get('eventBus'),
+                logger: this.logger,
+                debug: this.config?.get?.('logging.boardLayoutDebug', false)
             });
             
             // Сохраняем модули
