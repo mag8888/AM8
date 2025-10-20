@@ -429,10 +429,8 @@ class App {
             // Инициализируем игровые модули для этой комнаты сразу (убрана задержка)
             this._initializeGameModules(roomId);
             
-            // Принудительно инициализируем левую панель (оптимизированно)
-            setTimeout(() => {
-                this._initializeLeftPanel();
-            }, 50); // Сокращена задержка с 500ms до 50ms
+            // Принудительно инициализируем левую панель немедленно
+            this._initializeLeftPanel();
             
             // Обновляем URL без перезагрузки
             window.history.replaceState(null, '', `#game?roomId=${roomId}`);
@@ -556,17 +554,25 @@ class App {
             }
         };
 
+        // Проверяем доступность модулей перед инициализацией
+        console.log('🎯 App: Проверка доступности модулей:', {
+            BankPreview: !!window.BankPreview,
+            CardDeckPanel: !!window.CardDeckPanel
+        });
+        
         // Инициализируем BankPreview первым, затем CardDeckPanel для правильного порядка
-        if (!this.modules.get('bankPreview')) {
+        if (window.BankPreview && !this.modules.get('bankPreview')) {
             initBankPreview(); // Инициализация BankPreview
+        } else if (!window.BankPreview) {
+            console.warn('⚠️ App: BankPreview не найден в window');
         }
         
-        // Небольшая задержка для BankPreview перед инициализацией CardDeckPanel
-        setTimeout(() => {
-            if (!this.modules.get('cardDeckPanel')) {
-                initCardDeckPanel(); // Инициализация CardDeckPanel после BankPreview
-            }
-        }, 200);
+        // Инициализируем CardDeckPanel сразу после BankPreview
+        if (window.CardDeckPanel && !this.modules.get('cardDeckPanel')) {
+            initCardDeckPanel(); // Инициализация CardDeckPanel после BankPreview
+        } else if (!window.CardDeckPanel) {
+            console.warn('⚠️ App: CardDeckPanel не найден в window');
+        }
         
         // Инициализируем DealModule (микромодуль сделок)
         if (window.DealModule) {
@@ -815,12 +821,26 @@ class App {
         const bankPreview = this.modules.get('bankPreview');
         if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
             bankPreview.updatePreviewData();
+            console.log('🏦 App: BankPreview данные обновлены');
         }
         
         const cardDeckPanel = this.modules.get('cardDeckPanel');
         if (cardDeckPanel && typeof cardDeckPanel.loadDecks === 'function') {
             cardDeckPanel.loadDecks();
+            console.log('🃏 App: CardDeckPanel данные обновлены');
         }
+        
+        // Проверяем, что контейнер не пустой
+        setTimeout(() => {
+            const containerContent = container.innerHTML.trim();
+            console.log('🎯 App: Проверка содержимого левой панели:', {
+                containerExists: !!container,
+                hasContent: containerContent.length > 0,
+                contentLength: containerContent.length,
+                previewExists: !!container.querySelector('.bank-preview-card'),
+                cardsExist: !!container.querySelector('.card-deck-card')
+            });
+        }, 500);
     }
 
     /**

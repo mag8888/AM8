@@ -29,10 +29,8 @@ class BankPreview {
             return;
         }
         
-        // Рендерим сразу, но с небольшой задержкой для совместимости с CardDeckPanel
-        setTimeout(() => {
-            this.render();
-        }, 100); // Уменьшили задержку для быстрого отображения
+        // Рендерим сразу для немедленного отображения
+        this.render();
         
         // setupEventListeners будет вызван в render()
         
