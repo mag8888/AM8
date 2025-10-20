@@ -26,12 +26,10 @@ class Router {
         // Настраиваем обработчик истории браузера
         window.addEventListener('popstate', this.boundHandlePopState);
         
-        // Обрабатываем текущий URL только если есть маршруты
-        setTimeout(() => {
-            if (this.routes.size > 0) {
-                this.handleCurrentRoute();
-            }
-        }, 100);
+        // Обрабатываем текущий URL мгновенно для быстрой навигации
+        if (this.routes.size > 0) {
+            this.handleCurrentRoute();
+        }
         
         console.log('✅ Router: Маршрутизация инициализирована');
     }

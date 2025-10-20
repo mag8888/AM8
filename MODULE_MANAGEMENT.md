@@ -191,3 +191,4 @@ main (основная ветка)
       npm test -- --module="$MODULE"
     fi
 ```
+

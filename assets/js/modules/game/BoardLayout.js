@@ -16,12 +16,14 @@ class BoardLayout {
             outerTrackSelector,
             innerTrackSelector,
             gameState,
-            eventBus
+            eventBus,
+            logger = null,
+            debug = false
         } = config;
 
         if ((!window.SMALL_CIRCLE_CELLS && !window.BoardConfig?.SMALL_CIRCLE) || 
             (!window.BIG_CIRCLE_CELLS && !window.BoardConfig?.BIG_CIRCLE)) {
-            console.error('❌ BoardLayout: Конфигурации клеток не загружены');
+            this._error('Конфигурации клеток не загружены');
             throw new Error('Board config not loaded');
         }
 
@@ -29,10 +31,17 @@ class BoardLayout {
             throw new Error('BoardLayout requires track selectors');
         }
 
+        const globalConfig = typeof window !== 'undefined' ? window.config : null;
+        const debugFlag = typeof debug === 'boolean'
+            ? debug
+            : globalConfig?.get?.('logging.boardLayoutDebug', false);
+
         this.outerTrackSelector = outerTrackSelector;
         this.innerTrackSelector = innerTrackSelector;
         this.gameState = gameState || null;
         this.eventBus = eventBus || null;
+        this.logger = logger || window.logger || null;
+        this.debugEnabled = Boolean(debugFlag);
 
         this.outerCellsConfig = window.BIG_CIRCLE_CELLS || window.BoardConfig?.BIG_CIRCLE;
         this.innerCellsConfig = window.SMALL_CIRCLE_CELLS || window.BoardConfig?.SMALL_CIRCLE;
@@ -41,11 +50,13 @@ class BoardLayout {
         this.innerTrackElement = null;
 
         this.highlightTimers = new Map();
-
+        this.eventSubscriptions = [];
         this.boundHandleDelegatedClick = this.handleDelegatedClick.bind(this);
         this.boundHandlePlayerMoved = this.handlePlayerMoved.bind(this);
         this.boundHandleGameStarted = this.handleGameStarted.bind(this);
+        this.boundHandlePlayersUpdated = this.handlePlayersUpdated.bind(this);
         this.boundHandleResize = this.positionCells.bind(this);
+        this.isDestroyed = false;
 
         // Инициализируем попап для клеток
         this.cellPopup = null;
@@ -57,8 +68,8 @@ class BoardLayout {
             window.addEventListener('resize', this.boundHandleResize, { passive: true });
         }
 
-        console.log(
-            `🔍 BoardLayout: Config loaded - SMALL: ${this.innerCellsConfig.length} BIG: ${this.outerCellsConfig.length}`
+        this._debug(
+            `Config loaded - SMALL: ${this.innerCellsConfig.length} BIG: ${this.outerCellsConfig.length}`
         );
 
         // Рендерим доску сразу при инициализации
@@ -69,17 +80,18 @@ class BoardLayout {
      * Render both outer and inner tracks.
      */
     renderTracks() {
-        console.log('🎯 BoardLayout: renderTracks called');
+        this._debug('renderTracks called');
         this.ensureTrackElements();
 
         if (!this.outerTrackElement || !this.innerTrackElement) {
-            console.error('❌ BoardLayout: Track elements not found - render aborted');
-            console.error('❌ BoardLayout: outerTrackElement:', !!this.outerTrackElement);
-            console.error('❌ BoardLayout: innerTrackElement:', !!this.innerTrackElement);
+            this._error('Track elements not found - render aborted', {
+                outerTrackFound: Boolean(this.outerTrackElement),
+                innerTrackFound: Boolean(this.innerTrackElement)
+            });
             return;
         }
         
-        console.log('✅ BoardLayout: Track elements found, starting render');
+        this._debug('Track elements found, starting render');
 
         this.attachTrackListeners();
 
@@ -109,7 +121,7 @@ class BoardLayout {
         const total =
             this.outerTrackElement.childElementCount +
             this.innerTrackElement.childElementCount;
-        console.log(`✅ BoardLayout: ${total} клеток отрисовано`);
+        this._debug(`${total} клеток отрисовано`);
 
         this.positionCells();
     }
@@ -121,15 +133,13 @@ class BoardLayout {
      * @returns {HTMLElement|null}
      */
     createCell(position, isInner) {
-        console.log(`🎯 BoardLayout: Creating cell ${position} isInner: ${isInner}`);
+        this._debug(`Creating cell ${position} isInner: ${isInner}`);
 
         const cellsConfig = isInner ? this.innerCellsConfig : this.outerCellsConfig;
         const cellData = cellsConfig[position];
 
         if (!cellData) {
-            console.error(
-                `❌ BoardLayout: Cell config missing for position ${position} (isInner: ${isInner})`
-            );
+            this._error(`Cell config missing for position ${position}`, { isInner });
             return null;
         }
 
@@ -139,9 +149,7 @@ class BoardLayout {
                 ? window.getIconForType(type, cellData)
                 : cellData.icon || '?';
 
-        console.log(
-            `🔍 BoardLayout: Cell data - ${cellData.name || 'N/A'} ${type} ${icon || '?'}`
-        );
+        this._debug(`Cell data - ${cellData.name || 'N/A'} ${type} ${icon || '?'}`);
 
         const cell = document.createElement('div');
         cell.classList.add('track-cell', `cell-${type}`);
@@ -201,7 +209,7 @@ class BoardLayout {
         // Проверяем, есть ли у игроков выбранная мечта
         return this.gameState.players.some(player => {
             if (player.dream && player.dream.id) {
-                console.log(`❤️ BoardLayout: Игрок ${player.username} выбрал мечту: ${player.dream.id}`);
+                this._debug(`Игрок ${player.username} выбрал мечту: ${player.dream.id}`);
                 return true;
             }
             return false;
@@ -226,11 +234,11 @@ class BoardLayout {
                 heartElement.className = 'dream-heart';
                 heartElement.textContent = '❤️';
                 cell.appendChild(heartElement);
-                console.log(`❤️ BoardLayout: Добавлено сердечко на позицию ${position}`);
+                this._debug(`Добавлено сердечко на позицию ${position}`);
             } else if (!shouldShowHeart && heart) {
                 // Убираем сердечко
                 heart.remove();
-                console.log(`❤️ BoardLayout: Убрано сердечко с позиции ${position}`);
+                this._debug(`Убрано сердечко с позиции ${position}`);
             }
         });
     }
@@ -395,7 +403,14 @@ class BoardLayout {
 
         // Инициализируем попап если еще не создан
         if (!this.cellPopup) {
-            this.cellPopup = new CellPopup({
+            const PopupConstructor = typeof CellPopup === 'function'
+                ? CellPopup
+                : (typeof window !== 'undefined' ? window.CellPopup : null);
+            if (typeof PopupConstructor !== 'function') {
+                this._warn('CellPopup constructor is not available');
+                return;
+            }
+            this.cellPopup = new PopupConstructor({
                 eventBus: this.eventBus
             });
         }
@@ -412,9 +427,7 @@ class BoardLayout {
         }
 
         if (cellData.name) {
-            console.log(
-                `ℹ️ BoardLayout: Cell clicked -> ${cellData.name} (${cellData.type})`
-            );
+            this._debug(`Cell clicked -> ${cellData.name} (${cellData.type})`);
         }
     }
 
@@ -496,7 +509,7 @@ class BoardLayout {
      * Handle players updated event
      */
     handlePlayersUpdated(data) {
-        console.log('👥 BoardLayout: Игроки обновлены, обновляем сердечки мечт');
+        this._debug('Игроки обновлены, обновляем сердечки мечт');
         this.updateDreamHearts();
     }
 
@@ -506,11 +519,17 @@ class BoardLayout {
     ensureTrackElements() {
         if (!this.outerTrackElement) {
             this.outerTrackElement = document.querySelector(this.outerTrackSelector);
-            console.log('🔍 BoardLayout: outerTrackElement found:', !!this.outerTrackElement, this.outerTrackSelector);
+            this._debug('outerTrackElement lookup result', {
+                found: Boolean(this.outerTrackElement),
+                selector: this.outerTrackSelector
+            });
         }
         if (!this.innerTrackElement) {
             this.innerTrackElement = document.querySelector(this.innerTrackSelector);
-            console.log('🔍 BoardLayout: innerTrackElement found:', !!this.innerTrackElement, this.innerTrackSelector);
+            this._debug('innerTrackElement lookup result', {
+                found: Boolean(this.innerTrackElement),
+                selector: this.innerTrackSelector
+            });
         }
     }
 
@@ -551,9 +570,15 @@ class BoardLayout {
             return;
         }
 
-        this.eventBus.on('player:moved', this.boundHandlePlayerMoved);
-        this.eventBus.on('game:started', this.boundHandleGameStarted);
-        this.eventBus.on('game:playersUpdated', this.handlePlayersUpdated.bind(this));
+        const offPlayerMoved = this.eventBus.on('player:moved', this.boundHandlePlayerMoved);
+        const offGameStarted = this.eventBus.on('game:started', this.boundHandleGameStarted);
+        const offPlayersUpdated = this.eventBus.on('game:playersUpdated', this.boundHandlePlayersUpdated);
+
+        [offPlayerMoved, offGameStarted, offPlayersUpdated].forEach((unsubscribe) => {
+            if (typeof unsubscribe === 'function') {
+                this.eventSubscriptions.push(unsubscribe);
+            }
+        });
     }
 
     /**
@@ -591,6 +616,121 @@ class BoardLayout {
      */
     getHighlightKey(position, isInner) {
         return `${isInner ? 'inner' : 'outer'}-${position}`;
+    }
+
+    /**
+     * Детачим кликовые обработчики с дорожек.
+     */
+    detachTrackListeners() {
+        if (this.outerTrackElement) {
+            this.outerTrackElement.removeEventListener('click', this.boundHandleDelegatedClick);
+        }
+        if (this.innerTrackElement) {
+            this.innerTrackElement.removeEventListener('click', this.boundHandleDelegatedClick);
+        }
+    }
+
+    /**
+     * Безопасно удаляет подписки на события.
+     */
+    _removeEventBusListeners() {
+        if (!this.eventSubscriptions.length) {
+            return;
+        }
+        this.eventSubscriptions.forEach((unsubscribe) => {
+            try {
+                unsubscribe();
+            } catch (error) {
+                this._warn('Failed to unsubscribe from event bus listener', error);
+            }
+        });
+        this.eventSubscriptions = [];
+    }
+
+    /**
+     * Очищает таймеры подсветки.
+     */
+    _clearHighlightTimers() {
+        for (const timeoutId of this.highlightTimers.values()) {
+            clearTimeout(timeoutId);
+        }
+        this.highlightTimers.clear();
+    }
+
+    /**
+     * Уничтожает модуль и освобождает ресурсы.
+     */
+    destroy() {
+        if (this.isDestroyed) {
+            return;
+        }
+        this.isDestroyed = true;
+
+        this.detachTrackListeners();
+        if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+            window.removeEventListener('resize', this.boundHandleResize);
+        }
+        this._removeEventBusListeners();
+        this._clearHighlightTimers();
+
+        if (this.cellPopup) {
+            try {
+                if (typeof this.cellPopup.destroy === 'function') {
+                    this.cellPopup.destroy();
+                } else if (typeof this.cellPopup.hide === 'function') {
+                    this.cellPopup.hide();
+                }
+            } catch (error) {
+                this._warn('Failed to teardown cell popup', error);
+            }
+        }
+
+        this._debug('BoardLayout destroyed');
+    }
+
+    /**
+     * Унифицированный логгер.
+     * @param {'debug'|'info'|'warn'|'error'} level
+     * @param {string} message
+     * @param {Object|Error} [meta]
+     */
+    _log(level, message, meta) {
+        const logger = this.logger;
+        if (logger && typeof logger[level] === 'function') {
+            try {
+                logger[level](message, meta ?? null, 'BoardLayout');
+                return;
+            } catch (loggerError) {
+                // fall through to console logging
+                console.warn('[BoardLayout] Logger call failed', loggerError);
+            }
+        }
+
+        const consoleFn = console[level] || console.log;
+        if (meta !== undefined) {
+            consoleFn(`[BoardLayout] ${message}`, meta);
+        } else {
+            consoleFn(`[BoardLayout] ${message}`);
+        }
+    }
+
+    _debug(message, meta) {
+        if (!this.debugEnabled) {
+            return;
+        }
+        this._log('debug', message, meta);
+    }
+
+    _info(message, meta) {
+        this._log('info', message, meta);
+    }
+
+    _warn(message, meta) {
+        this._log('warn', message, meta);
+    }
+
+    _error(message, meta) {
+        this._log('error', message, meta);
     }
 }
 
