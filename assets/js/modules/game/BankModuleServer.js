@@ -33,6 +33,8 @@ class BankModuleServer {
         this.isOpen = false;
         this.isLoading = false;
         this._isTransferring = false;
+        this._lastDataLoad = 0;
+        this._dataCacheTimeout = 30000; // 30 секунд кэш
         
         console.log('🏦 BankModuleServer: Инициализирован (v2.0.0)');
         this.init();
@@ -49,8 +51,16 @@ class BankModuleServer {
     /**
      * Получение данных с сервера
      */
-    async loadServerData() {
+    async loadServerData(force = false) {
         if (this.isLoading) return;
+        
+        // Проверяем кэш для избежания лишних запросов
+        const now = Date.now();
+        if (!force && (now - this._lastDataLoad) < this._dataCacheTimeout) {
+            console.log('🚀 BankModuleServer: Используем кэшированные данные');
+            this.updateUIFromServer();
+            return;
+        }
         
         this.isLoading = true;
         this.showLoadingState(true);
@@ -94,6 +104,7 @@ class BankModuleServer {
         } finally {
             this.isLoading = false;
             this.showLoadingState(false);
+            this._lastDataLoad = Date.now();
         }
     }
     
@@ -1161,7 +1172,7 @@ class BankModuleServer {
         
         // Обновление данных с сервера
         const refreshBtn = this.ui.querySelector('#refresh-server-data');
-        refreshBtn.addEventListener('click', () => this.loadServerData());
+        refreshBtn.addEventListener('click', () => this.loadServerData(true));
         
         // Переводы
         const transferExecute = this.ui.querySelector('#transfer-execute-server');
@@ -1213,11 +1224,18 @@ class BankModuleServer {
         this.ui.style.display = 'flex';
         this.isOpen = true;
         
-        // Загружаем данные с сервера при открытии
-        await this.loadServerData();
+        // Сначала показываем UI с локальными данными (если есть)
+        if (this.bankState.balance !== 0 || this.bankState.players.length > 0) {
+            console.log('🚀 BankModuleServer: Показываем локальные данные');
+            this.updateUIFromServer();
+        }
         
-        // Обновляем UI
-        this.updateUIFromServer();
+        // Затем загружаем данные с сервера в фоне (неблокирующе)
+        this.loadServerData().then(() => {
+            this.updateUIFromServer();
+        }).catch(error => {
+            console.warn('⚠️ BankModuleServer: Ошибка фоновой загрузки данных:', error);
+        });
         
         console.log('🏦 BankModuleServer: Открыт');
     }
@@ -1293,8 +1311,8 @@ class BankModuleServer {
                 
                 this.resetTransferForm();
                 
-                // Перезагружаем данные с сервера
-                await this.loadServerData();
+                // Перезагружаем данные с сервера (принудительно, так как данные изменились)
+                await this.loadServerData(true);
                 this.updateUIFromServer();
             } else {
                 this.showNotification(result.message || 'Ошибка выполнения перевода', 'error');
@@ -1352,8 +1370,8 @@ class BankModuleServer {
                 
                 amountInput.value = '';
                 
-                // Перезагружаем данные с сервера
-                await this.loadServerData();
+                // Перезагружаем данные с сервера (принудительно, так как данные изменились)
+                await this.loadServerData(true);
                 this.updateUIFromServer();
             } else {
                 this.showNotification(result.message || 'Ошибка взятия кредита', 'error');
@@ -1413,8 +1431,8 @@ class BankModuleServer {
                 
                 amountInput.value = '';
                 
-                // Перезагружаем данные с сервера
-                await this.loadServerData();
+                // Перезагружаем данные с сервера (принудительно, так как данные изменились)
+                await this.loadServerData(true);
                 this.updateUIFromServer();
             } else {
                 this.showNotification(result.message || 'Ошибка погашения кредита', 'error');
