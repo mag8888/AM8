@@ -392,6 +392,7 @@ class TurnController {
      * @param {number} count - Количество игроков
      */
     updatePlayersCount(count) {
+        if (!this.ui) return;
         const playersCount = this.ui.querySelector('.players-count');
         if (playersCount) {
             playersCount.textContent = `${count}/4`;
@@ -562,7 +563,7 @@ class TurnController {
      * @param {Object} diceResult - Результат броска
      */
     updateDiceInfo(diceResult) {
-        if (diceResult) {
+        if (diceResult && this.ui) {
             const diceInfo = this.ui.querySelector('.dice-info');
             if (diceInfo) {
                 diceInfo.textContent = this.getDiceEmoji(diceResult.value);
@@ -576,6 +577,7 @@ class TurnController {
      * @param {Object} activePlayer - Активный игрок
      */
     updateCurrentPlayer(activePlayer) {
+        if (!this.ui) return;
         const currentPlayer = this.ui.querySelector('.current-player');
         if (currentPlayer) {
             if (activePlayer) {
@@ -591,6 +593,8 @@ class TurnController {
      * @param {Object} state - Состояние игры
      */
     updateControlButtons(state) {
+        if (!this.ui) return;
+        
         const rollBtn = this.ui.querySelector('#roll-dice-btn');
         const endTurnBtn = this.ui.querySelector('#end-turn-btn');
         
@@ -685,10 +689,12 @@ class TurnController {
         }
         
         // Дополнительная проверка на уровне UI
-        const rollBtn = this.ui.querySelector('#roll-dice-btn');
-        if (rollBtn && rollBtn.disabled) {
-            console.warn('⚠️ TurnController: Кнопка броска отключена');
-            return;
+        if (this.ui) {
+            const rollBtn = this.ui.querySelector('#roll-dice-btn');
+            if (rollBtn && rollBtn.disabled) {
+                console.warn('⚠️ TurnController: Кнопка броска отключена');
+                return;
+            }
         }
         
         // Проверяем права на бросок кубика
@@ -784,11 +790,13 @@ class TurnController {
         }
         
         // Дополнительная проверка на уровне UI
-        const moveBtns = this.ui.querySelectorAll('.move-btn');
-        const clickedBtn = Array.from(moveBtns).find(btn => parseInt(btn.dataset.steps) === steps);
-        if (clickedBtn && clickedBtn.disabled) {
-            console.warn('⚠️ TurnController: Кнопка перемещения отключена');
-            return;
+        if (this.ui) {
+            const moveBtns = this.ui.querySelectorAll('.move-btn');
+            const clickedBtn = Array.from(moveBtns).find(btn => parseInt(btn.dataset.steps) === steps);
+            if (clickedBtn && clickedBtn.disabled) {
+                console.warn('⚠️ TurnController: Кнопка перемещения отключена');
+                return;
+            }
         }
         
         // Проверяем права на перемещение
@@ -842,15 +850,21 @@ class TurnController {
      */
     onRollStart() {
         this.isRolling = true;
-        const rollBtn = this.ui.querySelector('#roll-dice-btn');
-        rollBtn.disabled = true;
-        rollBtn.textContent = '🎲 Бросаем...';
-        rollBtn.classList.add('rolling');
+        if (this.ui) {
+            const rollBtn = this.ui.querySelector('#roll-dice-btn');
+            if (rollBtn) {
+                rollBtn.disabled = true;
+                rollBtn.textContent = '🎲 Бросаем...';
+                rollBtn.classList.add('rolling');
+            }
+        }
         
         this.updateStatus('Бросаем кубик...');
     }
     
     onRollSuccess(response) {
+        if (!this.ui) return;
+        
         const moveActions = this.ui.querySelector('#move-actions');
         const endTurnBtn = this.ui.querySelector('#end-turn-btn');
         
@@ -863,7 +877,9 @@ class TurnController {
         this.updateDiceInBottomPanel(value);
         
         // Показываем кнопки перемещения
-        moveActions.style.display = response?.state?.canMove ? 'block' : 'none';
+        if (moveActions) {
+            moveActions.style.display = response?.state?.canMove ? 'block' : 'none';
+        }
         
         // Активируем кнопку "Передать ход" после броска кубика
         if (endTurnBtn) {
@@ -897,10 +913,12 @@ class TurnController {
     
     onRollError(error) {
         console.error('❌ TurnController: Ошибка броска кубика:', error);
-        const rollBtn = this.ui.querySelector('#roll-dice-btn');
-        if (rollBtn) {
-            rollBtn.disabled = true;
-            setTimeout(()=>{ rollBtn.disabled = false; }, 1200);
+        if (this.ui) {
+            const rollBtn = this.ui.querySelector('#roll-dice-btn');
+            if (rollBtn) {
+                rollBtn.disabled = true;
+                setTimeout(()=>{ rollBtn.disabled = false; }, 1200);
+            }
         }
         const message = (error && (error.message || error.toString() || ''));
         if (String(message).includes('HTTP 400') || String(message).toLowerCase().includes('not your turn')) {
@@ -912,10 +930,14 @@ class TurnController {
     
     onRollFinish() {
         this.isRolling = false;
-        const rollBtn = this.ui.querySelector('#roll-dice-btn');
-        rollBtn.disabled = false;
-        rollBtn.textContent = '🎲 Бросить кубик';
-        rollBtn.classList.remove('rolling');
+        if (this.ui) {
+            const rollBtn = this.ui.querySelector('#roll-dice-btn');
+            if (rollBtn) {
+                rollBtn.disabled = false;
+                rollBtn.textContent = '🎲 Бросить кубик';
+                rollBtn.classList.remove('rolling');
+            }
+        }
         
         this.updateUI();
     }
@@ -925,13 +947,17 @@ class TurnController {
      */
     onMoveStart() {
         this.isMoving = true;
-        const moveBtns = this.ui.querySelectorAll('.move-btn');
-        moveBtns.forEach(btn => btn.disabled = true);
+        if (this.ui) {
+            const moveBtns = this.ui.querySelectorAll('.move-btn');
+            moveBtns.forEach(btn => btn.disabled = true);
+        }
         
         this.updateStatus('Перемещаемся...');
     }
     
     onMoveSuccess(response) {
+        if (!this.ui) return;
+        
         const endTurnBtn = this.ui.querySelector('#end-turn-btn');
         const moveActions = this.ui.querySelector('#move-actions');
         if (moveActions) {
@@ -953,8 +979,10 @@ class TurnController {
     
     onMoveFinish() {
         this.isMoving = false;
-        const moveBtns = this.ui.querySelectorAll('.move-btn');
-        moveBtns.forEach(btn => btn.disabled = false);
+        if (this.ui) {
+            const moveBtns = this.ui.querySelectorAll('.move-btn');
+            moveBtns.forEach(btn => btn.disabled = false);
+        }
         
         this.updateUI();
     }
@@ -967,13 +995,19 @@ class TurnController {
     }
     
     onEndSuccess(response) {
+        if (!this.ui) return;
+        
         // Скрываем элементы
         const diceResult = this.ui.querySelector('#dice-result');
         const moveActions = this.ui.querySelector('#move-actions');
         const endTurnBtn = this.ui.querySelector('#end-turn-btn');
         
-        diceResult.style.display = 'none';
-        moveActions.style.display = 'none';
+        if (diceResult) {
+            diceResult.style.display = 'none';
+        }
+        if (moveActions) {
+            moveActions.style.display = 'none';
+        }
         
         // Отключаем кнопку "Передать ход" после завершения хода
         if (endTurnBtn) {
