@@ -998,3 +998,10 @@
         font-size: 1.1rem;
     }
 }
+
+/* Класс для принудительного скрытия кнопки */
+.hidden {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}

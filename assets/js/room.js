@@ -197,8 +197,13 @@ document.addEventListener('DOMContentLoaded', function() {
     displayUserInfo();
     loadDreams();
     loadTokens();
-    updateStartGameButton();
-    updateReadyStatus();
+    
+    // Отложенное обновление кнопок после загрузки всех данных
+    setTimeout(() => {
+        console.log('🔄 Room: Отложенное обновление кнопок');
+        updateStartGameButton();
+        updateReadyStatus();
+    }, 1000);
     
     // Запускаем периодическое обновление данных комнаты для получения изменений в реальном времени
     startRoomDataPolling();
@@ -605,6 +610,14 @@ async function joinRoomIfNeeded() {
             
             await roomService.joinRoom(currentRoom.id, playerData);
             showNotification('Вы присоединились к комнате', 'success');
+            
+            // Принудительно обновляем данные комнаты и кнопку после присоединения
+            console.log('🔄 Room: Принудительное обновление после присоединения к комнате');
+            await refreshRoomData();
+            setTimeout(() => {
+                console.log('🔄 Room: Дополнительное обновление кнопки после присоединения');
+                updateStartGameButton();
+            }, 500);
         } else {
             console.log('ℹ️ Room: Пользователь уже в комнате, обновляем данные');
             
@@ -626,6 +639,14 @@ async function joinRoomIfNeeded() {
             console.log('🔄 Room: Результат сброса готовности:', resetResult);
             
             showNotification('Добро пожаловать обратно в комнату!', 'info');
+            
+            // Принудительно обновляем данные комнаты и кнопку
+            console.log('🔄 Room: Принудительное обновление для существующего пользователя');
+            await refreshRoomData();
+            setTimeout(() => {
+                console.log('🔄 Room: Дополнительное обновление кнопки для существующего пользователя');
+                updateStartGameButton();
+            }, 500);
         }
     } catch (error) {
         console.error('❌ Room: Ошибка присоединения к комнате:', error);
@@ -884,11 +905,17 @@ function updateStartGameButton() {
     if (!isHost) {
         console.log('🚫 Room: Пользователь НЕ является хостом - скрываем кнопку "Начать игру"');
         startGameButton.style.display = 'none';
+        startGameButton.style.visibility = 'hidden';
+        // Дополнительная проверка через CSS класс
+        startGameButton.classList.add('hidden');
         return;
     }
     
     console.log('✅ Room: Пользователь является хостом - показываем кнопку "Начать игру"');
     startGameButton.style.display = 'block';
+    startGameButton.style.visibility = 'visible';
+    // Убираем CSS класс скрытия
+    startGameButton.classList.remove('hidden');
     
     startGameButton.disabled = !canStart || currentRoom.isStarted;
     
