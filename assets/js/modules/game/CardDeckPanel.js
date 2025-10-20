@@ -157,7 +157,19 @@
                     throw new Error(`Не удалось загрузить карточные колоды (HTTP ${response.status})`);
                 }
 
-                const payload = await response.json();
+                let payload;
+                try {
+                    payload = await response.json();
+                } catch (jsonError) {
+                    console.warn('⚠️ CardDeckPanel: Ошибка парсинга JSON ответа:', jsonError);
+                    // Используем кэшированные данные если есть
+                    if (this.lastKnownDecks.length) {
+                        this.renderDecks(this.lastKnownDecks);
+                        return;
+                    }
+                    throw new Error('Ошибка обработки ответа сервера');
+                }
+
                 if (!payload.success) {
                     throw new Error(payload.message || 'Не удалось загрузить карточные колоды');
                 }
@@ -174,13 +186,25 @@
                 if (error.name === 'AbortError') {
                     return;
                 }
+                
+                // Улучшенная обработка различных типов ошибок
+                if (error.message?.includes('Load failed') || error.name === 'TypeError') {
+                    console.warn('⚠️ CardDeckPanel: Сетевая ошибка, используем кэшированные данные');
+                    if (this.lastKnownDecks.length) {
+                        this.renderDecks(this.lastKnownDecks);
+                        return;
+                    }
+                }
+                
                 console.error('❌ CardDeckPanel: Ошибка загрузки данных колод:', error);
                 if (error?.isRateLimit && this.lastKnownDecks.length) {
                     this.renderDecks(this.lastKnownDecks);
                 } else {
                     this.renderError(error);
                 }
-                throw error;
+                
+                // Не пробрасываем ошибку дальше, чтобы не ломать UI
+                return;
             } finally {
                 this.setLoadingState(false);
                 this.abortController = null;

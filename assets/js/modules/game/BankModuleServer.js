@@ -32,6 +32,7 @@ class BankModuleServer {
         this.ui = null;
         this.isOpen = false;
         this.isLoading = false;
+        this._isTransferring = false;
         
         console.log('🏦 BankModuleServer: Инициализирован (v2.0.0)');
         this.init();
@@ -65,17 +66,28 @@ class BankModuleServer {
             // Загружаем только состояние игры, баланс получаем из него
             const gameStateData = await this.fetchGameState(roomId);
             
-            // Обновляем состояние банка данными из gameState
-            this.updateBankStateFromServer(gameStateData, null);
-            
-            // Загружаем историю операций
-            await this.loadTransactionsHistory();
-            
-            console.log('✅ BankModuleServer: Данные загружены с сервера');
+            if (gameStateData) {
+                // Обновляем состояние банка данными из gameState
+                this.updateBankStateFromServer(gameStateData, null);
+                
+                // Загружаем историю операций
+                await this.loadTransactionsHistory();
+                
+                console.log('✅ BankModuleServer: Данные загружены с сервера');
+            } else {
+                console.warn('⚠️ BankModuleServer: Не удалось загрузить данные с сервера, используем локальные');
+                this.loadLocalData();
+            }
             
         } catch (error) {
             console.error('❌ BankModuleServer: Ошибка загрузки данных:', error);
-            this.showNotification('Ошибка загрузки данных с сервера', 'error');
+            
+            // Показываем уведомление только для критических ошибок
+            if (!error.message?.includes('Load failed') && 
+                !error.message?.includes('Таймаут') &&
+                error.name !== 'TypeError') {
+                this.showNotification('Ошибка загрузки данных с сервера', 'error');
+            }
             
             // Fallback: пытаемся получить данные из локального GameStateManager
             this.loadLocalData();
@@ -91,19 +103,34 @@ class BankModuleServer {
     async fetchGameState(roomId) {
         // Добавляем таймаут для предотвращения блокировки UI
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // Увеличиваем таймаут до 8 секунд
         
         try {
             const response = await fetch(`/api/rooms/${roomId}/game-state`, {
-                signal: controller.signal
+                signal: controller.signal,
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Accept': 'application/json'
+                }
             });
             clearTimeout(timeoutId);
             
             if (!response.ok) {
+                if (response.status === 404) {
+                    console.warn('⚠️ BankModuleServer: Комната не найдена, используем локальные данные');
+                    return null; // Вернем null вместо ошибки
+                }
                 throw new Error(`Ошибка загрузки состояния игры: ${response.status}`);
             }
             
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                console.warn('⚠️ BankModuleServer: Ошибка парсинга JSON ответа:', jsonError);
+                return null;
+            }
+            
             if (!data.success) {
                 throw new Error(data.message || 'Ошибка получения данных игры');
             }
@@ -112,8 +139,16 @@ class BankModuleServer {
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
-                throw new Error('Таймаут загрузки данных (5 сек)');
+                console.warn('⚠️ BankModuleServer: Таймаут загрузки данных, используем локальные данные');
+                return null; // Возвращаем null вместо ошибки
             }
+            
+            // Обработка сетевых ошибок
+            if (error.message?.includes('Load failed') || error.name === 'TypeError') {
+                console.warn('⚠️ BankModuleServer: Сетевая ошибка, используем локальные данные');
+                return null;
+            }
+            
             throw error;
         }
     }
@@ -1202,16 +1237,27 @@ class BankModuleServer {
      * Выполнение перевода через сервер
      */
     async executeTransfer() {
-        const recipientId = this.ui.querySelector('#transfer-recipient').value;
-        const amount = parseInt(this.ui.querySelector('#transfer-amount').value);
-        
-        if (!recipientId || !amount || amount <= 0) {
-            this.showNotification('Заполните все поля корректно', 'error');
+        // Защита от множественных вызовов
+        if (this._isTransferring) {
+            console.log('🔄 BankModuleServer: Перевод уже выполняется...');
             return;
         }
         
+        const recipientId = this.ui.querySelector('#transfer-recipient')?.value;
+        const amountStr = this.ui.querySelector('#transfer-amount')?.value;
+        const amount = parseInt(amountStr);
+        
+        if (!recipientId || !amountStr || isNaN(amount) || amount <= 0) {
+            this.showNotification('Заполните все поля корректно', 'error');
+            this._isTransferring = false;
+            return;
+        }
+        
+        this._isTransferring = true;
+        
         if (amount > this.bankState.balance) {
             this.showNotification('Недостаточно средств', 'error');
+            this._isTransferring = false;
             return;
         }
         
@@ -1256,6 +1302,8 @@ class BankModuleServer {
         } catch (error) {
             console.error('❌ BankModuleServer: Ошибка перевода:', error);
             this.showNotification('Ошибка выполнения перевода', 'error');
+        } finally {
+            this._isTransferring = false;
         }
     }
     
