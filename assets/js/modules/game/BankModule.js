@@ -873,13 +873,15 @@ class BankModule {
         if (this.eventBus) {
             this.eventBus.on('game:playersUpdated', () => {
                 if (this.isOpen) {
-                    setTimeout(() => this.updateBankData(), 100);
+                    // Немедленное обновление без задержки для ускорения
+                    this.updateBankData();
                 }
             });
             
             this.eventBus.on('bank:balanceUpdated', () => {
                 if (this.isOpen) {
-                    setTimeout(() => this.updateBankData(), 100);
+                    // Немедленное обновление без задержки для ускорения
+                    this.updateBankData();
                 }
             });
         }
