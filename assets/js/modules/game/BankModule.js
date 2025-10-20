@@ -869,6 +869,20 @@ class BankModule {
      * Настройка обработчиков событий
      */
     setupEventListeners() {
+        // Добавляем слушатель событий для обновления данных банка
+        if (this.eventBus) {
+            this.eventBus.on('game:playersUpdated', () => {
+                if (this.isOpen) {
+                    setTimeout(() => this.updateBankData(), 100);
+                }
+            });
+            
+            this.eventBus.on('bank:balanceUpdated', () => {
+                if (this.isOpen) {
+                    setTimeout(() => this.updateBankData(), 100);
+                }
+            });
+        }
         // Закрытие модуля
         const closeBtn = this.ui.querySelector('#bank-close');
         closeBtn.addEventListener('click', async () => await this.close());
@@ -1151,8 +1165,19 @@ class BankModule {
             
             this.ui.style.display = 'flex';
             this.isOpen = true;
+            
+            // Принудительно обновляем данные дважды для надежности
             await this.updateBankData();
             await this.loadPlayers();
+            
+            // Дополнительное обновление через небольшую задержку
+            setTimeout(async () => {
+                if (this.isOpen) {
+                    await this.updateBankData();
+                    console.log('🔄 BankModule: Дополнительное обновление данных выполнено');
+                }
+            }, 500);
+            
             console.log('🏦 BankModule: Открыт для пользователя:', currentPlayer.username);
         }
     }
@@ -1193,7 +1218,7 @@ class BankModule {
         }
         
         // Получаем roomId для серверных запросов
-        const roomId = this._getCurrentRoomId() || this.gameState?.getRoomId?.();
+        const roomId = this._getCurrentRoomId() || this.gameState?.getRoomId?.() || window.location.hash.split('roomId=')[1];
         let serverPlayerData = null;
         
         // Загружаем актуальные данные игрока с сервера
@@ -1206,12 +1231,18 @@ class BankModule {
                     const gameStateData = await response.json();
                     if (gameStateData.success && gameStateData.state?.players) {
                         // Находим данные текущего игрока на сервере
-                        serverPlayerData = gameStateData.state.players.find(p => p.id === currentPlayer.id);
+                        serverPlayerData = gameStateData.state.players.find(p => 
+                            p.id === currentPlayer.id || 
+                            p.username === currentPlayer.username ||
+                            (currentPlayer.userId && p.userId === currentPlayer.userId)
+                        );
+                        
                         if (serverPlayerData) {
                             console.log('✅ BankModule: Данные игрока загружены с сервера:', {
                                 id: serverPlayerData.id,
                                 balance: serverPlayerData.balance || serverPlayerData.money,
-                                currentLoan: serverPlayerData.currentLoan
+                                currentLoan: serverPlayerData.currentLoan,
+                                username: serverPlayerData.username
                             });
                             
                             // Обновляем локальные данные игрока серверными данными
@@ -1221,6 +1252,12 @@ class BankModule {
                             if (this.gameState && typeof this.gameState.updatePlayer === 'function') {
                                 this.gameState.updatePlayer(currentPlayer.id, currentPlayer);
                             }
+                        } else {
+                            console.warn('⚠️ BankModule: Серверные данные игрока не найдены:', {
+                                searchId: currentPlayer.id,
+                                searchUsername: currentPlayer.username,
+                                availablePlayers: gameStateData.state.players.map(p => ({ id: p.id, username: p.username }))
+                            });
                         }
                     }
                 }
@@ -1229,17 +1266,24 @@ class BankModule {
             }
         }
         
+        // Убеждаемся, что у игрока есть правильные поля для баланса
+        const playerBalance = currentPlayer.balance ?? currentPlayer.money ?? currentPlayer.cash ?? 0;
+        currentPlayer.money = playerBalance;
+        currentPlayer.balance = playerBalance;
+        
         console.log('🏦 BankModule: Обновляем данные для пользователя:', {
             id: currentPlayer.id,
             username: currentPlayer.username,
-            money: currentPlayer.money
+            money: currentPlayer.money,
+            balance: currentPlayer.balance,
+            currentLoan: currentPlayer.currentLoan || 0
         });
         
         // Получаем данные профессии
-            const professionId = currentPlayer.profession || 'entrepreneur';
+        const professionId = currentPlayer.profession || 'entrepreneur';
         const professionDetails = this.professionSystem ? 
             this.professionSystem.getProfessionDetails(professionId, {
-                money: currentPlayer.money || 0,
+                money: playerBalance,
                 children: currentPlayer.children || 0,
                 paidOffLoans: currentPlayer.paidOffLoans || {},
                 extraIncome: currentPlayer.extraIncome || 0,
@@ -1247,31 +1291,52 @@ class BankModule {
                 otherMonthlyAdjustments: currentPlayer.otherMonthlyAdjustments || 0
             }) : null;
         
-        // Обновляем баланс
+        // Обновляем баланс с принудительным обновлением
         const balanceElement = this.ui.querySelector('#bank-balance');
         if (balanceElement) {
-            balanceElement.textContent = `$${this.formatNumber(currentPlayer.money || 0)}`;
+            const displayBalance = Math.max(0, playerBalance); // Убеждаемся, что баланс не отрицательный
+            balanceElement.textContent = `$${this.formatNumber(displayBalance)}`;
+            balanceElement.style.color = displayBalance >= 0 ? '#10b981' : '#ef4444'; // Зеленый/красный
+            console.log('💰 BankModule: Обновлен баланс:', displayBalance);
         }
         
         // Обновляем доходы (из профессии или из игрока)
         const incomeElement = this.ui.querySelector('#bank-income');
         if (incomeElement) {
-            const totalIncome = professionDetails ? professionDetails.income.total : (currentPlayer.totalIncome || 0);
+            let totalIncome = 0;
+            if (professionDetails && professionDetails.income) {
+                totalIncome = professionDetails.income.total || professionDetails.income.salary || 0;
+            } else {
+                totalIncome = currentPlayer.totalIncome || currentPlayer.salary || 0;
+            }
             incomeElement.textContent = `$${this.formatNumber(totalIncome)}`;
+            console.log('📈 BankModule: Обновлен доход:', totalIncome);
         }
         
         // Обновляем расходы (из профессии или из игрока)
         const expensesElement = this.ui.querySelector('#bank-expenses');
         if (expensesElement) {
-            const totalExpenses = professionDetails ? professionDetails.expenses.total : (currentPlayer.monthlyExpenses || 0);
+            let totalExpenses = 0;
+            if (professionDetails && professionDetails.expenses) {
+                totalExpenses = professionDetails.expenses.total || 0;
+            } else {
+                totalExpenses = currentPlayer.monthlyExpenses || 0;
+            }
             expensesElement.textContent = `$${this.formatNumber(totalExpenses)}`;
+            console.log('📉 BankModule: Обновлены расходы:', totalExpenses);
         }
         
         // Обновляем зарплату (из профессии или из игрока)
         const salaryElement = this.ui.querySelector('#bank-salary');
         if (salaryElement) {
-            const salary = professionDetails ? professionDetails.income.salary : (currentPlayer.salary || 0);
+            let salary = 0;
+            if (professionDetails && professionDetails.income) {
+                salary = professionDetails.income.salary || professionDetails.income.total || 0;
+            } else {
+                salary = currentPlayer.salary || currentPlayer.totalIncome || 0;
+            }
             salaryElement.textContent = `$${this.formatNumber(salary)}/мес`;
+            console.log('💰 BankModule: Обновлена зарплата:', salary);
         }
         
         // Обновляем кредит (текущий остаток)
@@ -1311,35 +1376,44 @@ class BankModule {
                 loanBalance.style.color = '#10b981'; // Зеленый для отсутствия кредита
                 loanBalance.style.fontWeight = 'normal';
             }
+            console.log('💳 BankModule: Обновлен баланс кредита:', currentLoan);
         }
         
         const loanMax = this.ui.querySelector('#loan-max');
         if (loanMax) {
             // Максимальный кредит = Чистый доход * 10
-            let netIncome = professionDetails?.netIncome?.netIncome || 0;
+            let netIncome = 0;
             
-            // Fallback: если чистый доход из профессии недоступен, вычисляем его из доходов и расходов
-            if (netIncome === 0 && professionDetails) {
-                const totalIncome = professionDetails.income?.total || 0;
+            // Пытаемся получить чистый доход из разных источников
+            if (professionDetails && professionDetails.netIncome) {
+                netIncome = professionDetails.netIncome.netIncome || 0;
+            } else if (professionDetails) {
+                const totalIncome = professionDetails.income?.total || professionDetails.income?.salary || 0;
                 const totalExpenses = professionDetails.expenses?.total || 0;
-                netIncome = totalIncome - totalExpenses;
+                netIncome = Math.max(0, totalIncome - totalExpenses);
             }
             
-            // Если все еще 0, пытаемся вычислить из элементов на странице
+            // Fallback: вычисляем из уже обновленных значений на странице
             if (netIncome === 0) {
-                const incomeElement = this.ui.querySelector('#bank-income');
-                const expensesElement = this.ui.querySelector('#bank-expenses');
-                
-                if (incomeElement && expensesElement) {
-                    const incomeText = incomeElement.textContent.replace(/[$,]/g, '');
-                    const expensesText = expensesElement.textContent.replace(/[$,]/g, '');
+                try {
+                    const incomeText = incomeElement?.textContent?.replace(/[$,]/g, '') || '0';
+                    const expensesText = expensesElement?.textContent?.replace(/[$,]/g, '') || '0';
                     const incomeValue = parseInt(incomeText) || 0;
                     const expensesValue = parseInt(expensesText) || 0;
-                    netIncome = incomeValue - expensesValue;
+                    netIncome = Math.max(0, incomeValue - expensesValue);
+                } catch (e) {
+                    console.warn('⚠️ BankModule: Ошибка вычисления чистого дохода:', e);
                 }
             }
             
-            const maxLoan = Math.max(netIncome * 10, 0);
+            // Дополнительный fallback: используем данные игрока напрямую
+            if (netIncome === 0 && currentPlayer) {
+                const playerIncome = currentPlayer.totalIncome || currentPlayer.salary || 0;
+                const playerExpenses = currentPlayer.monthlyExpenses || 0;
+                netIncome = Math.max(0, playerIncome - playerExpenses);
+            }
+            
+            const maxLoan = Math.max(netIncome * 10, 1000); // Минимум $1000 кредита
             loanMax.textContent = `$${this.formatNumber(maxLoan)}`;
             
             // Принудительно добавляем визуальное выделение
@@ -1350,14 +1424,26 @@ class BankModule {
                 netIncomeFromProfession: professionDetails?.netIncome?.netIncome || 0,
                 calculatedNetIncome: netIncome,
                 maxLoan: maxLoan,
+                playerIncome: currentPlayer.totalIncome || currentPlayer.salary || 0,
+                playerExpenses: currentPlayer.monthlyExpenses || 0,
                 textContent: loanMax.textContent
             });
         }
         
-        // Обновляем чистый доход
+        // Обновляем чистый доход с улучшенной логикой
         const netIncomeElement = this.ui.querySelector('#bank-net-income');
-        if (netIncomeElement && professionDetails) {
-            netIncomeElement.textContent = `$${this.formatNumber(professionDetails.netIncome.netIncome)}/мес`;
+        if (netIncomeElement) {
+            let netIncome = 0;
+            if (professionDetails && professionDetails.netIncome) {
+                netIncome = professionDetails.netIncome.netIncome || 0;
+            } else {
+                // Вычисляем чистый доход из доходов и расходов
+                const incomeValue = incomeElement ? parseInt(incomeElement.textContent.replace(/[$,]/g, '')) || 0 : 0;
+                const expensesValue = expensesElement ? parseInt(expensesElement.textContent.replace(/[$,]/g, '')) || 0 : 0;
+                netIncome = Math.max(0, incomeValue - expensesValue);
+            }
+            netIncomeElement.textContent = `$${this.formatNumber(netIncome)}/мес`;
+            console.log('💎 BankModule: Обновлен чистый доход:', netIncome);
         }
         
         // Обновляем детальную информацию о профессии
@@ -2348,3 +2434,4 @@ class BankModule {
 
 // Экспорт для глобального использования
 window.BankModule = BankModule;
+
