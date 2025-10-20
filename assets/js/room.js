@@ -268,12 +268,12 @@ function navigateToGameBoard(roomId) {
  * Запуск периодического обновления данных комнаты
  */
 function startRoomDataPolling() {
-    // Обновляем данные комнаты каждые 10 секунд (увеличено для уменьшения нагрузки)
+    // Обновляем данные комнаты каждые 30 секунд для снижения нагрузки
     setInterval(async () => {
         if (currentRoom && currentUser) {
             await refreshRoomData();
         }
-    }, 10000);
+    }, 30000);
     
     console.log('🔄 Room: Запущено периодическое обновление данных комнаты');
 }
@@ -312,6 +312,8 @@ function setupEventListeners() {
     const startGameButton = document.getElementById('start-game');
     if (startGameButton) {
         startGameButton.addEventListener('click', showStartGameModal);
+        // Скрываем кнопку по умолчанию до загрузки данных
+        startGameButton.style.display = 'none';
     }
     
     // Кнопка "Я готов к игре!"
@@ -441,9 +443,8 @@ async function loadRoomData() {
         
         if (!roomId) {
             showNotification('ID комнаты не указан', 'error');
-            setTimeout(() => {
-                window.location.href = 'rooms.html';
-            }, 2000);
+            // Мгновенный редирект без задержки для избежания проблем с памятью
+            window.location.href = 'rooms.html';
             return;
         }
         
@@ -500,9 +501,8 @@ async function loadRoomData() {
                 room = mockRoom;
             } else {
                 showNotification('Комната не найдена', 'error');
-                setTimeout(() => {
-                    window.location.href = 'rooms.html';
-                }, 2000);
+                // Мгновенный редирект без задержки для избежания проблем с памятью
+                window.location.href = 'rooms.html';
                 return;
             }
         }
@@ -747,10 +747,9 @@ function updateStartGameButton() {
     const startGameButton = document.getElementById('start-game');
     if (!startGameButton) return;
     
-    // Если нет данных о комнате или пользователе, показываем кнопку как неактивную
+    // Если нет данных о комнате или пользователе, скрываем кнопку
     if (!currentRoom || !currentUser) {
-        startGameButton.disabled = true;
-        startGameButton.textContent = '🚀 Начать игру';
+        startGameButton.style.display = 'none';
         return;
     }
     
@@ -793,12 +792,18 @@ function updateStartGameButton() {
         });
     }
     
-    startGameButton.disabled = !isHost || !canStart || currentRoom.isStarted;
+    // Скрываем кнопку полностью для не-хостов
+    if (!isHost) {
+        startGameButton.style.display = 'none';
+        return;
+    } else {
+        startGameButton.style.display = 'block';
+    }
+    
+    startGameButton.disabled = !canStart || currentRoom.isStarted;
     
     if (currentRoom.isStarted) {
         startGameButton.textContent = '🎮 Игра начата';
-    } else if (!isHost) {
-        startGameButton.textContent = '⏳ Ожидание хоста';
     } else if (!canStart) {
         startGameButton.textContent = `👥 Ждем готовности (${readyCount}/${playersCount})`;
     } else {

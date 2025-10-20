@@ -34,10 +34,10 @@ class BankPreview {
         
         // setupEventListeners будет вызван в render()
         
-        // Обновляем данные каждые 10 секунд (увеличили интервал с 5 сек до 10 сек)
+        // Обновляем данные каждые 30 секунд для снижения нагрузки
         this.updateInterval = setInterval(() => {
             this.updatePreviewData();
-        }, 10000);
+        }, 30000);
         
         // Следим за изменениями в контейнере (если CardDeckPanel перезаписывает содержимое)
         this.observeContainer();
@@ -134,11 +134,11 @@ class BankPreview {
                 this.updatePreviewData();
             });
             
-            // Подписываемся на события обновления карт, чтобы перерендерить превью
+            // Подписываемся на события обновления карт, чтобы перерендерить превью (убрана задержка)
             this.eventBus.on('cards:updated', () => {
-                setTimeout(() => {
+                requestAnimationFrame(() => {
                     this.render();
-                }, 100);
+                });
             });
         }
     }
@@ -479,14 +479,14 @@ class BankPreview {
             // Проверяем, не удалили ли наш элемент превью
             const hasPreview = this.container.querySelector('.bank-preview-card');
             if (!hasPreview && this.previewElement) {
-                // Debounce перерендер
+                // Debounce перерендер с requestAnimationFrame для лучшей производительности
                 if (this.renderDebounceTimer) {
-                    clearTimeout(this.renderDebounceTimer);
+                    cancelAnimationFrame(this.renderDebounceTimer);
                 }
-                this.renderDebounceTimer = setTimeout(() => {
+                this.renderDebounceTimer = requestAnimationFrame(() => {
                     this.render();
                     this.renderDebounceTimer = null;
-                }, 100);
+                });
             }
         });
         

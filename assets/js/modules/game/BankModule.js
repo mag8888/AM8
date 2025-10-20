@@ -1176,15 +1176,15 @@ class BankModule {
             // Принудительно обновляем UI элементы сразу
             this.forceUpdateBankUI(currentPlayer);
             
-            // Дополнительное обновление через небольшую задержку для надежности
-            setTimeout(async () => {
+            // Дополнительное обновление с requestAnimationFrame для лучшей производительности
+            requestAnimationFrame(async () => {
                 if (this.isOpen) {
                     console.log('🔄 BankModule: Выполняем дополнительное обновление данных...');
                     await this.updateBankData();
                     this.forceUpdateBankUI(currentPlayer);
                     console.log('✅ BankModule: Дополнительное обновление данных выполнено');
                 }
-            }, 500);
+            });
             
             console.log('🏦 BankModule: Открыт для пользователя:', currentPlayer.username);
         }
@@ -2287,13 +2287,12 @@ class BankModule {
             players = state.players || [];
             console.log('🔍 BankModule: Игроки из GameStateManager:', players);
             
-            // Если игроки пустые, ждем немного и пробуем еще раз
+            // Если игроки пустые, пробуем еще раз без задержки для лучшей производительности
             if (players.length === 0) {
-                console.log('🔍 BankModule: Игроки пустые, ждем обновления...');
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                console.log('🔍 BankModule: Игроки пустые, пробуем получить обновленное состояние...');
                 const updatedState = this.gameStateManager.getState();
                 players = updatedState.players || [];
-                console.log('🔍 BankModule: Игроки после ожидания:', players);
+                console.log('🔍 BankModule: Игроки после обновления:', players);
             }
         }
         

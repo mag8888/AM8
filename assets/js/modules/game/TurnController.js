@@ -160,9 +160,9 @@ class TurnController {
             container.appendChild(this.ui);
             console.log('🎮 TurnController: UI добавлен в контейнер:', container.tagName, container.id || container.className);
         } else {
-            // Если контейнеры не найдены, ждем и пробуем снова
-            console.log('🎮 TurnController: Контейнеры не найдены, повторная попытка через 100ms');
-            setTimeout(() => this.addUIToDOM(), 100);
+            // Если контейнеры не найдены, используем requestAnimationFrame для более эффективной проверки
+            console.log('🎮 TurnController: Контейнеры не найдены, повторная попытка через requestAnimationFrame');
+            requestAnimationFrame(() => this.addUIToDOM());
         }
     }
     
@@ -194,8 +194,8 @@ class TurnController {
             // Дополнительная диагностика - проверяем, есть ли другие контейнеры
             const allPanels = document.querySelectorAll('[id*="panel"], [class*="panel"]');
             console.log('🔍 Доступные панели:', Array.from(allPanels).map(el => ({ id: el.id, className: el.className })));
-            // Сокращаем задержку для ускорения инициализации
-            setTimeout(() => this.setupEventListeners(), 100);
+            // Используем requestAnimationFrame для более эффективной проверки
+            requestAnimationFrame(() => this.setupEventListeners());
             return;
         }
         
@@ -221,8 +221,8 @@ class TurnController {
             
             // Не повторяем, если превышен лимит попыток - проверка уже сделана в начале метода
             if (this._setupAttempts < 10) {
-                // Сокращаем задержку для ускорения инициализации
-                setTimeout(() => this.setupEventListeners(), 100);
+                // Используем requestAnimationFrame для более эффективной проверки
+                requestAnimationFrame(() => this.setupEventListeners());
             } else {
                 console.error(`❌ TurnController: Превышен лимит попыток поиска кнопки броска кубика (${this._setupAttempts}/10)`);
             }
@@ -255,8 +255,8 @@ class TurnController {
             console.warn(`⚠️ TurnController: Кнопка передачи хода не найдена (попытка ${this._setupAttempts}/10)`);
             // Не повторяем, если превышен лимит попыток - проверка уже сделана в начале метода
             if (this._setupAttempts < 10) {
-                // Сокращаем задержку для ускорения инициализации
-                setTimeout(() => this.setupEventListeners(), 100);
+                // Используем requestAnimationFrame для более эффективной проверки
+                requestAnimationFrame(() => this.setupEventListeners());
             } else {
                 console.error(`❌ TurnController: Превышен лимит попыток поиска кнопки передачи хода (${this._setupAttempts}/10)`);
             }

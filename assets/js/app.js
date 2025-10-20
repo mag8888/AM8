@@ -830,8 +830,8 @@ class App {
             console.log('🃏 App: CardDeckPanel данные обновлены');
         }
         
-        // Проверяем, что контейнер не пустой
-        setTimeout(() => {
+        // Проверяем, что контейнер не пустой (убрана задержка для немедленной проверки)
+        requestAnimationFrame(() => {
             const containerContent = container.innerHTML.trim();
             console.log('🎯 App: Проверка содержимого левой панели:', {
                 containerExists: !!container,
@@ -840,7 +840,7 @@ class App {
                 previewExists: !!container.querySelector('.bank-preview-card'),
                 cardsExist: !!container.querySelector('.card-deck-card')
             });
-        }, 500);
+        });
     }
 
     /**
@@ -986,13 +986,10 @@ class App {
                 eventBus: this.services.get('eventBus')
             });
             
-            // Вызываем init() для правильной инициализации TurnController
+            // Вызываем init() для правильной инициализации TurnController (убрана задержка)
             if (typeof turnController.init === 'function') {
-                // Добавляем небольшую задержку для PlayersPanel
-                setTimeout(() => {
-                    turnController.init();
-                    console.log('🎯 TurnController: init() вызван (_initGameModules)');
-                }, 50);
+                turnController.init();
+                console.log('🎯 TurnController: init() вызван (_initGameModules)');
             }
             if (typeof playersPanel.setupEventListeners === 'function') {
                 playersPanel.setupEventListeners();
