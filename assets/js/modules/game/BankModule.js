@@ -2086,6 +2086,12 @@ class BankModule {
      * Получение текущего пользователя (синхронная версия)
      */
     getCurrentUser() {
+        // Используем общую утилиту, если доступна
+        if (window.CommonUtils) {
+            return window.CommonUtils.getCurrentUser();
+        }
+        
+        // Fallback - старая логика для обратной совместимости
         try {
             // Пытаемся получить из localStorage
             const token = localStorage.getItem('authToken');
@@ -2383,9 +2389,14 @@ class BankModule {
     }
     
     /**
-     * Форматирование чисел
+     * Форматирование чисел (использует CommonUtils)
      */
     formatNumber(num) {
+        // Используем общую утилиту, если доступна
+        if (window.CommonUtils) {
+            return window.CommonUtils.formatNumber(num);
+        }
+        // Fallback для обратной совместимости
         return new Intl.NumberFormat('ru-RU').format(num);
     }
     
