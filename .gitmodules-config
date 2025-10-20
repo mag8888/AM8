@@ -1,0 +1,31 @@
+# Конфигурация для работы с микромодулями
+# Добавьте эти алиасы в ваш .gitconfig
+
+[alias]
+    # Список всех модулей
+    mod-list = "!bash scripts/module-manager.sh list"
+    
+    # Зафиксировать модуль с сообщением
+    mod-commit = "!bash scripts/module-manager.sh commit"
+    
+    # Отправить модуль в ветку
+    mod-push = "!bash scripts/module-manager.sh push"
+    
+    # Восстановить модуль из ветки
+    mod-restore = "!bash scripts/module-manager.sh restore"
+    
+    # Переключиться на ветку модуля
+    mod-switch = "!bash scripts/module-manager.sh switch"
+    
+    # Статус модуля
+    mod-status = "!bash scripts/module-manager.sh status"
+    
+    # Создать ветку для модуля
+    mod-branch = "!bash scripts/module-manager.sh create-branch"
+
+# Примеры использования:
+# git mod-list
+# git mod-commit BankModule "Исправление отображения данных"
+# git mod-push BankModule
+# git mod-restore Logger
+# git mod-status TurnController
