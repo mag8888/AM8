@@ -396,97 +396,93 @@ class TurnController {
     }
     
     /**
+     * Проверка, является ли текущий пользователь активным игроком
+     * @param {Object} state - Состояние игры
+     * @returns {boolean} true, если это ход текущего пользователя
+     */
+    isMyTurnCheck(state) {
+        if (window.CommonUtils) {
+            return window.CommonUtils.isMyTurn(state.activePlayer);
+        }
+        
+        // Fallback - старая логика
+        const currentUserId = this.getCurrentUserId();
+        const currentUsername = this.getCurrentUsername();
+        return state.activePlayer && (
+            state.activePlayer.id === currentUserId ||
+            (state.activePlayer.username && currentUsername && state.activePlayer.username === currentUsername)
+        );
+    }
+
+    /**
+     * Обновление элемента turnInfo с устранением дублирования
+     * @param {HTMLElement} turnInfo - Элемент для обновления
+     * @param {Object} state - Состояние игры
+     */
+    updateTurnInfoElement(turnInfo, state) {
+        const isMyTurn = this.isMyTurnCheck(state);
+        const playerToken = this.getPlayerToken(state.activePlayer);
+        
+        if (isMyTurn) {
+            turnInfo.innerHTML = `${playerToken} 🎯 ВАШ ХОД`;
+            turnInfo.classList.add('my-turn');
+            turnInfo.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+            turnInfo.style.animation = 'pulse 2s infinite';
+        } else if (state.activePlayer) {
+            turnInfo.innerHTML = `${playerToken} Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
+            turnInfo.classList.remove('my-turn');
+            turnInfo.style.background = 'rgba(255,255,255,0.08)';
+            turnInfo.style.animation = 'none';
+        } else {
+            turnInfo.innerHTML = '⏳ Ожидание...';
+            turnInfo.classList.remove('my-turn');
+            turnInfo.style.background = 'rgba(255,255,255,0.08)';
+            turnInfo.style.animation = 'none';
+        }
+        
+        // Обновляем кнопку броска кубика
+        this.updateRollButton(state, isMyTurn);
+    }
+
+    /**
+     * Обновление кнопки броска кубика
+     * @param {Object} state - Состояние игры
+     * @param {boolean} isMyTurn - Мой ли это ход
+     */
+    updateRollButton(state, isMyTurn) {
+        const rollBtn = this.safeQuerySelector('.btn-dice');
+        if (!rollBtn) return;
+        
+        if (isMyTurn) {
+            rollBtn.classList.add('my-turn');
+            rollBtn.style.boxShadow = '0 0 0 2px rgba(34,197,94,0.35), 0 10px 22px rgba(34,197,94,0.45)';
+            rollBtn.disabled = !state.canRoll || this.isRolling;
+        } else {
+            rollBtn.classList.remove('my-turn');
+            rollBtn.style.boxShadow = '';
+            rollBtn.disabled = true; // Не мой ход - кнопка неактивна
+        }
+    }
+
+    /**
      * Обновление информации о ходе
      * @param {Object} state - Состояние игры
      */
     updateTurnInfo(state) {
-        // Проверяем, что UI доступен
-        if (!this.ui) {
-            // Пытаемся найти элементы напрямую в DOM как fallback
-            const turnInfo = document.querySelector('.turn-info');
-            if (!turnInfo) {
-                return; // Элемент не найден, выходим
-            }
-            
-            // Обновляем найденный элемент напрямую с помощью существующей логики
-            const currentUserId = this.getCurrentUserId();
-            const currentUsername = this.getCurrentUsername();
-            const isMyTurn = state.activePlayer && (
-                state.activePlayer.id === currentUserId ||
-                (state.activePlayer.username && currentUsername && state.activePlayer.username === currentUsername)
-            );
-            const playerToken = this.getPlayerToken(state.activePlayer);
-            
-            if (isMyTurn) {
-                turnInfo.innerHTML = `${playerToken} 🎯 ВАШ ХОД`;
-                turnInfo.classList.add('my-turn');
-                turnInfo.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
-                turnInfo.style.animation = 'pulse 2s infinite';
-            } else if (state.activePlayer) {
-                turnInfo.innerHTML = `${playerToken} Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
-                turnInfo.classList.remove('my-turn');
-                turnInfo.style.background = 'rgba(255,255,255,0.08)';
-                turnInfo.style.animation = 'none';
-            } else {
-                turnInfo.innerHTML = '⏳ Ожидание...';
-                turnInfo.classList.remove('my-turn');
-                turnInfo.style.background = 'rgba(255,255,255,0.08)';
-                turnInfo.style.animation = 'none';
-            }
-            return;
+        // Ищем элемент turnInfo в UI или в документе
+        let turnInfo = null;
+        if (this.ui) {
+            turnInfo = this.ui.querySelector('.turn-info');
+        } else {
+            turnInfo = document.querySelector('.turn-info');
         }
         
-        const turnInfo = this.ui.querySelector('.turn-info');
-        if (turnInfo) {
-            const currentUserId = this.getCurrentUserId();
-            const currentUsername = this.getCurrentUsername();
-            const isMyTurn = state.activePlayer && (
-                state.activePlayer.id === currentUserId ||
-                (state.activePlayer.username && currentUsername && state.activePlayer.username === currentUsername)
-            );
-            const playerToken = this.getPlayerToken(state.activePlayer);
-            
-            // Обновляем информацию о ходе
-            if (isMyTurn) {
-                turnInfo.innerHTML = `${playerToken} 🎯 ВАШ ХОД`;
-                turnInfo.classList.add('my-turn');
-                turnInfo.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
-                turnInfo.style.animation = 'pulse 2s infinite';
-                
-                // Подсвечиваем кнопку броска и делаем активной
-                const rollBtn = this.safeQuerySelector('.btn-dice');
-                if (rollBtn) {
-                    rollBtn.classList.add('my-turn');
-                    rollBtn.style.boxShadow = '0 0 0 2px rgba(34,197,94,0.35), 0 10px 22px rgba(34,197,94,0.45)';
-                    rollBtn.disabled = !state.canRoll || this.isRolling;
-                }
-            } else if (state.activePlayer) {
-                turnInfo.innerHTML = `${playerToken} Ход ${PlayerStatusUtils.getPlayerDisplayName(state.activePlayer)}`;
-                turnInfo.classList.remove('my-turn');
-                turnInfo.style.background = 'rgba(255,255,255,0.08)';
-                turnInfo.style.animation = 'none';
-                
-                // Убираем подсветку кнопки и делаем неактивной
-                const rollBtn = this.safeQuerySelector('.btn-dice');
-                if (rollBtn) {
-                    rollBtn.classList.remove('my-turn');
-                    rollBtn.style.boxShadow = '';
-                    rollBtn.disabled = true; // Не мой ход - кнопка неактивна
-                }
-            } else {
-                turnInfo.innerHTML = '⏳ Ожидание...';
-                turnInfo.classList.remove('my-turn');
-                turnInfo.style.background = 'rgba(255,255,255,0.08)';
-                turnInfo.style.animation = 'none';
-                
-                const rollBtn = this.safeQuerySelector('.btn-dice');
-                if (rollBtn) {
-                    rollBtn.classList.remove('my-turn');
-                    rollBtn.style.boxShadow = '';
-                    rollBtn.disabled = true; // Ожидание - кнопка неактивна
-                }
-            }
+        if (!turnInfo) {
+            return; // Элемент не найден, выходим
         }
+        
+        // Используем общий метод обновления элемента
+        this.updateTurnInfoElement(turnInfo, state);
         
         // Обновляем визуальную индикацию в списке игроков
         this.updatePlayersTurnIndicators(state);
@@ -499,6 +495,7 @@ class TurnController {
     updatePlayersTurnIndicators(state) {
         if (!this.playerList) return;
         
+        // Используем общие утилиты, если доступны
         const currentUserId = this.getCurrentUserId();
         const currentUsername = this.getCurrentUsername();
         
@@ -620,6 +617,12 @@ class TurnController {
      * @returns {string|null} ID пользователя
      */
     getCurrentUserId() {
+        // Используем общую утилиту, если доступна
+        if (window.CommonUtils) {
+            return window.CommonUtils.getCurrentUserId();
+        }
+        
+        // Fallback - старая логика для обратной совместимости
         try {
             // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
@@ -645,6 +648,12 @@ class TurnController {
      * Получение username текущего пользователя (fallback для сравнения активного хода)
      */
     getCurrentUsername() {
+        // Используем общую утилиту, если доступна
+        if (window.CommonUtils) {
+            return window.CommonUtils.getCurrentUsername();
+        }
+        
+        // Fallback - старая логика для обратной совместимости
         try {
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
@@ -1022,11 +1031,22 @@ class TurnController {
      * @returns {Element|null}
      */
     safeQuerySelector(selector) {
-        if (!this.ui) {
-            // Fallback: поиск по всему документу
-            return document.querySelector(selector);
+        // Используем общую утилиту, если доступна
+        if (window.CommonUtils) {
+            const context = this.ui || document;
+            return window.CommonUtils.safeQuerySelector(selector, context);
         }
-        return this.ui.querySelector(selector);
+        
+        // Fallback - старая логика для обратной совместимости
+        try {
+            if (!this.ui) {
+                return document.querySelector(selector);
+            }
+            return this.ui.querySelector(selector);
+        } catch (error) {
+            console.warn('TurnController: Ошибка поиска элемента:', selector, error);
+            return null;
+        }
     }
     
     /**
