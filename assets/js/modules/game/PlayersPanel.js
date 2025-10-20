@@ -74,8 +74,8 @@ class PlayersPanel {
             return; // Уже создан
         }
         
-        // Делаем создание неблокирующим
-        requestAnimationFrame(() => {
+        // Создаем BankModule немедленно без задержки для ускорения
+        (() => {
             if (window.BankModuleServer) {
                 try {
                     const app = window.app;
@@ -207,7 +207,15 @@ class PlayersPanel {
     render() {
         if (!this.container) return;
         
-        this.container.innerHTML = `
+        // Оптимизация: проверяем, нужно ли обновлять DOM
+        if (this._lastRenderContent) {
+            return; // Уже отрендерено
+        }
+        
+        // Используем DocumentFragment для ускорения DOM операций
+        const fragment = document.createDocumentFragment();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = `
             <div class="game-right-panel">
                 <!-- Заголовок панели -->
                 <div class="panel-header">
@@ -311,13 +319,20 @@ class PlayersPanel {
             </div>
         `;
         
+        // Перемещаем содержимое в fragment для ускорения
+        fragment.appendChild(tempDiv.firstElementChild);
+        this.container.appendChild(fragment);
+        
+        // Отмечаем, что рендер выполнен
+        this._lastRenderContent = true;
+        
         // Добавляем новые стили
         this.addNewStyles();
         
         // Настраиваем обработчики
         this.setupControls();
         
-        console.log('✅ PlayersPanel v3.0: Новый дизайн отрендерен');
+        console.log('✅ PlayersPanel v3.0: Новый дизайн отрендерен (оптимизированно)');
     }
     
     /**
@@ -558,12 +573,17 @@ class PlayersPanel {
         }
         
         if (roomId) {
+            // Отменяем предыдущий запрос если есть
+            if (this._currentAbortController) {
+                this._currentAbortController.abort();
+            }
+            
             // Предзагружаем данные с более коротким таймаутом для ускорения
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 секунды вместо 5
+            this._currentAbortController = new AbortController();
+            const timeoutId = setTimeout(() => this._currentAbortController.abort(), 3000); // 3 секунды вместо 5
             
             fetch(`/api/rooms/${roomId}/game-state`, {
-                signal: controller.signal,
+                signal: this._currentAbortController.signal,
                 headers: {
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache'
@@ -935,8 +955,8 @@ class PlayersPanel {
      * Открытие банк модуля
      */
     openBankModule() {
-        // Делаем открытие неблокирующим
-        requestAnimationFrame(async () => {
+        // Убираем requestAnimationFrame для ускорения открытия банка
+        (async () => {
             try {
                 // Используем уже созданный BankModule
                 if (this.bankModule) {
@@ -946,11 +966,10 @@ class PlayersPanel {
                     console.warn('⚠️ PlayersPanel: BankModule не создан, создаем...');
                     this.createBankModule();
                     
-                    // Ждем создания BankModule
-                    let attempts = 0;
-                    while (!this.bankModule && attempts < 20) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        attempts++;
+                    // Создаем BankModule синхронно для ускорения
+                    if (!this.bankModule) {
+                        // Прямое создание без ожидания
+                        this.createBankModule();
                     }
                     
                     if (this.bankModule) {
@@ -962,7 +981,7 @@ class PlayersPanel {
             } catch (error) {
                 console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
             }
-        });
+        })();
     }
     
     /**
@@ -2439,10 +2458,55 @@ class PlayersPanel {
     }
     
     /**
-     * Уничтожение компонента
+     * Уничтожение компонента с полной очисткой памяти
      */
     destroy() {
-        console.log('👥 PlayersPanel v2.0: Уничтожен');
+        console.log('👥 PlayersPanel v2.0: Уничтожение с очисткой памяти...');
+        
+        // Очищаем все таймеры
+        if (this.timerId) {
+            clearTimeout(this.timerId);
+            this.timerId = null;
+        }
+        
+        if (this._rollingTimer) {
+            clearInterval(this._rollingTimer);
+            this._rollingTimer = null;
+        }
+        
+        // Отменяем текущие запросы
+        if (this._currentAbortController) {
+            this._currentAbortController.abort();
+            this._currentAbortController = null;
+        }
+        
+        // Очищаем кэш
+        if (this._playersCache) {
+            this._playersCache.clear();
+            this._playersCache = null;
+        }
+        
+        // Уничтожаем BankModule
+        if (this.bankModule && typeof this.bankModule.destroy === 'function') {
+            this.bankModule.destroy();
+            this.bankModule = null;
+        }
+        
+        // Отписываемся от событий
+        if (this.eventBus) {
+            this.eventBus.off('game:started');
+            this.eventBus.off('game:playersUpdated');
+            this.eventBus.off('game:turnChanged');
+            this.eventBus.off('dice:rolled');
+        }
+        
+        // Очищаем ссылки
+        this.container = null;
+        this.gameStateManager = null;
+        this.eventBus = null;
+        this.playerList = null;
+        
+        console.log('✅ PlayersPanel v2.0: Полностью очищен');
     }
 }
 

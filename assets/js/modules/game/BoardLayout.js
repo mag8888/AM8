@@ -98,8 +98,13 @@ class BoardLayout {
         const outerFragment = document.createDocumentFragment();
         const innerFragment = document.createDocumentFragment();
 
-        this.outerTrackElement.innerHTML = '';
-        this.innerTrackElement.innerHTML = '';
+        // Оптимизация: очищаем через removeChild вместо innerHTML для ускорения
+        while (this.outerTrackElement.firstChild) {
+            this.outerTrackElement.removeChild(this.outerTrackElement.firstChild);
+        }
+        while (this.innerTrackElement.firstChild) {
+            this.innerTrackElement.removeChild(this.innerTrackElement.firstChild);
+        }
 
         for (let i = 0; i < this.outerCellsConfig.length; i += 1) {
             const cell = this.createCell(i, false);
