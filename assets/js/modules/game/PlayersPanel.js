@@ -478,6 +478,10 @@ class PlayersPanel {
         })
             .then(response => {
                 if (!response.ok) {
+                    if (response.status === 429) {
+                        console.warn('⚠️ PlayersPanel: HTTP 429, пропускаем запрос');
+                        throw new Error('RATE_LIMITED'); // Специальная ошибка для rate limit
+                    }
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 return response.json();
@@ -514,6 +518,11 @@ class PlayersPanel {
             .catch(err => {
                 // Игнорируем ошибки отмены запроса
                 if (err.name === 'AbortError') {
+                    return;
+                }
+                // Игнорируем ошибки rate limit
+                if (err.message === 'RATE_LIMITED') {
+                    console.log('⚠️ PlayersPanel: Пропущен запрос из-за rate limit');
                     return;
                 }
                 console.error('❌ PlayersPanel: Ошибка принудительной загрузки игроков:', err);
@@ -563,6 +572,10 @@ class PlayersPanel {
                 if (response.ok) {
                     return response.json();
                 }
+                if (response.status === 429) {
+                    console.warn('⚠️ PlayersPanel: HTTP 429 при предзагрузке, пропускаем');
+                    throw new Error('RATE_LIMITED');
+                }
                 throw new Error(`HTTP ${response.status}`);
             })
             .then(data => {
@@ -575,7 +588,7 @@ class PlayersPanel {
             })
             .catch(err => {
                 clearTimeout(timeoutId);
-                if (err.name !== 'AbortError') {
+                if (err.name !== 'AbortError' && err.message !== 'RATE_LIMITED') {
                     console.warn('⚠️ PlayersPanel: Ошибка предзагрузки данных:', err);
                 }
             });

@@ -55,9 +55,9 @@ class RoomService {
         // Rate limiting для предотвращения HTTP 429
         this.requestQueue = {
             lastRequest: 0,
-            minInterval: 2000, // Минимум 2 секунды между запросами
-            backoffMultiplier: 2,
-            maxBackoff: 30000, // Максимум 30 секунд
+            minInterval: 5000, // Увеличиваем до 5 секунд между запросами
+            backoffMultiplier: 1.5, // Более мягкое увеличение
+            maxBackoff: 60000, // Максимум 60 секунд
             currentBackoff: 0,
             rateLimitedUntil: 0
         };

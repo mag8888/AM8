@@ -32,7 +32,7 @@
             this.eventBus = config.eventBus || null;
             this.refreshInterval = typeof config.refreshInterval === 'number'
                 ? config.refreshInterval
-                : 45000;
+                : 120000; // Увеличиваем до 2 минут для уменьшения нагрузки
 
             this.container = null;
             this.abortController = null;
@@ -147,7 +147,14 @@
 
                 if (response.status === 429) {
                     const retryAfter = this._applyRateLimitFromResponse(response);
-                    const error = new Error(`Не удалось загрузить карточные колоды (HTTP 429)`);
+                    console.warn('⚠️ CardDeckPanel: HTTP 429, используем кэшированные данные');
+                    // Не показываем ошибку пользователю, используем кэшированные данные
+                    if (this.lastKnownDecks.length) {
+                        this.renderDecks(this.lastKnownDecks);
+                        return;
+                    }
+                    // Если нет кэшированных данных, создаем минимальную ошибку
+                    const error = new Error(`Слишком много запросов, попробуйте позже`);
                     error.isRateLimit = true;
                     error.retryAfter = retryAfter;
                     throw error;
