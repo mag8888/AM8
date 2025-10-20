@@ -414,10 +414,20 @@ class AuthService {
      */
     storeAuth(token, user, remember = false) {
         try {
-            const storage = remember ? localStorage : sessionStorage;
-            
-            storage.setItem(this.tokenKey, token);
-            storage.setItem(this.userKey, JSON.stringify(user));
+            const primaryStorage = remember ? localStorage : sessionStorage;
+            const secondaryStorage = remember ? sessionStorage : localStorage;
+
+            primaryStorage.setItem(this.tokenKey, token);
+            primaryStorage.setItem(this.userKey, JSON.stringify(user));
+
+            // Удаляем устаревшие записи из альтернативного хранилища,
+            // чтобы избежать конфликтов между режимами "запомнить меня" и сессией
+            try {
+                secondaryStorage.removeItem(this.tokenKey);
+                secondaryStorage.removeItem(this.userKey);
+            } catch (cleanupError) {
+                console.warn('⚠️ AuthService: Не удалось очистить альтернативное хранилище', cleanupError);
+            }
             
             console.log('💾 AuthService: Данные авторизации сохранены');
         } catch (error) {

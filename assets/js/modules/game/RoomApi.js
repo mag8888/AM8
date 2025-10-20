@@ -14,7 +14,7 @@ class RoomApi {
         this.pendingRequests = new Map();
 
         // Глобальный контроль частоты запросов к API комнаты
-        this.minInterval = 2000; // минимум 2 секунды между запросами
+        this.minInterval = 150; // минимальная пауза между запросами
         this.lastRequestAt = 0;
         this.rateLimitUntil = 0;
         this.rateLimitBackoff = 0;
@@ -26,14 +26,36 @@ class RoomApi {
      * Получение заголовков с авторизацией
      */
     getHeaders() {
-        const token = localStorage.getItem('aura_money_token');
-        const userId = localStorage.getItem('aura_money_user_id');
-        
-        return {
-            ...this.headers,
-            'Authorization': `Bearer ${token}`,
-            'x-user-id': userId
+        const token =
+            localStorage.getItem('aura_money_token') ||
+            sessionStorage.getItem('aura_money_token');
+
+        let userId = null;
+        try {
+            const storedUser =
+                localStorage.getItem('aura_money_user') ||
+                sessionStorage.getItem('aura_money_user');
+            if (storedUser) {
+                const parsed = JSON.parse(storedUser);
+                userId = parsed?.id || parsed?.userId || null;
+            }
+        } catch (error) {
+            console.warn('RoomApi: Не удалось получить пользователя из storage', error);
+        }
+
+        const headers = {
+            ...this.headers
         };
+
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+
+        if (userId) {
+            headers['x-user-id'] = userId;
+        }
+
+        return headers;
     }
     
     /**
@@ -75,48 +97,6 @@ class RoomApi {
             }
             throw error;
         }
-    }
-    
-    /**
-     * Бросок кубика
-     * @param {string} roomId - ID комнаты
-     * @param {string} diceChoice - 'single' или 'double'
-     * @param {boolean} isReroll - Повторный бросок
-     * @returns {Promise<Object>} Результат броска
-     */
-    async rollDice(roomId, diceChoice = 'single', isReroll = false) {
-        const endpoint = `/${roomId}/roll`;
-        const body = {
-            diceChoice,
-            isReroll
-        };
-        
-        console.log(`🎲 RoomApi: Бросок кубика в комнате ${roomId}`);
-        
-        return await this.request(endpoint, {
-            method: 'POST',
-            body: JSON.stringify(body)
-        });
-    }
-    
-    /**
-     * Перемещение игрока
-     * @param {string} roomId - ID комнаты
-     * @param {number} steps - Количество шагов
-     * @returns {Promise<Object>} Результат перемещения
-     */
-    async move(roomId, steps) {
-        const endpoint = `/${roomId}/move`;
-        const body = {
-            steps
-        };
-        
-        console.log(`🚶 RoomApi: Перемещение на ${steps} шагов в комнате ${roomId}`);
-        
-        return await this.request(endpoint, {
-            method: 'POST',
-            body: JSON.stringify(body)
-        });
     }
     
     /**
@@ -409,6 +389,34 @@ class RoomApi {
     // Обратная совместимость (если где-то вызывается movePlayer)
     async movePlayer(roomId, steps) {
         return this.move(roomId, steps);
+    }
+
+    /**
+     * Отправка push-уведомления для комнаты
+     * @param {string} roomId
+     * @param {Object} notification
+     * @returns {Promise<Object>}
+     */
+    async sendNotification(roomId, notification) {
+        if (!roomId || !notification) {
+            throw new Error('RoomApi.sendNotification: invalid parameters');
+        }
+
+        const endpoint = `/${roomId}/notifications`;
+        
+        return await this.request(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(notification)
+        });
+    }
+
+    /**
+     * Алиас для getGameState для обратной совместимости
+     * @param {string} roomId
+     * @returns {Promise<Object>}
+     */
+    async getRoomState(roomId) {
+        return this.getGameState(roomId);
     }
 }
 
