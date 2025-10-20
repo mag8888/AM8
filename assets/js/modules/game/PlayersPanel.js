@@ -21,10 +21,14 @@ class PlayersPanel {
         // Кэш для данных игроков для ускорения загрузки
         this._playersCache = new Map();
         this._lastFetchTime = 0;
-        this._cacheTimeout = 2000; // 2 секунды кэш
+        this._cacheTimeout = 5000; // Увеличиваем до 5 секунд для снижения нагрузки
         
         // AbortController для отмены предыдущих запросов
         this._currentAbortController = null;
+        
+        // Rate limiting для предотвращения 429 ошибок
+        this._lastApiRequestTime = 0;
+        this._minRequestInterval = 3000; // Минимум 3 секунды между запросами
         
         console.log('👥 PlayersPanel v2.0: Инициализация');
         this.init();
@@ -458,6 +462,15 @@ class PlayersPanel {
      * Фоновое обновление данных игроков для кэша
      */
     _fetchPlayersInBackground(roomId) {
+        // Проверяем rate limiting перед запросом
+        const now = Date.now();
+        if (now - this._lastApiRequestTime < this._minRequestInterval) {
+            console.log('🚫 PlayersPanel: Пропускаем фоновый запрос из-за rate limiting');
+            return;
+        }
+        
+        this._lastApiRequestTime = now;
+        
         fetch(`/api/rooms/${roomId}/game-state`)
             .then(response => {
                 if (response.ok) {
@@ -482,6 +495,13 @@ class PlayersPanel {
      * Основная загрузка игроков с API
      */
     _fetchPlayersFromAPI(roomId) {
+        // Проверяем rate limiting перед запросом
+        const now = Date.now();
+        if (now - this._lastApiRequestTime < this._minRequestInterval) {
+            console.log('🚫 PlayersPanel: Пропускаем основной запрос из-за rate limiting');
+            return;
+        }
+        
         // Отменяем предыдущий запрос если он есть
         if (this._currentAbortController) {
             this._currentAbortController.abort();
@@ -489,6 +509,7 @@ class PlayersPanel {
         
         // Создаем новый AbortController
         this._currentAbortController = new AbortController();
+        this._lastApiRequestTime = now;
         
         fetch(`/api/rooms/${roomId}/game-state`, {
             signal: this._currentAbortController.signal
@@ -573,6 +594,13 @@ class PlayersPanel {
         }
         
         if (roomId) {
+            // Проверяем rate limiting перед запросом
+            const now = Date.now();
+            if (now - this._lastApiRequestTime < this._minRequestInterval) {
+                console.log('🚫 PlayersPanel: Пропускаем предзагрузку из-за rate limiting');
+                return;
+            }
+            
             // Отменяем предыдущий запрос если есть
             if (this._currentAbortController) {
                 this._currentAbortController.abort();
@@ -580,6 +608,7 @@ class PlayersPanel {
             
             // Предзагружаем данные с более коротким таймаутом для ускорения
             this._currentAbortController = new AbortController();
+            this._lastApiRequestTime = now;
             const timeoutId = setTimeout(() => this._currentAbortController.abort(), 3000); // 3 секунды вместо 5
             
             fetch(`/api/rooms/${roomId}/game-state`, {

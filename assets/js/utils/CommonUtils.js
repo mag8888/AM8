@@ -218,6 +218,37 @@ class CommonUtils {
         temp.textContent = html;
         return temp.innerHTML;
     }
+
+    /**
+     * Глобальный rate limiter для API запросов
+     * Предотвращает 429 ошибки от слишком частых запросов
+     */
+    static rateLimiter = {
+        _lastRequestTime: 0,
+        _minInterval: 2000, // Минимальный интервал 2 секунды
+        
+        canMakeRequest() {
+            const now = Date.now();
+            if (now - this._lastRequestTime >= this._minInterval) {
+                this._lastRequestTime = now;
+                return true;
+            }
+            return false;
+        },
+        
+        setInterval(ms) {
+            this._minInterval = ms;
+        }
+    };
+
+    /**
+     * Проверка возможности сделать API запрос без превышения rate limit
+     * @param {number} minInterval - Минимальный интервал в миллисекундах
+     * @returns {boolean} true если можно делать запрос
+     */
+    static canMakeApiRequest(minInterval = 2000) {
+        return this.rateLimiter.canMakeRequest();
+    }
 }
 
 // Экспорт для использования в других модулях
