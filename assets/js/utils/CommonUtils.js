@@ -249,6 +249,59 @@ class CommonUtils {
     static canMakeApiRequest(minInterval = 2000) {
         return this.rateLimiter.canMakeRequest();
     }
+
+    /**
+     * Специальный rate limiter для game-state endpoint
+     * Предотвращает множественные одновременные запросы к game-state
+     */
+    static gameStateLimiter = {
+        _lastRequestTime: 0,
+        _minInterval: 3000, // Минимальный интервал 3 секунды для game-state
+        _pendingRequests: new Map(),
+        
+        canMakeRequest(roomId = 'default') {
+            const now = Date.now();
+            const key = `gamestate_${roomId}`;
+            
+            // Проверяем, не выполняется ли уже запрос для этой комнаты
+            if (this._pendingRequests.has(key)) {
+                console.log(`⏳ GameStateLimiter: Запрос уже выполняется для комнаты ${roomId}`);
+                return false;
+            }
+            
+            // Проверяем временной интервал
+            if (now - this._lastRequestTime < this._minInterval) {
+                console.log(`⏳ GameStateLimiter: Слишком рано для запроса к game-state (${now - this._lastRequestTime}ms < ${this._minInterval}ms)`);
+                return false;
+            }
+            
+            this._lastRequestTime = now;
+            return true;
+        },
+        
+        setRequestPending(roomId = 'default') {
+            const key = `gamestate_${roomId}`;
+            this._pendingRequests.set(key, Date.now());
+        },
+        
+        clearRequestPending(roomId = 'default') {
+            const key = `gamestate_${roomId}`;
+            this._pendingRequests.delete(key);
+        },
+        
+        setInterval(ms) {
+            this._minInterval = ms;
+        }
+    };
+
+    /**
+     * Проверка возможности сделать запрос к game-state endpoint
+     * @param {string} roomId - ID комнаты для уникального ключа
+     * @returns {boolean} true если можно делать запрос
+     */
+    static canMakeGameStateRequest(roomId = 'default') {
+        return this.gameStateLimiter.canMakeRequest(roomId);
+    }
 }
 
 // Экспорт для использования в других модулях

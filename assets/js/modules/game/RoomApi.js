@@ -132,6 +132,16 @@ class RoomApi {
             return cached.data;
         }
         
+        // Проверяем глобальный rate limiter для game-state
+        if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
+            console.log(`📊 RoomApi: Пропускаем запрос к game-state из-за глобального rate limiting для ${roomId}`);
+            // Возвращаем кэшированные данные если они есть
+            if (cached) {
+                return cached.data;
+            }
+            throw new Error('Rate limited');
+        }
+        
         // Защита от множественных одновременных запросов
         const pendingKey = `getGameState_${roomId}`;
         if (this.pendingRequests.has(pendingKey)) {
@@ -141,6 +151,11 @@ class RoomApi {
         
         console.log(`📊 RoomApi: Получение состояния игры в комнате ${roomId}`);
         
+        // Устанавливаем флаг pending в глобальном limiter
+        if (window.CommonUtils) {
+            window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+        }
+        
         const requestPromise = this._executeGameStateRequest(endpoint, cacheKey, cached, now);
         this.pendingRequests.set(pendingKey, requestPromise);
         
@@ -149,6 +164,10 @@ class RoomApi {
             return result;
         } finally {
             this.pendingRequests.delete(pendingKey);
+            // Очищаем флаг pending в глобальном limiter
+            if (window.CommonUtils) {
+                window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+            }
         }
     }
     

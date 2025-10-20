@@ -462,14 +462,25 @@ class PlayersPanel {
      * Фоновое обновление данных игроков для кэша
      */
     _fetchPlayersInBackground(roomId) {
-        // Проверяем rate limiting перед запросом
+        // Проверяем глобальный rate limiter для game-state
+        if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
+            console.log('🚫 PlayersPanel: Пропускаем фоновый запрос из-за глобального rate limiting');
+            return;
+        }
+        
+        // Проверяем локальный rate limiting перед запросом
         const now = Date.now();
         if (now - this._lastApiRequestTime < this._minRequestInterval) {
-            console.log('🚫 PlayersPanel: Пропускаем фоновый запрос из-за rate limiting');
+            console.log('🚫 PlayersPanel: Пропускаем фоновый запрос из-за локального rate limiting');
             return;
         }
         
         this._lastApiRequestTime = now;
+        
+        // Устанавливаем флаг pending в глобальном limiter
+        if (window.CommonUtils) {
+            window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+        }
         
         fetch(`/api/rooms/${roomId}/game-state`)
             .then(response => {
@@ -488,6 +499,12 @@ class PlayersPanel {
             })
             .catch(err => {
                 console.warn('⚠️ PlayersPanel: Ошибка фонового обновления кэша:', err);
+            })
+            .finally(() => {
+                // Очищаем флаг pending в глобальном limiter
+                if (window.CommonUtils) {
+                    window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+                }
             });
     }
     
@@ -495,10 +512,16 @@ class PlayersPanel {
      * Основная загрузка игроков с API
      */
     _fetchPlayersFromAPI(roomId) {
-        // Проверяем rate limiting перед запросом
+        // Проверяем глобальный rate limiter для game-state
+        if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
+            console.log('🚫 PlayersPanel: Пропускаем основной запрос из-за глобального rate limiting');
+            return;
+        }
+        
+        // Проверяем локальный rate limiting перед запросом
         const now = Date.now();
         if (now - this._lastApiRequestTime < this._minRequestInterval) {
-            console.log('🚫 PlayersPanel: Пропускаем основной запрос из-за rate limiting');
+            console.log('🚫 PlayersPanel: Пропускаем основной запрос из-за локального rate limiting');
             return;
         }
         
@@ -510,6 +533,11 @@ class PlayersPanel {
         // Создаем новый AbortController
         this._currentAbortController = new AbortController();
         this._lastApiRequestTime = now;
+        
+        // Устанавливаем флаг pending в глобальном limiter
+        if (window.CommonUtils) {
+            window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+        }
         
         fetch(`/api/rooms/${roomId}/game-state`, {
             signal: this._currentAbortController.signal
@@ -569,6 +597,10 @@ class PlayersPanel {
             .finally(() => {
                 // Очищаем ссылку на AbortController
                 this._currentAbortController = null;
+                // Очищаем флаг pending в глобальном limiter
+                if (window.CommonUtils) {
+                    window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+                }
             });
     }
     
@@ -594,10 +626,16 @@ class PlayersPanel {
         }
         
         if (roomId) {
-            // Проверяем rate limiting перед запросом
+            // Проверяем глобальный rate limiter для game-state
+            if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
+                console.log('🚫 PlayersPanel: Пропускаем предзагрузку из-за глобального rate limiting');
+                return;
+            }
+            
+            // Проверяем локальный rate limiting перед запросом
             const now = Date.now();
             if (now - this._lastApiRequestTime < this._minRequestInterval) {
-                console.log('🚫 PlayersPanel: Пропускаем предзагрузку из-за rate limiting');
+                console.log('🚫 PlayersPanel: Пропускаем предзагрузку из-за локального rate limiting');
                 return;
             }
             
@@ -610,6 +648,11 @@ class PlayersPanel {
             this._currentAbortController = new AbortController();
             this._lastApiRequestTime = now;
             const timeoutId = setTimeout(() => this._currentAbortController.abort(), 3000); // 3 секунды вместо 5
+            
+            // Устанавливаем флаг pending в глобальном limiter
+            if (window.CommonUtils) {
+                window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+            }
             
             fetch(`/api/rooms/${roomId}/game-state`, {
                 signal: this._currentAbortController.signal,
@@ -641,6 +684,12 @@ class PlayersPanel {
                 clearTimeout(timeoutId);
                 if (err.name !== 'AbortError' && err.message !== 'RATE_LIMITED') {
                     console.warn('⚠️ PlayersPanel: Ошибка предзагрузки данных:', err);
+                }
+            })
+            .finally(() => {
+                // Очищаем флаг pending в глобальном limiter
+                if (window.CommonUtils) {
+                    window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
                 }
             });
         }
