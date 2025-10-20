@@ -743,29 +743,75 @@ async function kickPlayer(player) {
  */
 function isCurrentUserHost() {
     if (!currentRoom || !currentUser) {
+        console.log('🔍 Room: isCurrentUserHost - нет данных:', {
+            hasRoom: !!currentRoom,
+            hasUser: !!currentUser
+        });
         return false;
     }
     
+    const userId = currentUser.id || currentUser.userId;
+    const username = currentUser.username || currentUser.name;
+    
     // Первый приоритет: проверим по creatorId
-    if (currentRoom.creatorId === currentUser.id || currentRoom.creator_id === currentUser.id) {
+    if (currentRoom.creatorId === userId || currentRoom.creator_id === userId) {
+        console.log('✅ Room: isCurrentUserHost - найден по creatorId:', {
+            creatorId: currentRoom.creatorId,
+            creator_id: currentRoom.creator_id,
+            userId: userId
+        });
         return true;
     }
     
     // Второй приоритет: проверим по username/name в creator
-    if (currentRoom.creator === currentUser.username || currentRoom.creator === currentUser.name) {
+    if (currentRoom.creator === username) {
+        console.log('✅ Room: isCurrentUserHost - найден по creator username:', {
+            creator: currentRoom.creator,
+            username: username
+        });
         return true;
     }
     
     // Третий приоритет: проверим по флагам isHost в players
     if (currentRoom.players) {
         const hostPlayer = currentRoom.players.find(p => 
-            (p.userId === currentUser.id || p.id === currentUser.id || p.username === currentUser.username) && 
+            (p.userId === userId || p.id === userId || p.username === username) && 
             (p.isHost === true || p.isCreator === true || p.role === 'creator')
         );
         if (hostPlayer) {
+            console.log('✅ Room: isCurrentUserHost - найден по флагам в players:', {
+                hostPlayer: {
+                    userId: hostPlayer.userId,
+                    id: hostPlayer.id,
+                    username: hostPlayer.username,
+                    isHost: hostPlayer.isHost,
+                    isCreator: hostPlayer.isCreator,
+                    role: hostPlayer.role
+                }
+            });
             return true;
         }
     }
+    
+    console.log('❌ Room: isCurrentUserHost - пользователь НЕ является хостом:', {
+        currentUser: {
+            id: userId,
+            username: username
+        },
+        roomCreator: {
+            creatorId: currentRoom.creatorId,
+            creator_id: currentRoom.creator_id,
+            creator: currentRoom.creator
+        },
+        players: currentRoom.players?.map(p => ({
+            userId: p.userId,
+            id: p.id,
+            username: p.username,
+            isHost: p.isHost,
+            isCreator: p.isCreator,
+            role: p.role
+        }))
+    });
     
     return false;
 }
@@ -775,54 +821,74 @@ function isCurrentUserHost() {
  */
 function updateStartGameButton() {
     const startGameButton = document.getElementById('start-game');
-    if (!startGameButton) return;
+    if (!startGameButton) {
+        console.warn('⚠️ Room: Кнопка start-game не найдена в DOM');
+        return;
+    }
     
     // Если нет данных о комнате или пользователе, скрываем кнопку
     if (!currentRoom || !currentUser) {
+        console.log('🔍 Room: updateStartGameButton - нет данных:', {
+            hasRoom: !!currentRoom,
+            hasUser: !!currentUser,
+            currentRoom: currentRoom,
+            currentUser: currentUser
+        });
         startGameButton.style.display = 'none';
         return;
     }
     
     // Проверяем, является ли пользователь создателем комнаты/хостом
     const isHost = isCurrentUserHost();
-    const playersCount = currentRoom.players.length;
+    
+    console.log('🔍 Room: updateStartGameButton - проверка хоста:', {
+        isHost,
+        currentRoomData: {
+            creatorId: currentRoom.creatorId,
+            creator_id: currentRoom.creator_id,
+            creator: currentRoom.creator,
+            players: currentRoom.players?.map(p => ({
+                userId: p.userId,
+                id: p.id,
+                username: p.username,
+                isHost: p.isHost,
+                isCreator: p.isCreator,
+                role: p.role
+            }))
+        },
+        currentUserData: {
+            id: currentUser.id,
+            userId: currentUser.userId,
+            username: currentUser.username,
+            name: currentUser.name
+        }
+    });
+    const playersCount = currentRoom.players?.length || 0;
     // Правильно обрабатываем isReady - может быть boolean, string, или undefined
-    const readyCount = currentRoom.players.filter(p => Boolean(p.isReady)).length;
+    const readyCount = currentRoom.players?.filter(p => Boolean(p.isReady)).length || 0;
     const minPlayers = currentRoom.minPlayers || 2; // Минимум 2 игрока для старта
-    const allPlayersReady = currentRoom.players.every(player => Boolean(player.isReady));
+    const allPlayersReady = currentRoom.players?.every(player => Boolean(player.isReady)) || false;
     // Игра может начаться только если есть минимум игроков и хотя бы один готов
     const canStart = playersCount >= minPlayers && readyCount >= 1;
     
-    // Дополнительная отладка
-    console.log('🔍 Room: Отладка кнопки "Начать игру":', {
+    console.log('🔍 Room: Кнопка "Начать игру" - состояние:', {
         isHost,
         playersCount,
         readyCount,
         minPlayers,
-        allPlayersReady,
         canStart,
-        creatorId: currentRoom.creatorId,
-        currentUserId: currentUser.id,
-        players: currentRoom.players.map(p => ({ name: p.name, isReady: p.isReady }))
+        currentRoomStarted: currentRoom.isStarted
     });
     
-    // Логи для отладки (можно убрать в продакшене)
-    if (playersCount >= minPlayers && !allPlayersReady) {
-        console.log('🔍 Room: Ожидание готовности игроков:', {
-            playersCount,
-            minPlayers,
-            allPlayersReady,
-            readyPlayers: currentRoom.players.filter(p => p.isReady).length
-        });
-    }
-    
-    // Скрываем кнопку полностью для не-хостов
+    // СЕКЦИЯ: Скрытие кнопки для не-хостов
     if (!isHost) {
+        console.log('🚫 Room: Пользователь НЕ является хостом - скрываем кнопку "Начать игру"');
         startGameButton.style.display = 'none';
         return;
-    } else {
-        startGameButton.style.display = 'block';
     }
+    
+    console.log('✅ Room: Пользователь является хостом - показываем кнопку "Начать игру"');
+    startGameButton.style.display = 'block';
     
     startGameButton.disabled = !canStart || currentRoom.isStarted;
     
@@ -878,6 +944,13 @@ function displayUserInfo() {
                 userName.textContent = username || 'Пользователь';
                 
                 console.log('✅ Room: Информация о пользователе отображена:', currentUser.username || currentUser.name);
+                
+                // Обновляем кнопку "Начать игру" после загрузки данных пользователя
+                setTimeout(() => {
+                    console.log('🔄 Room: Обновляем кнопку после загрузки пользователя');
+                    updateStartGameButton();
+                }, 100);
+                
         } else {
             console.log('⚠️ Room: Пользователь не авторизован');
             showAuthRequired();
