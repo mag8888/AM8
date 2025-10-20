@@ -46,6 +46,9 @@ class PlayersPanel {
             } catch (_) {}
         }
         
+        // Показываем состояние загрузки сразу при инициализации
+        this.showLoadingState();
+        
         // Оптимизированная загрузка игроков - сокращена задержка
         setTimeout(() => {
             this.forceLoadPlayers();
@@ -341,10 +344,23 @@ class PlayersPanel {
         }
         
         // Обновляем список игроков
-        if (state.players && Array.isArray(state.players) && state.players.length > 0) {
-            this.updatePlayersList(state.players);
+        console.log('🔧 PlayersPanel: updateFromGameState - обработка игроков:', state.players);
+        
+        if (state.players && Array.isArray(state.players)) {
+            if (state.players.length > 0) {
+                console.log('👥 PlayersPanel: Обновляем список из состояния, игроков:', state.players.length);
+                this.updatePlayersList(state.players);
+            } else {
+                console.log('⚠️ PlayersPanel: Пустой массив игроков в состоянии');
+                this.showLoadingState();
+                // Попробуем загрузить принудительно, но с задержкой
+                setTimeout(() => {
+                    this.forceLoadPlayers();
+                }, 500);
+            }
         } else {
-            // Если игроки не переданы или пустые, пытаемся получить их принудительно
+            console.log('⚠️ PlayersPanel: Нет данных об игроках в состоянии, принудительная загрузка');
+            // Если игроки не переданы или невалидные, пытаемся получить их принудительно
             this.forceLoadPlayers();
         }
     }
@@ -353,26 +369,126 @@ class PlayersPanel {
      * Принудительная загрузка игроков
      */
     forceLoadPlayers() {
-        const roomId = window.location.hash.split('roomId=')[1];
-        if (!roomId) return;
+        // Улучшенное извлечение roomId из разных источников
+        let roomId = null;
+        
+        // Способ 1: из hash
+        const hash = window.location.hash;
+        const hashMatch = hash.match(/roomId=([^&]+)/);
+        if (hashMatch) {
+            roomId = hashMatch[1];
+        }
+        
+        // Способ 2: из URL search params
+        if (!roomId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            roomId = urlParams.get('roomId');
+        }
+        
+        // Способ 3: из sessionStorage
+        if (!roomId) {
+            try {
+                const roomData = sessionStorage.getItem('am_room_data');
+                if (roomData) {
+                    const parsed = JSON.parse(roomData);
+                    roomId = parsed.roomId || parsed.id;
+                }
+            } catch (e) {
+                console.warn('PlayersPanel: Ошибка чтения roomId из sessionStorage:', e);
+            }
+        }
+        
+        if (!roomId) {
+            console.warn('⚠️ PlayersPanel: roomId не найден, пропускаем загрузку игроков');
+            // Показываем ошибку, так как без roomId не можем загрузить данные
+            this.showErrorState('Комната не найдена');
+            return;
+        }
         
         console.log('🔧 PlayersPanel: Принудительная загрузка игроков для комнаты:', roomId);
         
         fetch(`/api/rooms/${roomId}/game-state`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                if (data.success && data.state && data.state.players && data.state.players.length > 0) {
-                    console.log('🔧 PlayersPanel: Получены игроки принудительно:', data.state.players);
-                    this.updatePlayersList(data.state.players);
-                    
-                    // Также обновляем GameStateManager
-                    const gameStateManager = window.app?.services?.get('gameStateManager');
-                    if (gameStateManager) {
-                        gameStateManager.updateFromServer(data.state);
+                console.log('🔧 PlayersPanel: Ответ API:', data);
+                
+                if (data && data.success && data.state) {
+                    const players = data.state.players || [];
+                    if (Array.isArray(players) && players.length > 0) {
+                        console.log('🔧 PlayersPanel: Получены игроки принудительно:', players);
+                        this.updatePlayersList(players);
+                        
+                        // Также обновляем GameStateManager
+                        const gameStateManager = window.app?.services?.get('gameStateManager');
+                        if (gameStateManager && typeof gameStateManager.updateFromServer === 'function') {
+                            gameStateManager.updateFromServer(data.state);
+                        }
+                    } else {
+                        console.log('⚠️ PlayersPanel: Игроки не найдены в ответе API');
+                        this.showEmptyState();
                     }
+                } else {
+                    console.warn('⚠️ PlayersPanel: Неуспешный ответ API:', data);
+                    this.showErrorState('Ошибка получения данных с сервера');
                 }
             })
-            .catch(err => console.error('❌ PlayersPanel: Ошибка принудительной загрузки игроков:', err));
+            .catch(err => {
+                console.error('❌ PlayersPanel: Ошибка принудительной загрузки игроков:', err);
+                this.showErrorState(`Ошибка загрузки: ${err.message}`);
+            });
+    }
+    
+    /**
+     * Показать состояние загрузки
+     */
+    showLoadingState() {
+        const playersList = document.getElementById('players-list');
+        const playersCount = document.getElementById('players-count');
+        
+        if (playersList) {
+            playersList.innerHTML = '<div class="loading-placeholder">Загрузка игроков...</div>';
+        }
+        
+        if (playersCount) {
+            playersCount.textContent = '?/4';
+        }
+    }
+    
+    /**
+     * Показать состояние ошибки
+     */
+    showErrorState(message = 'Ошибка загрузки игроков') {
+        const playersList = document.getElementById('players-list');
+        const playersCount = document.getElementById('players-count');
+        
+        if (playersList) {
+            playersList.innerHTML = `<div class="error-placeholder">${message}</div>`;
+        }
+        
+        if (playersCount) {
+            playersCount.textContent = '?/4';
+        }
+    }
+    
+    /**
+     * Показать пустое состояние
+     */
+    showEmptyState() {
+        const playersList = document.getElementById('players-list');
+        const playersCount = document.getElementById('players-count');
+        
+        if (playersList) {
+            playersList.innerHTML = '<div class="empty-placeholder">Нет игроков в комнате</div>';
+        }
+        
+        if (playersCount) {
+            playersCount.textContent = '0/4';
+        }
     }
     
     /**
@@ -391,24 +507,59 @@ class PlayersPanel {
      * @param {Array} players - Массив игроков
      */
     updatePlayersList(players = []) {
+        console.log('🔧 PlayersPanel: updatePlayersList вызван с данными:', players);
+        
         const playersList = document.getElementById('players-list');
         const playersCount = document.getElementById('players-count');
         
-        if (!playersList || !playersCount) return;
+        if (!playersList) {
+            console.error('❌ PlayersPanel: Элемент players-list не найден');
+            return;
+        }
         
-        // Обновляем счетчик игроков
-        playersCount.textContent = `${players.length}/4`;
+        if (!playersCount) {
+            console.error('❌ PlayersPanel: Элемент players-count не найден');
+        } else {
+            // Обновляем счетчик игроков
+            playersCount.textContent = `${players.length}/4`;
+        }
+        
+        // Проверяем валидность данных игроков
+        if (!Array.isArray(players)) {
+            console.warn('⚠️ PlayersPanel: players не является массивом:', typeof players, players);
+            playersList.innerHTML = '<div class="error-placeholder">Ошибка загрузки данных игроков</div>';
+            return;
+        }
         
         // Очищаем список
         playersList.innerHTML = '';
         
+        if (players.length === 0) {
+            console.log('👥 PlayersPanel: Нет игроков для отображения');
+            playersList.innerHTML = '<div class="empty-placeholder">Нет игроков в комнате</div>';
+            return;
+        }
+        
         // Добавляем каждого игрока
         players.forEach((player, index) => {
-            const playerElement = this.createPlayerElement(player, index);
-            playersList.appendChild(playerElement);
+            if (!player) {
+                console.warn('⚠️ PlayersPanel: Пустой объект игрока на позиции', index);
+                return;
+            }
+            
+            try {
+                const playerElement = this.createPlayerElement(player, index);
+                if (playerElement) {
+                    playersList.appendChild(playerElement);
+                } else {
+                    console.error('❌ PlayersPanel: Не удалось создать элемент для игрока:', player);
+                }
+            } catch (error) {
+                console.error('❌ PlayersPanel: Ошибка создания элемента игрока:', error, player);
+            }
         });
         
-        console.log('👥 PlayersPanel: Обновлен список игроков', players.length);
+        console.log(`👥 PlayersPanel: Обновлен список игроков (${players.length})`);
         
         // Синхронизируем баланс с банком, если он открыт
         this.syncBalanceWithBank(players);
