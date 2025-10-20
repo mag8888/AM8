@@ -168,6 +168,10 @@
                 try {
                     payload = await response.json();
                 } catch (jsonError) {
+                    // Игнорируем AbortError при парсинге JSON
+                    if (jsonError.name === 'AbortError') {
+                        return; // Просто выходим, запрос был отменен
+                    }
                     console.warn('⚠️ CardDeckPanel: Ошибка парсинга JSON ответа:', jsonError);
                     // Используем кэшированные данные если есть
                     if (this.lastKnownDecks.length) {

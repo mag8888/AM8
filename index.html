@@ -536,13 +536,16 @@
                                                             const turnController = window.app.modules.get('turnController');
                                                             const playersPanel = window.app.modules.get('playersPanel');
                                                             
-                                                            if (turnController && typeof turnController.setupEventListeners === 'function') {
+                                                            // Переподписываемся только если компоненты еще не были инициализированы
+                                                            if (turnController && typeof turnController.setupEventListeners === 'function' && !turnController._eventListenersSetup) {
                                                                 turnController.setupEventListeners();
+                                                                turnController._eventListenersSetup = true;
                                                                 console.log('🔄 syncWithServer: Переподписан TurnController');
                                                             }
                                                             
-                                                            if (playersPanel && typeof playersPanel.setupEventListeners === 'function') {
+                                                            if (playersPanel && typeof playersPanel.setupEventListeners === 'function' && !playersPanel._eventListenersSetup) {
                                                                 playersPanel.setupEventListeners();
+                                                                playersPanel._eventListenersSetup = true;
                                                                 console.log('🔄 syncWithServer: Переподписан PlayersPanel');
                                                             }
                                                         }
