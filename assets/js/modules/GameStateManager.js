@@ -20,6 +20,12 @@ class GameStateManager {
         this._storage = this._detectStorage();
         this._hydratedFromStorage = false;
 
+        // КРИТИЧНО: Централизованный запросник для предотвращения race conditions
+        this._lastFetchTime = 0;
+        this._fetchInterval = 8000; // Минимум 8 секунд между запросами
+        this._isUpdating = false;
+        this._updateTimer = null;
+
         const roomIdFromHash = this._parseRoomIdFromHash();
         if (roomIdFromHash) {
             this._state.roomId = roomIdFromHash;
@@ -98,6 +104,87 @@ class GameStateManager {
 
         next.updatedAt = Date.now();
         this._commitState(next, previous, { playersChanged, activePlayerChanged });
+    }
+
+    /**
+     * ЕДИНСТВЕННЫЙ безопасный метод запроса game-state для предотвращения race conditions
+     * @param {string} roomId - ID комнаты
+     * @param {boolean} force - Принудительный запрос (игнорирует rate limiting)
+     * @returns {Promise<Object|null>} - Состояние игры или null при ошибке
+     */
+    async fetchGameState(roomId, force = false) {
+        // Предотвращаем множественные одновременные запросы
+        if (this._isUpdating && !force) {
+            console.log('🚫 GameStateManager: Запрос уже выполняется');
+            return null;
+        }
+
+        // Проверяем rate limiting через общую систему
+        if (!force && window.CommonUtils) {
+            if (!window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+                console.log('🚫 GameStateManager: Rate limiting активен');
+                return null;
+            }
+        }
+
+        this._isUpdating = true;
+
+        try {
+            const response = await fetch(`/api/rooms/${roomId}/game-state`, {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+
+            if (response.ok) {
+                const gameStateData = await response.json();
+                if (gameStateData.success && gameStateData.state) {
+                    this.updateFromServer(gameStateData.state);
+                    this._lastFetchTime = Date.now();
+                    console.log('✅ GameStateManager: Успешно обновлено состояние');
+                    return gameStateData.state;
+                }
+            } else {
+                console.warn('⚠️ GameStateManager: Неудачный запрос game-state:', response.status);
+            }
+        } catch (error) {
+            console.warn('⚠️ GameStateManager: Ошибка запроса game-state:', error);
+        } finally {
+            this._isUpdating = false;
+            if (window.CommonUtils) {
+                window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Безопасный запуск периодических обновлений
+     * @param {string} roomId - ID комнаты
+     * @param {number} interval - Интервал в миллисекундах (по умолчанию 45 секунд)
+     */
+    startPeriodicUpdates(roomId, interval = 45000) {
+        if (this._updateTimer) {
+            clearInterval(this._updateTimer);
+        }
+
+        console.log(`🔄 GameStateManager: Запуск периодических обновлений каждые ${interval}ms`);
+        this._updateTimer = setInterval(async () => {
+            await this.fetchGameState(roomId);
+        }, interval);
+    }
+
+    /**
+     * Остановка периодических обновлений
+     */
+    stopPeriodicUpdates() {
+        if (this._updateTimer) {
+            clearInterval(this._updateTimer);
+            this._updateTimer = null;
+            console.log('⏹️ GameStateManager: Периодические обновления остановлены');
+        }
     }
 
     /**
@@ -378,9 +465,11 @@ class GameStateManager {
      * Destroy manager.
      */
     destroy() {
+        this.stopPeriodicUpdates();
         this.listeners.clear();
         this._state = this._createEmptyState({ roomId: this._state.roomId });
         this._stateSnapshot = null;
+        this._isUpdating = false;
         console.log('🏗️ GameStateManager: destroyed');
     }
 

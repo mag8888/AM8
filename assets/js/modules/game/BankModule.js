@@ -1295,15 +1295,9 @@ class BankModule {
         
         // Загружаем актуальные данные игрока с сервера
         if (roomId && currentPlayer.id) {
-            // Проверяем глобальный rate limiter для game-state
-            if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
-                console.log('🚫 BankModule: Пропускаем запрос из-за глобального rate limiting');
-                return;
-            }
-            
-            // Устанавливаем флаг pending в глобальном limiter
+            // Атомарная проверка и установка pending флага
             if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                console.log('🚫 BankModule: Не удалось установить pending (race condition)');
+                console.log('🚫 BankModule: Пропускаем запрос из-за глобального rate limiting или concurrent request');
                 return;
             }
             
@@ -1618,15 +1612,9 @@ class BankModule {
         
         // Загружаем актуальные данные игроков с сервера
         if (roomId) {
-            // Проверяем глобальный rate limiter для game-state
-            if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
-                console.log('🚫 BankModule: Пропускаем запрос из-за глобального rate limiting');
-                return;
-            }
-            
-            // Устанавливаем флаг pending в глобальном limiter
+            // Атомарная проверка и установка pending флага
             if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                console.log('🚫 BankModule: Не удалось установить pending (race condition)');
+                console.log('🚫 BankModule: Пропускаем запрос из-за глобального rate limiting или concurrent request');
                 return;
             }
             
