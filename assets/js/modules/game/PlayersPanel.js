@@ -18,6 +18,11 @@ class PlayersPanel {
         // Создаем BankModule при инициализации
         this.bankModule = null;
         
+        // Кэш для данных игроков для ускорения загрузки
+        this._playersCache = new Map();
+        this._lastFetchTime = 0;
+        this._cacheTimeout = 2000; // 2 секунды кэш
+        
         console.log('👥 PlayersPanel v2.0: Инициализация');
         this.init();
     }
@@ -49,10 +54,11 @@ class PlayersPanel {
         // Показываем состояние загрузки сразу при инициализации
         this.showLoadingState();
         
-        // Оптимизированная загрузка игроков - сокращена задержка
-        setTimeout(() => {
-            this.forceLoadPlayers();
-        }, 300); // Сокращена задержка с 1000ms до 300ms
+        // Немедленная загрузка игроков без задержки для ускорения
+        this.forceLoadPlayers();
+        
+        // Предзагружаем данные в фоне для ускорения последующих операций
+        this.preloadGameData();
         
         console.log('✅ PlayersPanel v2.0: Инициализирован');
     }
@@ -353,10 +359,8 @@ class PlayersPanel {
             } else {
                 console.log('⚠️ PlayersPanel: Пустой массив игроков в состоянии');
                 this.showLoadingState();
-                // Попробуем загрузить принудительно, но с задержкой
-                setTimeout(() => {
-                    this.forceLoadPlayers();
-                }, 500);
+                // Немедленная загрузка игроков для ускорения
+                this.forceLoadPlayers();
             }
         } else {
             console.log('⚠️ PlayersPanel: Нет данных об игроках в состоянии, принудительная загрузка');
@@ -407,6 +411,57 @@ class PlayersPanel {
         
         console.log('🔧 PlayersPanel: Принудительная загрузка игроков для комнаты:', roomId);
         
+        // Проверяем кэш для ускорения загрузки
+        const now = Date.now();
+        const cacheKey = `players_${roomId}`;
+        const cachedData = this._playersCache.get(cacheKey);
+        
+        if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
+            console.log('🚀 PlayersPanel: Используем кэшированные данные игроков');
+            this.updatePlayersList(cachedData);
+            
+            // Обновляем GameStateManager с кэшированными данными
+            const gameStateManager = window.app?.services?.get('gameStateManager');
+            if (gameStateManager && typeof gameStateManager.updateFromServer === 'function') {
+                gameStateManager.updateFromServer({ players: cachedData });
+            }
+            
+            // Обновляем кэш в фоне
+            this._fetchPlayersInBackground(roomId);
+            return;
+        }
+        
+        this._fetchPlayersFromAPI(roomId);
+    }
+    
+    /**
+     * Фоновое обновление данных игроков для кэша
+     */
+    _fetchPlayersInBackground(roomId) {
+        fetch(`/api/rooms/${roomId}/game-state`)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error(`HTTP ${response.status}`);
+            })
+            .then(data => {
+                if (data && data.success && data.state && data.state.players) {
+                    const cacheKey = `players_${roomId}`;
+                    this._playersCache.set(cacheKey, data.state.players);
+                    this._lastFetchTime = Date.now();
+                    console.log('🔄 PlayersPanel: Кэш обновлен в фоне');
+                }
+            })
+            .catch(err => {
+                console.warn('⚠️ PlayersPanel: Ошибка фонового обновления кэша:', err);
+            });
+    }
+    
+    /**
+     * Основная загрузка игроков с API
+     */
+    _fetchPlayersFromAPI(roomId) {
         fetch(`/api/rooms/${roomId}/game-state`)
             .then(response => {
                 if (!response.ok) {
@@ -421,6 +476,12 @@ class PlayersPanel {
                     const players = data.state.players || [];
                     if (Array.isArray(players) && players.length > 0) {
                         console.log('🔧 PlayersPanel: Получены игроки принудительно:', players);
+                        
+                        // Кэшируем данные для ускорения последующих загрузок
+                        const cacheKey = `players_${roomId}`;
+                        this._playersCache.set(cacheKey, players);
+                        this._lastFetchTime = Date.now();
+                        
                         this.updatePlayersList(players);
                         
                         // Также обновляем GameStateManager
@@ -441,6 +502,63 @@ class PlayersPanel {
                 console.error('❌ PlayersPanel: Ошибка принудительной загрузки игроков:', err);
                 this.showErrorState(`Ошибка загрузки: ${err.message}`);
             });
+    }
+    
+    /**
+     * Предзагрузка игровых данных для ускорения работы
+     */
+    preloadGameData() {
+        // Получаем roomId
+        const hash = window.location.hash;
+        const hashMatch = hash.match(/roomId=([^&]+)/);
+        let roomId = hashMatch ? hashMatch[1] : null;
+        
+        if (!roomId) {
+            try {
+                const roomData = sessionStorage.getItem('am_room_data');
+                if (roomData) {
+                    const parsed = JSON.parse(roomData);
+                    roomId = parsed.roomId || parsed.id;
+                }
+            } catch (e) {
+                console.warn('PlayersPanel: Ошибка получения roomId для предзагрузки:', e);
+            }
+        }
+        
+        if (roomId) {
+            // Предзагружаем данные с более коротким таймаутом для ускорения
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 секунды вместо 5
+            
+            fetch(`/api/rooms/${roomId}/game-state`, {
+                signal: controller.signal,
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            })
+            .then(response => {
+                clearTimeout(timeoutId);
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error(`HTTP ${response.status}`);
+            })
+            .then(data => {
+                if (data && data.success && data.state) {
+                    // Кэшируем более полные данные
+                    const cacheKey = `preload_${roomId}`;
+                    this._playersCache.set(cacheKey, data.state);
+                    console.log('🚀 PlayersPanel: Предзагружены игровые данные');
+                }
+            })
+            .catch(err => {
+                clearTimeout(timeoutId);
+                if (err.name !== 'AbortError') {
+                    console.warn('⚠️ PlayersPanel: Ошибка предзагрузки данных:', err);
+                }
+            });
+        }
     }
     
     /**
