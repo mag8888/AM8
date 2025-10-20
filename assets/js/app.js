@@ -17,6 +17,8 @@ class App {
         this.modules = new Map();
         this.services = new Map();
         this.isInitialized = false;
+        this.activeRoomId = null;
+        this.gameModulesReady = false;
         
         this._initializeCore();
         this._setupGlobalErrorHandling();
@@ -471,10 +473,10 @@ class App {
     }
 
     /**
-     * Инициализация игровых модулей с GameStateManager
-     * @param {string} roomId - ID комнаты
+     * @deprecated Временная устаревшая версия инициализации игровых модулей.
+     * Оставлена для совместимости, будет удалена после стабилизации нового пайплайна.
      */
-    _initializeGameModules(roomId) {
+    _legacyInitializeGameModules(roomId) {
         this.logger?.info('Инициализация игровых модулей для комнаты', { roomId }, 'App');
         
         // Гарантируем наличие GameState до инициализации зависимых модулей
@@ -656,7 +658,7 @@ class App {
         }
         
         // Инициализируем PlayersPanel с GameStateManager
-        if (window.PlayersPanel) {
+        if (window.PlayersPanel && !this.modules.get('playersPanel')) {
             const playersPanel = new window.PlayersPanel({
                 gameStateManager: gameStateManager,
                 eventBus: this.getEventBus(),
@@ -669,10 +671,12 @@ class App {
                 playersPanel.setupEventListeners();
                 console.log('🎯 PlayersPanel: setupEventListeners вызван');
             }
+        } else if (this.modules.get('playersPanel')) {
+            console.log('ℹ️ App: PlayersPanel уже инициализирован, пропускаем');
         }
         
         // Инициализируем TurnService (с защитой от отсутствия GameState)
-        if (window.TurnService) {
+        if (window.TurnService && !this.modules.get('turnService')) {
             try {
                 console.log('🎯 App: Инициализируем TurnService...');
                 let gameState = this.getModule('gameState');
@@ -707,12 +711,14 @@ class App {
             } catch (e) {
                 console.error('❌ App: Ошибка инициализации TurnService', e);
             }
+        } else if (this.modules.get('turnService')) {
+            console.log('ℹ️ App: TurnService уже инициализирован, пропускаем');
         } else {
             console.warn('⚠️ App: TurnService не найден в window');
         }
         
         // Оптимизированная инициализация TurnController - убрана задержка для мгновенной загрузки
-        if (window.TurnController) {
+        if (window.TurnController && !this.modules.get('turnController')) {
             const turnService = this.modules.get('turnService');
             const playerTokensModule = this.modules.get('playerTokens');
             if (turnService && gameStateManager) {
@@ -734,6 +740,8 @@ class App {
                     console.error('❌ App: Ошибка инициализации TurnController', e);
                 }
             }
+        } else if (this.modules.get('turnController')) {
+            console.log('ℹ️ App: TurnController уже инициализирован, пропускаем');
         }
         
         // Инициализируем TurnSyncService для синхронизации ходов (временно отключен)
@@ -771,6 +779,309 @@ class App {
 
         // Удален избыточный retry механизм - вызывает множественную инициализацию модулей
         // setTimeout(() => { /* retry logic */ }, 800); // REMOVED для оптимизации
+    }
+
+    /**
+     * Актуальная инициализация игровых модулей.
+     * @param {string} roomId
+     * @param {{force?: boolean}} options
+     * @returns {boolean} true, если выполнена новая инициализация
+     */
+    _initializeGameModules(roomId, options = {}) {
+        // Защита от множественных одновременных вызовов
+        if (this._initInProgress && !options.force) {
+            console.log('ℹ️ App: Инициализация игровых модулей уже в процессе, пропускаем');
+            return false;
+        }
+        
+        const { force = false } = options;
+        const resolvedRoomId = roomId || this.activeRoomId || null;
+        const roomChanged = Boolean(this.activeRoomId && resolvedRoomId && this.activeRoomId !== resolvedRoomId);
+        const shouldForce = force || roomChanged;
+
+        if (this.gameModulesReady && !shouldForce) {
+            this.logger?.debug('Игровые модули уже готовы', { roomId: this.activeRoomId }, 'App');
+            return false;
+        }
+        
+        this._initInProgress = true;
+
+        if (shouldForce) {
+            this.logger?.info('Переинициализация игровых модулей', {
+                previousRoomId: this.activeRoomId,
+                nextRoomId: resolvedRoomId
+            }, 'App');
+            this._teardownGameModules();
+        }
+
+        this.activeRoomId = resolvedRoomId;
+        this.logger?.info('Инициализация игровых модулей для комнаты', { roomId: this.activeRoomId }, 'App');
+        
+        try {
+
+        const eventBus = this.getEventBus();
+        const gameStateManager = this.getGameStateManager();
+        const pushClient = this.getPushClient();
+
+        if (!this.getModule('gameState') && window.GameState) {
+            try {
+                const gameState = new window.GameState(eventBus);
+                this.modules.set('gameState', gameState);
+            } catch (error) {
+                this.logger?.warn('Не удалось создать GameState', error, 'App');
+            }
+        }
+
+        if (!this.modules.get('roomApi') && window.RoomApi) {
+            try {
+                const roomApi = resolvedRoomId ? new window.RoomApi(resolvedRoomId) : new window.RoomApi();
+                this.modules.set('roomApi', roomApi);
+            } catch (error) {
+                this.logger?.warn('Не удалось создать RoomApi', error, 'App');
+            }
+        }
+
+        if (gameStateManager && typeof gameStateManager.setRoomId === 'function') {
+            gameStateManager.setRoomId(this.activeRoomId || null);
+        }
+
+        if (pushClient && typeof pushClient.subscribe === 'function') {
+            pushClient.subscribe().catch((error) => {
+                this.logger?.warn('Ошибка подписки PushClient', error, 'App');
+            });
+        }
+
+        if (shouldForce) {
+            this._destroyModule('boardLayout');
+        }
+        if (!this.modules.get('boardLayout') && window.BoardLayout) {
+            try {
+                const boardLayout = new window.BoardLayout({
+                    outerTrackSelector: '#outer-track',
+                    innerTrackSelector: '#inner-track',
+                    gameState: this.getModule('gameState'),
+                    eventBus,
+                    logger: this.logger,
+                    debug: this.config?.get?.('logging.boardLayoutDebug', false)
+                });
+                this.modules.set('boardLayout', boardLayout);
+            } catch (error) {
+                this.logger?.error('BoardLayout: ошибка инициализации', error, 'App');
+            }
+        }
+
+        const ensureModule = (name, factory, { forceRecreate = shouldForce } = {}) => {
+            if (forceRecreate) {
+                this._destroyModule(name);
+            }
+            if (!this.modules.get(name)) {
+                const instance = factory();
+                if (instance) {
+                    this.modules.set(name, instance);
+                }
+            }
+            return this.modules.get(name);
+        };
+
+        ensureModule('cardDeckPanel', () => {
+            if (!window.CardDeckPanel) return null;
+            return new window.CardDeckPanel({
+                containerSelector: '#card-decks-panel',
+                eventBus
+            });
+        }, { forceRecreate: false });
+
+        ensureModule('bankPreview', () => {
+            if (!window.BankPreview) return null;
+            return new window.BankPreview({
+                containerSelector: '#card-decks-panel',
+                eventBus,
+                gameStateManager
+            });
+        }, { forceRecreate: false });
+
+        ensureModule('dealModule', () => {
+            if (!window.DealModule) return null;
+            return new window.DealModule({
+                eventBus,
+                roomId: this.activeRoomId
+            });
+        });
+
+        ensureModule('playerTokens', () => {
+            if (!window.PlayerTokens) return null;
+            return new window.PlayerTokens({
+                gameState: this.getModule('gameState'),
+                eventBus,
+                outerTrackSelector: '#outer-track',
+                innerTrackSelector: '#inner-track'
+            });
+        });
+
+        ensureModule('diceService', () => {
+            if (!window.DiceService) return null;
+            return new window.DiceService({
+                gameState: this.getModule('gameState'),
+                eventBus
+            });
+        });
+
+        ensureModule('diceDisplay', () => {
+            if (!window.DiceDisplay) return null;
+            return new window.DiceDisplay({
+                eventBus,
+                diceService: this.modules.get('diceService')
+            });
+        });
+
+        ensureModule('movementService', () => {
+            if (!window.MovementService) return null;
+            return new window.MovementService({
+                gameState: this.getModule('gameState'),
+                eventBus
+            });
+        });
+
+        ensureModule('playerTokenRenderer', () => {
+            if (!window.PlayerTokenRenderer) return null;
+            return new window.PlayerTokenRenderer({
+                gameState: this.getModule('gameState'),
+                eventBus,
+                movementService: this.modules.get('movementService')
+            });
+        });
+
+        ensureModule('professionSystem', () => {
+            if (!window.ProfessionSystem) return null;
+            return new window.ProfessionSystem({
+                gameState: this.modules.get('gameState'),
+                eventBus
+            });
+        });
+
+        ensureModule('playerBalanceDisplay', () => {
+            if (!window.PlayerBalanceDisplay) return null;
+            return new window.PlayerBalanceDisplay({
+                gameState: this.modules.get('gameState'),
+                eventBus,
+                roomApi: this.modules.get('roomApi')
+            });
+        });
+
+        ensureModule('playersPanel', () => {
+            if (!window.PlayersPanel) return null;
+            return new window.PlayersPanel({
+                gameStateManager,
+                eventBus,
+                containerId: 'players-panel'
+            });
+        });
+
+        ensureModule('turnService', () => {
+            if (!window.TurnService) return null;
+            const gameState = this.getModule('gameState');
+            const roomApi = this.modules.get('roomApi');
+            const diceService = this.modules.get('diceService');
+            const movementService = this.modules.get('movementService');
+            if (!gameState || !roomApi || !movementService) {
+                this.logger?.warn('TurnService: отсутствуют зависимости', {
+                    hasGameState: Boolean(gameState),
+                    hasRoomApi: Boolean(roomApi),
+                    hasMovementService: Boolean(movementService)
+                }, 'App');
+                return null;
+            }
+            return new window.TurnService({
+                state: gameState,
+                gameState,
+                roomApi,
+                eventBus,
+                diceService,
+                movementService,
+                gameStateManager
+            });
+        });
+
+        ensureModule('turnController', () => {
+            if (!window.TurnController) return null;
+            const turnService = this.modules.get('turnService');
+            const playerTokens = this.modules.get('playerTokens');
+            if (!turnService) return null;
+            return new window.TurnController(
+                turnService,
+                playerTokens,
+                gameStateManager,
+                eventBus
+            );
+        });
+
+        const playerTokens = this.modules.get('playerTokens');
+        if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
+            playerTokens.forceUpdate();
+        }
+
+        this.gameModulesReady = true;
+        this._finalizeGameModules();
+        return true;
+        
+        } catch (error) {
+            this.logger?.error('Ошибка инициализации игровых модулей', error, 'App');
+            this._initInProgress = false; // Сбрасываем флаг при ошибке
+            throw error;
+        } finally {
+            this._initInProgress = false; // Гарантированно сбрасываем флаг
+        }
+    }
+
+    _destroyModule(name) {
+        const instance = this.modules.get(name);
+        if (!instance) {
+            return;
+        }
+
+        const teardownCandidates = ['destroy', 'dispose', 'teardown', 'removeAllListeners', 'off'];
+        for (const method of teardownCandidates) {
+            if (typeof instance[method] === 'function') {
+                try {
+                    if (method === 'off' && instance[method].length > 0) {
+                        continue;
+                    }
+                    instance[method]();
+                } catch (error) {
+                    this.logger?.warn(`Ошибка при уничтожении модуля ${name}`, error, 'App');
+                }
+                break;
+            }
+        }
+
+        this.modules.delete(name);
+    }
+
+    _teardownGameModules() {
+        const moduleNames = [
+            'turnSyncService',
+            'turnController',
+            'turnService',
+            'movementService',
+            'diceDisplay',
+            'diceService',
+            'playerTokens',
+            'playerTokenRenderer',
+            'playersPanel',
+            'playerBalanceDisplay',
+            'professionSystem',
+            'dealModule',
+            'cardDeckPanel',
+            'bankPreview',
+            'boardLayout',
+            'bankModuleServer',
+            'gameState',
+            'roomApi'
+        ];
+
+        moduleNames.forEach((name) => this._destroyModule(name));
+        this.activeRoomId = null;
+        this.gameModulesReady = false;
     }
 
     /**
@@ -907,6 +1218,8 @@ class App {
         this.modules.clear();
         this.services.clear();
         this.isInitialized = false;
+        this.activeRoomId = null;
+        this.gameModulesReady = false;
         
         this.logger?.info('Приложение уничтожено', null, 'App');
     }
@@ -958,72 +1271,19 @@ class App {
      * @param {string} roomId - ID комнаты
      * @private
      */
-    _initGameModules(roomId) {
+    _initGameModules(roomId, options = {}) {
+        const { force = true } = options;
         try {
-            // Создаем игровые модули
-            const gameState = new window.GameState(this.services.get('eventBus'));
-            const roomApi = new window.RoomApi(roomId);
-            const diceService = new window.DiceService();
-            const movementService = new window.MovementService(gameState, this.services.get('eventBus'));
-            const turnService = new window.TurnService({
-                state: gameState,
-                roomApi: roomApi,
-                diceService: diceService,
-                movementService: movementService,
-                gameStateManager: this.services.get('gameStateManager')
-            });
-            
-            // Создаем UI компоненты
-            const playerTokenRenderer = new window.PlayerTokenRenderer();
-            const turnController = new window.TurnController(
-                turnService,
-                playerTokenRenderer,
-                this.services.get('gameStateManager'),
-                this.services.get('eventBus')
-            );
-            const playersPanel = new window.PlayersPanel({
-                gameStateManager: this.services.get('gameStateManager'),
-                eventBus: this.services.get('eventBus')
-            });
-            
-            // Вызываем init() для правильной инициализации TurnController (убрана задержка)
-            if (typeof turnController.init === 'function') {
-                turnController.init();
-                console.log('🎯 TurnController: init() вызван (_initGameModules)');
+            const initialized = this._initializeGameModules(roomId, { force });
+            if (initialized) {
+                this.logger?.info('Игровые модули созданы и инициализированы', {
+                    modules: Array.from(this.modules.keys())
+                }, 'App');
+            } else {
+                this.logger?.debug('Игровые модули уже были готовы', {
+                    roomId: this.activeRoomId
+                }, 'App');
             }
-            if (typeof playersPanel.setupEventListeners === 'function') {
-                playersPanel.setupEventListeners();
-                console.log('🎯 PlayersPanel: setupEventListeners вызван (_initGameModules)');
-            }
-            
-            // Создаем игровое поле
-            const boardLayout = new window.BoardLayout({
-                outerTrackSelector: '#outer-track',
-                innerTrackSelector: '#inner-track',
-                gameState: gameState,
-                eventBus: this.services.get('eventBus'),
-                logger: this.logger,
-                debug: this.config?.get?.('logging.boardLayoutDebug', false)
-            });
-            
-            // Сохраняем модули
-            this.modules.set('gameState', gameState);
-            this.modules.set('roomApi', roomApi);
-            this.modules.set('diceService', diceService);
-            this.modules.set('movementService', movementService);
-            this.modules.set('turnService', turnService);
-            this.modules.set('playerTokenRenderer', playerTokenRenderer);
-            this.modules.set('turnController', turnController);
-            this.modules.set('playersPanel', playersPanel);
-            this.modules.set('boardLayout', boardLayout);
-            
-            // Инициализируем модули
-            this._initializeGameModules();
-            
-            this.logger?.info('Игровые модули созданы и инициализированы', {
-                modules: Array.from(this.modules.keys())
-            }, 'App');
-            
         } catch (error) {
             this.logger?.error('Ошибка создания игровых модулей', error, 'App');
             throw error;
@@ -1034,7 +1294,7 @@ class App {
      * Инициализация созданных игровых модулей
      * @private
      */
-    _initializeGameModules() {
+    _finalizeGameModules() {
         try {
             const gameStateManager = this.services.get('gameStateManager');
             const eventBus = this.services.get('eventBus');

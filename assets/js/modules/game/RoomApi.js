@@ -10,6 +10,9 @@ class RoomApi {
             'Content-Type': 'application/json'
         };
         
+        // Защита от множественных одновременных запросов
+        this.pendingRequests = new Map();
+        
         console.log('🌐 RoomApi: Инициализирован');
     }
     
@@ -122,13 +125,35 @@ class RoomApi {
         const now = Date.now();
         const cached = this.cache?.get(cacheKey);
         
-        if (cached && (now - cached.timestamp) < 3000) { // Кэш на 3 секунды
+        if (cached && (now - cached.timestamp) < 10000) { // Кэш на 10 секунд для снижения нагрузки
             console.log(`📊 RoomApi: Используем кэшированное состояние игры для ${roomId}`);
             return cached.data;
         }
         
+        // Защита от множественных одновременных запросов
+        const pendingKey = `getGameState_${roomId}`;
+        if (this.pendingRequests.has(pendingKey)) {
+            console.log(`📊 RoomApi: Запрос уже выполняется для ${roomId}, ждем результат`);
+            return await this.pendingRequests.get(pendingKey);
+        }
+        
         console.log(`📊 RoomApi: Получение состояния игры в комнате ${roomId}`);
         
+        const requestPromise = this._executeGameStateRequest(endpoint, cacheKey, cached, now);
+        this.pendingRequests.set(pendingKey, requestPromise);
+        
+        try {
+            const result = await requestPromise;
+            return result;
+        } finally {
+            this.pendingRequests.delete(pendingKey);
+        }
+    }
+    
+    /**
+     * Выполнение запроса состояния игры (выделен для переиспользования)
+     */
+    async _executeGameStateRequest(endpoint, cacheKey, cached, now) {
         try {
             const result = await this.request(endpoint, {
                 method: 'GET'
@@ -147,7 +172,7 @@ class RoomApi {
         } catch (error) {
             // При ошибке 429 возвращаем кэшированные данные, если есть
             if (error.message && error.message.includes('429') && cached) {
-                console.log(`📊 RoomApi: HTTP 429, используем кэшированные данные для ${roomId}`);
+                console.log(`📊 RoomApi: HTTP 429, используем кэшированные данные`);
                 return cached.data;
             }
             throw error;
