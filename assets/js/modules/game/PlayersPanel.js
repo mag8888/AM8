@@ -61,11 +61,9 @@ class PlayersPanel {
         // Показываем состояние загрузки сразу при инициализации
         this.showLoadingState();
         
-        // Немедленная загрузка игроков без задержки для ускорения
+        // Используем только forceLoadPlayers для избежания конфликта запросов
+        // preloadGameData будет вызван после успешной загрузки основных данных
         this.forceLoadPlayers();
-        
-        // Предзагружаем данные в фоне для ускорения последующих операций
-        this.preloadGameData();
         
         console.log('✅ PlayersPanel v2.0: Инициализирован');
     }
@@ -450,8 +448,11 @@ class PlayersPanel {
                 gameStateManager.updateFromServer({ players: cachedData });
             }
             
-            // Обновляем кэш в фоне
-            this._fetchPlayersInBackground(roomId);
+            // НЕ вызываем фоновое обновление сразу - это создает конфликт запросов
+            // Предзагрузка будет выполнена через некоторое время
+            setTimeout(() => {
+                this._fetchPlayersInBackground(roomId);
+            }, 15000); // Через 15 секунд, чтобы не конфликтовать с основным запросом
             return;
         }
         
@@ -462,26 +463,22 @@ class PlayersPanel {
      * Фоновое обновление данных игроков для кэша
      */
     _fetchPlayersInBackground(roomId) {
-        // Проверяем глобальный rate limiter для game-state
-        if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
-            console.log('🚫 PlayersPanel: Пропускаем фоновый запрос из-за глобального rate limiting');
+        // Атомарная проверка и установка pending флага для предотвращения race condition
+        if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+            console.log('🚫 PlayersPanel: Пропускаем фоновый запрос из-за глобального rate limiting или concurrent request');
             return;
         }
         
-        // Проверяем локальный rate limiting перед запросом
+        // Проверяем локальный rate limiting после успешной установки pending флага
         const now = Date.now();
         if (now - this._lastApiRequestTime < this._minRequestInterval) {
             console.log('🚫 PlayersPanel: Пропускаем фоновый запрос из-за локального rate limiting');
+            // Очищаем флаг pending так как мы не будем делать запрос
+            window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
             return;
         }
         
         this._lastApiRequestTime = now;
-        
-        // Устанавливаем флаг pending в глобальном limiter
-        if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-            console.log('🚫 PlayersPanel: Не удалось установить pending (race condition)');
-            return;
-        }
         
         fetch(`/api/rooms/${roomId}/game-state`)
             .then(response => {
@@ -513,16 +510,18 @@ class PlayersPanel {
      * Основная загрузка игроков с API
      */
     _fetchPlayersFromAPI(roomId) {
-        // Проверяем глобальный rate limiter для game-state
-        if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
-            console.log('🚫 PlayersPanel: Пропускаем основной запрос из-за глобального rate limiting');
+        // Атомарная проверка и установка pending флага для предотвращения race condition
+        if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+            console.log('🚫 PlayersPanel: Пропускаем основной запрос из-за глобального rate limiting или concurrent request');
             return;
         }
         
-        // Проверяем локальный rate limiting перед запросом
+        // Проверяем локальный rate limiting после успешной установки pending флага
         const now = Date.now();
         if (now - this._lastApiRequestTime < this._minRequestInterval) {
             console.log('🚫 PlayersPanel: Пропускаем основной запрос из-за локального rate limiting');
+            // Очищаем флаг pending так как мы не будем делать запрос
+            window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
             return;
         }
         
@@ -534,12 +533,6 @@ class PlayersPanel {
         // Создаем новый AbortController
         this._currentAbortController = new AbortController();
         this._lastApiRequestTime = now;
-        
-        // Устанавливаем флаг pending в глобальном limiter
-        if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-            console.log('🚫 PlayersPanel: Не удалось установить pending (race condition)');
-            return;
-        }
         
         fetch(`/api/rooms/${roomId}/game-state`, {
             signal: this._currentAbortController.signal
@@ -574,6 +567,11 @@ class PlayersPanel {
                         if (gameStateManager && typeof gameStateManager.updateFromServer === 'function') {
                             gameStateManager.updateFromServer(data.state);
                         }
+                        
+                        // Предзагружаем дополнительные данные через некоторое время
+                        setTimeout(() => {
+                            this.preloadGameData();
+                        }, 10000); // Через 10 секунд после успешной загрузки основных данных
                     } else {
                         console.log('⚠️ PlayersPanel: Игроки не найдены в ответе API');
                         this.showEmptyState();
@@ -628,16 +626,18 @@ class PlayersPanel {
         }
         
         if (roomId) {
-            // Проверяем глобальный rate limiter для game-state
-            if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
-                console.log('🚫 PlayersPanel: Пропускаем предзагрузку из-за глобального rate limiting');
+            // Атомарная проверка и установка pending флага для предотвращения race condition
+            if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+                console.log('🚫 PlayersPanel: Пропускаем предзагрузку из-за глобального rate limiting или concurrent request');
                 return;
             }
             
-            // Проверяем локальный rate limiting перед запросом
+            // Проверяем локальный rate limiting после успешной установки pending флага
             const now = Date.now();
             if (now - this._lastApiRequestTime < this._minRequestInterval) {
                 console.log('🚫 PlayersPanel: Пропускаем предзагрузку из-за локального rate limiting');
+                // Очищаем флаг pending так как мы не будем делать запрос
+                window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
                 return;
             }
             
@@ -649,13 +649,10 @@ class PlayersPanel {
             // Предзагружаем данные с более коротким таймаутом для ускорения
             this._currentAbortController = new AbortController();
             this._lastApiRequestTime = now;
-            const timeoutId = setTimeout(() => this._currentAbortController.abort(), 3000); // 3 секунды вместо 5
-            
-            // Устанавливаем флаг pending в глобальном limiter
-            if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                console.log('🚫 PlayersPanel: Не удалось установить pending (race condition)');
-                return;
-            }
+            const timeoutId = setTimeout(() => {
+                this._currentAbortController.abort();
+                window.CommonUtils?.gameStateLimiter.clearRequestPending(roomId);
+            }, 3000); // 3 секунды вместо 5
             
             fetch(`/api/rooms/${roomId}/game-state`, {
                 signal: this._currentAbortController.signal,
