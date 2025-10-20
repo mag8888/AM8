@@ -1295,6 +1295,17 @@ class BankModule {
         
         // Загружаем актуальные данные игрока с сервера
         if (roomId && currentPlayer.id) {
+            // Проверяем глобальный rate limiter для game-state
+            if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
+                console.log('🚫 BankModule: Пропускаем запрос из-за глобального rate limiting');
+                return;
+            }
+            
+            // Устанавливаем флаг pending в глобальном limiter
+            if (window.CommonUtils) {
+                window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+            }
+            
             try {
                 console.log('🌐 BankModule: Загружаем данные игрока с сервера...', { roomId, playerId: currentPlayer.id });
                 
@@ -1335,6 +1346,11 @@ class BankModule {
                 }
             } catch (error) {
                 console.warn('⚠️ BankModule: Ошибка загрузки данных с сервера:', error);
+            } finally {
+                // Очищаем флаг pending в глобальном limiter
+                if (window.CommonUtils) {
+                    window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+                }
             }
         }
         
@@ -1601,6 +1617,17 @@ class BankModule {
         
         // Загружаем актуальные данные игроков с сервера
         if (roomId) {
+            // Проверяем глобальный rate limiter для game-state
+            if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
+                console.log('🚫 BankModule: Пропускаем запрос из-за глобального rate limiting');
+                return;
+            }
+            
+            // Устанавливаем флаг pending в глобальном limiter
+            if (window.CommonUtils) {
+                window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+            }
+            
             try {
                 console.log('🌐 BankModule: Загружаем список игроков с сервера...', { roomId });
                 
@@ -1624,6 +1651,11 @@ class BankModule {
                 }
             } catch (error) {
                 console.warn('⚠️ BankModule: Ошибка загрузки игроков с сервера, используем локальные данные:', error);
+            } finally {
+                // Очищаем флаг pending в глобальном limiter
+                if (window.CommonUtils) {
+                    window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+                }
             }
         }
         

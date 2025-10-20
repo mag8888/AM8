@@ -112,6 +112,17 @@ class BankModuleServer {
      * Загрузка состояния игры с сервера
      */
     async fetchGameState(roomId) {
+        // Проверяем глобальный rate limiter для game-state
+        if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
+            console.log('🚫 BankModuleServer: Пропускаем запрос из-за глобального rate limiting');
+            return null;
+        }
+        
+        // Устанавливаем флаг pending в глобальном limiter
+        if (window.CommonUtils) {
+            window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+        }
+        
         // Добавляем таймаут для предотвращения блокировки UI
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000); // Увеличиваем таймаут до 8 секунд
@@ -161,6 +172,11 @@ class BankModuleServer {
             }
             
             throw error;
+        } finally {
+            // Очищаем флаг pending в глобальном limiter
+            if (window.CommonUtils) {
+                window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+            }
         }
     }
     

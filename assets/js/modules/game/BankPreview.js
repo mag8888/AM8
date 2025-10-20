@@ -196,11 +196,29 @@ class BankPreview {
                 // Fallback: получаем данные с сервера напрямую
                 const roomId = this.getCurrentRoomId();
                 if (roomId) {
-                    const response = await fetch(`/api/rooms/${roomId}/game-state`);
-                    if (response.ok) {
-                        const gameStateData = await response.json();
-                        if (gameStateData.success && gameStateData.state?.players) {
-                            bankData = this.extractBankDataFromGameState(gameStateData.state);
+                    // Проверяем глобальный rate limiter для game-state
+                    if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
+                        console.log('🚫 BankPreview: Пропускаем запрос из-за глобального rate limiting');
+                        return;
+                    }
+                    
+                    // Устанавливаем флаг pending в глобальном limiter
+                    if (window.CommonUtils) {
+                        window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+                    }
+                    
+                    try {
+                        const response = await fetch(`/api/rooms/${roomId}/game-state`);
+                        if (response.ok) {
+                            const gameStateData = await response.json();
+                            if (gameStateData.success && gameStateData.state?.players) {
+                                bankData = this.extractBankDataFromGameState(gameStateData.state);
+                            }
+                        }
+                    } finally {
+                        // Очищаем флаг pending в глобальном limiter
+                        if (window.CommonUtils) {
+                            window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
                         }
                     }
                 }

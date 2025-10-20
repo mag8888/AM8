@@ -45,6 +45,18 @@ class GameState {
             
             console.log('🏠 GameState: Загружаем игроков из комнаты:', roomId);
             
+            // Проверяем глобальный rate limiter для game-state
+            if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
+                console.log('🚫 GameState: Пропускаем запрос из-за глобального rate limiting');
+                this.addTestPlayers();
+                return;
+            }
+            
+            // Устанавливаем флаг pending в глобальном limiter
+            if (window.CommonUtils) {
+                window.CommonUtils.gameStateLimiter.setRequestPending(roomId);
+            }
+            
             // Загружаем данные комнаты
             fetch(`/api/rooms/${roomId}/game-state`)
                 .then(response => response.json())
@@ -60,6 +72,12 @@ class GameState {
                 .catch(error => {
                     console.error('❌ GameState: Ошибка загрузки игроков из комнаты:', error);
                     this.addTestPlayers();
+                })
+                .finally(() => {
+                    // Очищаем флаг pending в глобальном limiter
+                    if (window.CommonUtils) {
+                        window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+                    }
                 });
         } catch (error) {
             console.error('❌ GameState: Ошибка загрузки игроков:', error);
