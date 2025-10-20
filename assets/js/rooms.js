@@ -8,6 +8,13 @@ let roomService;
 let router;
 let selectedRoom = null;
 
+// Флаги для предотвращения множественных одновременных запросов
+let isLoadingRooms = false;
+let isLoadingStats = false;
+let lastRoomsRequest = 0;
+let lastStatsRequest = 0;
+const MIN_REQUEST_INTERVAL = 5000; // 5 секунд минимум между запросами
+
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🏠 Rooms: Инициализация страницы комнат');
@@ -33,9 +40,9 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function startRoomsPolling() {
     let lastRefreshAttempt = 0;
-    const minRefreshInterval = 5000; // Минимум 5 секунд между обновлениями
+    const minRefreshInterval = 15000; // Увеличиваем до 15 секунд между обновлениями
     
-    // Обновляем список комнат каждые 30 секунд для снижения нагрузки
+    // Обновляем список комнат каждые 60 секунд для снижения нагрузки на сервер
     setInterval(async () => {
         const now = Date.now();
         if (now - lastRefreshAttempt < minRefreshInterval) {
@@ -50,7 +57,7 @@ function startRoomsPolling() {
             console.error('❌ Rooms: Ошибка периодического обновления:', error);
             handleRefreshError(error);
         }
-    }, 30000);
+    }, 60000); // Увеличиваем интервал до 60 секунд
     
     // Также обновляем при фокусе на окне (когда пользователь возвращается)
     window.addEventListener('focus', async () => {
@@ -119,7 +126,18 @@ function handleRefreshError(error) {
  * Обновление списка комнат
  */
 async function refreshRoomsList() {
+    // Предотвращаем множественные одновременные запросы
+    const now = Date.now();
+    if (isLoadingRooms || (now - lastRoomsRequest < MIN_REQUEST_INTERVAL)) {
+        console.log('⏳ Rooms: Пропускаем обновление - запрос уже выполняется или слишком часто');
+        return;
+    }
+    
+    isLoadingRooms = true;
+    lastRoomsRequest = now;
+    
     try {
+        console.log('🔄 Rooms: Начинаем обновление списка комнат');
         const rooms = await roomService.getAllRooms();
         
         // Получаем текущее состояние комнат
@@ -146,12 +164,15 @@ async function refreshRoomsList() {
                 roomsCount.textContent = `${rooms.length} комнат`;
             }
             
-            // Обновляем статистику
-            try {
-                await loadStats();
-            } catch (statsError) {
-                console.warn('⚠️ Rooms: Ошибка обновления статистики:', statsError);
-                // Игнорируем ошибки статистики при обновлении списка комнат
+            // Обновляем статистику только при значительных изменениях
+            // чтобы не создавать лишнюю нагрузку на сервер
+            if (hasChanges.hasNewRooms || hasChanges.hasRemovedRooms) {
+                try {
+                    await loadStats();
+                } catch (statsError) {
+                    console.warn('⚠️ Rooms: Ошибка обновления статистики:', statsError);
+                    // Игнорируем ошибки статистики при обновлении списка комнат
+                }
             }
             
             // Показываем уведомления
@@ -181,6 +202,9 @@ async function refreshRoomsList() {
             console.warn('⏳ Rooms: Обновление пропущено из-за rate limiting');
             // Не показываем ошибку пользователю при периодическом обновлении
         }
+    } finally {
+        // Всегда сбрасываем флаг загрузки
+        isLoadingRooms = false;
     }
 }
 
@@ -474,7 +498,18 @@ async function loadRooms() {
  * Загрузка статистики
  */
 async function loadStats() {
+    // Предотвращаем множественные одновременные запросы статистики
+    const now = Date.now();
+    if (isLoadingStats || (now - lastStatsRequest < MIN_REQUEST_INTERVAL)) {
+        console.log('⏳ Rooms: Пропускаем загрузку статистики - запрос уже выполняется или слишком часто');
+        return;
+    }
+    
+    isLoadingStats = true;
+    lastStatsRequest = now;
+    
     try {
+        console.log('📊 Rooms: Загружаем статистику');
         const stats = await roomService.getStats();
         renderStats(stats);
     } catch (error) {
@@ -492,6 +527,9 @@ async function loadStats() {
                 playersOnline: 0
             });
         }
+    } finally {
+        // Всегда сбрасываем флаг загрузки
+        isLoadingStats = false;
     }
 }
 
