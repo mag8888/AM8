@@ -1470,9 +1470,14 @@ class BankModuleServer {
     }
     
     /**
-     * Форматирование чисел
+     * Форматирование чисел (использует CommonUtils)
      */
     formatNumber(num) {
+        // Используем общую утилиту, если доступна
+        if (window.CommonUtils) {
+            return window.CommonUtils.formatNumber(num);
+        }
+        // Fallback для обратной совместимости
         return new Intl.NumberFormat('ru-RU').format(num);
     }
     
