@@ -196,6 +196,9 @@ class BankPreview {
         // Вставляем превью в начало контейнера
         this.container.insertBefore(this.previewElement, this.container.firstChild);
         
+        // Сбрасываем флаг обработчиков чтобы переустановить их
+        this._eventListenersSetup = false;
+        
         // Настраиваем обработчики событий после создания элемента
         this.setupEventListeners();
 
@@ -282,13 +285,26 @@ class BankPreview {
      * Настройка обработчиков событий
      */
     setupEventListeners() {
-        if (!this.previewElement || this._eventListenersSetup) return;
+        if (!this.previewElement) return;
         
-        // Клик по превью открывает банк
-        this.previewElement.addEventListener('click', (e) => {
+        // Удаляем старые обработчики если они есть
+        if (this._clickHandler) {
+            this.previewElement.removeEventListener('click', this._clickHandler);
+        }
+        
+        // Создаем новый обработчик клика для открытия банка
+        this._clickHandler = (e) => {
             e.preventDefault();
+            e.stopPropagation();
+            console.log('🏦 BankPreview: Клик по панели банка, открываем popup');
             this.openBank();
-        });
+        };
+        
+        // Добавляем обработчик клика
+        this.previewElement.addEventListener('click', this._clickHandler);
+        
+        // Делаем элемент кликабельным
+        this.previewElement.style.cursor = 'pointer';
         
         // Отмечаем, что обработчики настроены
         this._eventListenersSetup = true;
@@ -953,6 +969,12 @@ class BankPreview {
         if (this.observer) {
             this.observer.disconnect();
             this.observer = null;
+        }
+        
+        // Очищаем обработчик клика
+        if (this.previewElement && this._clickHandler) {
+            this.previewElement.removeEventListener('click', this._clickHandler);
+            this._clickHandler = null;
         }
         
         // Очищаем ссылки на элементы
