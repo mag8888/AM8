@@ -220,8 +220,15 @@ class PlayersPanel {
     render() {
         if (!this.container) return;
         
+        // Очищаем контейнер перед рендерингом, чтобы избежать дублирования
+        if (this.container.children.length > 0) {
+            console.log('🧹 PlayersPanel: Очищаем контейнер перед рендерингом');
+            this.container.innerHTML = '';
+        }
+        
         // Оптимизация: проверяем, нужно ли обновлять DOM
-        if (this._lastRenderContent) {
+        if (this._lastRenderContent && this.container.children.length > 0) {
+            console.log('⚡ PlayersPanel: Пропускаем рендеринг, контент уже существует');
             return; // Уже отрендерено
         }
         
@@ -1080,6 +1087,20 @@ class PlayersPanel {
                     }
                 }
             } else {
+                // Пытаемся получить активного игрока из GameStateManager
+                if (this.gameStateManager && typeof this.gameStateManager.getState === 'function') {
+                    try {
+                        const state = this.gameStateManager.getState();
+                        if (state && state.activePlayer) {
+                            // Рекурсивно вызываем себя с полученными данными
+                            this.updateActivePlayerInfo(state.activePlayer);
+                            return;
+                        }
+                    } catch (error) {
+                        console.warn('⚠️ PlayersPanel: Ошибка получения состояния для activePlayer:', error);
+                    }
+                }
+                
                 currentPlayerName.textContent = 'Загрузка...';
                 const avatarText = playerAvatar?.querySelector('.avatar-text');
                 if (avatarText) {
