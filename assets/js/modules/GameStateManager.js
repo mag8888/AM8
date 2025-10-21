@@ -162,7 +162,11 @@ class GameStateManager {
                     return gameStateData.state;
                 }
             } else {
-                console.warn('⚠️ GameStateManager: Неудачный запрос game-state:', response.status);
+                if (response.status === 429) {
+                    console.warn('⚠️ GameStateManager: Rate limited (HTTP 429), используем текущее состояние');
+                } else {
+                    console.warn('⚠️ GameStateManager: Неудачный запрос game-state:', response.status);
+                }
             }
         } catch (error) {
             if (error.name === 'AbortError') {

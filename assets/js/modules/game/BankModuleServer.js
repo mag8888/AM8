@@ -1396,6 +1396,16 @@ class BankModuleServer {
                 })
             });
             
+            // Проверяем статус ответа перед парсингом JSON
+            if (!response.ok) {
+                if (response.status === 429) {
+                    console.warn('⚠️ BankModuleServer: Rate limited при переводе, попробуйте позже');
+                    this.showNotification('Сервер перегружен, попробуйте позже', 'warning');
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const result = await response.json();
             
             if (result.success) {
@@ -1421,7 +1431,17 @@ class BankModuleServer {
             }
         } catch (error) {
             console.error('❌ BankModuleServer: Ошибка перевода:', error);
-            this.showNotification('Ошибка выполнения перевода', 'error');
+            
+            // Не показываем ошибку для rate limiting или сетевых проблем
+            if (error.message?.includes('429') || 
+                error.message?.includes('Rate limited') ||
+                error.name === 'TypeError' ||
+                error.message?.includes('Load failed')) {
+                console.warn('⚠️ BankModuleServer: Сетевая ошибка при переводе, попробуйте позже');
+                this.showNotification('Временные проблемы с сетью, попробуйте позже', 'warning');
+            } else {
+                this.showNotification('Ошибка выполнения перевода', 'error');
+            }
         } finally {
             this._isTransferring = false;
         }
@@ -1457,6 +1477,16 @@ class BankModuleServer {
                     amount: amount
                 })
             });
+            
+            // Проверяем статус ответа перед парсингом JSON
+            if (!response.ok) {
+                if (response.status === 429) {
+                    console.warn('⚠️ BankModuleServer: Rate limited при взятии кредита, попробуйте позже');
+                    this.showNotification('Сервер перегружен, попробуйте позже', 'warning');
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             
             const result = await response.json();
             
@@ -1518,6 +1548,16 @@ class BankModuleServer {
                     amount: amount
                 })
             });
+            
+            // Проверяем статус ответа перед парсингом JSON
+            if (!response.ok) {
+                if (response.status === 429) {
+                    console.warn('⚠️ BankModuleServer: Rate limited при погашении кредита, попробуйте позже');
+                    this.showNotification('Сервер перегружен, попробуйте позже', 'warning');
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             
             const result = await response.json();
             
