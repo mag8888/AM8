@@ -41,6 +41,7 @@
             this.lastKnownDecks = [];
             this.rateLimitUntil = 0;
             this.rateLimitBackoff = 0;
+            this._loadDecksTimer = null;
 
             this.handleContainerClick = this.handleContainerClick.bind(this);
 
@@ -107,6 +108,20 @@
                 clearInterval(this.autoRefreshTimer);
                 this.autoRefreshTimer = null;
             }
+            if (this._loadDecksTimer) {
+                clearTimeout(this._loadDecksTimer);
+                this._loadDecksTimer = null;
+            }
+        }
+        
+        /**
+         * Очистка ресурсов
+         */
+        destroy() {
+            this.clearAutoRefresh();
+            this.cancelPendingRequest();
+            this.container = null;
+            this.lastKnownDecks = [];
         }
 
         /**
@@ -120,6 +135,16 @@
          * Загружает данные колод с API
          */
         async loadDecks() {
+            // Дебаунсинг для предотвращения множественных одновременных запросов
+            if (this._loadDecksTimer) {
+                clearTimeout(this._loadDecksTimer);
+            }
+            
+            // Отменяем предыдущий запрос если он еще выполняется
+            if (this.abortController) {
+                this.abortController.abort();
+            }
+            
             if (this._isRateLimited()) {
                 console.warn('⚠️ CardDeckPanel: Пропускаем загрузку — действует rate limit');
                 if (this.lastKnownDecks.length) {
@@ -135,9 +160,10 @@
 
             const requestInit = {
                 method: 'GET',
-                credentials: 'same-origin',
+                credentials: 'include', // Изменено с 'same-origin' для лучшей совместимости с CORS
                 headers: {
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 signal: this.abortController.signal
             };
@@ -198,9 +224,15 @@
                     return;
                 }
                 
-                // Улучшенная обработка различных типов ошибок
-                if (error.message?.includes('Load failed') || error.name === 'TypeError') {
-                    console.warn('⚠️ CardDeckPanel: Сетевая ошибка, используем кэшированные данные');
+                // Улучшенная обработка различных типов ошибок (включая CORS)
+                const isNetworkError = error.message?.includes('Load failed') || 
+                                     error.name === 'TypeError' ||
+                                     error.message?.includes('access control checks') ||
+                                     error.message?.includes('CORS') ||
+                                     error.message?.includes('Failed to fetch');
+                
+                if (isNetworkError) {
+                    console.warn('⚠️ CardDeckPanel: Сетевая/CORS ошибка, используем кэшированные данные');
                     if (this.lastKnownDecks.length) {
                         this.renderDecks(this.lastKnownDecks);
                         return;
@@ -219,6 +251,10 @@
             } finally {
                 this.setLoadingState(false);
                 this.abortController = null;
+                if (this._loadDecksTimer) {
+                    clearTimeout(this._loadDecksTimer);
+                    this._loadDecksTimer = null;
+                }
             }
         }
 
