@@ -480,6 +480,9 @@ class BankPreview {
             credit: bankState.credit
         });
         
+        // Сбрасываем кэш отображаемых данных чтобы принудительно обновить UI
+        this._lastDisplayedData = null;
+        
         // Принудительно обновляем UI с данными от BankModuleServer
         this.updatePreviewUI(bankState);
     }
@@ -600,14 +603,19 @@ class BankPreview {
         // 1. Это первое обновление (_lastDisplayedData === null)
         // 2. Данные действительно изменились
         // 3. Принудительное обновление (когда balance был 0, а теперь больше 0)
+        // 4. Всегда обновляем при получении данных от BankModuleServer (баланс > 0)
         const shouldUpdate = !this._lastDisplayedData || 
                            this._lastDisplayedData !== dataString ||
-                           (this._lastDisplayedData.includes('"balance":0') && !dataString.includes('"balance":0'));
+                           (this._lastDisplayedData.includes('"balance":0') && !dataString.includes('"balance":0')) ||
+                           (bankData.balance > 0 && this._lastDisplayedData && this._lastDisplayedData.includes('"balance":0'));
                            
         if (!shouldUpdate) {
             // Данные не изменились, пропускаем обновление UI
+            console.log('🔄 BankPreview: Пропускаем обновление UI - данные не изменились:', dataString);
             return;
         }
+        
+        console.log('✅ BankPreview: Обновляем UI с новыми данными:', dataString);
         
         this._lastDisplayedData = dataString;
         
