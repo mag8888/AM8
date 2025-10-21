@@ -1085,18 +1085,12 @@ class PlayersPanel {
         }
         
         playerDiv.innerHTML = `
-            <div class="player-avatar">
-                <span class="player-icon">🎯</span>
-            </div>
             <div class="player-info">
                 <div class="player-name">${player.username || 'Игрок ' + (index + 1)}</div>
                 <div class="player-status ${isActive ? 'active' : 'inactive'}">
                     ${status}
                 </div>
                 <div class="player-balance">$${balance}</div>
-            </div>
-            <div class="player-token">
-                <span class="token-icon">🎯</span>
             </div>
         `;
         
@@ -1972,14 +1966,6 @@ class PlayersPanel {
                 font-weight: 600;
             }
             
-            .player-token {
-                flex-shrink: 0;
-            }
-            
-            .token-icon {
-                font-size: 1rem;
-                opacity: 0.7;
-            }
 
             /* === НОВЫЙ УЛУЧШЕННЫЙ ДИЗАЙН ПРАВОЙ ПАНЕЛИ === */
             
