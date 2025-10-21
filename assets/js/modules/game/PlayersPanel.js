@@ -260,7 +260,7 @@ class PlayersPanel {
                             <div class="player-status-indicator" id="player-status-indicator"></div>
                         </div>
                         <div class="player-details">
-                            <div class="player-name" id="current-player-name">Загрузка...</div>
+                            <div class="player-name" id="current-player-name"></div>
                             <div class="player-status" id="turn-status">
                                 <span class="status-icon">⏳</span>
                                 <span class="status-text">Ожидание данных</span>
@@ -1127,6 +1127,7 @@ class PlayersPanel {
             if (activePlayer) {
                 const displayName = PlayerStatusUtils.getPlayerDisplayName(activePlayer);
                 currentPlayerName.textContent = displayName;
+                console.log('✅ PlayersPanel: Обновляем имя активного игрока:', displayName);
                 
                 // Обновляем аватар с инициалами игрока или эмодзи
                 if (playerAvatar && displayName) {
@@ -1161,8 +1162,8 @@ class PlayersPanel {
                 // Принудительно обновляем данные если activePlayer не найден
                 this.forceUpdateGameState();
                 
-                // Показываем временное состояние только на короткое время
-                currentPlayerName.textContent = 'Загрузка...';
+                // НЕ показываем "Загрузка..." - пусть остается пустым или показывает последнее известное имя
+                // currentPlayerName.textContent = 'Загрузка...';
                 const avatarText = playerAvatar?.querySelector('.avatar-text');
                 if (avatarText) {
                     avatarText.textContent = '👤';
