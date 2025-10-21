@@ -803,7 +803,7 @@ class PlayerTokens {
             this._performForceUpdate();
             this._forceUpdateTimer = null;
             // Флаг будет сброшен в _performForceUpdate после завершения
-        }, 500); // Увеличена задержка до 500мс для лучшей защиты от HTTP 429
+        }, 150); // Увеличена задержка до 150мс для лучшей защиты
     }
     
     /**

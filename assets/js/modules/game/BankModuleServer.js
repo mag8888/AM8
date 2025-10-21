@@ -25,8 +25,7 @@ class BankModuleServer {
             credit: 0,
             maxCredit: 0,
             players: [],
-            transactions: [],
-            loaded: false
+            transactions: []
         };
         
         // UI элементы
@@ -77,32 +76,8 @@ class BankModuleServer {
             
             console.log('🌐 BankModuleServer: Загружаем данные с сервера для комнаты:', roomId);
             
-            // Предпочитаем использовать GameStateManager чтобы избегать дублирующих запросов
-            let gameStateData = null;
-            const canUseManager = this.gameStateManager && typeof this.gameStateManager.getState === 'function';
-
-            if (canUseManager) {
-                const cachedState = this.gameStateManager.getState();
-                const cacheIsFresh = cachedState && cachedState.players && cachedState.players.length > 0;
-
-                if (!force && cacheIsFresh) {
-                    gameStateData = cachedState;
-                } else if (typeof this.gameStateManager.fetchGameState === 'function') {
-                    try {
-                        const fetched = await this.gameStateManager.fetchGameState(roomId, force);
-                        gameStateData = fetched || this.gameStateManager.getState();
-                    } catch (managerError) {
-                        console.warn('⚠️ BankModuleServer: fetch через GameStateManager не удался, fallback к прямому запросу', managerError);
-                    }
-                } else {
-                    gameStateData = cachedState;
-                }
-            }
-
-            // Fallback: прямой запрос только если GameStateManager отсутствует или не вернул данные
-            if (!gameStateData) {
-                gameStateData = await this.fetchGameState(roomId);
-            }
+            // Загружаем только состояние игры, баланс получаем из него
+            const gameStateData = await this.fetchGameState(roomId);
             
             if (gameStateData) {
                 // Обновляем состояние банка данными из gameState
@@ -123,8 +98,6 @@ class BankModuleServer {
             // Показываем уведомление только для критических ошибок
             if (!error.message?.includes('Load failed') && 
                 !error.message?.includes('Таймаут') &&
-                !error.message?.includes('429') &&
-                !error.message?.includes('Rate limited') &&
                 error.name !== 'TypeError') {
                 this.showNotification('Ошибка загрузки данных с сервера', 'error');
             }
@@ -166,10 +139,6 @@ class BankModuleServer {
                 if (response.status === 404) {
                     console.warn('⚠️ BankModuleServer: Комната не найдена, используем локальные данные');
                     return null; // Вернем null вместо ошибки
-                }
-                if (response.status === 429) {
-                    console.warn('⚠️ BankModuleServer: Rate limited (HTTP 429), используем локальные данные');
-                    return null; // Не выбрасываем ошибку для 429
                 }
                 throw new Error(`Ошибка загрузки состояния игры: ${response.status}`);
             }
@@ -339,7 +308,6 @@ class BankModuleServer {
         
         this.bankState.credit = currentPlayer.currentLoan || 0;
         this.bankState.currentPlayer = currentPlayer;
-        this.bankState.loaded = true;
         
         console.log('📊 BankModuleServer: Состояние обновлено:', {
             balance: this.bankState.balance,
@@ -490,10 +458,6 @@ class BankModuleServer {
      * Обновление UI данными с сервера
      */
     updateUIFromServer() {
-        if (!this.bankState || this.bankState.loaded === false) {
-            return;
-        }
-
         if (!this.ui) {
             // Очищаем кэш если UI недоступен
             this._elementCache.clear();
@@ -569,26 +533,6 @@ class BankModuleServer {
         this.updateTransactionsHistory();
         
         console.log('🔄 BankModuleServer: UI обновлен данными с сервера');
-        
-        // Уведомляем BankPreview о новых данных
-        this.notifyBankPreview();
-    }
-    
-    /**
-     * Уведомление BankPreview о новых данных
-     */
-    notifyBankPreview() {
-        try {
-            if (window.app && window.app.getModule) {
-                const bankPreview = window.app.getModule('bankPreview');
-                if (bankPreview && typeof bankPreview.updateFromBankModule === 'function') {
-                    console.log('🔄 BankModuleServer: Уведомляем BankPreview о новых данных');
-                    bankPreview.updateFromBankModule(this.bankState);
-                }
-            }
-        } catch (error) {
-            console.warn('⚠️ BankModuleServer: Ошибка уведомления BankPreview:', error);
-        }
     }
     
     /**
@@ -1446,16 +1390,6 @@ class BankModuleServer {
                 })
             });
             
-            // Проверяем статус ответа перед парсингом JSON
-            if (!response.ok) {
-                if (response.status === 429) {
-                    console.warn('⚠️ BankModuleServer: Rate limited при переводе, попробуйте позже');
-                    this.showNotification('Сервер перегружен, попробуйте позже', 'warning');
-                    return;
-                }
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
             const result = await response.json();
             
             if (result.success) {
@@ -1481,17 +1415,7 @@ class BankModuleServer {
             }
         } catch (error) {
             console.error('❌ BankModuleServer: Ошибка перевода:', error);
-            
-            // Не показываем ошибку для rate limiting или сетевых проблем
-            if (error.message?.includes('429') || 
-                error.message?.includes('Rate limited') ||
-                error.name === 'TypeError' ||
-                error.message?.includes('Load failed')) {
-                console.warn('⚠️ BankModuleServer: Сетевая ошибка при переводе, попробуйте позже');
-                this.showNotification('Временные проблемы с сетью, попробуйте позже', 'warning');
-            } else {
-                this.showNotification('Ошибка выполнения перевода', 'error');
-            }
+            this.showNotification('Ошибка выполнения перевода', 'error');
         } finally {
             this._isTransferring = false;
         }
@@ -1527,16 +1451,6 @@ class BankModuleServer {
                     amount: amount
                 })
             });
-            
-            // Проверяем статус ответа перед парсингом JSON
-            if (!response.ok) {
-                if (response.status === 429) {
-                    console.warn('⚠️ BankModuleServer: Rate limited при взятии кредита, попробуйте позже');
-                    this.showNotification('Сервер перегружен, попробуйте позже', 'warning');
-                    return;
-                }
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
             
             const result = await response.json();
             
@@ -1598,16 +1512,6 @@ class BankModuleServer {
                     amount: amount
                 })
             });
-            
-            // Проверяем статус ответа перед парсингом JSON
-            if (!response.ok) {
-                if (response.status === 429) {
-                    console.warn('⚠️ BankModuleServer: Rate limited при погашении кредита, попробуйте позже');
-                    this.showNotification('Сервер перегружен, попробуйте позже', 'warning');
-                    return;
-                }
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
             
             const result = await response.json();
             
@@ -1791,10 +1695,6 @@ class BankModuleServer {
             // Загружаем историю операций с сервера
             const response = await fetch(`/api/bank/transactions/${roomId}/${playerId}`);
             if (!response.ok) {
-                if (response.status === 429) {
-                    console.warn('⚠️ BankModuleServer: Rate limited при загрузке истории операций, оставляем текущую');
-                    return; // Не сбрасываем транзакции при rate limiting
-                }
                 console.warn('⚠️ BankModuleServer: Не удалось загрузить историю операций:', response.status);
                 this.bankState.transactions = [];
                 return;
@@ -1973,9 +1873,6 @@ class BankModuleServer {
             this.ui.parentNode.removeChild(this.ui);
         }
         this.ui = null;
-        if (this.bankState) {
-            this.bankState.loaded = false;
-        }
         console.log('🏦 BankModuleServer: Уничтожен');
     }
 }
