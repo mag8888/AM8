@@ -81,9 +81,9 @@ class BankPreview {
             // Проверяем есть ли уже данные в GameStateManager при подписке
             if (this.gameStateManager._state && this.gameStateManager._state.players) {
                 console.log('🔄 BankPreview: Найдены существующие данные, обновляем сразу');
-                // Обновляем только если данные действительные (не нулевые или не fallback)
+                // Обновляем если данные валидны (даже если balance = 0)
                 const currentData = this.extractBankDataFromGameState(this.gameStateManager._state);
-                if (currentData && currentData.balance > 0) {
+                if (currentData && this._isValidSnapshot(currentData)) {
                     setTimeout(() => {
                         this.updatePreviewDataFromState(this.gameStateManager._state);
                     }, 200);
@@ -236,13 +236,13 @@ class BankPreview {
             
             let bankData = null;
             
-            // ПРИОРИТЕТ 1: GameStateManager (актуальные данные игры) - только если данные валидны
+            // ПРИОРИТЕТ 1: GameStateManager (актуальные данные игры) - всегда используем если есть
             let gamestateData = null;
             if (this.gameStateManager && this.gameStateManager._state && this.gameStateManager._state.players && this.gameStateManager._state.players.length > 0) {
                 gamestateData = this.extractBankDataFromGameState(this.gameStateManager._state);
                 if (gamestateData && this._isValidSnapshot(gamestateData)) {
                     bankData = gamestateData;
-                    console.log('✅ BankPreview: Начальные данные из GameStateManager (валидные)');
+                    console.log('✅ BankPreview: Начальные данные из GameStateManager (реальные данные игрока)');
                 }
             } 
             
@@ -417,14 +417,14 @@ class BankPreview {
                 this.bankModule = app.modules.get('bankModuleServer') || app.modules.get('bankModule');
             }
             
-            // ПРИОРИТЕТ 1: GameStateManager (актуальные данные игры) - только если данные валидны
+            // ПРИОРИТЕТ 1: GameStateManager (актуальные данные игры) - всегда используем если есть
             let gamestateData = null;
             if (this.gameStateManager && this.gameStateManager._state && this.gameStateManager._state.players && this.gameStateManager._state.players.length > 0) {
                 gamestateData = this.extractBankDataFromGameState(this.gameStateManager._state);
-                // Используем данные из GameState только если они валидны (баланс > 0 или есть другие данные)
-                if (gamestateData && (gamestateData.balance > 0 || gamestateData.income > 0)) {
+                // Используем данные из GameState если они валидны (даже если balance = 0)
+                if (gamestateData && this._isValidSnapshot(gamestateData)) {
                     bankData = gamestateData;
-                    console.log('✅ BankPreview: Используем валидные данные из GameStateManager');
+                    console.log('✅ BankPreview: Используем реальные данные из GameStateManager');
                 }
             } 
             
@@ -561,18 +561,14 @@ class BankPreview {
             return null;
         }
         
-        // Получаем баланс с fallback на стартовый баланс
+        // Получаем реальный баланс игрока
         let balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
             ? currentPlayer.money 
             : ((currentPlayer.balance !== undefined && currentPlayer.balance !== null) 
                 ? currentPlayer.balance 
-                : 5000); // fallback только если значения undefined/null
+                : 0); // Используем 0 если значения undefined/null
         
-        // Если баланс 0, устанавливаем стартовый баланс 5000
-        if (balance === 0) {
-            balance = 5000;
-            console.log('💰 BankPreview: Баланс был 0, устанавливаем стартовый баланс 5000');
-        }
+        console.log('💰 BankPreview: Реальный баланс игрока:', balance, 'для игрока:', currentPlayer.username || currentPlayer.id);
         
         // Используем данные предпринимателя по умолчанию если это предприниматель
         let bankData;
@@ -612,14 +608,14 @@ class BankPreview {
     getFallbackBankData() {
         const currentUser = this.getCurrentUser();
         
-        // Возвращаем стандартные данные для предпринимателя
+        // Возвращаем данные по умолчанию (если нет данных игрока)
         return {
-            balance: 5000, // Стартовый баланс
-            income: 10000,
-            expenses: 6200,
-            netIncome: 3800,
+            balance: 0, // Показываем 0 если нет данных
+            income: 0,
+            expenses: 0,
+            netIncome: 0,
             credit: 0,
-            maxCredit: 38000
+            maxCredit: 0
         };
     }
 
