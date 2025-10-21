@@ -5,11 +5,12 @@
  */
 
 class TurnController {
-    constructor(turnService, playerTokenRenderer, gameStateManager, eventBus = null) {
+    constructor(turnService, playerTokenRenderer, gameStateManager, eventBus = null, turnManager = null) {
         this.turnService = turnService;
         this.playerTokenRenderer = playerTokenRenderer;
         this.gameStateManager = gameStateManager;
         this.eventBus = eventBus;
+        this.turnManager = turnManager;
         this.ui = null;
         this.isRolling = false;
         this.isMoving = false;
@@ -17,6 +18,7 @@ class TurnController {
         this._lastStateKey = null;
         this._eventListenersSetup = false; // Флаг для избежания повторной настройки
         this._setupAttempts = 0; // Счетчик попыток настройки обработчиков
+        this._turnManagerListeners = [];
         
         // Создаем PlayerList для отображения игроков
         this.playerList = null;
@@ -39,6 +41,7 @@ class TurnController {
     init() {
         this.createUI(); // createUI() вызовет bindToExistingUI(), который сам найдет правильное время для setupEventListeners()
         this.initializePlayerList();
+        this.setupTurnManagerListeners();
         this.updateUI();
     }
     
@@ -86,6 +89,47 @@ class TurnController {
         } else {
             console.warn('⚠️ TurnController: eventBus недоступен для push-уведомлений');
         }
+    }
+
+    /**
+     * Настройка слушателей TurnManager
+     */
+    setupTurnManagerListeners() {
+        if (!this.turnManager || this._turnManagerListenersAttached) {
+            return;
+        }
+        if (typeof this.turnManager.on !== 'function') {
+            console.warn('⚠️ TurnController: TurnManager не поддерживает события');
+            return;
+        }
+
+        this._turnManagerListenersAttached = true;
+
+        const addListener = (event, handler) => {
+            const wrapped = (payload) => {
+                const data = payload && payload.detail !== undefined ? payload.detail : payload;
+                try {
+                    handler.call(this, data);
+                } catch (error) {
+                    console.error(`❌ TurnController: Ошибка обработчика ${event}`, error);
+                }
+            };
+            this.turnManager.on(event, wrapped);
+            this._turnManagerListeners.push({ event, handler: wrapped });
+        };
+
+        addListener('turn:state', this.onTurnManagerState);
+        addListener('turn:diceRolled', this.onTurnManagerDiceRolled);
+        addListener('turn:movementStarted', () => {
+            this.isMoving = true;
+            this.updateActionButtonsFromTurnState();
+        });
+        addListener('turn:movementCompleted', () => {
+            this.isMoving = false;
+            this.updateActionButtonsFromTurnState();
+        });
+
+        this.updateActionButtonsFromTurnState();
     }
     
     /**
@@ -681,6 +725,63 @@ class TurnController {
     /**
      * Обработка броска кубика
      */
+    updateActionButtonsFromTurnState(state = null) {
+        if (!this.ui) return;
+        const isMyTurn = this.turnService?.isMyTurn?.() ?? false;
+        const resolvedState = state || {
+            isRolling: this.turnManager?.isRolling || false,
+            isMoving: this.turnManager?.isMoving || false,
+            canRoll: this.turnManager ? this.turnManager.canRoll : this.turnService?.canRoll?.() ?? false,
+            canMove: this.turnManager ? this.turnManager.canMove : this.turnService?.canMove?.() ?? false,
+            canEndTurn: this.turnManager ? this.turnManager.canEndTurn : this.turnService?.canEndTurn?.() ?? false
+        };
+
+        const rollBtn = this.ui.querySelector('#roll-dice-btn');
+        if (rollBtn) {
+            rollBtn.disabled = !isMyTurn ||
+                !resolvedState.canRoll ||
+                resolvedState.isRolling ||
+                resolvedState.isMoving;
+            rollBtn.classList.toggle('rolling', resolvedState.isRolling);
+        }
+
+        const endTurnBtn = this.ui.querySelector('#end-turn-btn');
+        if (endTurnBtn) {
+            endTurnBtn.disabled = !isMyTurn ||
+                !resolvedState.canEndTurn ||
+                resolvedState.isRolling ||
+                resolvedState.isMoving;
+        }
+    }
+
+    onTurnManagerState(state) {
+        if (!state) return;
+        this.isRolling = Boolean(state.isRolling);
+        this.isMoving = Boolean(state.isMoving);
+        this.updateActionButtonsFromTurnState(state);
+
+        if (Number.isFinite(state.lastDiceValue)) {
+            this.updateDiceInBottomPanel(state.lastDiceValue);
+        }
+
+        if (state.activePlayer) {
+            const activeName = state.activePlayer.username || state.activePlayer.name || 'Игрок';
+            const statusMessage = this.turnService?.isMyTurn?.()
+                ? `Ваш ход (${activeName})`
+                : `Ходит: ${activeName}`;
+            this.updateStatus(statusMessage);
+        }
+    }
+
+    onTurnManagerDiceRolled(payload) {
+        if (!payload) return;
+        const value = payload.value;
+        if (Number.isFinite(value)) {
+            this.updateDiceInBottomPanel(value);
+            this.updateStatus(`Выпало: ${value}`);
+        }
+    }
+
     async handleRollDice() {
         // Защита от множественных воздействий
         if (this.isRolling) {
@@ -717,7 +818,11 @@ class TurnController {
         
         console.log('🎲 TurnController: Начинаем бросок кубика для текущего пользователя');
         try {
-            await this.turnService.roll({ diceChoice: 'single' });
+            if (this.turnManager) {
+                await this.turnManager.rollDice({ diceChoice: 'single' });
+            } else {
+                await this.turnService.roll({ diceChoice: 'single' });
+            }
         } catch (error) {
             console.error('❌ TurnController: Ошибка броска кубика:', error);
             this.showNotification('❌ Ошибка броска кубика', 'error');
@@ -817,7 +922,8 @@ class TurnController {
             return;
         }
         
-        if (!this.turnService.canMove()) {
+        const canMove = this.turnManager ? this.turnManager.canMove : this.turnService.canMove();
+        if (!canMove) {
             console.warn('⚠️ TurnController: Перемещение недоступно');
             this.showNotification('❌ Перемещение недоступно', 'error');
             return;
@@ -825,7 +931,14 @@ class TurnController {
         
         console.log('🎯 TurnController: Начинаем перемещение для текущего пользователя');
         try {
-            await this.turnService.move(steps);
+            if (this.turnManager) {
+                await this.turnManager.moveActivePlayer(steps, {
+                    requireMyTurn: true,
+                    reason: 'manual'
+                });
+            } else {
+                await this.turnService.move(steps);
+            }
         } catch (error) {
             console.error('❌ TurnController: Ошибка перемещения:', error);
             this.showNotification('❌ Ошибка перемещения', 'error');
@@ -836,10 +949,15 @@ class TurnController {
      * Обработка завершения хода
      */
     async handleEndTurn() {
-        if (!this.turnService.canEndTurn()) return;
+        const canEnd = this.turnManager ? this.turnManager.canEndTurn : this.turnService.canEndTurn();
+        if (!canEnd) return;
         
         try {
-            await this.turnService.endTurn();
+            if (this.turnManager) {
+                await this.turnManager.endTurn();
+            } else {
+                await this.turnService.endTurn();
+            }
         } catch (error) {
             console.error('❌ TurnController: Ошибка завершения хода:', error);
         }
@@ -860,6 +978,7 @@ class TurnController {
         }
         
         this.updateStatus('Бросаем кубик...');
+        this.updateActionButtonsFromTurnState();
     }
     
     onRollSuccess(response) {
@@ -887,6 +1006,12 @@ class TurnController {
         }
         
         this.updateStatus(`Выпало: ${value != null ? value : '?'}`);
+        this.updateActionButtonsFromTurnState({
+            isRolling: false,
+            canRoll: this.turnManager ? this.turnManager.canRoll : this.turnService.canRoll(),
+            canEndTurn: this.turnManager ? this.turnManager.canEndTurn : this.turnService.canEndTurn(),
+            isMoving: this.isMoving
+        });
     }
     
     /**
@@ -926,11 +1051,13 @@ class TurnController {
         } else {
             this.updateStatus('Ошибка броска кубика');
         }
+        this.updateActionButtonsFromTurnState();
     }
     
     onRollFinish() {
         this.isRolling = false;
-        if (this.ui) {
+        const isStillRolling = this.turnManager && this.turnManager.isRolling;
+        if (!isStillRolling && this.ui) {
             const rollBtn = this.ui.querySelector('#roll-dice-btn');
             if (rollBtn) {
                 rollBtn.disabled = false;
@@ -939,7 +1066,10 @@ class TurnController {
             }
         }
         
-        this.updateUI();
+        if (!isStillRolling) {
+            this.updateUI();
+        }
+        this.updateActionButtonsFromTurnState();
     }
     
     /**
@@ -953,6 +1083,7 @@ class TurnController {
         }
         
         this.updateStatus('Перемещаемся...');
+        this.updateActionButtonsFromTurnState();
     }
     
     onMoveSuccess(response) {
@@ -970,21 +1101,32 @@ class TurnController {
         }
         
         this.updateStatus(`Перемещены на ${response.moveResult.steps} шагов`);
+        this.updateActionButtonsFromTurnState({
+            isRolling: this.isRolling,
+            isMoving: false,
+            canRoll: this.turnManager ? this.turnManager.canRoll : this.turnService.canRoll(),
+            canEndTurn: this.turnManager ? this.turnManager.canEndTurn : this.turnService.canEndTurn()
+        });
     }
     
     onMoveError(error) {
         console.error('❌ TurnController: Ошибка перемещения:', error);
         this.updateStatus('Ошибка перемещения');
+        this.updateActionButtonsFromTurnState();
     }
     
     onMoveFinish() {
         this.isMoving = false;
-        if (this.ui) {
+        const isStillMoving = this.turnManager && this.turnManager.isMoving;
+        if (!isStillMoving && this.ui) {
             const moveBtns = this.ui.querySelectorAll('.move-btn');
             moveBtns.forEach(btn => btn.disabled = false);
         }
         
-        this.updateUI();
+        if (!isStillMoving) {
+            this.updateUI();
+        }
+        this.updateActionButtonsFromTurnState();
     }
     
     /**
@@ -1016,15 +1158,18 @@ class TurnController {
         
         this.updateStatus('Ход завершен');
         this.updateUI();
+        this.updateActionButtonsFromTurnState();
     }
     
     onEndError(error) {
         console.error('❌ TurnController: Ошибка завершения хода:', error);
         this.updateStatus('Ошибка завершения хода');
+        this.updateActionButtonsFromTurnState();
     }
     
     onEndFinish() {
         this.updateUI();
+        this.updateActionButtonsFromTurnState();
     }
     
     /**
@@ -1093,6 +1238,17 @@ class TurnController {
         if (this.playerList) {
             this.playerList.destroy();
         }
+
+        if (this.turnManager && typeof this.turnManager.off === 'function' && this._turnManagerListeners.length) {
+            this._turnManagerListeners.forEach(({ event, handler }) => {
+                try {
+                    this.turnManager.off(event, handler);
+                } catch (error) {
+                    console.warn(`⚠️ TurnController: Не удалось отписаться от события ${event}`, error);
+                }
+            });
+        }
+        this._turnManagerListeners = [];
         
         if (this.ui) {
             this.ui.remove();

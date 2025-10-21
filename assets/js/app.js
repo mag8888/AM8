@@ -1007,16 +1007,38 @@ class App {
             });
         });
 
+        ensureModule('turnManager', () => {
+            if (!window.TurnManager) return null;
+            const turnService = this.modules.get('turnService');
+            const movementService = this.modules.get('movementService');
+            if (!turnService || !movementService) {
+                this.logger?.warn('TurnManager: отсутствуют зависимости', {
+                    hasTurnService: Boolean(turnService),
+                    hasMovementService: Boolean(movementService)
+                }, 'App');
+                return null;
+            }
+            return new window.TurnManager({
+                turnService,
+                movementService,
+                gameStateManager,
+                eventBus,
+                stepDelayMs: 500
+            });
+        });
+
         ensureModule('turnController', () => {
             if (!window.TurnController) return null;
             const turnService = this.modules.get('turnService');
             const playerTokens = this.modules.get('playerTokens');
+            const turnManager = this.modules.get('turnManager');
             if (!turnService) return null;
             return new window.TurnController(
                 turnService,
                 playerTokens,
                 gameStateManager,
-                eventBus
+                eventBus,
+                turnManager
             );
         });
 

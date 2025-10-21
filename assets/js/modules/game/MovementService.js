@@ -56,7 +56,11 @@ class MovementService {
             }
             
             console.log('🎯 MovementService: Выполняем автоматическое движение для текущего пользователя');
-            this.movePlayer(this.gameState.activePlayer.id, rollResult.total);
+            this.movePlayer(this.gameState.activePlayer.id, rollResult.total, {
+                stepDelayMs: 500
+            }).catch((error) => {
+                console.error('❌ MovementService: Ошибка автоматического движения', error);
+            });
         }
     }
     
@@ -131,17 +135,17 @@ class MovementService {
     /**
      * Движение игрока на указанное количество клеток
      */
-    movePlayer(playerId, steps) {
+    async movePlayer(playerId, steps, options = {}) {
         if (this.isMoving) {
             console.warn('🚀 MovementService: Движение уже выполняется');
-            return null;
+            throw new Error('Movement already in progress');
         }
         
         const currentPosition = this.playerPositions.get(playerId);
         if (!currentPosition) {
             console.error(`🚀 MovementService: Позиция игрока ${playerId} не найдена`);
             this.initializePlayerPosition(playerId);
-            return this.movePlayer(playerId, steps);
+            return this.movePlayer(playerId, steps, options);
         }
         
         this.isMoving = true;
@@ -163,13 +167,14 @@ class MovementService {
         
         // Обновляем позицию игрока
         this.playerPositions.set(playerId, movement.endPosition);
-        
         this.currentMovement = movement;
         
         console.log(`🚀 MovementService: Игрок ${playerId} движется на ${steps} клеток:`, movement);
         
-        // Отправляем события
-        this.emitMovementEvents(movement);
+        const stepDelayMs = Number(options.stepDelayMs);
+        await this.emitMovementEvents(movement, {
+            stepDelayMs: Number.isFinite(stepDelayMs) && stepDelayMs > 0 ? stepDelayMs : 0
+        });
         
         this.isMoving = false;
         this.currentMovement = null;
@@ -257,29 +262,72 @@ class MovementService {
     /**
      * Отправка событий движения
      */
-    emitMovementEvents(movement) {
-        if (this.eventBus) {
-            // Основное событие движения
-            this.eventBus.emit('movement:completed', movement);
-            
-            // Событие для каждой клетки в пути
-            movement.path.forEach((stepPosition, index) => {
+    emitMovementEvents(movement, options = {}) {
+        if (!this.eventBus) {
+            return Promise.resolve(movement);
+        }
+
+        const stepDelayMs = Number(options.stepDelayMs);
+        const path = Array.isArray(movement.path) ? movement.path : [];
+
+        // Событие начала движения
+        this.eventBus.emit('movement:started', {
+            playerId: movement.playerId,
+            steps: movement.steps,
+            path: movement.path,
+            movement
+        });
+
+        if (!path.length || !Number.isFinite(stepDelayMs) || stepDelayMs <= 0) {
+            path.forEach((stepPosition, index) => {
                 this.eventBus.emit('movement:step', {
                     playerId: movement.playerId,
                     step: index + 1,
+                    totalSteps: path.length,
                     position: stepPosition,
-                    isFinal: index === movement.path.length - 1
+                    isFinal: index === path.length - 1
                 });
             });
-            
-            // Событие о попадании на финальную клетку
-            const finalPosition = movement.endPosition;
+
+            this.eventBus.emit('movement:completed', movement);
             this.eventBus.emit('movement:landed', {
                 playerId: movement.playerId,
-                position: finalPosition,
-                cellData: this.getCellData(finalPosition)
+                position: movement.endPosition,
+                cellData: this.getCellData(movement.endPosition)
             });
+
+            return Promise.resolve(movement);
         }
+
+        return new Promise((resolve) => {
+            const iterate = (index) => {
+                const stepPosition = path[index];
+                const isFinal = index === path.length - 1;
+
+                this.eventBus.emit('movement:step', {
+                    playerId: movement.playerId,
+                    step: index + 1,
+                    totalSteps: path.length,
+                    position: stepPosition,
+                    isFinal
+                });
+
+                if (isFinal) {
+                    this.eventBus.emit('movement:completed', movement);
+                    this.eventBus.emit('movement:landed', {
+                        playerId: movement.playerId,
+                        position: movement.endPosition,
+                        cellData: this.getCellData(movement.endPosition)
+                    });
+                    resolve(movement);
+                    return;
+                }
+
+                setTimeout(() => iterate(index + 1), stepDelayMs);
+            };
+
+            iterate(0);
+        });
     }
     
     /**

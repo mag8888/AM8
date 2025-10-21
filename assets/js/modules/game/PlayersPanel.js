@@ -1462,25 +1462,45 @@ class PlayersPanel {
         try {
             console.log('🎲 PlayersPanel: Попытка броска кубика');
             
-            // Получаем TurnService через window.app
             const app = window.app;
+            const turnManager = app && app.getModule ? app.getModule('turnManager') : null;
             const turnService = app && app.getModule ? app.getModule('turnService') : null;
             
-            if (!turnService) {
-                console.warn('⚠️ PlayersPanel: TurnService не найден');
+            const isMyTurn = turnService && typeof turnService.isMyTurn === 'function'
+                ? turnService.isMyTurn()
+                : false;
+            
+            if (turnManager) {
+                if (!turnManager.canRoll) {
+                    console.warn('⚠️ PlayersPanel: Нельзя бросать кубик (TurnManager.canRoll=false)');
+                    return;
+                }
+                if (!isMyTurn) {
+                    console.warn('⚠️ PlayersPanel: Не ваш ход — бросок заблокирован (TurnManager)');
+                    return;
+                }
+                await turnManager.rollDice({ diceChoice: 'single' });
+                console.log('✅ PlayersPanel: Бросок кубика выполнен через TurnManager');
                 return;
             }
             
-            // Проверяем права на бросок
+            if (!turnService || typeof turnService.roll !== 'function') {
+                console.warn('⚠️ PlayersPanel: TurnService недоступен');
+                return;
+            }
+            
             if (!turnService.canRoll()) {
                 console.warn('⚠️ PlayersPanel: Нельзя бросать кубик');
                 return;
             }
             
-            // Выполняем бросок через TurnService
-            await turnService.rollDice();
+            if (!isMyTurn) {
+                console.warn('⚠️ PlayersPanel: Не ваш ход — бросок заблокирован');
+                return;
+            }
             
-            console.log('✅ PlayersPanel: Бросок кубика выполнен');
+            await turnService.roll({ diceChoice: 'single' });
+            console.log('✅ PlayersPanel: Бросок кубика выполнен через TurnService');
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка при броске кубика:', error);
         }
@@ -1491,22 +1511,38 @@ class PlayersPanel {
      */
     async handleEndTurn() {
         try {
-            // Получаем TurnService через window.app
             const app = window.app;
+            const turnManager = app && app.getModule ? app.getModule('turnManager') : null;
             const turnService = app && app.getModule ? app.getModule('turnService') : null;
             
-            if (!turnService) {
+            const isMyTurn = turnService && typeof turnService.isMyTurn === 'function'
+                ? turnService.isMyTurn()
+                : false;
+            
+            if (turnManager) {
+                if (!turnManager.canEndTurn) {
+                    console.warn('⚠️ PlayersPanel: Нельзя завершить ход (TurnManager.canEndTurn=false)');
+                    return;
+                }
+                if (!isMyTurn) {
+                    console.warn('⚠️ PlayersPanel: Не ваш ход — завершение заблокировано (TurnManager)');
+                    return;
+                }
+                await turnManager.endTurn();
+                console.log('✅ PlayersPanel: Ход завершен через TurnManager');
+                return;
+            }
+            
+            if (!turnService || typeof turnService.endTurn !== 'function') {
                 console.warn('⚠️ PlayersPanel: TurnService не найден');
                 return;
             }
             
-            // Проверяем права на завершение хода
             if (!turnService.canEndTurn()) {
                 console.warn('⚠️ PlayersPanel: Нельзя завершить ход');
                 return;
             }
             
-            // Проверяем, что это действительно мой ход (используем ту же логику, что и TurnService)
             const currentUserId = this.getCurrentUserId();
             const state = turnService.getState();
             
@@ -1516,12 +1552,12 @@ class PlayersPanel {
             }
             
             const activePlayer = state.activePlayer;
-            const isMyTurn = 
+            const isReallyMyTurn = 
                 activePlayer.id === currentUserId ||
                 activePlayer.userId === currentUserId ||
                 (activePlayer.username && currentUserId && activePlayer.username === currentUserId);
             
-            if (!isMyTurn) {
+            if (!isReallyMyTurn) {
                 console.warn('⚠️ PlayersPanel: Не ваш ход - завершение хода заблокировано', {
                     activePlayer: activePlayer.username || activePlayer.id,
                     currentUserId
@@ -1529,7 +1565,7 @@ class PlayersPanel {
                 return;
             }
             
-            console.log('🎯 PlayersPanel: Завершаем ход для текущего пользователя');
+            console.log('🎯 PlayersPanel: Завершаем ход для текущего пользователя (fallback)');
             await turnService.endTurn();
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка завершения хода:', error);
