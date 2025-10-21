@@ -357,6 +357,12 @@ class PlayersPanel {
         // Обновляем информацию об активном игроке
         this.updateActivePlayerInfo(state.activePlayer);
         
+        // Если activePlayer отсутствует, принудительно обновляем состояние
+        if (!state.activePlayer) {
+            console.log('⚠️ PlayersPanel: activePlayer отсутствует, запускаем принудительное обновление');
+            setTimeout(() => this.forceUpdateGameState(), 100);
+        }
+        
         // Обновляем кнопки управления
         this.updateControlButtons(state);
 
@@ -527,6 +533,41 @@ class PlayersPanel {
                 console.log('🔄 PlayersPanel: Отправляем событие для восстановления игроков');
                 this.eventBus.emit('players:restore');
                 this.eventBus.emit('game:playersUpdated', { players: [] });
+            }
+        }, 500);
+    }
+
+    /**
+     * Принудительное обновление состояния игры для синхронизации данных
+     */
+    forceUpdateGameState() {
+        console.log('🔄 PlayersPanel: Принудительное обновление состояния игры');
+        
+        // Принудительно загружаем данные через GameStateManager
+        if (this.gameStateManager && typeof this.gameStateManager.forceUpdate === 'function') {
+            console.log('🔄 PlayersPanel: Запускаем forceUpdate GameStateManager для синхронизации');
+            this.gameStateManager.forceUpdate();
+        }
+
+        // Загружаем игроков через GameStateManager
+        this.loadPlayersViaGameStateManager();
+
+        // Дополнительная проверка через небольшую задержку
+        setTimeout(() => {
+            if (this.gameStateManager && typeof this.gameStateManager.getState === 'function') {
+                try {
+                    const state = this.gameStateManager.getState();
+                    if (state && state.activePlayer) {
+                        console.log('✅ PlayersPanel: Найдены данные activePlayer, обновляем UI');
+                        this.updateActivePlayerInfo(state.activePlayer);
+                    } else {
+                        console.log('⚠️ PlayersPanel: activePlayer все еще не найден, повторяем попытку');
+                        // Повторяем попытку еще раз через короткое время
+                        setTimeout(() => this.forceUpdateGameState(), 1000);
+                    }
+                } catch (error) {
+                    console.warn('⚠️ PlayersPanel: Ошибка получения состояния после forceUpdate:', error);
+                }
             }
         }, 500);
     }
@@ -1028,7 +1069,7 @@ class PlayersPanel {
                 <div class="player-balance">$${balance}</div>
             </div>
             <div class="player-token">
-                <span class="token-icon">🎲</span>
+                <span class="token-icon">🎯</span>
             </div>
         `;
         
@@ -1090,6 +1131,10 @@ class PlayersPanel {
                     }
                 }
                 
+                // Принудительно обновляем данные если activePlayer не найден
+                this.forceUpdateGameState();
+                
+                // Показываем временное состояние только на короткое время
                 currentPlayerName.textContent = 'Загрузка...';
                 const avatarText = playerAvatar?.querySelector('.avatar-text');
                 if (avatarText) {
