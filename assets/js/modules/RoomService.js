@@ -52,12 +52,12 @@ class RoomService {
         };
         this.roomsCacheKey = 'am_rooms_cache_v1';
         
-        // Rate limiting для предотвращения HTTP 429 - оптимизирован для быстрой загрузки
+        // Rate limiting для предотвращения HTTP 429 - оптимизирован для стабильности
         this.requestQueue = {
             lastRequest: 0,
-            minInterval: 3000, // Увеличиваем до 3 секунд для стабильности
-            backoffMultiplier: 1.5, // Уменьшаем множитель для менее агрессивного роста
-            maxBackoff: 60000, // Уменьшаем максимум до 1 минуты
+            minInterval: 5000, // Увеличиваем до 5 секунд для предотвращения HTTP 429
+            backoffMultiplier: 1.3, // Уменьшаем множитель для менее агрессивного роста
+            maxBackoff: 90000, // Увеличиваем максимум до 1.5 минут для стабильности
             currentBackoff: 0,
             rateLimitedUntil: 0
         };
