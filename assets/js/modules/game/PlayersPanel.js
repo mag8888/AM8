@@ -1485,6 +1485,19 @@ class PlayersPanel {
                 (activePlayer.username && currentUserId && activePlayer.username === currentUserId);
         }
         
+        console.log('🔍 PlayersPanel: Проверка isMyTurn:', {
+            currentUserId,
+            activePlayerId: activePlayer?.id,
+            activePlayerUserId: activePlayer?.userId,
+            activePlayerUsername: activePlayer?.username,
+            isMyTurn,
+            comparison: {
+                idMatch: activePlayer?.id === currentUserId,
+                userIdMatch: activePlayer?.userId === currentUserId,
+                usernameMatch: activePlayer?.username === currentUserId
+            }
+        });
+        
         // Логика для кнопки "Бросить" - активна если это мой ход и можно бросать
         if (rollBtn) {
             const canRoll = isMyTurn && (state.canRoll !== false);
@@ -1518,10 +1531,23 @@ class PlayersPanel {
         
         // Кнопка броска - активна если это мой ход (по умолчанию true если не указано иное)
         if (moveBtn) {
+            // Для кнопки "Бросок" делаем более мягкую проверку - активна если это мой ход
             const canRoll = isMyTurn && (state.canRoll !== false);
-            moveBtn.disabled = !canRoll;
             
-            if (canRoll) {
+            // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если это мой ход, но canRoll undefined/null - делаем кнопку активной
+            const shouldActivate = isMyTurn && (state.canRoll !== false);
+            moveBtn.disabled = !shouldActivate;
+            
+            console.log('🎲 PlayersPanel: Проверка активации кнопки "Бросок":', {
+                moveBtn: !!moveBtn,
+                isMyTurn,
+                canRoll: state.canRoll,
+                canRollResult: canRoll,
+                shouldActivate,
+                disabled: moveBtn.disabled
+            });
+            
+            if (shouldActivate) {
                 moveBtn.classList.add('active');
             } else {
                 moveBtn.classList.remove('active');
