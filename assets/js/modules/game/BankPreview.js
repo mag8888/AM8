@@ -76,15 +76,6 @@ class BankPreview {
             };
             
             this.gameStateManager.on('state:updated', this._stateUpdatedCallback);
-            
-            // Дополнительная подписка на обновления игроков для немедленного обновления банка
-            this.gameStateManager.on('players:updated', (data) => {
-                console.log('🔄 BankPreview: Получено событие players:updated, обновляем банк');
-                setTimeout(() => {
-                    this.updatePreviewData();
-                }, 100);
-            });
-            
             console.log('🔄 BankPreview: Подписан на обновления GameStateManager (конструктор)');
             
             // Проверяем есть ли уже данные в GameStateManager при подписке
@@ -743,12 +734,24 @@ class BankPreview {
 
         // Считаем данные валидными если они есть (даже если balance = 0)
         // Главное чтобы это были реальные данные, а не undefined/null
-        return typeof snapshot.balance === 'number' &&
+        const hasValidTypes = typeof snapshot.balance === 'number' &&
                typeof snapshot.income === 'number' &&
                typeof snapshot.expenses === 'number' &&
                typeof snapshot.netIncome === 'number' &&
                typeof snapshot.credit === 'number' &&
                typeof snapshot.maxCredit === 'number';
+        
+        // Дополнительная проверка: если все значения равны 0, но типы правильные - это тоже валидные данные
+        const hasValidData = hasValidTypes && (
+            snapshot.balance > 0 || 
+            snapshot.income > 0 || 
+            snapshot.expenses > 0 || 
+            snapshot.netIncome !== 0 || 
+            snapshot.credit > 0 || 
+            snapshot.maxCredit > 0
+        );
+        
+        return hasValidTypes && hasValidData;
     }
 
     /**
