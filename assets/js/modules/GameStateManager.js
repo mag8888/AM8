@@ -22,7 +22,7 @@ class GameStateManager {
 
         // КРИТИЧНО: Централизованный запросник для предотвращения race conditions
         this._lastFetchTime = 0;
-        this._fetchInterval = 8000; // Минимум 8 секунд между запросами
+        this._fetchInterval = 15000; // Увеличили до 15 секунд между запросами
         this._isUpdating = false;
         this._updateTimer = null;
 
@@ -496,8 +496,8 @@ class GameStateManager {
     forceUpdateAllComponents() {
         console.log('🔄 GameStateManager: Централизованное обновление всех компонентов');
         
-        // 1. Сначала обновляем данные с сервера
-        this.forceUpdate();
+        // 1. Пытаемся обновить данные с сервера, но не блокируем UI при rate limiting
+        this.forceUpdateSafe();
         
         // 2. Устанавливаем активного игрока если его нет
         if (this._state.players.length > 0 && !this._state.activePlayer) {
@@ -505,7 +505,7 @@ class GameStateManager {
             this.forceStartFirstTurn();
         }
         
-        // 3. Эмитим события для всех компонентов
+        // 3. Эмитим события для всех компонентов (используем кэшированные данные)
         this.notifyListeners('state:updated', this._state);
         this.notifyListeners('players:updated', { 
             players: this._state.players,
@@ -528,6 +528,35 @@ class GameStateManager {
         }, 500);
         
         console.log('✅ GameStateManager: Все компоненты обновлены централизованно');
+    }
+
+    /**
+     * Безопасное обновление данных с сервера (не блокирует UI при rate limiting)
+     */
+    forceUpdateSafe() {
+        console.log('🔄 GameStateManager: Безопасное обновление данных с сервера');
+        
+        try {
+            // Проверяем rate limiter перед запросом
+            if (window.CommonUtils && window.CommonUtils.gameStateLimiter) {
+                if (!window.CommonUtils.gameStateLimiter.canMakeRequest(this._state.roomId)) {
+                    console.log('⏳ GameStateManager: Rate limiter блокирует запрос, используем кэшированные данные');
+                    return;
+                }
+                window.CommonUtils.gameStateLimiter.setRequestPending(this._state.roomId);
+            }
+            
+            // Выполняем запрос в фоне
+            this.syncWithServer().catch(error => {
+                console.warn('⚠️ GameStateManager: Ошибка при безопасном обновлении:', error.message);
+                // Очищаем pending запрос при ошибке
+                if (window.CommonUtils && window.CommonUtils.gameStateLimiter) {
+                    window.CommonUtils.gameStateLimiter.clearRequestPending(this._state.roomId);
+                }
+            });
+        } catch (error) {
+            console.warn('⚠️ GameStateManager: Ошибка при инициации безопасного обновления:', error.message);
+        }
     }
 
     /**

@@ -32,7 +32,7 @@
             this.eventBus = config.eventBus || null;
             this.refreshInterval = typeof config.refreshInterval === 'number'
                 ? config.refreshInterval
-                : 120000; // Увеличиваем до 2 минут для уменьшения нагрузки
+                : 180000; // Увеличиваем до 3 минут для предотвращения rate limiting
 
             this.container = null;
             this.abortController = null;
@@ -88,7 +88,7 @@
                     }
                     this._refreshTimer = setTimeout(() => {
                         this.refresh();
-                    }, 2000); // Задержка 2 секунды
+                    }, 5000); // Увеличиваем задержку до 5 секунд
                 });
             }
         }
