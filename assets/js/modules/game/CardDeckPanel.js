@@ -344,13 +344,14 @@
         renderLoading() {
             if (!this.container) return;
             
-            // Сохраняем BankPreview если он есть
-            const bankPreview = this.container.querySelector('.bank-preview-card');
-            const bankPreviewHTML = bankPreview ? bankPreview.outerHTML : '';
+            // АНТИ-ЗАТИРАНИЕ: Обновляем только колоды, не трогая BankPreview
+            const existingDecks = this.container.querySelectorAll('.card-deck-card');
+            existingDecks.forEach(deck => deck.remove());
             
-            this.container.innerHTML = bankPreviewHTML + `
-                <div class="card-decks-empty">Загружаем карточные колоды...</div>
-            `;
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'card-decks-empty';
+            loadingMessage.textContent = 'Загружаем карточные колоды...';
+            this.container.appendChild(loadingMessage);
         }
 
         /**
@@ -401,9 +402,14 @@
             const bankPreviewHTML = bankPreview ? bankPreview.outerHTML : '';
 
             if (!Array.isArray(decks) || decks.length === 0) {
-                this.container.innerHTML = bankPreviewHTML + `
-                    <div class="card-decks-empty">Нет доступных колод. Добавьте карточки через админку.</div>
-                `;
+                // Если нет колод, обновляем только колоды, не трогая BankPreview
+                const existingDecks = this.container.querySelectorAll('.card-deck-card');
+                existingDecks.forEach(deck => deck.remove());
+                
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'card-decks-empty';
+                emptyMessage.textContent = 'Нет доступных колод. Добавьте карточки через админку.';
+                this.container.appendChild(emptyMessage);
                 return;
             }
 
@@ -426,8 +432,16 @@
                 `;
             }).join('');
 
-            // Объединяем BankPreview и колоды карт
-            this.container.innerHTML = bankPreviewHTML + decksHTML;
+            // АНТИ-ЗАТИРАНИЕ: Обновляем только колоды карт, не трогая BankPreview
+            const existingDecks = this.container.querySelectorAll('.card-deck-card');
+            existingDecks.forEach(deck => deck.remove());
+            
+            // Добавляем новые колоды
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = decksHTML;
+            while (tempDiv.firstChild) {
+                this.container.appendChild(tempDiv.firstChild);
+            }
 
             // Уведомляем другие компоненты об обновлении
             if (this.eventBus) {
@@ -441,16 +455,15 @@
         renderError(error) {
             if (!this.container) return;
             
-            // Сохраняем BankPreview если он есть
-            const bankPreview = this.container.querySelector('.bank-preview-card');
-            const bankPreviewHTML = bankPreview ? bankPreview.outerHTML : '';
+            // АНТИ-ЗАТИРАНИЕ: Обновляем только колоды, не трогая BankPreview
+            const existingDecks = this.container.querySelectorAll('.card-deck-card');
+            existingDecks.forEach(deck => deck.remove());
             
             const message = error?.message || 'Не удалось загрузить карточные колоды';
-            this.container.innerHTML = bankPreviewHTML + `
-                <div class="card-decks-error">
-                    <div>⚠️ ${message}</div>
-                </div>
-            `;
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'card-decks-error';
+            errorMessage.innerHTML = `<div>⚠️ ${message}</div>`;
+            this.container.appendChild(errorMessage);
         }
 
         /**
