@@ -240,22 +240,22 @@ class BankPreview {
             let gamestateData = null;
             if (this.gameStateManager && this.gameStateManager._state && this.gameStateManager._state.players && this.gameStateManager._state.players.length > 0) {
                 gamestateData = this.extractBankDataFromGameState(this.gameStateManager._state);
-                if (gamestateData && (gamestateData.balance > 0 || gamestateData.income > 0)) {
+                if (gamestateData && this._isValidSnapshot(gamestateData)) {
                     bankData = gamestateData;
                     console.log('✅ BankPreview: Начальные данные из GameStateManager (валидные)');
                 }
             } 
             
             // ПРИОРИТЕТ 2: BankModule (если GameState данные невалидны или отсутствуют)
-            if (!bankData || (bankData.balance === 0 && bankData.income === 0)) {
-                if (this.bankModule && this.bankModule.bankState && this.bankModule.bankState.balance > 0) {
+            if (!this._isValidSnapshot(bankData)) {
+                if (this.bankModule && this.bankModule.bankState && this._isValidSnapshot(this.bankModule.bankState)) {
                     bankData = this.bankModule.bankState;
                     console.log('✅ BankPreview: Начальные данные из BankModuleServer (GameState невалидны)');
                 }
             }
             
             // ПРИОРИТЕТ 3: Fallback данные
-            if (!bankData || (bankData.balance === 0 && bankData.income === 0)) {
+            if (!this._isValidSnapshot(bankData)) {
                 bankData = this.getFallbackBankData();
                 console.log('🔄 BankPreview: Используем fallback данные для начального отображения');
             }
@@ -429,17 +429,17 @@ class BankPreview {
             } 
             
             // ПРИОРИТЕТ 2: BankModule (если GameState данные невалидны или отсутствуют)
-            if ((!bankData || (bankData.balance === 0 && bankData.income === 0)) && this.bankModule && this.bankModule.bankState) {
+            if (!this._isValidSnapshot(bankData) && this.bankModule && this.bankModule.bankState) {
                 const moduleState = this.bankModule.bankState;
                 const moduleLoaded = moduleState.loaded !== false;
-                if (moduleLoaded && (moduleState.balance > 0 || moduleState.income > 0 || moduleState.netIncome > 0)) {
+                if (moduleLoaded && this._isValidSnapshot(moduleState)) {
                     bankData = moduleState;
                     console.log('✅ BankPreview: Используем данные из BankModuleServer (GameState данные невалидны)');
                 }
             }
             
             // ПРИОРИТЕТ 3: Fallback данные (если все остальные источники невалидны)
-            if (!bankData || (bankData.balance === 0 && bankData.income === 0)) {
+            if (!this._isValidSnapshot(bankData)) {
                 bankData = this.getFallbackBankData();
             }
             
@@ -482,7 +482,7 @@ class BankPreview {
                 // console.log('✅ BankPreview: Обновляем данные из переданного состояния');
             }
             
-            if (bankData) {
+            if (this._isValidSnapshot(bankData)) {
                 this.updatePreviewUI(bankData);
             } else {
                 // Используем fallback данные вместо нулей для лучшего UX
@@ -509,8 +509,16 @@ class BankPreview {
 
         const normalized = this._normalizeBankData(bankState);
         const incomingValid = this._isValidSnapshot(normalized);
+        const currentValid = this._isValidSnapshot(this._lastBankSnapshot);
+        const snapshotsEqual = this._compareSnapshots(this._lastBankSnapshot, normalized);
 
-        if (!incomingValid && this._isValidSnapshot(this._lastBankSnapshot)) {
+        // Если текущие данные валидны и новые тоже валидны и одинаковы - не обновляем
+        if (currentValid && incomingValid && snapshotsEqual) {
+            return;
+        }
+
+        // Если текущие данные валидны, а новые нет - сохраняем текущие
+        if (currentValid && !incomingValid) {
             console.log('🔄 BankPreview: Сохраняем отображение — новые данные нулевые');
             return;
         }
@@ -636,6 +644,11 @@ class BankPreview {
             return;
         }
 
+        // Если входящие данные валидны, но текущие тоже валидны и одинаковы - не обновляем
+        if (incomingValid && currentValid && snapshotsEqual) {
+            return;
+        }
+
         if (!this._restoring && snapshotsEqual) {
             return;
         }
@@ -719,10 +732,14 @@ class BankPreview {
             return false;
         }
 
-        return snapshot.balance > 0 ||
-            snapshot.income > 0 ||
-            snapshot.netIncome > 0 ||
-            snapshot.credit > 0;
+        // Считаем данные валидными если они есть (даже если balance = 0)
+        // Главное чтобы это были реальные данные, а не undefined/null
+        return typeof snapshot.balance === 'number' &&
+               typeof snapshot.income === 'number' &&
+               typeof snapshot.expenses === 'number' &&
+               typeof snapshot.netIncome === 'number' &&
+               typeof snapshot.credit === 'number' &&
+               typeof snapshot.maxCredit === 'number';
     }
 
     /**
