@@ -42,6 +42,7 @@
             this.rateLimitUntil = 0;
             this.rateLimitBackoff = 0;
             this._loadDecksTimer = null;
+            this._refreshTimer = null;
 
             this.handleContainerClick = this.handleContainerClick.bind(this);
 
@@ -81,7 +82,13 @@
 
             if (this.eventBus && typeof this.eventBus.on === 'function') {
                 this.eventBus.on('cards:updated', () => {
-                    this.refresh();
+                    // Дебаунсинг для предотвращения слишком частых обновлений
+                    if (this._refreshTimer) {
+                        clearTimeout(this._refreshTimer);
+                    }
+                    this._refreshTimer = setTimeout(() => {
+                        this.refresh();
+                    }, 2000); // Задержка 2 секунды
                 });
             }
         }
@@ -111,6 +118,10 @@
             if (this._loadDecksTimer) {
                 clearTimeout(this._loadDecksTimer);
                 this._loadDecksTimer = null;
+            }
+            if (this._refreshTimer) {
+                clearTimeout(this._refreshTimer);
+                this._refreshTimer = null;
             }
         }
         
