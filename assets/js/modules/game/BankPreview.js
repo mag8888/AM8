@@ -18,6 +18,10 @@ class BankPreview {
         // Callback для подписки на GameStateManager
         this._stateUpdatedCallback = null;
         
+        // Флаги для предотвращения множественных подписок
+        this._eventListenersSetup = false;
+        this._eventBusSubscribed = false;
+        
         this.init();
     }
 
@@ -133,7 +137,7 @@ class BankPreview {
      * Настройка обработчиков событий
      */
     setupEventListeners() {
-        if (!this.previewElement) return;
+        if (!this.previewElement || this._eventListenersSetup) return;
         
         // Клик по превью открывает банк
         this.previewElement.addEventListener('click', (e) => {
@@ -142,7 +146,7 @@ class BankPreview {
         });
         
         // ПОДПИСКА НА GameStateManager для централизованных обновлений
-        if (this.gameStateManager && typeof this.gameStateManager.on === 'function') {
+        if (this.gameStateManager && typeof this.gameStateManager.on === 'function' && !this._stateUpdatedCallback) {
             this._stateUpdatedCallback = (state) => {
                 // Обновляем превью при изменении состояния игры, используя уже полученные данные
                 this.updatePreviewDataFromState(state);
@@ -152,8 +156,11 @@ class BankPreview {
             console.log('🔄 BankPreview: Подписан на обновления GameStateManager');
         }
         
-        // Подписываемся на события банка если есть eventBus
-        if (this.eventBus) {
+        // Отмечаем, что обработчики настроены
+        this._eventListenersSetup = true;
+        
+        // Подписываемся на события банка если есть eventBus (только один раз)
+        if (this.eventBus && !this._eventBusSubscribed) {
             this.eventBus.on('bank:updated', () => {
                 // Используем debounced версию для предотвращения спама
                 if (this.updatePreviewDataDebounced) {
@@ -169,6 +176,8 @@ class BankPreview {
                     this.render();
                 });
             });
+            
+            this._eventBusSubscribed = true;
         }
     }
 
