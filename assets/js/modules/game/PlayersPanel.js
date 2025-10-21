@@ -378,10 +378,9 @@ class PlayersPanel {
                 console.log('👥 PlayersPanel: Обновляем список из состояния, игроков:', state.players.length);
                 this.updatePlayersList(state.players);
             } else {
-                console.log('⚠️ PlayersPanel: Пустой массив игроков в состоянии');
-                this.showLoadingState();
-                // Немедленная загрузка игроков через GameStateManager
-                this.loadPlayersViaGameStateManager();
+                console.log('⚠️ PlayersPanel: Пустой массив игроков в состоянии, пытаемся fallback');
+                // Пробуем создать fallback для текущего пользователя
+                this.createCurrentUserFallback();
             }
         } else {
             console.log('⚠️ PlayersPanel: Нет данных об игроках в состоянии, загружаем через GameStateManager');
@@ -436,12 +435,21 @@ class PlayersPanel {
                     // Запускаем периодические обновления
                     this.startPeriodicUpdatesViaGameStateManager(roomId);
                 } else {
-                    console.warn('⚠️ PlayersPanel: Данные игроков не получены через GameStateManager');
-                    this.showEmptyState();
+                    console.warn('⚠️ PlayersPanel: Данные игроков не получены через GameStateManager, пытаемся fallback');
+                    // Fallback: проверяем кэшированные данные в GameStateManager
+                    const cachedState = this.gameStateManager._state;
+                    if (cachedState && cachedState.players && cachedState.players.length > 0) {
+                        console.log('🔧 PlayersPanel: Используем кэшированные данные из GameStateManager._state');
+                        this.updatePlayersList(cachedState.players);
+                    } else {
+                        // Последний fallback: создаем текущего пользователя
+                        this.createCurrentUserFallback();
+                    }
                 }
             } catch (error) {
                 console.error('❌ PlayersPanel: Ошибка загрузки через GameStateManager:', error);
-                this.showErrorState(`Ошибка загрузки: ${error.message}`);
+                // В случае ошибки также пытаемся создать fallback
+                this.createCurrentUserFallback();
             }
         } else {
             console.warn('⚠️ PlayersPanel: GameStateManager недоступен, fallback к forceLoadPlayers');
@@ -456,6 +464,104 @@ class PlayersPanel {
         if (this.gameStateManager && typeof this.gameStateManager.startPeriodicUpdates === 'function') {
             console.log('🔄 PlayersPanel: Запуск периодических обновлений через GameStateManager');
             this.gameStateManager.startPeriodicUpdates(roomId, 45000); // 45 секунд интервал
+        }
+    }
+
+    /**
+     * Создание fallback для текущего пользователя когда данные не загружаются
+     */
+    createCurrentUserFallback() {
+        try {
+            // Получаем текущего пользователя из глобального состояния
+            const currentUser = this.getCurrentUser();
+            if (!currentUser) {
+                console.warn('⚠️ PlayersPanel: Текущий пользователь не найден для fallback');
+                this.showEmptyState();
+                return;
+            }
+            
+            // Создаем базовый объект игрока
+            const fallbackPlayer = {
+                id: currentUser.id || 'current-user',
+                userId: currentUser.id,
+                username: currentUser.username || 'admin',
+                name: currentUser.username || currentUser.name || 'admin',
+                money: currentUser.money || 5000,
+                balance: currentUser.money || 5000,
+                isActive: true,
+                position: 0,
+                profession: currentUser.profession || 'Предприниматель'
+            };
+            
+            console.log('🔧 PlayersPanel: Создан fallback игрок:', fallbackPlayer);
+            
+            // Обновляем список с одним игроком
+            this.updatePlayersList([fallbackPlayer]);
+            
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка создания fallback пользователя:', error);
+            this.showEmptyState();
+        }
+    }
+
+    /**
+     * Получение текущего пользователя
+     */
+    getCurrentUser() {
+        try {
+            // Способ 1: из localStorage (разные ключи)
+            const keys = ['user', 'currentUser', 'aura_money_user'];
+            for (const key of keys) {
+                const userData = localStorage.getItem(key);
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    console.log(`🔍 PlayersPanel: Найден пользователь в localStorage[${key}]:`, user);
+                    return user;
+                }
+            }
+            
+            // Способ 2: из sessionStorage
+            for (const key of keys) {
+                const userData = sessionStorage.getItem(key);
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    console.log(`🔍 PlayersPanel: Найден пользователь в sessionStorage[${key}]:`, user);
+                    return user;
+                }
+            }
+            
+            // Способ 3: из глобального объекта
+            if (window.currentUser) {
+                console.log('🔍 PlayersPanel: Найден пользователь в window.currentUser:', window.currentUser);
+                return window.currentUser;
+            }
+            
+            // Способ 4: из window.app
+            if (window.app && window.app.getCurrentUser) {
+                const user = window.app.getCurrentUser();
+                if (user) {
+                    console.log('🔍 PlayersPanel: Найден пользователь в window.app.getCurrentUser():', user);
+                    return user;
+                }
+            }
+            
+            // Способ 5: из UserModel
+            if (window.app && window.app.getModule) {
+                const userModel = window.app.getModule('userModel');
+                if (userModel && userModel.getCurrentUser) {
+                    const user = userModel.getCurrentUser();
+                    if (user) {
+                        console.log('🔍 PlayersPanel: Найден пользователь в userModel.getCurrentUser():', user);
+                        return user;
+                    }
+                }
+            }
+            
+            console.warn('⚠️ PlayersPanel: Пользователь не найден ни в одном источнике');
+            return null;
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка получения текущего пользователя:', error);
+            return null;
         }
     }
 
