@@ -1454,37 +1454,37 @@ if (typeof window !== 'undefined') {
         console.log('🔄 Global: Принудительное обновление всех компонентов');
         
         if (window.app) {
-            // Обновляем GameStateManager
+            // Используем централизованный метод GameStateManager
             const gameStateManager = window.app.getModule('gameStateManager');
-            if (gameStateManager && typeof gameStateManager.forceUpdate === 'function') {
-                console.log('🔄 Global: Обновляем GameStateManager');
-                gameStateManager.forceUpdate();
-            }
-            
-            // Обновляем PlayersPanel
-            const playersPanel = window.app.getModule('playersPanel');
-            if (playersPanel && typeof playersPanel.forceUpdateGameState === 'function') {
-                console.log('🔄 Global: Обновляем PlayersPanel');
-                playersPanel.forceUpdateGameState();
-            }
-            
-            // Обновляем PlayerTokens
-            const playerTokens = window.app.getModule('playerTokens');
-            if (playerTokens && typeof playerTokens.forceUpdateFromGameState === 'function') {
-                console.log('🔄 Global: Обновляем PlayerTokens через GameStateManager');
-                playerTokens.forceUpdateFromGameState();
-            } else if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
-                console.log('🔄 Global: Обновляем PlayerTokens через forceUpdate');
-                if (typeof window.app.safePlayerTokensForceUpdate === 'function') {
-                    window.app.safePlayerTokensForceUpdate('window.forceUpdateAllComponents');
+            if (gameStateManager && typeof gameStateManager.forceUpdateAllComponents === 'function') {
+                console.log('🔄 Global: Используем централизованное обновление GameStateManager');
+                gameStateManager.forceUpdateAllComponents();
+            } else {
+                console.warn('⚠️ Global: GameStateManager.forceUpdateAllComponents недоступен, используем fallback');
+                
+                // Fallback: обновляем компоненты по отдельности
+                if (gameStateManager && typeof gameStateManager.forceUpdate === 'function') {
+                    gameStateManager.forceUpdate();
                 }
-            }
-            
-            // Обновляем BankPreview
-            const bankPreview = window.app.getModule('bankPreview');
-            if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
-                console.log('🔄 Global: Обновляем BankPreview');
-                bankPreview.updatePreviewData();
+                
+                const playersPanel = window.app.getModule('playersPanel');
+                if (playersPanel && typeof playersPanel.forceUpdateGameState === 'function') {
+                    playersPanel.forceUpdateGameState();
+                }
+                
+                const playerTokens = window.app.getModule('playerTokens');
+                if (playerTokens && typeof playerTokens.forceUpdateFromGameState === 'function') {
+                    playerTokens.forceUpdateFromGameState();
+                } else if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
+                    if (typeof window.app.safePlayerTokensForceUpdate === 'function') {
+                        window.app.safePlayerTokensForceUpdate('window.forceUpdateAllComponents');
+                    }
+                }
+                
+                const bankPreview = window.app.getModule('bankPreview');
+                if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
+                    bankPreview.updatePreviewData();
+                }
             }
             
             console.log('✅ Global: Все компоненты обновлены');

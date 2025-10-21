@@ -491,6 +491,78 @@ class GameStateManager {
     }
 
     /**
+     * Централизованное обновление всех компонентов игры
+     */
+    forceUpdateAllComponents() {
+        console.log('🔄 GameStateManager: Централизованное обновление всех компонентов');
+        
+        // 1. Сначала обновляем данные с сервера
+        this.forceUpdate();
+        
+        // 2. Устанавливаем активного игрока если его нет
+        if (this._state.players.length > 0 && !this._state.activePlayer) {
+            console.log('🎯 GameStateManager: Устанавливаем первого игрока как активного');
+            this.forceStartFirstTurn();
+        }
+        
+        // 3. Эмитим события для всех компонентов
+        this.notifyListeners('state:updated', this._state);
+        this.notifyListeners('players:updated', { 
+            players: this._state.players,
+            activePlayer: this._state.activePlayer,
+            forceUpdate: true 
+        });
+        
+        // 4. Обновляем фишки игроков
+        this.forceUpdateTokens();
+        
+        // 5. Обновляем банк
+        this.notifyListeners('bank:updated', {
+            players: this._state.players,
+            activePlayer: this._state.activePlayer
+        });
+        
+        // 6. Принудительно создаем кнопки и фишки через небольшую задержку
+        setTimeout(() => {
+            this.forceCreateUIComponents();
+        }, 500);
+        
+        console.log('✅ GameStateManager: Все компоненты обновлены централизованно');
+    }
+
+    /**
+     * Принудительное создание UI компонентов
+     */
+    forceCreateUIComponents() {
+        console.log('🔧 GameStateManager: Принудительное создание UI компонентов');
+        
+        if (window.app && window.app.getModule) {
+            // Принудительно создаем кнопки в PlayersPanel
+            const playersPanel = window.app.getModule('playersPanel');
+            if (playersPanel && typeof playersPanel.forceCreateButtons === 'function') {
+                console.log('🔧 GameStateManager: Создаем кнопки управления');
+                playersPanel.forceCreateButtons();
+            }
+            
+            // Принудительно создаем фишки в PlayerTokens
+            const playerTokens = window.app.getModule('playerTokens');
+            if (playerTokens && typeof playerTokens.forceCreateTokens === 'function') {
+                console.log('🔧 GameStateManager: Создаем фишки игроков');
+                playerTokens.forceCreateTokens();
+            }
+            
+            // Обновляем BankPreview
+            const bankPreview = window.app.getModule('bankPreview');
+            if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
+                console.log('🔧 GameStateManager: Обновляем BankPreview');
+                bankPreview.updatePreviewData();
+            }
+        }
+        
+        console.log('✅ GameStateManager: UI компоненты созданы принудительно');
+    }
+
+    /**
      * Subscribe on event.
      * @param {string} event
      * @param {Function} callback

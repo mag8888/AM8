@@ -1407,6 +1407,13 @@ class PlayersPanel {
         const passBtn = document.getElementById('pass-turn');
         const rollBtn = document.getElementById('roll-dice-btn');
         
+        // Если кнопки не найдены, принудительно создаем их
+        if (!rollBtn || !passBtn) {
+            console.warn('⚠️ PlayersPanel: Кнопки не найдены, принудительно создаем');
+            this.forceCreateButtons();
+            return;
+        }
+        
         // Проверяем, мой ли это ход
         const currentUserId = this.getCurrentUserId();
         const activePlayer = state.activePlayer;
@@ -1454,6 +1461,7 @@ class PlayersPanel {
             canRoll: state.canRoll,
             canEndTurn: state.canEndTurn,
             passBtnDisabled: passBtn?.disabled,
+            rollBtnDisabled: rollBtn?.disabled,
             shouldBeDisabled: !isMyTurn || !state.canEndTurn,
             turnCheckDetails: {
                 idMatch: activePlayer?.id === currentUserId,
@@ -1461,6 +1469,46 @@ class PlayersPanel {
                 usernameMatch: activePlayer?.username === currentUserId
             }
         });
+    }
+
+    /**
+     * Принудительное создание кнопок управления
+     */
+    forceCreateButtons() {
+        console.log('🔧 PlayersPanel: Принудительное создание кнопок управления');
+        
+        const actionsGrid = document.querySelector('.actions-grid');
+        if (!actionsGrid) {
+            console.error('❌ PlayersPanel: actions-grid не найден');
+            return;
+        }
+        
+        // Очищаем существующие кнопки
+        actionsGrid.innerHTML = '';
+        
+        // Создаем кнопки заново
+        actionsGrid.innerHTML = `
+            <button class="action-btn bank-btn" id="open-bank" type="button">
+                <div class="btn-icon">🏦</div>
+                <div class="btn-label">Банк</div>
+                <div class="btn-glow"></div>
+            </button>
+            <button class="action-btn roll-btn" id="roll-dice-btn" type="button" disabled>
+                <div class="btn-icon">🎲</div>
+                <div class="btn-label">Бросить</div>
+                <div class="btn-glow"></div>
+            </button>
+            <button class="action-btn pass-btn" id="pass-turn" type="button" disabled>
+                <div class="btn-icon">➡️</div>
+                <div class="btn-label">Передать</div>
+                <div class="btn-glow"></div>
+            </button>
+        `;
+        
+        // Привязываем обработчики событий
+        this.setupControls();
+        
+        console.log('✅ PlayersPanel: Кнопки управления созданы принудительно');
     }
     
     /**
