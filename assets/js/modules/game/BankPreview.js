@@ -636,10 +636,10 @@ class BankPreview {
         const hasDataChanged = this._lastDisplayedData !== dataString;
         const isZeroData = bankData.balance === 0 && bankData.income === 0;
         
+        // Более простая логика: обновляем если есть валидные данные или если это первое обновление
         const shouldUpdate = !this._lastDisplayedData || 
                            (incomingHasValidData && hasDataChanged) ||
-                           (!currentHasValidData && hasDataChanged) ||
-                           (incomingHasValidData && !currentHasValidData && hasDataChanged);
+                           (!currentHasValidData);
                            
         if (!shouldUpdate) {
             // Данные не изменились или пытаемся перезаписать хорошие данные плохими
@@ -664,7 +664,11 @@ class BankPreview {
         const updateElement = (id, value) => {
             const element = this.previewElement.querySelector(id);
             if (element) {
-                element.textContent = typeof value === 'number' ? `$${this.formatNumber(value)}` : value;
+                const newText = typeof value === 'number' ? `$${this.formatNumber(value)}` : value;
+                element.textContent = newText;
+                console.log(`🔧 BankPreview: Обновлен элемент ${id}: "${newText}"`);
+            } else {
+                console.warn(`⚠️ BankPreview: Элемент ${id} не найден`);
             }
         };
         
