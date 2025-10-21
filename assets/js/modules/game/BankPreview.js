@@ -21,6 +21,11 @@ class BankPreview {
         // Флаги для предотвращения множественных подписок
         this._eventListenersSetup = false;
         this._eventBusSubscribed = false;
+        this._initialDataLoaded = false;
+        this._isLoadingInitialData = false;
+        this._lastExtractedData = null;
+        this._lastExtractedTimestamp = 0;
+        this._updateStateDebounceTimer = null;
         
         // ПОДПИСКИ В КОНСТРУКТОРЕ - выполняется только один раз
         this._setupGameStateManagerSubscription();
@@ -57,8 +62,14 @@ class BankPreview {
     _setupGameStateManagerSubscription() {
         if (this.gameStateManager && typeof this.gameStateManager.on === 'function' && !this._stateUpdatedCallback) {
             this._stateUpdatedCallback = (state) => {
-                // Обновляем превью при изменении состояния игры, используя уже полученные данные
-                this.updatePreviewDataFromState(state);
+                // Используем debounced версию для предотвращения спама
+                if (this._updateStateDebounceTimer) {
+                    clearTimeout(this._updateStateDebounceTimer);
+                }
+                this._updateStateDebounceTimer = setTimeout(() => {
+                    this.updatePreviewDataFromState(state);
+                    this._updateStateDebounceTimer = null;
+                }, 300);
             };
             
             this.gameStateManager.on('state:updated', this._stateUpdatedCallback);
@@ -191,6 +202,12 @@ class BankPreview {
      * Загрузка начальных данных сразу при создании превью
      */
     loadInitialData() {
+        // Предотвращаем множественные вызовы
+        if (this._initialDataLoaded || this._isLoadingInitialData) {
+            return;
+        }
+        
+        this._isLoadingInitialData = true;
         console.log('🏦 BankPreview: Загружаем начальные данные');
         
         try {
@@ -228,6 +245,10 @@ class BankPreview {
             if (this.previewElement) {
                 this.updatePreviewUI(fallbackData);
             }
+        } finally {
+            // Сбрасываем флаги
+            this._isLoadingInitialData = false;
+            this._initialDataLoaded = true;
         }
     }
 
@@ -409,9 +430,17 @@ class BankPreview {
      * Извлечение данных банка из состояния игры
      */
     extractBankDataFromGameState(gameState) {
+        // Кэширование для предотвращения повторных вычислений
+        const now = Date.now();
+        if (this._lastExtractedData && (now - this._lastExtractedTimestamp) < 1000) {
+            console.log('🚀 BankPreview: Используем кэшированные данные extractBankDataFromGameState');
+            return this._lastExtractedData;
+        }
+        
         const currentUser = this.getCurrentUser();
-        console.log('🔍 BankPreview: extractBankDataFromGameState - currentUser:', currentUser);
-        console.log('🔍 BankPreview: extractBankDataFromGameState - gameState.players:', gameState.players?.length);
+        // Убираем избыточное логирование для уменьшения спама
+        // console.log('🔍 BankPreview: extractBankDataFromGameState - currentUser:', currentUser);
+        // console.log('🔍 BankPreview: extractBankDataFromGameState - gameState.players:', gameState.players?.length);
         
         if (!currentUser || !gameState.players) {
             console.warn('⚠️ BankPreview: Нет currentUser или players в gameState');
@@ -424,7 +453,7 @@ class BankPreview {
             p.username === currentUser.username
         );
         
-        console.log('🔍 BankPreview: Найденный currentPlayer:', currentPlayer);
+        // console.log('🔍 BankPreview: Найденный currentPlayer:', currentPlayer);
         
         if (!currentPlayer) {
             console.warn('⚠️ BankPreview: currentPlayer не найден в gameState.players');
@@ -467,7 +496,12 @@ class BankPreview {
             };
         }
         
-        console.log('💰 BankPreview: Извлеченные данные банка:', bankData);
+        // console.log('💰 BankPreview: Извлеченные данные банка:', bankData);
+        
+        // Сохраняем в кэш
+        this._lastExtractedData = bankData;
+        this._lastExtractedTimestamp = Date.now();
+        
         return bankData;
     }
 
@@ -732,6 +766,11 @@ class BankPreview {
         
         if (this.renderDebounceTimer) {
             clearTimeout(this.renderDebounceTimer);
+        }
+        
+        if (this._updateStateDebounceTimer) {
+            clearTimeout(this._updateStateDebounceTimer);
+            this._updateStateDebounceTimer = null;
         }
         
         if (this.observer) {
