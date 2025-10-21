@@ -197,14 +197,8 @@ class BankPreview {
         // Загружаем данные НЕМЕДЛЕННО при создании превью
         this.loadInitialData();
         
-        // Добавляем отложенное обновление для случая, когда данные еще не готовы
-        setTimeout(() => {
-            // Обновляем только если данных нет или они нулевые
-            if (!this._lastDisplayedData || this._lastDisplayedData.includes('"balance":0')) {
-                console.log('🔄 BankPreview: Попытка обновить данные через timeout');
-                this.updatePreviewData();
-            }
-        }, 1000);
+        // Убираем проблематичный setTimeout для Safari
+        // Данные будут загружены через синхронизацию с BankModuleServer
     }
 
     /**
@@ -474,14 +468,29 @@ class BankPreview {
             return;
         }
         
+        // Проверяем, стоит ли обновлять данные (предотвращаем перезапись хороших данных плохими)
+        const hasValidData = bankState.balance > 0 || bankState.income > 0 || bankState.netIncome > 0;
+        const currentHasValidData = this._lastDisplayedData && (
+            this._lastDisplayedData.includes('"balance":5000') || 
+            this._lastDisplayedData.includes('"income":10000')
+        );
+        
+        // Обновляем только если получаем валидные данные или если текущие данные нулевые
+        if (!hasValidData && currentHasValidData) {
+            console.log('🔄 BankPreview: Пропускаем обновление - текущие данные лучше полученных нулевых');
+            return;
+        }
+        
         console.log('🔄 BankPreview: Получены данные от BankModuleServer:', {
             balance: bankState.balance,
             income: bankState.income,
             credit: bankState.credit
         });
         
-        // Сбрасываем кэш отображаемых данных чтобы принудительно обновить UI
-        this._lastDisplayedData = null;
+        // Сбрасываем кэш только если данные действительно валидные
+        if (hasValidData) {
+            this._lastDisplayedData = null;
+        }
         
         // Принудительно обновляем UI с данными от BankModuleServer
         this.updatePreviewUI(bankState);
@@ -599,19 +608,25 @@ class BankPreview {
             maxCredit: bankData.maxCredit || 0
         });
         
+        // Проверяем валидность входящих данных для Safari
+        const incomingHasValidData = bankData.balance > 0 || bankData.income > 0 || bankData.netIncome > 0;
+        const currentHasValidData = this._lastDisplayedData && (
+            this._lastDisplayedData.includes('"balance":5000') || 
+            this._lastDisplayedData.includes('"income":10000') ||
+            !this._lastDisplayedData.includes('"balance":0')
+        );
+        
         // Разрешаем обновление если:
         // 1. Это первое обновление (_lastDisplayedData === null)
-        // 2. Данные действительно изменились
-        // 3. Принудительное обновление (когда balance был 0, а теперь больше 0)
-        // 4. Всегда обновляем при получении данных от BankModuleServer (баланс > 0)
+        // 2. Данные действительно изменились И не перезаписываем хорошие данные плохими
+        // 3. Получаем валидные данные (balance > 0)
         const shouldUpdate = !this._lastDisplayedData || 
-                           this._lastDisplayedData !== dataString ||
-                           (this._lastDisplayedData.includes('"balance":0') && !dataString.includes('"balance":0')) ||
-                           (bankData.balance > 0 && this._lastDisplayedData && this._lastDisplayedData.includes('"balance":0'));
+                           (this._lastDisplayedData !== dataString && !(!incomingHasValidData && currentHasValidData)) ||
+                           (incomingHasValidData && !currentHasValidData);
                            
         if (!shouldUpdate) {
-            // Данные не изменились, пропускаем обновление UI
-            console.log('🔄 BankPreview: Пропускаем обновление UI - данные не изменились:', dataString);
+            // Данные не изменились или пытаемся перезаписать хорошие данные плохими
+            console.log('🔄 BankPreview: Пропускаем обновление UI - защита от перезаписи хороших данных в Safari:', dataString);
             return;
         }
         
