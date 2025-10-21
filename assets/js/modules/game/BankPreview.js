@@ -442,8 +442,10 @@ class BankPreview {
             
             // ПРИОРИТЕТ 3: Fallback данные (если все остальные источники невалидны)
             if (!this._isValidSnapshot(bankData)) {
-                if (this._isValidSnapshot(this._lastBankSnapshot)) {
-                    console.log('🔄 BankPreview: Сохраняем предыдущее валидное состояние (данные недоступны)');
+                // АНТИ-ЗАТИРАНИЕ: Если есть реальные данные в _lastBankSnapshot - сохраняем их
+                if (this._isValidSnapshot(this._lastBankSnapshot) && 
+                    (this._lastBankSnapshot.balance > 0 || this._lastBankSnapshot.income > 0)) {
+                    console.log('🔄 BankPreview: Сохраняем реальные данные из предыдущего состояния');
                     this.restoreLastSnapshot();
                     return;
                 }
@@ -496,8 +498,10 @@ class BankPreview {
             if (this._isValidSnapshot(bankData)) {
                 this.updatePreviewUI(bankData);
             } else {
-                if (this._isValidSnapshot(this._lastBankSnapshot)) {
-                    console.log('🔄 BankPreview: Сохраняем предыдущее валидное состояние (state данные пустые)');
+                // АНТИ-ЗАТИРАНИЕ: Сохраняем реальные данные если они есть
+                if (this._isValidSnapshot(this._lastBankSnapshot) && 
+                    (this._lastBankSnapshot.balance > 0 || this._lastBankSnapshot.income > 0)) {
+                    console.log('🔄 BankPreview: Сохраняем реальные данные (state данные пустые)');
                     this.restoreLastSnapshot();
                 } else {
                     // Используем fallback данные только если валидных данных ещё не было
@@ -533,9 +537,10 @@ class BankPreview {
             return;
         }
 
-        // Если текущие данные валидны, а новые нет - сохраняем текущие
-        if (currentValid && !incomingValid) {
-            console.log('🔄 BankPreview: Сохраняем отображение — новые данные нулевые');
+        // АНТИ-ЗАТИРАНИЕ: Если текущие данные содержат реальные данные, а новые нулевые - сохраняем
+        if (currentValid && !incomingValid && 
+            (currentSnapshot.balance > 0 || currentSnapshot.income > 0)) {
+            console.log('🔄 BankPreview: Сохраняем реальные данные — новые данные нулевые');
             return;
         }
 
@@ -653,10 +658,18 @@ class BankPreview {
         const currentValid = this._isValidSnapshot(currentSnapshot);
         const snapshotsEqual = this._compareSnapshots(currentSnapshot, normalized);
 
-        // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ: Всегда обновляем UI если есть валидные данные
+        // АНТИ-ЗАТИРАНИЕ: Приоритет реальным данным игрока
         if (incomingValid) {
-            console.log('✅ BankPreview: Принудительное обновление UI с валидными данными');
-            // Принудительно обновляем UI с реальными данными
+            // Если новые данные валидны И содержат реальные данные игрока - принудительно обновляем
+            if (normalized.balance > 0 || normalized.income > 0) {
+                console.log('✅ BankPreview: Принудительное обновление - найдены реальные данные игрока');
+            } else if (currentValid && currentSnapshot.balance > 0) {
+                // Если текущие данные содержат реальные данные, а новые нулевые - сохраняем текущие
+                console.log('🔄 BankPreview: Сохраняем реальные данные, новые нулевые');
+                return;
+            } else {
+                console.log('✅ BankPreview: Обновляем UI с валидными данными');
+            }
         } else {
             console.log('⚠️ BankPreview: Пропускаем обновление - данные невалидны');
             return;
