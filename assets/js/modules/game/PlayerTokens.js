@@ -785,70 +785,60 @@ class PlayerTokens {
      */
     forceUpdate() {
         // Проверяем, не выполняется ли уже обновление
-        if (this._isForceUpdating) {
-            console.log('🎯 PlayerTokens: Пропускаем forceUpdate - обновление уже выполняется');
+        if (this._isForceUpdating || this._forceUpdateTimer) {
+            console.log('🎯 PlayerTokens: Пропускаем forceUpdate - уже выполняется или запланировано');
             return;
         }
         
-        // Дебаунсинг для предотвращения множественных одновременных вызовов
-        if (this._forceUpdateTimer) {
-            clearTimeout(this._forceUpdateTimer);
-        }
+        // Устанавливаем флаг сразу, чтобы заблокировать параллельные вызовы
+        this._isForceUpdating = true;
         
+        // Дебаунсинг для предотвращения множественных одновременных вызовов
         this._forceUpdateTimer = setTimeout(() => {
             this._performForceUpdate();
             this._forceUpdateTimer = null;
-        }, 200); // Увеличена задержка до 200мс для лучшего дебаунсинга
+            // Флаг будет сброшен в _performForceUpdate после завершения
+        }, 100); // Уменьшена задержка до 100мс, но с ранним установлением флага
     }
     
     /**
      * Внутренний метод для выполнения принудительного обновления
      */
     _performForceUpdate() {
-        // Проверяем, не выполняется ли уже обновление
-        if (this._isForceUpdating) {
-            console.log('🎯 PlayerTokens: Пропускаем _performForceUpdate - уже выполняется');
-            return;
-        }
-        
-        this._isForceUpdating = true;
-        
-        console.log('🎯 PlayerTokens: Принудительное обновление фишек');
-        const players = this.getPlayers();
-        
-        if (players && players.length > 0) {
-            console.log('🎯 PlayerTokens: Обновляем фишки для', players.length, 'игроков');
-            this.updateTokens(players);
-            // Сбрасываем флаг сразу после успешного обновления
-            this._isForceUpdating = false;
-        } else {
-            console.log('🎯 PlayerTokens: Игроки не найдены, пытаемся загрузить данные');
+        // Флаг уже установлен в forceUpdate(), поэтому просто выполняем логику
+        try {
+            console.log('🎯 PlayerTokens: Принудительное обновление фишек');
+            const players = this.getPlayers();
             
-            // Пытаемся получить данные из GameStateManager принудительно
-            if (window.app && window.app.getModule) {
-                const gameStateManager = window.app.getModule('gameStateManager');
-                if (gameStateManager && typeof gameStateManager.forceUpdate === 'function') {
-                    console.log('🎯 PlayerTokens: Запускаем forceUpdate GameStateManager');
-                    gameStateManager.forceUpdate();
-                    
-                    // Повторяем попытку через небольшую задержку
-                    setTimeout(() => {
-                        const updatedPlayers = this.getPlayers();
-                        if (updatedPlayers && updatedPlayers.length > 0) {
-                            console.log('🎯 PlayerTokens: Фишки восстановлены после forceUpdate:', updatedPlayers.length);
-                            this.updateTokens(updatedPlayers);
-                        }
-                        // Сбрасываем флаг после завершения отложенного обновления
-                        this._isForceUpdating = false;
-                    }, 500);
-                } else {
-                    // Если нет GameStateManager, сбрасываем флаг сразу
-                    this._isForceUpdating = false;
-                }
+            if (players && players.length > 0) {
+                console.log('🎯 PlayerTokens: Обновляем фишки для', players.length, 'игроков');
+                this.updateTokens(players);
             } else {
-                // Если нет window.app, сбрасываем флаг сразу
-                this._isForceUpdating = false;
+                console.log('🎯 PlayerTokens: Игроки не найдены, пытаемся загрузить данные');
+                
+                // Пытаемся получить данные из GameStateManager принудительно
+                if (window.app && window.app.getModule) {
+                    const gameStateManager = window.app.getModule('gameStateManager');
+                    if (gameStateManager && typeof gameStateManager.forceUpdate === 'function') {
+                        console.log('🎯 PlayerTokens: Запускаем forceUpdate GameStateManager');
+                        gameStateManager.forceUpdate();
+                        
+                        // Повторяем попытку через небольшую задержку
+                        setTimeout(() => {
+                            const updatedPlayers = this.getPlayers();
+                            if (updatedPlayers && updatedPlayers.length > 0) {
+                                console.log('🎯 PlayerTokens: Фишки восстановлены после forceUpdate:', updatedPlayers.length);
+                                this.updateTokens(updatedPlayers);
+                            }
+                        }, 500);
+                    }
+                }
             }
+        } finally {
+            // Всегда сбрасываем флаг после завершения всех операций
+            setTimeout(() => {
+                this._isForceUpdating = false;
+            }, 50); // Небольшая задержка для завершения всех операций
         }
     }
     
