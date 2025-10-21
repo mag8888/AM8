@@ -17,7 +17,6 @@ class BankPreview {
         
         // Callback для подписки на GameStateManager
         this._stateUpdatedCallback = null;
-        this._isSubscribed = false; // Флаг для предотвращения множественных подписок
         
         this.init();
     }
@@ -142,15 +141,14 @@ class BankPreview {
             this.openBank();
         });
         
-        // ПОДПИСКА НА GameStateManager для централизованных обновлений (только один раз)
-        if (this.gameStateManager && typeof this.gameStateManager.on === 'function' && !this._isSubscribed) {
+        // ПОДПИСКА НА GameStateManager для централизованных обновлений
+        if (this.gameStateManager && typeof this.gameStateManager.on === 'function') {
             this._stateUpdatedCallback = (state) => {
                 // Обновляем превью при изменении состояния игры, используя уже полученные данные
                 this.updatePreviewDataFromState(state);
             };
             
             this.gameStateManager.on('state:updated', this._stateUpdatedCallback);
-            this._isSubscribed = true;
             console.log('🔄 BankPreview: Подписан на обновления GameStateManager');
         }
         
@@ -613,7 +611,6 @@ class BankPreview {
         if (this.gameStateManager && typeof this.gameStateManager.off === 'function' && this._stateUpdatedCallback) {
             this.gameStateManager.off('state:updated', this._stateUpdatedCallback);
             this._stateUpdatedCallback = null;
-            this._isSubscribed = false;
         }
         
         if (this.renderDebounceTimer) {

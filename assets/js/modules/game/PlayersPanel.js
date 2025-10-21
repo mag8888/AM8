@@ -72,43 +72,55 @@ class PlayersPanel {
      */
     createBankModule() {
         if (this.bankModule) {
+            console.log('🏦 PlayersPanel: BankModule уже существует');
             return; // Уже создан
         }
         
-        // Создаем BankModule немедленно без задержки для ускорения
-        (() => {
-            if (window.BankModuleServer) {
-                try {
-                    const app = window.app;
-                    if (!app) {
-                        console.warn('⚠️ PlayersPanel: App не найден');
-                        return;
-                    }
-                    
-                    const gameState = app.getModule('gameState');
-                    const eventBus = app.getEventBus();
-                    const roomApi = app.getModule('roomApi');
-                    const professionSystem = app.getModule('professionSystem');
-                    
-                    this.bankModule = new window.BankModuleServer({
-                        gameState: gameState,
-                        eventBus: eventBus,
-                        roomApi: roomApi,
-                        professionSystem: professionSystem,
-                        gameStateManager: this.gameStateManager
-                    });
-                    
-                    // Убираем дублирование - сохраняем только как bankModuleServer
-                    app.modules.set('bankModuleServer', this.bankModule);
-                    
-                    console.log('🏦 PlayersPanel: BankModuleServer создан (оптимизированно)');
-                } catch (error) {
-                    console.error('❌ PlayersPanel: Ошибка создания BankModuleServer:', error);
-                }
-            } else {
-                console.warn('⚠️ PlayersPanel: BankModuleServer не найден');
+        console.log('🏦 PlayersPanel: Создание BankModuleServer...');
+        
+        if (!window.BankModuleServer) {
+            console.error('❌ PlayersPanel: BankModuleServer класс не найден в window');
+            return;
+        }
+        
+        try {
+            const app = window.app;
+            if (!app) {
+                console.warn('⚠️ PlayersPanel: App не найден');
+                return;
             }
-        });
+            
+            const gameState = app.getModule('gameState');
+            const eventBus = app.getEventBus();
+            const roomApi = app.getModule('roomApi');
+            const professionSystem = app.getModule('professionSystem');
+            
+            console.log('🏦 PlayersPanel: Создаем BankModuleServer с модулями:', {
+                gameState: !!gameState,
+                eventBus: !!eventBus,
+                roomApi: !!roomApi,
+                professionSystem: !!professionSystem,
+                gameStateManager: !!this.gameStateManager
+            });
+            
+            this.bankModule = new window.BankModuleServer({
+                gameState: gameState,
+                eventBus: eventBus,
+                roomApi: roomApi,
+                professionSystem: professionSystem,
+                gameStateManager: this.gameStateManager
+            });
+            
+            // Сохраняем в app.modules
+            if (app.modules && typeof app.modules.set === 'function') {
+                app.modules.set('bankModuleServer', this.bankModule);
+            }
+            
+            console.log('✅ PlayersPanel: BankModuleServer создан успешно');
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка создания BankModuleServer:', error);
+            console.error('❌ PlayersPanel: Стек ошибки:', error.stack);
+        }
     }
     
     
@@ -378,9 +390,10 @@ class PlayersPanel {
                 console.log('👥 PlayersPanel: Обновляем список из состояния, игроков:', state.players.length);
                 this.updatePlayersList(state.players);
             } else {
-                console.log('⚠️ PlayersPanel: Пустой массив игроков в состоянии, пытаемся fallback');
-                // Пробуем создать fallback для текущего пользователя
-                this.createCurrentUserFallback();
+                console.log('⚠️ PlayersPanel: Пустой массив игроков в состоянии');
+                this.showLoadingState();
+                // Немедленная загрузка игроков через GameStateManager
+                this.loadPlayersViaGameStateManager();
             }
         } else {
             console.log('⚠️ PlayersPanel: Нет данных об игроках в состоянии, загружаем через GameStateManager');
@@ -435,21 +448,12 @@ class PlayersPanel {
                     // Запускаем периодические обновления
                     this.startPeriodicUpdatesViaGameStateManager(roomId);
                 } else {
-                    console.warn('⚠️ PlayersPanel: Данные игроков не получены через GameStateManager, пытаемся fallback');
-                    // Fallback: проверяем кэшированные данные в GameStateManager
-                    const cachedState = this.gameStateManager._state;
-                    if (cachedState && cachedState.players && cachedState.players.length > 0) {
-                        console.log('🔧 PlayersPanel: Используем кэшированные данные из GameStateManager._state');
-                        this.updatePlayersList(cachedState.players);
-                    } else {
-                        // Последний fallback: создаем текущего пользователя
-                        this.createCurrentUserFallback();
-                    }
+                    console.warn('⚠️ PlayersPanel: Данные игроков не получены через GameStateManager');
+                    this.showEmptyState();
                 }
             } catch (error) {
                 console.error('❌ PlayersPanel: Ошибка загрузки через GameStateManager:', error);
-                // В случае ошибки также пытаемся создать fallback
-                this.createCurrentUserFallback();
+                this.showErrorState(`Ошибка загрузки: ${error.message}`);
             }
         } else {
             console.warn('⚠️ PlayersPanel: GameStateManager недоступен, fallback к forceLoadPlayers');
@@ -464,104 +468,6 @@ class PlayersPanel {
         if (this.gameStateManager && typeof this.gameStateManager.startPeriodicUpdates === 'function') {
             console.log('🔄 PlayersPanel: Запуск периодических обновлений через GameStateManager');
             this.gameStateManager.startPeriodicUpdates(roomId, 45000); // 45 секунд интервал
-        }
-    }
-
-    /**
-     * Создание fallback для текущего пользователя когда данные не загружаются
-     */
-    createCurrentUserFallback() {
-        try {
-            // Получаем текущего пользователя из глобального состояния
-            const currentUser = this.getCurrentUser();
-            if (!currentUser) {
-                console.warn('⚠️ PlayersPanel: Текущий пользователь не найден для fallback');
-                this.showEmptyState();
-                return;
-            }
-            
-            // Создаем базовый объект игрока
-            const fallbackPlayer = {
-                id: currentUser.id || 'current-user',
-                userId: currentUser.id,
-                username: currentUser.username || 'admin',
-                name: currentUser.username || currentUser.name || 'admin',
-                money: currentUser.money || 5000,
-                balance: currentUser.money || 5000,
-                isActive: true,
-                position: 0,
-                profession: currentUser.profession || 'Предприниматель'
-            };
-            
-            console.log('🔧 PlayersPanel: Создан fallback игрок:', fallbackPlayer);
-            
-            // Обновляем список с одним игроком
-            this.updatePlayersList([fallbackPlayer]);
-            
-        } catch (error) {
-            console.error('❌ PlayersPanel: Ошибка создания fallback пользователя:', error);
-            this.showEmptyState();
-        }
-    }
-
-    /**
-     * Получение текущего пользователя
-     */
-    getCurrentUser() {
-        try {
-            // Способ 1: из localStorage (разные ключи)
-            const keys = ['user', 'currentUser', 'aura_money_user'];
-            for (const key of keys) {
-                const userData = localStorage.getItem(key);
-                if (userData) {
-                    const user = JSON.parse(userData);
-                    console.log(`🔍 PlayersPanel: Найден пользователь в localStorage[${key}]:`, user);
-                    return user;
-                }
-            }
-            
-            // Способ 2: из sessionStorage
-            for (const key of keys) {
-                const userData = sessionStorage.getItem(key);
-                if (userData) {
-                    const user = JSON.parse(userData);
-                    console.log(`🔍 PlayersPanel: Найден пользователь в sessionStorage[${key}]:`, user);
-                    return user;
-                }
-            }
-            
-            // Способ 3: из глобального объекта
-            if (window.currentUser) {
-                console.log('🔍 PlayersPanel: Найден пользователь в window.currentUser:', window.currentUser);
-                return window.currentUser;
-            }
-            
-            // Способ 4: из window.app
-            if (window.app && window.app.getCurrentUser) {
-                const user = window.app.getCurrentUser();
-                if (user) {
-                    console.log('🔍 PlayersPanel: Найден пользователь в window.app.getCurrentUser():', user);
-                    return user;
-                }
-            }
-            
-            // Способ 5: из UserModel
-            if (window.app && window.app.getModule) {
-                const userModel = window.app.getModule('userModel');
-                if (userModel && userModel.getCurrentUser) {
-                    const user = userModel.getCurrentUser();
-                    if (user) {
-                        console.log('🔍 PlayersPanel: Найден пользователь в userModel.getCurrentUser():', user);
-                        return user;
-                    }
-                }
-            }
-            
-            console.warn('⚠️ PlayersPanel: Пользователь не найден ни в одном источнике');
-            return null;
-        } catch (error) {
-            console.error('❌ PlayersPanel: Ошибка получения текущего пользователя:', error);
-            return null;
         }
     }
 
@@ -1240,31 +1146,45 @@ class PlayersPanel {
      * Открытие банк модуля
      */
     openBankModule() {
-        // Убираем requestAnimationFrame для ускорения открытия банка
+        console.log('🏦 PlayersPanel: Попытка открыть банк...');
+        
         (async () => {
             try {
-                // Используем уже созданный BankModule
-                if (this.bankModule) {
-                    await this.bankModule.open();
-                    console.log('🏦 PlayersPanel: Банк модуль открыт');
-                } else {
-                    console.warn('⚠️ PlayersPanel: BankModule не создан, создаем...');
+                // Используем уже созданный BankModule или создаем новый
+                if (!this.bankModule) {
+                    console.log('🏦 PlayersPanel: BankModule не создан, создаем...');
                     this.createBankModule();
                     
-                    // Создаем BankModule синхронно для ускорения
-                    if (!this.bankModule) {
-                        // Прямое создание без ожидания
-                        this.createBankModule();
+                    // Ждем создания модуля
+                    let attempts = 0;
+                    while (!this.bankModule && attempts < 10) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
                     }
+                }
+                
+                if (this.bankModule) {
+                    console.log('🏦 PlayersPanel: Открываем BankModule...');
+                    await this.bankModule.open();
+                    console.log('✅ PlayersPanel: Банк модуль успешно открыт');
+                } else {
+                    console.error('❌ PlayersPanel: Не удалось создать BankModule');
+                    
+                    // Попробуем повторную попытку с принудительным созданием
+                    console.log('🔄 PlayersPanel: Повторная попытка создания BankModule...');
+                    this.bankModule = null; // Сбрасываем
+                    this.createBankModule();
                     
                     if (this.bankModule) {
                         await this.bankModule.open();
+                        console.log('✅ PlayersPanel: Банк модуль открыт после повторной попытки');
                     } else {
-                        console.error('❌ PlayersPanel: Не удалось создать BankModule');
+                        console.error('❌ PlayersPanel: Критическая ошибка - BankModule не может быть создан');
                     }
                 }
             } catch (error) {
                 console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
+                console.error('❌ PlayersPanel: Детали ошибки:', error.stack);
             }
         })();
     }

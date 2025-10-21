@@ -542,6 +542,12 @@ class BankModuleServer {
      * Создание UI банк модуля
      */
     createUI() {
+        // Проверяем, не создан ли уже UI
+        if (this.ui && document.body.contains(this.ui)) {
+            console.log('🏦 BankModuleServer: UI уже существует');
+            return;
+        }
+
         // Используем тот же HTML, что и в оригинальном модуле
         const bankModuleHTML = `
             <div id="bank-module-server" class="bank-module" style="display: none;">
@@ -670,13 +676,20 @@ class BankModuleServer {
         
         // Добавляем HTML в body
         document.body.insertAdjacentHTML('beforeend', bankModuleHTML);
-        this.ui = document.getElementById('bank-module-server');
         
-        // Добавляем стили в следующем кадре для избежания блокировки
-        requestAnimationFrame(() => {
+        // Ждем следующего тика для гарантии, что DOM обновился
+        setTimeout(() => {
+            this.ui = document.getElementById('bank-module-server');
+            if (!this.ui) {
+                console.error('❌ BankModuleServer: Не удалось найти созданный UI элемент');
+                return;
+            }
+            
+            // Добавляем стили и настраиваем обработчики
             this.addStyles();
-            console.log('🏦 BankModuleServer: UI создан');
-        });
+            this.setupEventListeners();
+            console.log('🏦 BankModuleServer: UI создан и настроен');
+        }, 0);
     }
     
     /**
@@ -1222,41 +1235,52 @@ class BankModuleServer {
      * Открытие банк модуля
      */
     async open() {
-        // Проверяем и создаем UI если нужно
-        if (!this.ui) {
-            console.log('🏦 BankModuleServer: UI не найден, создаем...');
-            this.createUI();
-            
-            // Ждем создания UI с небольшим таймаутом
-            let attempts = 0;
-            while (!this.ui && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 50));
-                attempts++;
+        try {
+            // Проверяем и создаем UI если нужно
+            if (!this.ui || !document.body.contains(this.ui)) {
+                console.log('🏦 BankModuleServer: UI не найден, создаем...');
+                this.createUI();
+                
+                // Ждем создания UI с небольшим таймаутом
+                let attempts = 0;
+                while ((!this.ui || !document.body.contains(this.ui)) && attempts < 20) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    attempts++;
+                }
+                
+                if (!this.ui || !document.body.contains(this.ui)) {
+                    console.error('❌ BankModuleServer: Не удалось создать UI');
+                    return;
+                }
             }
             
-            if (!this.ui) {
-                console.error('❌ BankModuleServer: Не удалось создать UI');
-                return;
+            // Убеждаемся, что обработчики событий настроены
+            if (this.ui && !this.ui.hasAttribute('data-listeners-setup')) {
+                console.log('🏦 BankModuleServer: Настраиваем обработчики событий...');
+                this.setupEventListeners();
+                this.ui.setAttribute('data-listeners-setup', 'true');
             }
+            
+            this.ui.style.display = 'flex';
+            this.isOpen = true;
+            
+            // Сначала показываем UI с локальными данными (если есть)
+            if (this.bankState.balance !== 0 || this.bankState.players.length > 0) {
+                console.log('🚀 BankModuleServer: Показываем локальные данные');
+                this.updateUIFromServer();
+            }
+            
+            // Затем загружаем данные с сервера в фоне (неблокирующе)
+            this.loadServerData().then(() => {
+                this.updateUIFromServer();
+            }).catch(error => {
+                console.warn('⚠️ BankModuleServer: Ошибка фоновой загрузки данных:', error);
+            });
+            
+            console.log('🏦 BankModuleServer: Открыт');
+        } catch (error) {
+            console.error('❌ BankModuleServer: Ошибка открытия банка:', error);
         }
-        
-        this.ui.style.display = 'flex';
-        this.isOpen = true;
-        
-        // Сначала показываем UI с локальными данными (если есть)
-        if (this.bankState.balance !== 0 || this.bankState.players.length > 0) {
-            console.log('🚀 BankModuleServer: Показываем локальные данные');
-            this.updateUIFromServer();
-        }
-        
-        // Затем загружаем данные с сервера в фоне (неблокирующе)
-        this.loadServerData().then(() => {
-            this.updateUIFromServer();
-        }).catch(error => {
-            console.warn('⚠️ BankModuleServer: Ошибка фоновой загрузки данных:', error);
-        });
-        
-        console.log('🏦 BankModuleServer: Открыт');
     }
     
     /**
