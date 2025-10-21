@@ -14,6 +14,7 @@ class PlayerTokens {
         
         this.tokens = new Map(); // Хранение DOM элементов фишек
         this.animatingTokens = new Set(); // Фишки, которые сейчас анимируются
+        this._forceUpdateTimer = null; // Дебаунсинг для forceUpdate
         
         console.log('🎯 PlayerTokens: Инициализация');
         this.init();
@@ -782,6 +783,21 @@ class PlayerTokens {
      * Принудительное обновление фишек из GameState
      */
     forceUpdate() {
+        // Дебаунсинг для предотвращения множественных одновременных вызовов
+        if (this._forceUpdateTimer) {
+            clearTimeout(this._forceUpdateTimer);
+        }
+        
+        this._forceUpdateTimer = setTimeout(() => {
+            this._performForceUpdate();
+            this._forceUpdateTimer = null;
+        }, 100); // Задержка 100мс для дебаунсинга
+    }
+    
+    /**
+     * Внутренний метод для выполнения принудительного обновления
+     */
+    _performForceUpdate() {
         console.log('🎯 PlayerTokens: Принудительное обновление фишек');
         const players = this.getPlayers();
         
@@ -929,6 +945,22 @@ class PlayerTokens {
             token.style.boxShadow = '';
             token.style.border = '';
         }
+    }
+    
+    /**
+     * Очистка ресурсов
+     */
+    destroy() {
+        if (this._forceUpdateTimer) {
+            clearTimeout(this._forceUpdateTimer);
+            this._forceUpdateTimer = null;
+        }
+        
+        // Очищаем коллекции
+        this.tokens.clear();
+        this.animatingTokens.clear();
+        
+        console.log('🎯 PlayerTokens: Ресурсы очищены');
     }
 }
 
