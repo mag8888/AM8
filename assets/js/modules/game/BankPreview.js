@@ -144,12 +144,8 @@ class BankPreview {
         // ПОДПИСКА НА GameStateManager для централизованных обновлений
         if (this.gameStateManager && typeof this.gameStateManager.on === 'function') {
             this._stateUpdatedCallback = (state) => {
-                // Обновляем превью при изменении состояния игры
-                if (this.updatePreviewDataDebounced) {
-                    this.updatePreviewDataDebounced();
-                } else {
-                    this.updatePreviewData();
-                }
+                // Обновляем превью при изменении состояния игры, используя уже полученные данные
+                this.updatePreviewDataFromState(state);
             };
             
             this.gameStateManager.on('state:updated', this._stateUpdatedCallback);
@@ -233,17 +229,24 @@ class BankPreview {
             if (this.bankModule && this.bankModule.bankState) {
                 bankData = this.bankModule.bankState;
             } else {
-                // Fallback: используем GameStateManager для безопасного запроса
+                // Сначала пытаемся получить кэшированные данные из GameStateManager
                 const roomId = this.getCurrentRoomId();
-                if (roomId && this.gameStateManager && typeof this.gameStateManager.fetchGameState === 'function') {
-                    console.log('🔄 BankPreview: Используем GameStateManager для получения данных');
-                    try {
-                        const gameState = await this.gameStateManager.fetchGameState(roomId);
-                        if (gameState && gameState.players) {
-                            bankData = this.extractBankDataFromGameState(gameState);
+                if (roomId && this.gameStateManager) {
+                    // Проверяем есть ли уже кэшированные данные в GameStateManager
+                    if (this.gameStateManager._state && this.gameStateManager._state.players && this.gameStateManager._state.players.length > 0) {
+                        console.log('✅ BankPreview: Используем кэшированные данные из GameStateManager');
+                        bankData = this.extractBankDataFromGameState(this.gameStateManager._state);
+                    } else if (typeof this.gameStateManager.fetchGameState === 'function') {
+                        // Только если нет кэшированных данных, делаем запрос
+                        console.log('🔄 BankPreview: Делаем fallback запрос через GameStateManager');
+                        try {
+                            const gameState = await this.gameStateManager.fetchGameState(roomId);
+                            if (gameState && gameState.players) {
+                                bankData = this.extractBankDataFromGameState(gameState);
+                            }
+                        } catch (error) {
+                            console.warn('⚠️ BankPreview: Ошибка получения данных через GameStateManager:', error);
                         }
-                    } catch (error) {
-                        console.warn('⚠️ BankPreview: Ошибка получения данных через GameStateManager:', error);
                     }
                 } else if (roomId && !this.gameStateManager) {
                     console.warn('⚠️ BankPreview: GameStateManager недоступен, пропускаем fallback запрос');
@@ -265,6 +268,52 @@ class BankPreview {
             }
         } catch (error) {
             console.warn('⚠️ BankPreview: Ошибка обновления данных:', error);
+        } finally {
+            this._isUpdating = false;
+        }
+    }
+
+    /**
+     * Обновление данных превью из переданного состояния (без дополнительных API запросов)
+     */
+    updatePreviewDataFromState(state) {
+        if (!this.previewElement || this._isUpdating) return;
+        
+        this._isUpdating = true;
+        
+        try {
+            let bankData = null;
+            
+            // Сначала пытаемся получить данные из BankModuleServer
+            const app = window.app;
+            if (app && app.modules) {
+                this.bankModule = app.modules.get('bankModuleServer') || app.modules.get('bankModule');
+            }
+            
+            if (this.bankModule && this.bankModule.bankState) {
+                bankData = this.bankModule.bankState;
+                console.log('✅ BankPreview: Обновляем данные из BankModule');
+            } else if (state && state.players) {
+                // Используем переданное состояние без дополнительных запросов
+                bankData = this.extractBankDataFromGameState(state);
+                console.log('✅ BankPreview: Обновляем данные из переданного состояния');
+            }
+            
+            if (bankData) {
+                this.updatePreviewUI(bankData);
+            } else {
+                // Показываем заглушку если данных нет
+                this.updatePreviewUI({
+                    balance: 0,
+                    income: 0,
+                    expenses: 0,
+                    netIncome: 0,
+                    credit: 0,
+                    maxCredit: 0
+                });
+            }
+        } catch (error) {
+            console.warn('⚠️ BankPreview: Ошибка обновления данных из состояния:', error);
         } finally {
             this._isUpdating = false;
         }

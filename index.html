@@ -591,8 +591,19 @@
                                     
                                     window.requestRoomSync = syncWithServer;
                                     
+                                    // Инициализация синхронизации
                                     syncWithServer();
-                                    const syncInterval = setInterval(syncWithServer, 15000); // Увеличиваем интервал до 15 секунд
+                                    
+                                    // Проверяем, есть ли GameStateManager для централизованной синхронизации
+                                    let syncInterval = null;
+                                    if (gameStateManager && typeof gameStateManager.startPeriodicUpdates === 'function') {
+                                        console.log('🔄 index.html: Используем GameStateManager для периодических обновлений');
+                                        gameStateManager.startPeriodicUpdates(roomId, 45000); // 45 секунд интервал
+                                    } else {
+                                        // Fallback к старому методу если GameStateManager недоступен
+                                        console.log('🔄 index.html: Используем legacy интервал синхронизации');
+                                        syncInterval = setInterval(syncWithServer, 15000);
+                                    }
                                     
                                     const handleVisibility = () => {
                                         if (!document.hidden) {
@@ -607,7 +618,16 @@
                                     eventBus?.on('push:stats_updated', handlePushStats);
                                     
                                     window.addEventListener('beforeunload', () => {
-                                        clearInterval(syncInterval);
+                                        // Очищаем интервал если он был создан
+                                        if (syncInterval) {
+                                            clearInterval(syncInterval);
+                                        }
+                                        
+                                        // Останавливаем GameStateManager
+                                        if (gameStateManager && typeof gameStateManager.stopPeriodicUpdates === 'function') {
+                                            gameStateManager.stopPeriodicUpdates();
+                                        }
+                                        
                                         window.requestRoomSync = null;
                                         window.removeEventListener('focus', syncWithServer);
                                         document.removeEventListener('visibilitychange', handleVisibility);
