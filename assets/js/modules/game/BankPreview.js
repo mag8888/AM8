@@ -143,6 +143,7 @@ class BankPreview {
         // Создаем элемент превью банка
         this.previewElement = document.createElement('div');
         this.previewElement.className = 'bank-preview-card';
+        console.log('🔧 BankPreview: Создаем HTML структуру для банка');
         this.previewElement.innerHTML = `
             <div class="bank-preview-header">
                 <div class="bank-preview-icon">🏦</div>
@@ -197,6 +198,15 @@ class BankPreview {
         
         // Вставляем превью в начало контейнера
         this.container.insertBefore(this.previewElement, this.container.firstChild);
+        
+        // Проверяем, что элементы создались в DOM
+        const balanceElement = this.previewElement.querySelector('#bank-preview-balance');
+        const incomeElement = this.previewElement.querySelector('#bank-preview-income');
+        console.log('🔧 BankPreview: Проверка DOM элементов после создания:', {
+            balanceElement: balanceElement,
+            incomeElement: incomeElement,
+            previewElementHTML: this.previewElement.outerHTML.substring(0, 200)
+        });
         
         // Сбрасываем флаг обработчиков чтобы переустановить их
         this._eventListenersSetup = false;
@@ -702,9 +712,13 @@ class BankPreview {
         const updateElement = (selector, value, formatter = (v) => `$${this.formatNumber(v)}`) => {
             const element = this.previewElement.querySelector(selector);
             if (!element) {
-                console.warn(`⚠️ BankPreview: Элемент ${selector} не найден`);
+                console.error(`🚨 BankPreview: КРИТИЧЕСКАЯ ОШИБКА - элемент ${selector} не найден в DOM!`, {
+                    previewElement: this.previewElement,
+                    previewElementHTML: this.previewElement ? this.previewElement.outerHTML.substring(0, 500) : 'null'
+                });
                 return;
             }
+            console.log(`✅ BankPreview: Обновляем элемент ${selector} значением ${formatter(value)}`);
             element.textContent = formatter(value);
         };
 
