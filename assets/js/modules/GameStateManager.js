@@ -113,6 +113,15 @@ class GameStateManager {
      * @returns {Promise<Object|null>} - Состояние игры или null при ошибке
      */
     async fetchGameState(roomId, force = false) {
+        // Быстрый возврат кэшированных данных для улучшения производительности
+        if (!force && this._state && this._state.players && this._state.players.length > 0) {
+            const timeSinceLastFetch = Date.now() - this._lastFetchTime;
+            if (timeSinceLastFetch < 2000) { // Возвращаем кэш если данные свежие (2 секунды)
+                console.log('🚀 GameStateManager: Возвращаем свежие кэшированные данные для быстрого отображения');
+                return this._state;
+            }
+        }
+
         // Предотвращаем множественные одновременные запросы
         if (this._isUpdating && !force) {
             console.log('🚫 GameStateManager: Запрос уже выполняется');
@@ -132,7 +141,7 @@ class GameStateManager {
         try {
             // Добавляем таймаут для предотвращения долгих ожиданий
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд таймаут
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут для быстрого переключения
             
             const response = await fetch(`/api/rooms/${roomId}/game-state`, {
                 headers: {
@@ -157,7 +166,7 @@ class GameStateManager {
             }
         } catch (error) {
             if (error.name === 'AbortError') {
-                console.warn('⚠️ GameStateManager: Запрос отменен по таймауту (10 сек)');
+                console.warn('⚠️ GameStateManager: Запрос отменен по таймауту (5 сек)');
             } else {
                 console.warn('⚠️ GameStateManager: Ошибка запроса game-state:', error);
             }

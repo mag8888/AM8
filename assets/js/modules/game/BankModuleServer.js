@@ -120,7 +120,7 @@ class BankModuleServer {
         
         // Добавляем таймаут для предотвращения блокировки UI
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // Увеличиваем таймаут до 8 секунд
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // Уменьшаем таймаут до 5 секунд для быстрого переключения
         
         try {
             const response = await fetch(`/api/rooms/${roomId}/game-state`, {

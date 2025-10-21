@@ -513,7 +513,7 @@
                                     let isSyncing = false;
                                     let pendingSync = false;
                                     let lastSyncTime = 0;
-                                    const MIN_SYNC_INTERVAL = 5000; // Минимум 5 секунд между синхронизациями
+                                    const MIN_SYNC_INTERVAL = 1000; // Минимум 1 секунда между синхронизациями для быстрой загрузки
                                     const syncWithServer = () => {
                                         if (isSyncing) {
                                             pendingSync = true;
