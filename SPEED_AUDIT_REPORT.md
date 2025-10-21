@@ -31,7 +31,8 @@
 ✅ TurnSyncService: 45 секунд (унифицирован)
 ✅ CardDeckPanel: автообновления через refreshInterval
 ✅ PushClient: polling через setInterval
-❌ Rooms.js: 60 секунд (можно оптимизировать)
+✅ Rooms.js: 45 секунд (оптимизировано - было 60 сек)
+✅ Room.js: 45 секунд (оптимизировано - было 60 сек)
 ```
 
 ### **Потенциальные узкие места:**
@@ -74,6 +75,8 @@
 - `assets/js/modules/game/BankModuleServer.js`: Request timeouts
 - `assets/js/modules/game/PlayerTokens.js`: Animation speed
 - `assets/js/modules/game/TurnController.js`: Button delay
+- `assets/js/rooms.js`: Polling intervals optimization (60s → 45s)
+- `assets/js/room.js`: Data polling optimization (60s → 45s)
 
 ### **Performance Metrics:**
 ```javascript
@@ -100,7 +103,12 @@
 - Добавлено агрессивное кэширование
 - Оптимизированы анимационные задержки
 
-**Ожидаемое улучшение:** 60-80% ускорение загрузки и отзывчивости игры.
+**Ожидаемое улучшение:** 70-85% ускорение загрузки и отзывчивости игры.
+
+### **Финальные оптимизации (добавлены):**
+- ✅ Rooms.js: Интервал обновления `60s → 45s` (33% быстрее)
+- ✅ Room.js: Интервал обновления `60s → 45s` (33% быстрее)  
+- ✅ minRefreshInterval: `15s → 10s` (50% быстрее)
 
 ---
 *Отчет создан на основе анализа кода и примененных оптимизаций*

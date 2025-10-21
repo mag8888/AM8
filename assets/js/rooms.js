@@ -40,9 +40,9 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function startRoomsPolling() {
     let lastRefreshAttempt = 0;
-    const minRefreshInterval = 15000; // Увеличиваем до 15 секунд между обновлениями
+    const minRefreshInterval = 10000; // Уменьшаем до 10 секунд для быстрого отклика
     
-    // Обновляем список комнат каждые 60 секунд для снижения нагрузки на сервер
+    // Обновляем список комнат каждые 45 секунд для баланса скорости и нагрузки
     setInterval(async () => {
         const now = Date.now();
         if (now - lastRefreshAttempt < minRefreshInterval) {
@@ -57,7 +57,7 @@ function startRoomsPolling() {
             console.error('❌ Rooms: Ошибка периодического обновления:', error);
             handleRefreshError(error);
         }
-    }, 60000); // Увеличиваем интервал до 60 секунд
+    }, 45000); // Уменьшаем интервал до 45 секунд для быстрого отклика
     
     // Также обновляем при фокусе на окне (когда пользователь возвращается)
     window.addEventListener('focus', async () => {
