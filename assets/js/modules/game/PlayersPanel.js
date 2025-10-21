@@ -296,6 +296,11 @@ class PlayersPanel {
                             <div class="btn-label">Бросить</div>
                             <div class="btn-glow"></div>
                         </button>
+                        <button class="action-btn move-btn" id="move-btn" type="button" disabled>
+                            <div class="btn-icon">👣</div>
+                            <div class="btn-label">Ходить</div>
+                            <div class="btn-glow"></div>
+                        </button>
                         <button class="action-btn pass-btn" id="pass-turn" type="button" disabled>
                             <div class="btn-icon">➡️</div>
                             <div class="btn-label">Передать</div>
@@ -1457,6 +1462,7 @@ class PlayersPanel {
     updateControlButtons(state) {
         const passBtn = document.getElementById('pass-turn');
         const rollBtn = document.getElementById('roll-dice-btn');
+        const moveBtn = document.getElementById('move-btn');
         
         // Если кнопки не найдены, принудительно создаем их
         if (!rollBtn || !passBtn) {
@@ -1510,6 +1516,18 @@ class PlayersPanel {
             }
         }
         
+        // Кнопка хода - активна если это мой ход и можно двигаться
+        if (moveBtn) {
+            const canMove = isMyTurn && (state.canMove !== false);
+            moveBtn.disabled = !canMove;
+            
+            if (canMove) {
+                moveBtn.classList.add('active');
+            } else {
+                moveBtn.classList.remove('active');
+            }
+        }
+        
         console.log('🎯 PlayersPanel: Обновлены кнопки управления:', {
             currentUserId,
             activePlayerId: activePlayer?.id,
@@ -1517,6 +1535,7 @@ class PlayersPanel {
             activePlayerUserId: activePlayer?.userId,
             isMyTurn,
             canRoll: state.canRoll,
+            canMove: state.canMove,
             canEndTurn: state.canEndTurn,
             passBtnDisabled: passBtn?.disabled,
             rollBtnDisabled: rollBtn?.disabled,
@@ -1554,6 +1573,11 @@ class PlayersPanel {
             <button class="action-btn roll-btn" id="roll-dice-btn" type="button" disabled>
                 <div class="btn-icon">🎲</div>
                 <div class="btn-label">Бросить</div>
+                <div class="btn-glow"></div>
+            </button>
+            <button class="action-btn move-btn" id="move-btn" type="button" disabled>
+                <div class="btn-icon">👣</div>
+                <div class="btn-label">Ходить</div>
                 <div class="btn-glow"></div>
             </button>
             <button class="action-btn pass-btn" id="pass-turn" type="button" disabled>
@@ -1683,6 +1707,44 @@ class PlayersPanel {
             await turnService.endTurn();
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка завершения хода:', error);
+        }
+    }
+    
+    /**
+     * Обработчик кнопки "Ходить"
+     */
+    async handleMove() {
+        try {
+            console.log('👣 PlayersPanel: Обработка хода игрока');
+            
+            const app = window.app;
+            const movementService = app && app.getModule ? app.getModule('movementService') : null;
+            
+            if (!movementService) {
+                console.warn('⚠️ PlayersPanel: MovementService не найден');
+                return;
+            }
+            
+            // Проверяем, можем ли мы двигаться
+            const canMove = movementService.canMove && typeof movementService.canMove === 'function'
+                ? movementService.canMove()
+                : true; // По умолчанию разрешаем движение
+                
+            if (!canMove) {
+                console.warn('⚠️ PlayersPanel: Движение недоступно');
+                return;
+            }
+            
+            // Выполняем движение
+            if (typeof movementService.move === 'function') {
+                await movementService.move();
+                console.log('✅ PlayersPanel: Движение выполнено');
+            } else {
+                console.warn('⚠️ PlayersPanel: Метод move не найден в MovementService');
+            }
+            
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка выполнения хода:', error);
         }
     }
     
@@ -2755,6 +2817,11 @@ class PlayersPanel {
                 box-shadow: 0 8px 20px rgba(245, 158, 11, 0.15);
             }
 
+            .move-btn:hover:not(:disabled) {
+                border-color: rgba(34, 197, 94, 0.3);
+                box-shadow: 0 8px 20px rgba(34, 197, 94, 0.15);
+            }
+
             .btn-icon {
                 font-size: 1.5rem;
             }
@@ -2927,6 +2994,14 @@ class PlayersPanel {
         if (passTurnBtn) {
             passTurnBtn.addEventListener('click', () => {
                 this.handleEndTurn();
+            });
+        }
+        
+        // Обработчик кнопки "Ходить"
+        const moveBtn = this.container.querySelector('#move-btn');
+        if (moveBtn) {
+            moveBtn.addEventListener('click', () => {
+                this.handleMove();
             });
         }
         
