@@ -384,10 +384,12 @@ class PlayersPanel {
         
         // Обновляем список игроков
         console.log('🔧 PlayersPanel: updateFromGameState - обработка игроков:', state.players);
+        console.log('🔧 PlayersPanel: updateFromGameState - тип players:', typeof state.players, Array.isArray(state.players));
         
         if (state.players && Array.isArray(state.players)) {
             if (state.players.length > 0) {
                 console.log('👥 PlayersPanel: Обновляем список из состояния, игроков:', state.players.length);
+                console.log('👥 PlayersPanel: Первый игрок:', state.players[0]);
                 this.updatePlayersList(state.players);
             } else {
                 console.log('⚠️ PlayersPanel: Пустой массив игроков в состоянии');
@@ -397,6 +399,7 @@ class PlayersPanel {
             }
         } else {
             console.log('⚠️ PlayersPanel: Нет данных об игроках в состоянии, загружаем через GameStateManager');
+            console.log('⚠️ PlayersPanel: state.players:', state.players);
             // Если игроки не переданы или невалидные, используем GameStateManager
             this.loadPlayersViaGameStateManager();
         }
