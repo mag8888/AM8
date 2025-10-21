@@ -239,8 +239,22 @@
                     }
                 }
                 
+                // Проверяем, является ли ошибка rate limiting или сетевой проблемой
+                const isRateLimitError = error?.isRateLimit || 
+                                       error.message?.includes('Rate limited') ||
+                                       error.message?.includes('Too many requests') ||
+                                       error.message?.includes('Слишком много запросов');
+                
+                if (isRateLimitError) {
+                    console.warn('⚠️ CardDeckPanel: Rate limit ошибка, используем кэшированные данные');
+                    if (this.lastKnownDecks.length) {
+                        this.renderDecks(this.lastKnownDecks);
+                    }
+                    return; // Не показываем ошибку пользователю при rate limiting
+                }
+                
                 console.error('❌ CardDeckPanel: Ошибка загрузки данных колод:', error);
-                if (error?.isRateLimit && this.lastKnownDecks.length) {
+                if (this.lastKnownDecks.length) {
                     this.renderDecks(this.lastKnownDecks);
                 } else {
                     this.renderError(error);
