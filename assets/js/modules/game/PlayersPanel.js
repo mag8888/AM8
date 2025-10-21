@@ -278,25 +278,15 @@ class PlayersPanel {
                     </div>
                 </div>
 
-                <!-- Бросок кубика -->
+                <!-- Кнопка броска -->
                 <div class="dice-widget">
                     <div class="widget-header">
                         <span class="widget-icon">🎲</span>
                         <span class="widget-title">Бросок кубика</span>
                     </div>
                     <div class="dice-container">
-                        <div class="dice-display" id="dice-display">
-                            <div class="dice-main" id="dice-result-value">
-                                <div class="dice-face">
-                                    <span class="dice-number">-</span>
-                                </div>
-                            </div>
-                            <div class="dice-history" id="roll-history">
-                                <!-- История бросков будет здесь -->
-                            </div>
-                        </div>
                         <div class="dice-controls">
-                            <button class="dice-btn primary" id="roll-dice-btn" type="button">
+                            <button class="dice-btn primary" id="roll-dice-btn" type="button" disabled>
                                 <span class="btn-icon">🎲</span>
                                 <span class="btn-text">БРОСИТЬ</span>
                                 <div class="btn-glow"></div>
@@ -312,11 +302,6 @@ class PlayersPanel {
                         <span class="widget-title">Действия</span>
                     </div>
                     <div class="actions-grid">
-                        <button class="action-btn roll-btn" id="roll-dice" type="button" disabled>
-                            <div class="btn-icon">🎲</div>
-                            <div class="btn-label">Бросить</div>
-                            <div class="btn-glow"></div>
-                        </button>
                         <button class="action-btn bank-btn" id="open-bank" type="button">
                             <div class="btn-icon">🏦</div>
                             <div class="btn-label">Банк</div>
@@ -402,7 +387,7 @@ class PlayersPanel {
             if (state.players.length > 0) {
                 console.log('👥 PlayersPanel: Обновляем список из состояния, игроков:', state.players.length);
                 console.log('👥 PlayersPanel: Первый игрок:', state.players[0]);
-                this.updatePlayersList(state.players, state.activePlayer);
+                this.updatePlayersList(state.players);
             } else {
                 console.log('⚠️ PlayersPanel: Пустой массив игроков в состоянии');
                 this.showLoadingState();
@@ -436,9 +421,7 @@ class PlayersPanel {
         
         if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
             console.log('🚀 PlayersPanel: Используем кэшированные данные через GameStateManager');
-            // Получаем activePlayer из GameStateManager для сравнения
-            const activePlayer = this.gameStateManager?.getState()?.activePlayer || null;
-            this.updatePlayersList(cachedData, activePlayer);
+            this.updatePlayersList(cachedData);
             
             // Обновляем GameStateManager с кэшированными данными
             if (this.gameStateManager) {
@@ -460,9 +443,7 @@ class PlayersPanel {
                 if (Array.isArray(players) && players.length > 0) {
                     this._playersCache.set(cacheKey, players);
                     this._lastFetchTime = Date.now();
-                    // Получаем activePlayer из состояния
-                    const activePlayer = state?.activePlayer || this.gameStateManager.getState()?.activePlayer || null;
-                    this.updatePlayersList(players, activePlayer);
+                    this.updatePlayersList(players);
                     this.startPeriodicUpdatesViaGameStateManager(roomId);
                 } else {
                     console.warn('⚠️ PlayersPanel: GameStateManager вернул пустой список игроков');
@@ -616,12 +597,10 @@ class PlayersPanel {
         
         if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
             console.log('🚀 PlayersPanel: Используем кэшированные данные игроков');
-            // Получаем activePlayer для сравнения
-            const gameStateManager = window.app?.services?.get('gameStateManager');
-            const activePlayer = gameStateManager?.getState()?.activePlayer || null;
-            this.updatePlayersList(cachedData, activePlayer);
+            this.updatePlayersList(cachedData);
             
             // Обновляем GameStateManager с кэшированными данными
+            const gameStateManager = window.app?.services?.get('gameStateManager');
             if (gameStateManager && typeof gameStateManager.updateFromServer === 'function') {
                 gameStateManager.updateFromServer({ players: cachedData });
             }
@@ -739,9 +718,7 @@ class PlayersPanel {
                         this._playersCache.set(cacheKey, players);
                         this._lastFetchTime = Date.now();
                         
-                        // Получаем activePlayer для сравнения
-                        const activePlayer = data.state?.activePlayer || null;
-                        this.updatePlayersList(players, activePlayer);
+                        this.updatePlayersList(players);
                         
                         // Также обновляем GameStateManager
                         const gameStateManager = window.app?.services?.get('gameStateManager');
@@ -938,11 +915,9 @@ class PlayersPanel {
     /**
      * Обновление списка игроков
      * @param {Array} players - Массив игроков
-     * @param {Object} activePlayer - Активный игрок
      */
-    updatePlayersList(players = [], activePlayer = null) {
+    updatePlayersList(players = []) {
         console.log('🔧 PlayersPanel: updatePlayersList вызван с данными:', players);
-        console.log('🔧 PlayersPanel: activePlayer для сравнения:', activePlayer);
         
         const playersList = document.getElementById('players-list');
         const playersCount = document.getElementById('players-count');
@@ -975,17 +950,6 @@ class PlayersPanel {
             return;
         }
         
-        // Если activePlayer не передан, пытаемся получить из GameStateManager
-        if (!activePlayer && this.gameStateManager) {
-            try {
-                const state = this.gameStateManager.getState();
-                activePlayer = state?.activePlayer;
-                console.log('🔧 PlayersPanel: Получен activePlayer из GameStateManager:', activePlayer);
-            } catch (error) {
-                console.warn('⚠️ PlayersPanel: Не удалось получить activePlayer из GameStateManager:', error);
-            }
-        }
-        
         // Добавляем каждого игрока
         players.forEach((player, index) => {
             if (!player) {
@@ -994,7 +958,7 @@ class PlayersPanel {
             }
             
             try {
-                const playerElement = this.createPlayerElement(player, index, activePlayer);
+                const playerElement = this.createPlayerElement(player, index);
                 if (playerElement) {
                     playersList.appendChild(playerElement);
                 } else {
@@ -1044,23 +1008,32 @@ class PlayersPanel {
      * Создание элемента игрока
      * @param {Object} player - Данные игрока
      * @param {number} index - Индекс игрока
-     * @param {Object} activePlayer - Активный игрок для сравнения
      * @returns {HTMLElement} Элемент игрока
      */
-    createPlayerElement(player, index, activePlayer = null) {
+    createPlayerElement(player, index) {
         const playerDiv = document.createElement('div');
         playerDiv.className = 'player-item';
         
         // Получаем баланс из разных возможных источников
         const balance = player.balance || player.money || player.cash || 0;
         
-        // Определяем, является ли игрок активным, сравнивая с activePlayer
-        let isActive = false;
-        if (activePlayer && player) {
-            isActive = (player.id === activePlayer.id) || 
-                      (player.userId === activePlayer.userId) || 
-                      (player.username === activePlayer.username) ||
-                      (activePlayer.id && player.id && player.id === activePlayer.id);
+        // Определяем, является ли игрок активным через GameStateManager
+        let isPlayerActive = false;
+        try {
+            if (this.gameStateManager) {
+                const state = this.gameStateManager.getState();
+                if (state && state.activePlayer) {
+                    const activePlayer = state.activePlayer;
+                    isPlayerActive = 
+                        activePlayer.id === player.id ||
+                        activePlayer.userId === player.userId ||
+                        activePlayer.username === player.username ||
+                        (activePlayer.id === player.userId) ||
+                        (activePlayer.userId === player.id);
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ PlayersPanel: Ошибка определения активного игрока:', error);
         }
         
         playerDiv.innerHTML = `
@@ -1069,8 +1042,8 @@ class PlayersPanel {
             </div>
             <div class="player-info">
                 <div class="player-name">${player.username || 'Игрок ' + (index + 1)}</div>
-                <div class="player-status ${isActive ? 'active' : 'inactive'}">
-                    ${isActive ? 'Активен' : 'Ожидание'}
+                <div class="player-status ${isPlayerActive ? 'active' : 'inactive'}">
+                    ${isPlayerActive ? 'Активен' : 'Ожидание'}
                 </div>
                 <div class="player-balance">$${balance}</div>
             </div>
@@ -1304,38 +1277,13 @@ class PlayersPanel {
      * @param {number} result - Результат броска
      */
     updateDiceResult(result) {
-        const diceResult = document.getElementById('dice-result-value');
-        const rollHistory = document.getElementById('roll-history');
+        // Кубики удалены - только логируем результат для отладки
+        const numericValue = typeof result === 'object'
+            ? Number(result?.value ?? result?.total)
+            : Number(result);
         
-        if (diceResult) {
-            const numericValue = typeof result === 'object'
-                ? Number(result?.value ?? result?.total)
-                : Number(result);
-            
-            const diceFace = diceResult.querySelector('.dice-face');
-            const diceNumber = diceFace?.querySelector('.dice-number');
-            
-            if (Number.isFinite(numericValue) && numericValue >= 1 && numericValue <= 6) {
-                // Показываем результат
-                if (diceNumber) {
-                    diceNumber.textContent = numericValue;
-                }
-                
-                if (diceFace) {
-                    diceFace.classList.add('rolling');
-                    setTimeout(() => {
-                        diceFace.classList.remove('rolling');
-                    }, 600);
-                }
-                
-                // Добавляем результат в историю бросков
-                this.addToRollHistory(numericValue, rollHistory);
-            } else {
-                // Возвращаем placeholder состояние
-                if (diceNumber) {
-                    diceNumber.textContent = '-';
-                }
-            }
+        if (Number.isFinite(numericValue) && numericValue >= 1 && numericValue <= 6) {
+            console.log('🎲 PlayersPanel: Результат броска отображается через кнопку:', numericValue);
         }
     }
 
@@ -1379,8 +1327,8 @@ class PlayersPanel {
      * @param {Object} state - Состояние игры
      */
     updateControlButtons(state) {
-        const rollBtn = document.getElementById('roll-dice');
         const passBtn = document.getElementById('pass-turn');
+        const rollBtn = document.getElementById('roll-dice-btn');
         
         // Проверяем, мой ли это ход
         const currentUserId = this.getCurrentUserId();
@@ -1396,21 +1344,45 @@ class PlayersPanel {
                 (activePlayer.username && currentUserId && activePlayer.username === currentUserId);
         }
         
-        // Управление кнопкой "Бросить"
+        // Управление кнопкой броска - 3 режима согласно требованиям
         if (rollBtn) {
-            // Кнопка "Бросить" активна если это мой ход И можно бросать кубик
-            const canRoll = state.canRoll !== false && isMyTurn;
-            rollBtn.disabled = !canRoll;
+            let shouldRollBeEnabled = false;
+            let rollButtonText = 'БРОСИТЬ';
             
-            // Добавляем визуальную индикацию
-            if (canRoll) {
+            if (isMyTurn) {
+                if (state.canRoll) {
+                    // Режим 1: Можно бросать (после хода/передачи)
+                    shouldRollBeEnabled = true;
+                    rollButtonText = 'БРОСИТЬ';
+                } else if (state.canEndTurn) {
+                    // Режим 2: После броска, можно передать ход
+                    shouldRollBeEnabled = false;
+                    rollButtonText = 'БРОСИТЬ';
+                } else {
+                    // Режим 3: Ожидание
+                    shouldRollBeEnabled = false;
+                    rollButtonText = 'ОЖИДАНИЕ';
+                }
+            } else {
+                // Не мой ход - показываем ожидание
+                shouldRollBeEnabled = false;
+                rollButtonText = 'ОЖИДАНИЕ';
+            }
+            
+            rollBtn.disabled = !shouldRollBeEnabled;
+            const btnText = rollBtn.querySelector('.btn-text');
+            if (btnText) {
+                btnText.textContent = rollButtonText;
+            }
+            
+            // Визуальная индикация
+            if (shouldRollBeEnabled) {
                 rollBtn.classList.add('active');
             } else {
                 rollBtn.classList.remove('active');
             }
         }
         
-        // Управление кнопкой "Передать ход"
         if (passBtn) {
             // Кнопка передачи хода активна ТОЛЬКО если это мой ход И можно завершить ход
             const shouldBeDisabled = !isMyTurn || !state.canEndTurn;
@@ -1440,56 +1412,6 @@ class PlayersPanel {
                 usernameMatch: activePlayer?.username === currentUserId
             }
         });
-    }
-    
-    /**
-     * Обработка броска кубика
-     */
-    async handleRollDice() {
-        try {
-            // Получаем TurnService через window.app
-            const app = window.app;
-            const turnService = app && app.getModule ? app.getModule('turnService') : null;
-            
-            if (!turnService) {
-                console.warn('⚠️ PlayersPanel: TurnService не найден');
-                return;
-            }
-            
-            // Проверяем права на бросок кубика
-            if (!turnService.canRoll()) {
-                console.warn('⚠️ PlayersPanel: Нельзя бросить кубик');
-                return;
-            }
-            
-            // Проверяем, что это действительно мой ход
-            const currentUserId = this.getCurrentUserId();
-            const state = turnService.getState();
-            
-            if (!state || !state.activePlayer) {
-                console.warn('⚠️ PlayersPanel: Нет активного игрока');
-                return;
-            }
-            
-            const activePlayer = state.activePlayer;
-            const isMyTurn = 
-                activePlayer.id === currentUserId ||
-                activePlayer.userId === currentUserId ||
-                (activePlayer.username && currentUserId && activePlayer.username === currentUserId);
-            
-            if (!isMyTurn) {
-                console.warn('⚠️ PlayersPanel: Не ваш ход - бросок кубика заблокирован', {
-                    activePlayer: activePlayer.username || activePlayer.id,
-                    currentUserId
-                });
-                return;
-            }
-            
-            console.log('🎲 PlayersPanel: Бросаем кубик для текущего пользователя');
-            await turnService.rollDice();
-        } catch (error) {
-            console.error('❌ PlayersPanel: Ошибка броска кубика:', error);
-        }
     }
     
     /**
@@ -1539,6 +1461,56 @@ class PlayersPanel {
             await turnService.endTurn();
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка завершения хода:', error);
+        }
+    }
+    
+    /**
+     * Обработка броска кубика
+     */
+    async handleRollDice() {
+        try {
+            // Получаем TurnService через window.app
+            const app = window.app;
+            const turnService = app && app.getModule ? app.getModule('turnService') : null;
+            
+            if (!turnService) {
+                console.warn('⚠️ PlayersPanel: TurnService не найден');
+                return;
+            }
+            
+            // Проверяем права на бросок
+            if (!turnService.canRoll()) {
+                console.warn('⚠️ PlayersPanel: Нельзя бросить кубик');
+                return;
+            }
+            
+            // Проверяем, что это действительно мой ход
+            const currentUserId = this.getCurrentUserId();
+            const state = turnService.getState();
+            
+            if (!state || !state.activePlayer) {
+                console.warn('⚠️ PlayersPanel: Нет активного игрока');
+                return;
+            }
+            
+            const activePlayer = state.activePlayer;
+            const isMyTurn = 
+                activePlayer.id === currentUserId ||
+                activePlayer.userId === currentUserId ||
+                (activePlayer.username && currentUserId && activePlayer.username === currentUserId);
+            
+            if (!isMyTurn) {
+                console.warn('⚠️ PlayersPanel: Не ваш ход - бросок заблокирован', {
+                    activePlayer: activePlayer.username || activePlayer.id,
+                    currentUserId
+                });
+                return;
+            }
+            
+            console.log('🎲 PlayersPanel: Бросаем кубик для текущего пользователя');
+            await turnService.rollDice();
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка броска кубика:', error);
         }
     }
     
@@ -2767,9 +2739,9 @@ class PlayersPanel {
         }
         
         // Обработчик кнопки "Бросить"
-        const rollDiceBtn = this.container.querySelector('#roll-dice');
-        if (rollDiceBtn) {
-            rollDiceBtn.addEventListener('click', () => {
+        const rollBtn = this.container.querySelector('#roll-dice-btn');
+        if (rollBtn) {
+            rollBtn.addEventListener('click', () => {
                 this.handleRollDice();
             });
         }
