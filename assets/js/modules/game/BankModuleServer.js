@@ -25,7 +25,8 @@ class BankModuleServer {
             credit: 0,
             maxCredit: 0,
             players: [],
-            transactions: []
+            transactions: [],
+            loaded: false
         };
         
         // UI элементы
@@ -338,6 +339,7 @@ class BankModuleServer {
         
         this.bankState.credit = currentPlayer.currentLoan || 0;
         this.bankState.currentPlayer = currentPlayer;
+        this.bankState.loaded = true;
         
         console.log('📊 BankModuleServer: Состояние обновлено:', {
             balance: this.bankState.balance,
@@ -488,6 +490,10 @@ class BankModuleServer {
      * Обновление UI данными с сервера
      */
     updateUIFromServer() {
+        if (!this.bankState || this.bankState.loaded === false) {
+            return;
+        }
+
         if (!this.ui) {
             // Очищаем кэш если UI недоступен
             this._elementCache.clear();
@@ -1967,6 +1973,9 @@ class BankModuleServer {
             this.ui.parentNode.removeChild(this.ui);
         }
         this.ui = null;
+        if (this.bankState) {
+            this.bankState.loaded = false;
+        }
         console.log('🏦 BankModuleServer: Уничтожен');
     }
 }

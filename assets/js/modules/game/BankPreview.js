@@ -411,24 +411,23 @@ class BankPreview {
             } 
             
             // ПРИОРИТЕТ 2: BankModule (если GameState данные невалидны или отсутствуют)
-            if (!bankData || (bankData.balance === 0 && bankData.income === 0)) {
-                if (this.bankModule && this.bankModule.bankState && this.bankModule.bankState.balance > 0) {
-                    bankData = this.bankModule.bankState;
+            if ((!bankData || (bankData.balance === 0 && bankData.income === 0)) && this.bankModule && this.bankModule.bankState) {
+                const moduleState = this.bankModule.bankState;
+                const moduleLoaded = moduleState.loaded !== false;
+                if (moduleLoaded && (moduleState.balance > 0 || moduleState.income > 0 || moduleState.netIncome > 0)) {
+                    bankData = moduleState;
                     console.log('✅ BankPreview: Используем данные из BankModuleServer (GameState данные невалидны)');
                 }
             }
             
             // ПРИОРИТЕТ 3: Fallback данные (если все остальные источники невалидны)
             if (!bankData || (bankData.balance === 0 && bankData.income === 0)) {
-                console.log('🔄 BankPreview: Все источники данных невалидны, используем fallback данные');
                 bankData = this.getFallbackBankData();
             }
             
             if (bankData) {
                 this.updatePreviewUI(bankData);
             } else {
-                // Используем fallback данные вместо нулей
-                console.log('🔄 BankPreview: Нет данных, используем fallback');
                 this.updatePreviewUI(this.getFallbackBankData());
             }
         } catch (error) {
@@ -457,9 +456,8 @@ class BankPreview {
                 this.bankModule = app.modules.get('bankModuleServer') || app.modules.get('bankModule');
             }
             
-            if (this.bankModule && this.bankModule.bankState) {
+            if (this.bankModule && this.bankModule.bankState && this.bankModule.bankState.loaded !== false) {
                 bankData = this.bankModule.bankState;
-                // console.log('✅ BankPreview: Обновляем данные из BankModule');
             } else if (state && state.players) {
                 // Используем переданное состояние без дополнительных запросов
                 bankData = this.extractBankDataFromGameState(state);
@@ -484,6 +482,10 @@ class BankPreview {
      */
     updateFromBankModule(bankState) {
         if (!this.previewElement || !bankState || this._isUpdating) {
+            return;
+        }
+
+        if (!bankState || bankState.loaded === false) {
             return;
         }
 
@@ -622,8 +624,6 @@ class BankPreview {
 
         if (incomingValid) {
             console.log('✅ BankPreview: Обновляем UI с новыми данными:', JSON.stringify(normalized));
-        } else if (!currentValid) {
-            console.log('🔄 BankPreview: Устанавливаем fallback значения', JSON.stringify(normalized));
         }
 
         this._lastBankSnapshot = normalized;
