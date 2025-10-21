@@ -554,7 +554,11 @@ class BankPreview {
             p.username === currentUser.username
         );
         
-        // console.log('🔍 BankPreview: Найденный currentPlayer:', currentPlayer);
+        console.log('🔍 BankPreview: Поиск игрока:', {
+            currentUser: currentUser,
+            players: gameState.players.map(p => ({ id: p.id, userId: p.userId, username: p.username, money: p.money, balance: p.balance })),
+            foundPlayer: currentPlayer
+        });
         
         if (!currentPlayer) {
             console.warn('⚠️ BankPreview: currentPlayer не найден в gameState.players');

@@ -1448,6 +1448,52 @@ if (typeof window !== 'undefined') {
     };
     
     console.log('✅ Global: Функция window.restorePlayers() доступна');
+    
+    // Глобальная функция для принудительного обновления всех компонентов
+    window.forceUpdateAllComponents = function() {
+        console.log('🔄 Global: Принудительное обновление всех компонентов');
+        
+        if (window.app) {
+            // Обновляем GameStateManager
+            const gameStateManager = window.app.getModule('gameStateManager');
+            if (gameStateManager && typeof gameStateManager.forceUpdate === 'function') {
+                console.log('🔄 Global: Обновляем GameStateManager');
+                gameStateManager.forceUpdate();
+            }
+            
+            // Обновляем PlayersPanel
+            const playersPanel = window.app.getModule('playersPanel');
+            if (playersPanel && typeof playersPanel.forceUpdateGameState === 'function') {
+                console.log('🔄 Global: Обновляем PlayersPanel');
+                playersPanel.forceUpdateGameState();
+            }
+            
+            // Обновляем PlayerTokens
+            const playerTokens = window.app.getModule('playerTokens');
+            if (playerTokens && typeof playerTokens.forceUpdateFromGameState === 'function') {
+                console.log('🔄 Global: Обновляем PlayerTokens через GameStateManager');
+                playerTokens.forceUpdateFromGameState();
+            } else if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
+                console.log('🔄 Global: Обновляем PlayerTokens через forceUpdate');
+                if (typeof window.app.safePlayerTokensForceUpdate === 'function') {
+                    window.app.safePlayerTokensForceUpdate('window.forceUpdateAllComponents');
+                }
+            }
+            
+            // Обновляем BankPreview
+            const bankPreview = window.app.getModule('bankPreview');
+            if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
+                console.log('🔄 Global: Обновляем BankPreview');
+                bankPreview.updatePreviewData();
+            }
+            
+            console.log('✅ Global: Все компоненты обновлены');
+        } else {
+            console.warn('⚠️ Global: window.app не инициализирован');
+        }
+    };
+    
+    console.log('✅ Global: Функция window.forceUpdateAllComponents() доступна');
 }
 
 // Автоматическая инициализация при загрузке страницы

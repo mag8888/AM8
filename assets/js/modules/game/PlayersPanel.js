@@ -1070,6 +1070,14 @@ class PlayersPanel {
             (player.username && activePlayer.username && player.username === activePlayer.username)
         );
         
+        console.log('🔍 PlayersPanel: Проверка активности игрока:', {
+            playerUsername: player.username,
+            playerId: player.id,
+            activePlayerUsername: activePlayer?.username,
+            activePlayerId: activePlayer?.id,
+            isActive: isActive
+        });
+        
         // Определяем статус игрока
         let status = 'Ожидание';
         if (isActive) {

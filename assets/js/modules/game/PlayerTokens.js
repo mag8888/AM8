@@ -805,6 +805,29 @@ class PlayerTokens {
             // Флаг будет сброшен в _performForceUpdate после завершения
         }, 150); // Увеличена задержка до 150мс для лучшей защиты
     }
+
+    /**
+     * Принудительное обновление фишек с приоритетом GameStateManager
+     */
+    forceUpdateFromGameState() {
+        console.log('🎯 PlayerTokens: Принудительное обновление из GameStateManager');
+        
+        // Сначала пытаемся получить данные из GameStateManager
+        if (window.app && window.app.getModule) {
+            const gameStateManager = window.app.getModule('gameStateManager');
+            if (gameStateManager && typeof gameStateManager.getState === 'function') {
+                const state = gameStateManager.getState();
+                if (state && state.players && state.players.length > 0) {
+                    console.log('🎯 PlayerTokens: Получены данные из GameStateManager, обновляем фишки');
+                    this.updateTokens(state.players);
+                    return;
+                }
+            }
+        }
+        
+        // Если GameStateManager не дал данных, используем обычный forceUpdate
+        this.forceUpdate();
+    }
     
     /**
      * Внутренний метод для выполнения принудительного обновления
