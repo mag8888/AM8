@@ -442,6 +442,11 @@ class BankPreview {
             
             // ПРИОРИТЕТ 3: Fallback данные (если все остальные источники невалидны)
             if (!this._isValidSnapshot(bankData)) {
+                if (this._isValidSnapshot(this._lastBankSnapshot)) {
+                    console.log('🔄 BankPreview: Сохраняем предыдущее валидное состояние (данные недоступны)');
+                    this.restoreLastSnapshot();
+                    return;
+                }
                 bankData = this.getFallbackBankData();
             }
             
@@ -491,8 +496,13 @@ class BankPreview {
             if (this._isValidSnapshot(bankData)) {
                 this.updatePreviewUI(bankData);
             } else {
-                // Используем fallback данные вместо нулей для лучшего UX
-                this.updatePreviewUI(this.getFallbackBankData());
+                if (this._isValidSnapshot(this._lastBankSnapshot)) {
+                    console.log('🔄 BankPreview: Сохраняем предыдущее валидное состояние (state данные пустые)');
+                    this.restoreLastSnapshot();
+                } else {
+                    // Используем fallback данные только если валидных данных ещё не было
+                    this.updatePreviewUI(this.getFallbackBankData());
+                }
             }
         } catch (error) {
             console.warn('⚠️ BankPreview: Ошибка обновления данных из состояния:', error);
