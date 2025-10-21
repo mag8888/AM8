@@ -222,18 +222,26 @@ class BankPreview {
             
             let bankData = null;
             
-            // ПРИОРИТЕТ 1: GameStateManager (актуальные данные игры)
+            // ПРИОРИТЕТ 1: GameStateManager (актуальные данные игры) - только если данные валидны
+            let gamestateData = null;
             if (this.gameStateManager && this.gameStateManager._state && this.gameStateManager._state.players && this.gameStateManager._state.players.length > 0) {
-                bankData = this.extractBankDataFromGameState(this.gameStateManager._state);
-                // console.log('✅ BankPreview: Получены данные из GameStateManager (приоритет)');
+                gamestateData = this.extractBankDataFromGameState(this.gameStateManager._state);
+                if (gamestateData && (gamestateData.balance > 0 || gamestateData.income > 0)) {
+                    bankData = gamestateData;
+                    console.log('✅ BankPreview: Начальные данные из GameStateManager (валидные)');
+                }
             } 
-            // ПРИОРИТЕТ 2: BankModule (только если есть реальные данные, не нули)
-            else if (this.bankModule && this.bankModule.bankState && this.bankModule.bankState.balance > 0) {
-                bankData = this.bankModule.bankState;
-                console.log('✅ BankPreview: Получены данные из существующего BankModule (не нулевые)');
-            } 
+            
+            // ПРИОРИТЕТ 2: BankModule (если GameState данные невалидны или отсутствуют)
+            if (!bankData || (bankData.balance === 0 && bankData.income === 0)) {
+                if (this.bankModule && this.bankModule.bankState && this.bankModule.bankState.balance > 0) {
+                    bankData = this.bankModule.bankState;
+                    console.log('✅ BankPreview: Начальные данные из BankModuleServer (GameState невалидны)');
+                }
+            }
+            
             // ПРИОРИТЕТ 3: Fallback данные
-            else {
+            if (!bankData || (bankData.balance === 0 && bankData.income === 0)) {
                 bankData = this.getFallbackBankData();
                 console.log('🔄 BankPreview: Используем fallback данные для начального отображения');
             }
@@ -382,19 +390,28 @@ class BankPreview {
                 this.bankModule = app.modules.get('bankModuleServer') || app.modules.get('bankModule');
             }
             
-            // ПРИОРИТЕТ 1: GameStateManager (актуальные данные игры)
+            // ПРИОРИТЕТ 1: GameStateManager (актуальные данные игры) - только если данные валидны
+            let gamestateData = null;
             if (this.gameStateManager && this.gameStateManager._state && this.gameStateManager._state.players && this.gameStateManager._state.players.length > 0) {
-                bankData = this.extractBankDataFromGameState(this.gameStateManager._state);
-                // console.log('✅ BankPreview: Используем кэшированные данные из GameStateManager (приоритет)');
+                gamestateData = this.extractBankDataFromGameState(this.gameStateManager._state);
+                // Используем данные из GameState только если они валидны (баланс > 0 или есть другие данные)
+                if (gamestateData && (gamestateData.balance > 0 || gamestateData.income > 0)) {
+                    bankData = gamestateData;
+                    console.log('✅ BankPreview: Используем валидные данные из GameStateManager');
+                }
             } 
-            // ПРИОРИТЕТ 2: BankModule (только если есть реальные данные, не нули)
-            else if (this.bankModule && this.bankModule.bankState && this.bankModule.bankState.balance > 0) {
-                bankData = this.bankModule.bankState;
-                // console.log('✅ BankPreview: Используем данные из BankModule (не нулевые)');
-            } 
-            // ПРИОРИТЕТ 3: Fallback данные
-            else {
-                // console.log('🔄 BankPreview: Используем fallback данные (без API запросов)');
+            
+            // ПРИОРИТЕТ 2: BankModule (если GameState данные невалидны или отсутствуют)
+            if (!bankData || (bankData.balance === 0 && bankData.income === 0)) {
+                if (this.bankModule && this.bankModule.bankState && this.bankModule.bankState.balance > 0) {
+                    bankData = this.bankModule.bankState;
+                    console.log('✅ BankPreview: Используем данные из BankModuleServer (GameState данные невалидны)');
+                }
+            }
+            
+            // ПРИОРИТЕТ 3: Fallback данные (если все остальные источники невалидны)
+            if (!bankData || (bankData.balance === 0 && bankData.income === 0)) {
+                console.log('🔄 BankPreview: Все источники данных невалидны, используем fallback данные');
                 bankData = this.getFallbackBankData();
             }
             
@@ -601,29 +618,46 @@ class BankPreview {
             maxCredit: bankData.maxCredit || 0
         });
         
-        // Проверяем валидность входящих данных для Safari
-        const incomingHasValidData = bankData.balance > 0 || bankData.income > 0 || bankData.netIncome > 0;
+        // Проверяем валидность входящих данных
+        const incomingHasValidData = (bankData.balance > 0) || (bankData.income > 0) || (bankData.netIncome > 0);
+        
+        // Проверяем есть ли у нас уже валидные данные
         const currentHasValidData = this._lastDisplayedData && (
-            this._lastDisplayedData.includes('"balance":5000') || 
-            this._lastDisplayedData.includes('"income":10000') ||
-            !this._lastDisplayedData.includes('"balance":0')
+            this._lastDisplayedData.includes('"balance":5') || 
+            this._lastDisplayedData.includes('"balance":10') ||
+            this._lastDisplayedData.includes('"income":10') ||
+            (!this._lastDisplayedData.includes('"balance":0') && !this._lastDisplayedData.includes('"income":0'))
         );
         
         // Разрешаем обновление если:
-        // 1. Это первое обновление (_lastDisplayedData === null)
-        // 2. Данные действительно изменились И не перезаписываем хорошие данные плохими
-        // 3. Получаем валидные данные (balance > 0)
+        // 1. Это первое обновление
+        // 2. Получаем валидные данные ИЛИ текущих валидных данных нет
+        // 3. Данные действительно изменились (но не нули на нули)
+        const hasDataChanged = this._lastDisplayedData !== dataString;
+        const isZeroData = bankData.balance === 0 && bankData.income === 0;
+        
         const shouldUpdate = !this._lastDisplayedData || 
-                           (this._lastDisplayedData !== dataString && !(!incomingHasValidData && currentHasValidData)) ||
-                           (incomingHasValidData && !currentHasValidData);
+                           (incomingHasValidData && hasDataChanged) ||
+                           (!currentHasValidData && hasDataChanged) ||
+                           (incomingHasValidData && !currentHasValidData && hasDataChanged);
                            
         if (!shouldUpdate) {
             // Данные не изменились или пытаемся перезаписать хорошие данные плохими
-            console.log('🔄 BankPreview: Пропускаем обновление UI - защита от перезаписи хороших данных в Safari:', dataString);
+            console.log('🔄 BankPreview: Пропускаем обновление UI - защита от перезаписи хороших данных в Safari:', {
+                incomingData: dataString,
+                incomingValid: incomingHasValidData,
+                currentValid: currentHasValidData,
+                dataChanged: hasDataChanged,
+                isZeroData: isZeroData
+            });
             return;
         }
         
-        console.log('✅ BankPreview: Обновляем UI с новыми данными:', dataString);
+        console.log('✅ BankPreview: Обновляем UI с новыми данными:', {
+            data: dataString,
+            incomingValid: incomingHasValidData,
+            currentValid: currentHasValidData
+        });
         
         this._lastDisplayedData = dataString;
         
