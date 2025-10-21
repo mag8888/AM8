@@ -633,8 +633,8 @@ class PlayerTokens {
                 
                 stepIndex++;
                 
-                // Переходим к следующему шагу через 500мс
-                setTimeout(moveToNextStep, 500);
+                // Переходим к следующему шагу через 200мс для быстрого отображения
+                setTimeout(moveToNextStep, 200);
             } else {
                 console.warn('⚠️ PlayerTokens: Клетка не найдена для позиции:', stepPosition);
                 stepIndex++;

@@ -917,7 +917,7 @@ class TurnController {
             const rollBtn = this.ui.querySelector('#roll-dice-btn');
             if (rollBtn) {
                 rollBtn.disabled = true;
-                setTimeout(()=>{ rollBtn.disabled = false; }, 1200);
+                setTimeout(()=>{ rollBtn.disabled = false; }, 800);
             }
         }
         const message = (error && (error.message || error.toString() || ''));
