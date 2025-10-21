@@ -528,10 +528,14 @@ class PlayersPanel {
 
         // Принудительно обновляем фишки через PlayerTokens
         setTimeout(() => {
-            if (window.app && window.app.getModule) {
+            if (window.app && typeof window.app.safePlayerTokensForceUpdate === 'function') {
+                console.log('🎯 PlayersPanel: Восстанавливаем фишки через PlayerTokens (защищенный метод)');
+                window.app.safePlayerTokensForceUpdate('PlayersPanel.forceRestorePlayers');
+            } else if (window.app && window.app.getModule) {
+                // Fallback на прямой вызов, если новый метод недоступен
                 const playerTokens = window.app.getModule('playerTokens');
                 if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
-                    console.log('🎯 PlayersPanel: Восстанавливаем фишки через PlayerTokens');
+                    console.log('🎯 PlayersPanel: Восстанавливаем фишки через PlayerTokens (fallback)');
                     playerTokens.forceUpdate();
                 }
             }

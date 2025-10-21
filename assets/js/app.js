@@ -796,6 +796,9 @@ class App {
             return false;
         }
         
+        // Сбрасываем флаг для PlayerTokens при новой инициализации
+        this._playerTokensForceUpdateCalled = false;
+        
         const { force = false } = options;
         const resolvedRoomId = roomId || this.activeRoomId || null;
         const roomChanged = Boolean(this.activeRoomId && resolvedRoomId && this.activeRoomId !== resolvedRoomId);
@@ -1369,6 +1372,23 @@ class App {
             playerTokens.forceUpdate();
         }
     }
+
+    /**
+     * Публичный метод для безопасного обновления PlayerTokens (для глобальных функций)
+     * @public
+     */
+    safePlayerTokensForceUpdate(context = 'global') {
+        this._safePlayerTokensForceUpdate(context);
+    }
+
+    /**
+     * Сброс флага для PlayerTokens forceUpdate (при переходе между комнатами)
+     * @public
+     */
+    resetPlayerTokensForceUpdateFlag() {
+        this._playerTokensForceUpdateCalled = false;
+        console.log('🎯 App: Сброшен флаг _playerTokensForceUpdateCalled');
+    }
 }
 
 // Экспорт
@@ -1387,11 +1407,11 @@ if (typeof window !== 'undefined') {
                 playersPanel.forceRestorePlayers();
             }
             
-            // Восстанавливаем фишки через PlayerTokens
-            const playerTokens = window.app.getModule('playerTokens');
-            if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
-                console.log('🎯 Global: Восстанавливаем фишки через PlayerTokens');
-                playerTokens.forceUpdate();
+            // Восстанавливаем фишки через PlayerTokens (используем защищенный метод)
+            if (typeof window.app.safePlayerTokensForceUpdate === 'function') {
+                window.app.safePlayerTokensForceUpdate('window.restorePlayers');
+            } else {
+                console.warn('⚠️ Global: safePlayerTokensForceUpdate метод недоступен, пропускаем');
             }
             
             // Принудительно обновляем GameStateManager
