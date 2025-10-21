@@ -443,15 +443,8 @@ class BankPreview {
             if (bankData) {
                 this.updatePreviewUI(bankData);
             } else {
-                // Показываем заглушку если данных нет
-                this.updatePreviewUI({
-                    balance: 0,
-                    income: 0,
-                    expenses: 0,
-                    netIncome: 0,
-                    credit: 0,
-                    maxCredit: 0
-                });
+                // Используем fallback данные вместо нулей для лучшего UX
+                this.updatePreviewUI(this.getFallbackBankData());
             }
         } catch (error) {
             console.warn('⚠️ BankPreview: Ошибка обновления данных из состояния:', error);
@@ -854,7 +847,7 @@ class BankPreview {
      * Уничтожение компонента
      */
     destroy() {
-        // Очищаем интервалы (если они были созданы)
+        // Очищаем все возможные таймеры для предотвращения утечек памяти
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
@@ -865,13 +858,9 @@ class BankPreview {
             this.cleanupInterval = null;
         }
         
-        // Отписываемся от GameStateManager
-        if (this.gameStateManager && typeof this.gameStateManager.off === 'function' && this._stateUpdatedCallback) {
-            this.gameStateManager.off('state:updated', this._stateUpdatedCallback);
-        }
-        
         if (this.renderDebounceTimer) {
             clearTimeout(this.renderDebounceTimer);
+            this.renderDebounceTimer = null;
         }
         
         if (this._updateStateDebounceTimer) {
@@ -879,23 +868,47 @@ class BankPreview {
             this._updateStateDebounceTimer = null;
         }
         
-        if (this.observer) {
-            this.observer.disconnect();
+        // Отписываемся от GameStateManager
+        if (this.gameStateManager && typeof this.gameStateManager.off === 'function' && this._stateUpdatedCallback) {
+            this.gameStateManager.off('state:updated', this._stateUpdatedCallback);
         }
         
-        // Сбрасываем флаг обновления
+        // Отписываемся от EventBus
+        if (this.eventBus && typeof this.eventBus.off === 'function') {
+            this.eventBus.off('bank:update', this._bankUpdateCallback);
+        }
+        
+        // Отключаем MutationObserver
+        if (this.observer) {
+            this.observer.disconnect();
+            this.observer = null;
+        }
+        
+        // Очищаем ссылки на элементы
+        if (this.previewElement && this.previewElement.parentNode) {
+            this.previewElement.parentNode.removeChild(this.previewElement);
+            this.previewElement = null;
+        }
+        
+        // Сбрасываем все флаги и данные
         this._isUpdating = false;
+        this._initialDataLoaded = false;
+        this._isLoadingInitialData = false;
+        this._lastDisplayedData = null;
+        this._lastExtractedData = null;
         
         // СБРОС ФЛАГОВ ДЛЯ КОНТРОЛИРУЕМОЙ РЕИНИЦИАЛИЗАЦИИ
         this._eventListenersSetup = false;
         this._eventBusSubscribed = false;
         this._stateUpdatedCallback = null;
+        this._bankUpdateCallback = null;
         
-        if (this.previewElement && this.previewElement.parentNode) {
-            this.previewElement.parentNode.removeChild(this.previewElement);
-        }
+        // Очищаем ссылки на модули
+        this.bankModule = null;
+        this.gameStateManager = null;
+        this.eventBus = null;
         
-        console.log('🏦 BankPreview: Уничтожен (флаги сброшены для реинициализации)');
+        console.log('🏦 BankPreview: Полностью уничтожен (все ресурсы очищены)');
     }
 }
 
