@@ -1535,6 +1535,13 @@ class PlayersPanel {
             const shouldActivate = isMyTurn;
             moveBtn.disabled = !shouldActivate;
             
+            // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ: если кнопка все еще отключена, но это ход игрока
+            if (moveBtn.disabled && isMyTurn) {
+                console.log('🔧 PlayersPanel: ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Бросок"');
+                moveBtn.disabled = false;
+                moveBtn.classList.add('active');
+            }
+            
             console.log('🎲 PlayersPanel: УПРОЩЕННАЯ активация кнопки "Бросок":', {
                 moveBtn: !!moveBtn,
                 isMyTurn,
@@ -1757,11 +1764,11 @@ class PlayersPanel {
             }
             
             // Выполняем бросок кубиков
-            if (typeof turnService.rollDice === 'function') {
-                await turnService.rollDice();
+            if (typeof turnService.roll === 'function') {
+                await turnService.roll({ diceChoice: 'single' });
                 console.log('✅ PlayersPanel: Бросок кубиков выполнен');
             } else {
-                console.warn('⚠️ PlayersPanel: Метод rollDice не найден в TurnService');
+                console.warn('⚠️ PlayersPanel: Метод roll не найден в TurnService');
             }
             
         } catch (error) {
