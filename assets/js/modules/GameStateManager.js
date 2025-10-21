@@ -130,12 +130,19 @@ class GameStateManager {
         this._isUpdating = true;
 
         try {
+            // Добавляем таймаут для предотвращения долгих ожиданий
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд таймаут
+            
             const response = await fetch(`/api/rooms/${roomId}/game-state`, {
                 headers: {
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache'
-                }
+                },
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
 
             if (response.ok) {
                 const gameStateData = await response.json();
@@ -149,7 +156,11 @@ class GameStateManager {
                 console.warn('⚠️ GameStateManager: Неудачный запрос game-state:', response.status);
             }
         } catch (error) {
-            console.warn('⚠️ GameStateManager: Ошибка запроса game-state:', error);
+            if (error.name === 'AbortError') {
+                console.warn('⚠️ GameStateManager: Запрос отменен по таймауту (10 сек)');
+            } else {
+                console.warn('⚠️ GameStateManager: Ошибка запроса game-state:', error);
+            }
         } finally {
             this._isUpdating = false;
             if (window.CommonUtils) {
