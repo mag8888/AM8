@@ -205,9 +205,28 @@ class PlayerTokens {
      * Получение игроков из GameStateManager
      */
     getPlayers() {
+        // Сначала пробуем получить из локального gameState
         if (this.gameState && this.gameState.players) {
             return this.gameState.players;
         }
+        
+        // Пробуем получить из глобального GameStateManager
+        if (window.app && window.app.getModule) {
+            const gameStateManager = window.app.getModule('gameStateManager');
+            if (gameStateManager && typeof gameStateManager.getState === 'function') {
+                try {
+                    const state = gameStateManager.getState();
+                    if (state && state.players && Array.isArray(state.players)) {
+                        console.log('🎯 PlayerTokens: Получены игроки из GameStateManager:', state.players.length);
+                        return state.players;
+                    }
+                } catch (error) {
+                    console.warn('⚠️ PlayerTokens: Ошибка получения состояния из GameStateManager:', error);
+                }
+            }
+        }
+        
+        console.log('🎯 PlayerTokens: Игроки не найдены, возвращаем пустой массив');
         return [];
     }
     
@@ -763,8 +782,33 @@ class PlayerTokens {
      * Принудительное обновление фишек из GameState
      */
     forceUpdate() {
+        console.log('🎯 PlayerTokens: Принудительное обновление фишек');
         const players = this.getPlayers();
-        this.updateTokens(players);
+        
+        if (players && players.length > 0) {
+            console.log('🎯 PlayerTokens: Обновляем фишки для', players.length, 'игроков');
+            this.updateTokens(players);
+        } else {
+            console.log('🎯 PlayerTokens: Игроки не найдены, пытаемся загрузить данные');
+            
+            // Пытаемся получить данные из GameStateManager принудительно
+            if (window.app && window.app.getModule) {
+                const gameStateManager = window.app.getModule('gameStateManager');
+                if (gameStateManager && typeof gameStateManager.forceUpdate === 'function') {
+                    console.log('🎯 PlayerTokens: Запускаем forceUpdate GameStateManager');
+                    gameStateManager.forceUpdate();
+                    
+                    // Повторяем попытку через небольшую задержку
+                    setTimeout(() => {
+                        const updatedPlayers = this.getPlayers();
+                        if (updatedPlayers && updatedPlayers.length > 0) {
+                            console.log('🎯 PlayerTokens: Фишки восстановлены после forceUpdate:', updatedPlayers.length);
+                            this.updateTokens(updatedPlayers);
+                        }
+                    }, 500);
+                }
+            }
+        }
     }
     
     /**

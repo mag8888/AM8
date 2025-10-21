@@ -1360,6 +1360,38 @@ class App {
 // Экспорт
 if (typeof window !== 'undefined') {
     window.App = App;
+    
+    // Глобальная функция для восстановления игроков и фишек
+    window.restorePlayers = function() {
+        console.log('🔄 Global: Восстановление игроков и фишек');
+        
+        if (window.app) {
+            // Восстанавливаем через PlayersPanel
+            const playersPanel = window.app.getModule('playersPanel');
+            if (playersPanel && typeof playersPanel.forceRestorePlayers === 'function') {
+                console.log('🔄 Global: Восстанавливаем через PlayersPanel');
+                playersPanel.forceRestorePlayers();
+            }
+            
+            // Восстанавливаем фишки через PlayerTokens
+            const playerTokens = window.app.getModule('playerTokens');
+            if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
+                console.log('🎯 Global: Восстанавливаем фишки через PlayerTokens');
+                playerTokens.forceUpdate();
+            }
+            
+            // Принудительно обновляем GameStateManager
+            const gameStateManager = window.app.getModule('gameStateManager');
+            if (gameStateManager && typeof gameStateManager.forceUpdate === 'function') {
+                console.log('🔄 Global: Принудительно обновляем GameStateManager');
+                gameStateManager.forceUpdate();
+            }
+        } else {
+            console.warn('⚠️ Global: window.app не инициализирован');
+        }
+    };
+    
+    console.log('✅ Global: Функция window.restorePlayers() доступна');
 }
 
 // Автоматическая инициализация при загрузке страницы

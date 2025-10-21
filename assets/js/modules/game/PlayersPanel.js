@@ -504,6 +504,48 @@ class PlayersPanel {
     }
 
     /**
+     * Принудительное восстановление игроков и фишек
+     */
+    forceRestorePlayers() {
+        console.log('🔄 PlayersPanel: Принудительное восстановление игроков');
+        
+        const roomId = this.getCurrentRoomId();
+        if (!roomId) {
+            console.warn('⚠️ PlayersPanel: roomId не найден для восстановления');
+            return;
+        }
+
+        // Принудительно загружаем данные через GameStateManager
+        if (this.gameStateManager && typeof this.gameStateManager.forceUpdate === 'function') {
+            console.log('🔄 PlayersPanel: Запускаем forceUpdate GameStateManager');
+            this.gameStateManager.forceUpdate();
+        }
+
+        // Также загружаем через наш метод
+        this.loadPlayersViaGameStateManager();
+
+        // Принудительно обновляем фишки через PlayerTokens
+        setTimeout(() => {
+            if (window.app && window.app.getModule) {
+                const playerTokens = window.app.getModule('playerTokens');
+                if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
+                    console.log('🎯 PlayersPanel: Восстанавливаем фишки через PlayerTokens');
+                    playerTokens.forceUpdate();
+                }
+            }
+        }, 200);
+
+        // Дополнительное обновление через EventBus
+        setTimeout(() => {
+            if (this.eventBus && typeof this.eventBus.emit === 'function') {
+                console.log('🔄 PlayersPanel: Отправляем событие для восстановления игроков');
+                this.eventBus.emit('players:restore');
+                this.eventBus.emit('game:playersUpdated', { players: [] });
+            }
+        }, 500);
+    }
+
+    /**
      * Принудительная загрузка игроков (deprecated - использовать loadPlayersViaGameStateManager)
      */
     forceLoadPlayers() {
