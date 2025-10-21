@@ -294,11 +294,11 @@ class CommonUtils {
             if (this._pendingRequests.has(key)) {
                 const pendingTime = this._pendingRequests.get(key);
                 const elapsedSincePending = now - pendingTime;
-                // Если запрос висит больше 30 секунд, перезаписываем его
-                if (elapsedSincePending > 30000) {
-                    console.log(`⚠️ GameStateLimiter: Перезаписываем зависший запрос для комнаты ${roomId}`);
+                // Если запрос висит больше 10 секунд, перезаписываем его (уменьшено для отзывчивости)
+                if (elapsedSincePending > 10000) {
+                    console.log(`⚠️ GameStateLimiter: Перезаписываем зависший запрос для комнаты ${roomId} (${elapsedSincePending}ms)`);
                 } else {
-                    console.log(`⏳ GameStateLimiter: Запрос уже выполняется для комнаты ${roomId} (race condition detected)`);
+                    console.log(`⏳ GameStateLimiter: Запрос уже выполняется для комнаты ${roomId} (race condition detected, ${elapsedSincePending}ms)`);
                     return false;
                 }
             }

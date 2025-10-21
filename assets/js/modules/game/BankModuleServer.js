@@ -98,6 +98,8 @@ class BankModuleServer {
             // Показываем уведомление только для критических ошибок
             if (!error.message?.includes('Load failed') && 
                 !error.message?.includes('Таймаут') &&
+                !error.message?.includes('429') &&
+                !error.message?.includes('Rate limited') &&
                 error.name !== 'TypeError') {
                 this.showNotification('Ошибка загрузки данных с сервера', 'error');
             }
@@ -139,6 +141,10 @@ class BankModuleServer {
                 if (response.status === 404) {
                     console.warn('⚠️ BankModuleServer: Комната не найдена, используем локальные данные');
                     return null; // Вернем null вместо ошибки
+                }
+                if (response.status === 429) {
+                    console.warn('⚠️ BankModuleServer: Rate limited (HTTP 429), используем локальные данные');
+                    return null; // Не выбрасываем ошибку для 429
                 }
                 throw new Error(`Ошибка загрузки состояния игры: ${response.status}`);
             }
@@ -1695,6 +1701,10 @@ class BankModuleServer {
             // Загружаем историю операций с сервера
             const response = await fetch(`/api/bank/transactions/${roomId}/${playerId}`);
             if (!response.ok) {
+                if (response.status === 429) {
+                    console.warn('⚠️ BankModuleServer: Rate limited при загрузке истории операций, оставляем текущую');
+                    return; // Не сбрасываем транзакции при rate limiting
+                }
                 console.warn('⚠️ BankModuleServer: Не удалось загрузить историю операций:', response.status);
                 this.bankState.transactions = [];
                 return;
