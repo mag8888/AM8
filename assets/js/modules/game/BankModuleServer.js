@@ -539,6 +539,26 @@ class BankModuleServer {
         this.updateTransactionsHistory();
         
         console.log('🔄 BankModuleServer: UI обновлен данными с сервера');
+        
+        // Уведомляем BankPreview о новых данных
+        this.notifyBankPreview();
+    }
+    
+    /**
+     * Уведомление BankPreview о новых данных
+     */
+    notifyBankPreview() {
+        try {
+            if (window.app && window.app.getModule) {
+                const bankPreview = window.app.getModule('bankPreview');
+                if (bankPreview && typeof bankPreview.updateFromBankModule === 'function') {
+                    console.log('🔄 BankModuleServer: Уведомляем BankPreview о новых данных');
+                    bankPreview.updateFromBankModule(this.bankState);
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ BankModuleServer: Ошибка уведомления BankPreview:', error);
+        }
     }
     
     /**

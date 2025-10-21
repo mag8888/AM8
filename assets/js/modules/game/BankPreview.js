@@ -467,6 +467,24 @@ class BankPreview {
     }
 
     /**
+     * Обновление данных превью напрямую из BankModule (вызывается BankModuleServer)
+     */
+    updateFromBankModule(bankState) {
+        if (!this.previewElement || !bankState || this._isUpdating) {
+            return;
+        }
+        
+        console.log('🔄 BankPreview: Получены данные от BankModuleServer:', {
+            balance: bankState.balance,
+            income: bankState.income,
+            credit: bankState.credit
+        });
+        
+        // Принудительно обновляем UI с данными от BankModuleServer
+        this.updatePreviewUI(bankState);
+    }
+
+    /**
      * Извлечение данных банка из состояния игры
      */
     extractBankDataFromGameState(gameState) {
