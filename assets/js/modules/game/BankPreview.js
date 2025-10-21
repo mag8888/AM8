@@ -27,6 +27,8 @@ class BankPreview {
         this._lastExtractedTimestamp = 0;
         this._updateStateDebounceTimer = null;
         this._lastDisplayedData = null;
+        this._lastLogTime = 0;
+        this._logThrottleInterval = 2000; // Логировать максимум раз в 2 секунды
         
         // ПОДПИСКИ В КОНСТРУКТОРЕ - выполняется только один раз
         this._setupGameStateManagerSubscription();
@@ -576,14 +578,14 @@ class BankPreview {
                 maxCredit: 38000
             };
         } else {
-            // Для других профессий используем их данные
+        // Для других профессий используем их данные
             bankData = {
-                balance: balance,
-                income: currentPlayer.totalIncome || currentPlayer.salary || 5000,
-                expenses: currentPlayer.monthlyExpenses || 2000,
-                netIncome: (currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000),
-                credit: currentPlayer.currentLoan || 0,
-                maxCredit: Math.max(((currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000)) * 10, 0)
+            balance: balance,
+            income: currentPlayer.totalIncome || currentPlayer.salary || 5000,
+            expenses: currentPlayer.monthlyExpenses || 2000,
+            netIncome: (currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000),
+            credit: currentPlayer.currentLoan || 0,
+            maxCredit: Math.max(((currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000)) * 10, 0)
             };
         }
         
@@ -639,7 +641,12 @@ class BankPreview {
         }
 
         if (incomingValid) {
-            console.log('✅ BankPreview: Обновляем UI с новыми данными:', JSON.stringify(normalized));
+            // Throttle логирование - максимум раз в 2 секунды
+            const now = Date.now();
+            if (now - this._lastLogTime > this._logThrottleInterval) {
+                console.log('✅ BankPreview: Обновляем UI с новыми данными:', JSON.stringify(normalized));
+                this._lastLogTime = now;
+            }
         }
 
         this._lastBankSnapshot = normalized;
