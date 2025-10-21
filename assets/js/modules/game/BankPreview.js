@@ -22,7 +22,48 @@ class BankPreview {
         this._eventListenersSetup = false;
         this._eventBusSubscribed = false;
         
+        // ПОДПИСКИ В КОНСТРУКТОРЕ - выполняется только один раз
+        this._setupGameStateManagerSubscription();
+        
         this.init();
+    }
+    
+    /**
+     * Статический метод для получения или создания единственного экземпляра BankPreview
+     */
+    static getInstance(config = {}) {
+        // Проверяем, есть ли уже экземпляр в window.app.modules
+        if (window.app && window.app.modules && window.app.modules.get('bankPreview')) {
+            const existingInstance = window.app.modules.get('bankPreview');
+            console.log('🔄 BankPreview: Используем существующий экземпляр (синглтон)');
+            return existingInstance;
+        }
+        
+        // Создаем новый экземпляр
+        const instance = new BankPreview(config);
+        
+        // Сохраняем в window.app.modules для синглтон поведения
+        if (window.app && window.app.modules) {
+            window.app.modules.set('bankPreview', instance);
+            console.log('✨ BankPreview: Создан новый экземпляр и сохранен как синглтон');
+        }
+        
+        return instance;
+    }
+    
+    /**
+     * Настройка подписки на GameStateManager в конструкторе (только один раз)
+     */
+    _setupGameStateManagerSubscription() {
+        if (this.gameStateManager && typeof this.gameStateManager.on === 'function' && !this._stateUpdatedCallback) {
+            this._stateUpdatedCallback = (state) => {
+                // Обновляем превью при изменении состояния игры, используя уже полученные данные
+                this.updatePreviewDataFromState(state);
+            };
+            
+            this.gameStateManager.on('state:updated', this._stateUpdatedCallback);
+            console.log('🔄 BankPreview: Подписан на обновления GameStateManager (конструктор)');
+        }
     }
 
     /**
@@ -144,17 +185,6 @@ class BankPreview {
             e.preventDefault();
             this.openBank();
         });
-        
-        // ПОДПИСКА НА GameStateManager для централизованных обновлений
-        if (this.gameStateManager && typeof this.gameStateManager.on === 'function' && !this._stateUpdatedCallback) {
-            this._stateUpdatedCallback = (state) => {
-                // Обновляем превью при изменении состояния игры, используя уже полученные данные
-                this.updatePreviewDataFromState(state);
-            };
-            
-            this.gameStateManager.on('state:updated', this._stateUpdatedCallback);
-            console.log('🔄 BankPreview: Подписан на обновления GameStateManager');
-        }
         
         // Отмечаем, что обработчики настроены
         this._eventListenersSetup = true;
@@ -619,7 +649,6 @@ class BankPreview {
         // Отписываемся от GameStateManager
         if (this.gameStateManager && typeof this.gameStateManager.off === 'function' && this._stateUpdatedCallback) {
             this.gameStateManager.off('state:updated', this._stateUpdatedCallback);
-            this._stateUpdatedCallback = null;
         }
         
         if (this.renderDebounceTimer) {
@@ -633,11 +662,16 @@ class BankPreview {
         // Сбрасываем флаг обновления
         this._isUpdating = false;
         
+        // СБРОС ФЛАГОВ ДЛЯ КОНТРОЛИРУЕМОЙ РЕИНИЦИАЛИЗАЦИИ
+        this._eventListenersSetup = false;
+        this._eventBusSubscribed = false;
+        this._stateUpdatedCallback = null;
+        
         if (this.previewElement && this.previewElement.parentNode) {
             this.previewElement.parentNode.removeChild(this.previewElement);
         }
         
-        console.log('🏦 BankPreview: Уничтожен');
+        console.log('🏦 BankPreview: Уничтожен (флаги сброшены для реинициализации)');
     }
 }
 

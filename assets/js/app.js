@@ -543,16 +543,19 @@ class App {
             }
         };
 
-        // Инициализируем BankPreview с отсрочкой
+        // Инициализируем BankPreview как синглтон
         const initBankPreview = () => {
-            if (window.BankPreview && !this.modules.get('bankPreview')) {
-                const bankPreview = new window.BankPreview({
+            if (window.BankPreview && window.BankPreview.getInstance) {
+                const bankPreview = window.BankPreview.getInstance({
                     containerSelector: '#card-decks-panel',
                     eventBus: this.getEventBus(),
                     gameStateManager: gameStateManager
                 });
-                this.modules.set('bankPreview', bankPreview);
-                console.log('🏦 BankPreview: Инициализирован');
+                // Синхронизируем с модулями app
+                if (!this.modules.get('bankPreview')) {
+                    this.modules.set('bankPreview', bankPreview);
+                }
+                console.log('🏦 BankPreview: Инициализирован как синглтон');
             }
         };
 
@@ -892,8 +895,8 @@ class App {
         }, { forceRecreate: false });
 
         ensureModule('bankPreview', () => {
-            if (!window.BankPreview) return null;
-            return new window.BankPreview({
+            if (!window.BankPreview || !window.BankPreview.getInstance) return null;
+            return window.BankPreview.getInstance({
                 containerSelector: '#card-decks-panel',
                 eventBus,
                 gameStateManager
