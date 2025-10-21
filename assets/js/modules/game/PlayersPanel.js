@@ -1529,22 +1529,18 @@ class PlayersPanel {
             }
         }
         
-        // Кнопка броска - активна если это мой ход (по умолчанию true если не указано иное)
+        // Кнопка броска - активна если это мой ход (упрощенная логика)
         if (moveBtn) {
-            // Для кнопки "Бросок" делаем более мягкую проверку - активна если это мой ход
-            const canRoll = isMyTurn && (state.canRoll !== false);
-            
-            // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если это мой ход, но canRoll undefined/null - делаем кнопку активной
-            const shouldActivate = isMyTurn && (state.canRoll !== false);
+            // ПРОСТАЯ ЛОГИКА: если это мой ход - кнопка активна (игнорируем state.canRoll)
+            const shouldActivate = isMyTurn;
             moveBtn.disabled = !shouldActivate;
             
-            console.log('🎲 PlayersPanel: Проверка активации кнопки "Бросок":', {
+            console.log('🎲 PlayersPanel: УПРОЩЕННАЯ активация кнопки "Бросок":', {
                 moveBtn: !!moveBtn,
                 isMyTurn,
-                canRoll: state.canRoll,
-                canRollResult: canRoll,
                 shouldActivate,
-                disabled: moveBtn.disabled
+                disabled: moveBtn.disabled,
+                note: 'Кнопка активна если isMyTurn = true'
             });
             
             if (shouldActivate) {
