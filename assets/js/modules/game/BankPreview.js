@@ -140,7 +140,15 @@ class BankPreview {
     render() {
         if (!this.container) return;
         
-        // Создаем элемент превью банка
+        // Проверяем, есть ли уже банк превью в контейнере
+        const existingPreview = this.container.querySelector('.bank-preview-card');
+        if (existingPreview) {
+            console.log('🔄 BankPreview: Элемент уже существует, используем существующий');
+            this.previewElement = existingPreview;
+            return; // Не пересоздаем HTML, используем существующий
+        }
+        
+        // Создаем элемент превью банка только если его нет
         this.previewElement = document.createElement('div');
         this.previewElement.className = 'bank-preview-card';
         console.log('🔧 BankPreview: Создаем HTML структуру для банка');
@@ -189,12 +197,6 @@ class BankPreview {
         
         // Добавляем стили если их еще нет
         this.addStyles();
-        
-        // Проверяем, есть ли уже банк превью в контейнере
-        const existingPreview = this.container.querySelector('.bank-preview-card');
-        if (existingPreview) {
-            existingPreview.remove();
-        }
         
         // Вставляем превью в начало контейнера
         this.container.insertBefore(this.previewElement, this.container.firstChild);
