@@ -1084,9 +1084,13 @@ class PlayersPanel {
             status = 'Ходит';
         }
         
+        // Получаем токен игрока и его иконку
+        const playerToken = this.getDefaultTokenForPlayer(player, index);
+        const tokenIcon = this.getTokenIcon(playerToken);
+        
         playerDiv.innerHTML = `
             <div class="player-avatar">
-                <span class="player-icon">👤</span>
+                <span class="player-icon">${tokenIcon}</span>
             </div>
             <div class="player-info">
                 <div class="player-name">${player.username || 'Игрок ' + (index + 1)}</div>
@@ -1224,6 +1228,54 @@ class PlayersPanel {
         
         const name = playerName.toLowerCase();
         return emojiMap[name] || null;
+    }
+
+    /**
+     * Получение иконки токена игрока
+     * @param {string} tokenId - ID токена игрока
+     * @returns {string} Иконка токена
+     */
+    getTokenIcon(tokenId) {
+        const tokenIcons = {
+            'lion': '🦁',
+            'eagle': '🦅', 
+            'fox': '🦊',
+            'bear': '🐻',
+            'tiger': '🐅',
+            'wolf': '🐺',
+            'elephant': '🐘',
+            'shark': '🦈',
+            'owl': '🦉',
+            'dolphin': '🐬'
+        };
+        
+        return tokenIcons[tokenId] || '👤';
+    }
+
+    /**
+     * Получение токена по умолчанию для игрока
+     * @param {Object} player - Объект игрока
+     * @param {number} index - Индекс игрока
+     * @returns {string} ID токена
+     */
+    getDefaultTokenForPlayer(player, index) {
+        // Если у игрока уже есть выбранный токен, используем его
+        if (player.token) {
+            return player.token;
+        }
+        
+        // Попробуем получить токен из localStorage если пользователь выбирал его
+        const savedToken = localStorage.getItem(`player_token_${player.username || player.id}`);
+        if (savedToken) {
+            return savedToken;
+        }
+        
+        // Массив доступных токенов по умолчанию
+        const defaultTokens = ['lion', 'eagle', 'fox', 'bear', 'tiger', 'wolf', 'elephant', 'shark', 'owl', 'dolphin'];
+        
+        // Используем индекс игрока для выбора токена
+        const tokenIndex = index % defaultTokens.length;
+        return defaultTokens[tokenIndex];
     }
 
     /**
