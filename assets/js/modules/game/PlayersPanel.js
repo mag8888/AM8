@@ -441,27 +441,26 @@ class PlayersPanel {
             console.log('🔄 PlayersPanel: Загружаем данные через GameStateManager');
             try {
                 const state = await this.gameStateManager.fetchGameState(roomId);
-                if (state && state.players) {
-                    // Кэшируем данные
-                    this._playersCache.set(cacheKey, state.players);
+                const players = state?.players || this.gameStateManager.getState()?.players || [];
+                
+                if (Array.isArray(players) && players.length > 0) {
+                    this._playersCache.set(cacheKey, players);
                     this._lastFetchTime = Date.now();
-                    
-                    this.updatePlayersList(state.players);
-                    
-                    // Запускаем периодические обновления
+                    this.updatePlayersList(players);
                     this.startPeriodicUpdatesViaGameStateManager(roomId);
                 } else {
-                    console.warn('⚠️ PlayersPanel: Данные игроков не получены через GameStateManager');
+                    console.warn('⚠️ PlayersPanel: GameStateManager вернул пустой список игроков');
                     this.showEmptyState();
                 }
             } catch (error) {
                 console.error('❌ PlayersPanel: Ошибка загрузки через GameStateManager:', error);
                 this.showErrorState(`Ошибка загрузки: ${error.message}`);
             }
-        } else {
-            console.warn('⚠️ PlayersPanel: GameStateManager недоступен, fallback к forceLoadPlayers');
-            this.forceLoadPlayers();
+            return;
         }
+
+        console.warn('⚠️ PlayersPanel: GameStateManager недоступен, показываем fallback');
+        this.showErrorState('Состояние игры недоступно');
     }
 
     /**

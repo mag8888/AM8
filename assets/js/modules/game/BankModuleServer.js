@@ -76,8 +76,32 @@ class BankModuleServer {
             
             console.log('🌐 BankModuleServer: Загружаем данные с сервера для комнаты:', roomId);
             
-            // Загружаем только состояние игры, баланс получаем из него
-            const gameStateData = await this.fetchGameState(roomId);
+            // Предпочитаем использовать GameStateManager чтобы избегать дублирующих запросов
+            let gameStateData = null;
+            const canUseManager = this.gameStateManager && typeof this.gameStateManager.getState === 'function';
+
+            if (canUseManager) {
+                const cachedState = this.gameStateManager.getState();
+                const cacheIsFresh = cachedState && cachedState.players && cachedState.players.length > 0;
+
+                if (!force && cacheIsFresh) {
+                    gameStateData = cachedState;
+                } else if (typeof this.gameStateManager.fetchGameState === 'function') {
+                    try {
+                        const fetched = await this.gameStateManager.fetchGameState(roomId, force);
+                        gameStateData = fetched || this.gameStateManager.getState();
+                    } catch (managerError) {
+                        console.warn('⚠️ BankModuleServer: fetch через GameStateManager не удался, fallback к прямому запросу', managerError);
+                    }
+                } else {
+                    gameStateData = cachedState;
+                }
+            }
+
+            // Fallback: прямой запрос только если GameStateManager отсутствует или не вернул данные
+            if (!gameStateData) {
+                gameStateData = await this.fetchGameState(roomId);
+            }
             
             if (gameStateData) {
                 // Обновляем состояние банка данными из gameState

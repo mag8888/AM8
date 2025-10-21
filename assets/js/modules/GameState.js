@@ -20,17 +20,124 @@ class GameState {
         // Инициализируем модуль профессий
         this.professionModule = new ProfessionModule();
         
-        // Загружаем игроков из комнаты при инициализации
-        this.loadPlayersFromCurrentRoom();
+        // Попытка использовать GameStateManager как основной источник данных
+        this.gameStateManager = this._resolveGameStateManager();
+        if (this.gameStateManager) {
+            this._bindToGameStateManager();
+        } else {
+            // Загружаем игроков из комнаты при инициализации (fallback)
+            this.loadPlayersFromCurrentRoom();
+        }
         
         console.log('✅ GameState инициализирован');
     }
     
     /**
-     * Загрузка игроков из текущей комнаты
+     * Поиск и подключение GameStateManager, если он доступен
+     * @private
      */
-    loadPlayersFromCurrentRoom() {
+    _resolveGameStateManager() {
         try {
+            if (window.app && typeof window.app.getGameStateManager === 'function') {
+                return window.app.getGameStateManager();
+            }
+        } catch (error) {
+            console.warn('⚠️ GameState: Не удалось получить GameStateManager из app', error);
+        }
+        return null;
+    }
+
+    /**
+     * Привязка к обновлениям GameStateManager вместо прямых сетевых запросов
+     * @private
+     */
+    _bindToGameStateManager() {
+        const manager = this.gameStateManager;
+        if (!manager) {
+            return;
+        }
+
+        const initialState = typeof manager.getState === 'function' ? manager.getState() : null;
+        if (initialState && initialState.players && initialState.players.length) {
+            this._applyManagerState(initialState);
+        }
+
+        if (typeof manager.on === 'function') {
+            this._managerListener = (state) => {
+                this._applyManagerState(state);
+            };
+            manager.on('state:updated', this._managerListener);
+        }
+
+        // Принудительно запрашиваем состояние (централизовано через GameStateManager)
+        if (typeof manager.fetchGameState === 'function') {
+            const roomId = this.getRoomId();
+            if (roomId) {
+                manager.fetchGameState(roomId).catch((error) => {
+                    console.warn('⚠️ GameState: Не удалось получить состояние через GameStateManager', error);
+                    this.loadPlayersFromCurrentRoom(true); // fallback
+                });
+            } else {
+                this.loadPlayersFromCurrentRoom(true); // fallback если roomId не найден
+            }
+        }
+    }
+
+    /**
+     * Применение состояния, полученного из GameStateManager
+     * @param {Object} state
+     * @private
+     */
+    _applyManagerState(state) {
+        if (!state || typeof state !== 'object') {
+            return;
+        }
+
+        const players = Array.isArray(state.players) ? state.players.slice() : [];
+        if (players.length) {
+            this.players = players;
+            this.gameState.players = players;
+        }
+
+        if (typeof state.currentPlayerIndex === 'number') {
+            this.currentPlayerIndex = state.currentPlayerIndex;
+        }
+
+        if (state.activePlayer) {
+            this.gameState.activePlayer = state.activePlayer;
+        }
+
+        if (typeof state.canRoll === 'boolean') {
+            this.gameState.canRoll = state.canRoll;
+        }
+        if (typeof state.canMove === 'boolean') {
+            this.gameState.canMove = state.canMove;
+        }
+        if (typeof state.canEndTurn === 'boolean') {
+            this.gameState.canEndTurn = state.canEndTurn;
+        }
+        if (state.lastDiceResult !== undefined) {
+            this.gameState.lastDiceResult = state.lastDiceResult;
+        }
+
+        this.gameStarted = players.length > 0;
+
+        if (this.eventBus) {
+            this.eventBus.emit('game:playersUpdated', { players });
+            this.eventBus.emit('game:stateSynced', state);
+        }
+    }
+
+    /**
+     * Загрузка игроков из текущей комнаты (fallback без GameStateManager)
+     */
+    loadPlayersFromCurrentRoom(force = false) {
+        try {
+            if (this.gameStateManager && !force) {
+                console.warn('⚠️ GameState: GameStateManager доступен, пропускаем прямой fetch');
+                return;
+            }
+            
             // Получаем roomId из URL
             const hash = window.location.hash;
             const roomIdMatch = hash.match(/roomId=([^&]+)/);
