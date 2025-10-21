@@ -410,7 +410,7 @@ class PlayersPanel {
         
         if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
             console.log('🚀 PlayersPanel: Используем кэшированные данные через GameStateManager');
-            this.updatePlayersList(cachedData);
+            this.updatePlayersList(cachedData, this.gameStateManager?.getState?.()?.activePlayer);
             
             // Обновляем GameStateManager с кэшированными данными
             if (this.gameStateManager) {
@@ -432,7 +432,7 @@ class PlayersPanel {
                 if (Array.isArray(players) && players.length > 0) {
                     this._playersCache.set(cacheKey, players);
                     this._lastFetchTime = Date.now();
-                    this.updatePlayersList(players);
+                    this.updatePlayersList(players, this.gameStateManager?.getState?.()?.activePlayer);
                     this.startPeriodicUpdatesViaGameStateManager(roomId);
                 } else {
                     console.warn('⚠️ PlayersPanel: GameStateManager вернул пустой список игроков');
@@ -640,7 +640,7 @@ class PlayersPanel {
         
         if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
             console.log('🚀 PlayersPanel: Используем кэшированные данные игроков');
-            this.updatePlayersList(cachedData);
+            this.updatePlayersList(cachedData, this.gameStateManager?.getState?.()?.activePlayer);
             
             // Обновляем GameStateManager с кэшированными данными
             const gameStateManager = window.app?.services?.get('gameStateManager');
@@ -761,7 +761,7 @@ class PlayersPanel {
                         this._playersCache.set(cacheKey, players);
                         this._lastFetchTime = Date.now();
                         
-                        this.updatePlayersList(players);
+                        this.updatePlayersList(players, this.gameStateManager?.getState?.()?.activePlayer);
                         
                         // Также обновляем GameStateManager
                         const gameStateManager = window.app?.services?.get('gameStateManager');
@@ -1432,6 +1432,13 @@ class PlayersPanel {
         if (rollBtn) {
             const canRoll = isMyTurn && (state.canRoll !== false);
             rollBtn.disabled = !canRoll;
+            
+            console.log('🎲 PlayersPanel: Обновление кнопки бросить:', {
+                isMyTurn,
+                canRoll,
+                stateCanRoll: state.canRoll,
+                disabled: !canRoll
+            });
             
             if (canRoll) {
                 rollBtn.classList.add('active');

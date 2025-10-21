@@ -750,7 +750,10 @@ class PlayerTokens {
         grouped.forEach(({ position, isInner, players: playersAtPosition }) => {
             const trackSelector = isInner ? this.innerTrackSelector : this.outerTrackSelector;
             const trackElement = document.querySelector(trackSelector);
-            if (!trackElement) return;
+            if (!trackElement) {
+                console.warn(`⚠️ PlayerTokens: Трек не найден: ${trackSelector}`);
+                return;
+            }
             
             const cell = trackElement.querySelector(`[data-position="${position}"]`);
             if (!cell) return;
