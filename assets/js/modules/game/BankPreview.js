@@ -26,6 +26,7 @@ class BankPreview {
         this._lastExtractedData = null;
         this._lastExtractedTimestamp = 0;
         this._updateStateDebounceTimer = null;
+        this._lastDisplayedData = null;
         
         // ПОДПИСКИ В КОНСТРУКТОРЕ - выполняется только один раз
         this._setupGameStateManagerSubscription();
@@ -69,7 +70,7 @@ class BankPreview {
                 this._updateStateDebounceTimer = setTimeout(() => {
                     this.updatePreviewDataFromState(state);
                     this._updateStateDebounceTimer = null;
-                }, 300);
+                }, 1000); // Увеличиваем до 1 секунды для предотвращения мигания
             };
             
             this.gameStateManager.on('state:updated', this._stateUpdatedCallback);
@@ -78,9 +79,10 @@ class BankPreview {
             // Проверяем есть ли уже данные в GameStateManager при подписке
             if (this.gameStateManager._state && this.gameStateManager._state.players) {
                 console.log('🔄 BankPreview: Найдены существующие данные, обновляем сразу');
-                setTimeout(() => {
-                    this.updatePreviewDataFromState(this.gameStateManager._state);
-                }, 100);
+                // Убираем setTimeout чтобы избежать дополнительных обновлений
+                // setTimeout(() => {
+                //     this.updatePreviewDataFromState(this.gameStateManager._state);
+                // }, 100);
             }
         }
     }
@@ -192,10 +194,10 @@ class BankPreview {
         // Загружаем данные НЕМЕДЛЕННО при создании превью
         this.loadInitialData();
         
-        // Дополнительная загрузка через небольшой интервал для обновления
-        setTimeout(() => {
-            this.updatePreviewData();
-        }, 500);
+        // Убираем дополнительный setTimeout который может вызывать мигание
+        // setTimeout(() => {
+        //     this.updatePreviewData();
+        // }, 500);
     }
 
     /**
@@ -527,6 +529,23 @@ class BankPreview {
      */
     updatePreviewUI(bankData) {
         if (!this.previewElement || !bankData) return;
+        
+        // Проверяем, изменились ли данные - предотвращаем мигание UI
+        const dataString = JSON.stringify({
+            balance: bankData.balance || 0,
+            income: bankData.income || 0,
+            expenses: bankData.expenses || 0,
+            netIncome: bankData.netIncome || 0,
+            credit: bankData.credit || 0,
+            maxCredit: bankData.maxCredit || 0
+        });
+        
+        if (this._lastDisplayedData === dataString) {
+            // Данные не изменились, пропускаем обновление UI
+            return;
+        }
+        
+        this._lastDisplayedData = dataString;
         
         const updateElement = (id, value) => {
             const element = this.previewElement.querySelector(id);
