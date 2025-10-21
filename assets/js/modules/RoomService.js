@@ -261,6 +261,13 @@ class RoomService {
         } catch (error) {
             console.error('❌ RoomService: Ошибка получения комнат:', error);
             
+            // Проверяем, является ли ошибка rate limiting
+            const isRateLimited = error.message && error.message.includes('Rate limited');
+            
+            if (isRateLimited) {
+                console.log('⏳ RoomService: Rate limited, используем кэш вместо fallback');
+            }
+            
             // Пробуем кэш
             const cached = this._readRoomsCache();
             if (cached && cached.length) {
@@ -269,9 +276,15 @@ class RoomService {
                 this.state.lastUpdate = Date.now();
                 return cached;
             }
-            // Fallback на мок-данные в любом случае для стабильности
-            console.log('🔄 RoomService: Fallback на мок-данные из-за ошибки API');
-            return this._getMockRooms();
+            
+            // Fallback на мок-данные только если нет кэша и это не rate limiting
+            if (!isRateLimited) {
+                console.log('🔄 RoomService: Fallback на мок-данные из-за ошибки API');
+                return this._getMockRooms();
+            } else {
+                console.log('🚫 RoomService: Rate limited и нет кэша, возвращаем пустой массив');
+                return [];
+            }
         }
     }
 
@@ -297,6 +310,9 @@ class RoomService {
      * @private
      */
     async _fetchRoomsFromAPI() {
+        // Проверяем локальный rate limiting перед запросом
+        await this._waitForRateLimit();
+        
         // Проверяем глобальный rate limiter для RoomService
         if (window.CommonUtils && !window.CommonUtils.canMakeRoomsRequest()) {
             console.log('🚫 RoomService: Пропускаем запрос к rooms из-за глобального rate limiting');
@@ -371,8 +387,18 @@ class RoomService {
 
         if (now < nextAllowed) {
             const waitTime = nextAllowed - now;
-            console.log(`⏳ RoomService: Ожидание ${waitTime}мс для соблюдения rate limit`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
+            
+            // Не ждем дольше 30 секунд, чтобы не блокировать UI
+            const maxWaitTime = 30000;
+            const actualWaitTime = Math.min(waitTime, maxWaitTime);
+            
+            if (actualWaitTime < waitTime) {
+                console.log(`⚠️ RoomService: Rate limit требует ожидания ${waitTime}мс, но ограничиваем до ${maxWaitTime}мс для UI`);
+                throw new Error(`Rate limited! Server requests ${waitTime}ms wait but UI limit is ${maxWaitTime}ms`);
+            }
+            
+            console.log(`⏳ RoomService: Ожидание ${actualWaitTime}мс для соблюдения rate limit`);
+            await new Promise(resolve => setTimeout(resolve, actualWaitTime));
         }
 
         this.requestQueue.lastRequest = Date.now();
@@ -383,18 +409,30 @@ class RoomService {
      * @private
      */
     _increaseBackoff(preferredMs = 0) {
+        let newBackoff = 0;
+        
         if (preferredMs && preferredMs > 0) {
-            this.requestQueue.currentBackoff = Math.min(preferredMs, this.requestQueue.maxBackoff);
+            // Если сервер указал конкретное время ожидания
+            newBackoff = Math.min(preferredMs, this.requestQueue.maxBackoff);
         } else if (this.requestQueue.currentBackoff === 0) {
-            this.requestQueue.currentBackoff = this.requestQueue.minInterval;
+            // Первая ошибка - минимальная задержка
+            newBackoff = this.requestQueue.minInterval;
         } else {
-            this.requestQueue.currentBackoff = Math.min(
+            // Экспоненциальное увеличение с ограничением
+            newBackoff = Math.min(
                 this.requestQueue.currentBackoff * this.requestQueue.backoffMultiplier,
                 this.requestQueue.maxBackoff
             );
         }
 
-        this.requestQueue.rateLimitedUntil = Date.now() + this.requestQueue.currentBackoff;
+        this.requestQueue.currentBackoff = newBackoff;
+        
+        // Устанавливаем время окончания rate limit только если оно больше текущего времени
+        const newRateLimitedUntil = Date.now() + newBackoff;
+        if (newRateLimitedUntil > this.requestQueue.rateLimitedUntil) {
+            this.requestQueue.rateLimitedUntil = newRateLimitedUntil;
+        }
+        
         return this.requestQueue.currentBackoff;
     }
 
@@ -852,6 +890,13 @@ class RoomService {
         } catch (error) {
             console.error('❌ RoomService: Ошибка получения статистики:', error);
             
+            // Проверяем, является ли ошибка rate limiting
+            const isRateLimited = error.message && error.message.includes('Rate limited');
+            
+            if (isRateLimited) {
+                console.log('⏳ RoomService: Статистика rate limited, используем кэшированные данные');
+            }
+            
             // Всегда возвращаем безопасный фолбэк, чтобы UI не ломался
             try {
                 return this._getMockStats();
@@ -882,6 +927,9 @@ class RoomService {
      * @private
      */
     async _fetchStatsFromAPI() {
+        // Проверяем локальный rate limiting перед запросом
+        await this._waitForRateLimit();
+        
         // Проверяем глобальный rate limiter для RoomService
         if (window.CommonUtils && !window.CommonUtils.canMakeStatsRequest()) {
             console.log('🚫 RoomService: Пропускаем запрос к stats из-за глобального rate limiting');
