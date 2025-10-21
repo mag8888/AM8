@@ -60,12 +60,23 @@
                 return;
             }
 
-            this.renderLoading();
+            // Сразу показываем 4 карточки по умолчанию
+            this.renderDecks(DEFAULT_DECKS.map(deck => ({
+                ...deck,
+                drawCount: 0,
+                discardCount: 0
+            })));
+            
             this.loadDecks().catch((error) => {
                 if (error?.isRateLimit && this.lastKnownDecks.length) {
                     this.renderDecks(this.lastKnownDecks);
                 } else {
-                    this.renderError(error);
+                    // При ошибке тоже показываем DEFAULT_DECKS
+                    this.renderDecks(DEFAULT_DECKS.map(deck => ({
+                        ...deck,
+                        drawCount: 0,
+                        discardCount: 0
+                    })));
                 }
             });
             this.setupEventListeners();
@@ -348,10 +359,13 @@
             const existingDecks = this.container.querySelectorAll('.card-deck-card');
             existingDecks.forEach(deck => deck.remove());
             
-            const loadingMessage = document.createElement('div');
-            loadingMessage.className = 'card-decks-empty';
-            loadingMessage.textContent = 'Загружаем карточные колоды...';
-            this.container.appendChild(loadingMessage);
+            // Убираем сообщение "Загружаем карточные колоды..."
+            const existingLoadingMessage = this.container.querySelector('.card-decks-empty');
+            if (existingLoadingMessage) {
+                existingLoadingMessage.remove();
+            }
+            
+            // Не показываем сообщение загрузки - просто скрываем колоды
         }
 
         /**
@@ -402,15 +416,13 @@
             const bankPreviewHTML = bankPreview ? bankPreview.outerHTML : '';
 
             if (!Array.isArray(decks) || decks.length === 0) {
-                // Если нет колод, обновляем только колоды, не трогая BankPreview
-                const existingDecks = this.container.querySelectorAll('.card-deck-card');
-                existingDecks.forEach(deck => deck.remove());
-                
-                const emptyMessage = document.createElement('div');
-                emptyMessage.className = 'card-decks-empty';
-                emptyMessage.textContent = 'Нет доступных колод. Добавьте карточки через админку.';
-                this.container.appendChild(emptyMessage);
-                return;
+                // Если нет колод, используем DEFAULT_DECKS
+                console.log('🃏 CardDeckPanel: Используем DEFAULT_DECKS (4 карточки)');
+                decks = DEFAULT_DECKS.map(deck => ({
+                    ...deck,
+                    drawCount: 0,
+                    discardCount: 0
+                }));
             }
 
             const decksHTML = decks.map((deck) => {
