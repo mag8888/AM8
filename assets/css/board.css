@@ -257,9 +257,21 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(255, 255, 255, 0.02);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    animation: deck-loading 1.6s ease-in-out infinite;
     z-index: 2;
-    /* Убираем анимацию которая вызывает подергивания */
+}
+
+@keyframes deck-loading {
+    0% {
+        transform: translateX(-100%);
+    }
+    50% {
+        transform: translateX(100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 .card-deck-card.error {
@@ -292,51 +304,12 @@
 
 @media (max-width: 640px) {
     .card-decks-container {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
-        gap: 8px;
-        max-width: none !important;
-        padding: 8px;
-        overflow-y: auto;
-        max-height: 300px !important;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-        height: auto !important;
-        flex-direction: initial !important;
-    }
-    
-    .card-decks-container::-webkit-scrollbar {
-        width: 6px;
-    }
-    
-    .card-decks-container::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    
-    .card-decks-container::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 3px;
-    }
-    
-    .card-decks-container::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.5);
+        flex-direction: column;
+        max-width: none;
     }
     
     .card-deck-card {
         min-height: 100px;
-        width: 100%;
-    }
-}
-
-@media (max-width: 480px) {
-    .card-decks-container {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 6px;
-        max-height: 250px !important;
-    }
-    
-    .card-deck-card {
-        min-height: 90px;
     }
 }
 
@@ -516,8 +489,8 @@
 }
 
 .logo-img {
-    width: 200px;
-    height: 200px;
+    width: 120px;
+    height: 120px;
     filter: drop-shadow(0 0 40px rgba(245, 245, 220, 0.9));
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
@@ -615,11 +588,6 @@
 
 .dice.rolling {
     animation: dice-pulse 0.6s ease-in-out;
-}
-
-/* Скрываем кубики внизу экрана */
-.dice {
-    display: none !important;
 }
 
 @keyframes dice-pulse {
@@ -764,8 +732,8 @@
     }
     
     .center-area {
-        width: min(40vmin, 220px);
-        height: min(40vmin, 220px);
+        width: min(30vmin, 150px);
+        height: min(30vmin, 150px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -800,16 +768,16 @@
     }
     
     .center-area {
-        width: min(40vmin, 220px);
-        height: min(40vmin, 220px);
+        width: min(30vmin, 150px);
+        height: min(30vmin, 150px);
         display: flex;
         align-items: center;
         justify-content: center;
     }
     
     .logo-img {
-        width: 200px;
-        height: 200px;
+        width: 120px;
+        height: 120px;
         filter: drop-shadow(0 0 30px rgba(245, 245, 220, 0.9));
     }
     
