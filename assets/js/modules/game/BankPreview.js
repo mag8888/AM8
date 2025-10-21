@@ -123,6 +123,11 @@ class BankPreview {
         
         // Следим за изменениями в контейнере (если CardDeckPanel перезаписывает содержимое)
         this.observeContainer();
+
+        // Снапшот последнего валидного состояния банка
+        this._lastBankSnapshot = null;
+        this._renderVersion = 0;
+        this._restoring = false;
         
         console.log('🏦 BankPreview: Инициализирован');
     }
@@ -193,6 +198,10 @@ class BankPreview {
         
         // Настраиваем обработчики событий после создания элемента
         this.setupEventListeners();
+
+        this._renderVersion += 1;
+        this.previewElement.setAttribute('data-render-version', String(this._renderVersion));
+        this.restoreLastSnapshot();
         
         // Загружаем данные НЕМЕДЛЕННО при создании превью
         this.loadInitialData();
@@ -477,33 +486,17 @@ class BankPreview {
         if (!this.previewElement || !bankState || this._isUpdating) {
             return;
         }
-        
-        // Проверяем, стоит ли обновлять данные (предотвращаем перезапись хороших данных плохими)
-        const hasValidData = bankState.balance > 0 || bankState.income > 0 || bankState.netIncome > 0;
-        const currentHasValidData = this._lastDisplayedData && (
-            this._lastDisplayedData.includes('"balance":5000') || 
-            this._lastDisplayedData.includes('"income":10000')
-        );
-        
-        // Обновляем только если получаем валидные данные или если текущие данные нулевые
-        if (!hasValidData && currentHasValidData) {
-            console.log('🔄 BankPreview: Пропускаем обновление - текущие данные лучше полученных нулевых');
+
+        const normalized = this._normalizeBankData(bankState);
+        const incomingValid = this._isValidSnapshot(normalized);
+
+        if (!incomingValid && this._isValidSnapshot(this._lastBankSnapshot)) {
+            console.log('🔄 BankPreview: Сохраняем отображение — новые данные нулевые');
             return;
         }
-        
-        console.log('🔄 BankPreview: Получены данные от BankModuleServer:', {
-            balance: bankState.balance,
-            income: bankState.income,
-            credit: bankState.credit
-        });
-        
-        // Сбрасываем кэш только если данные действительно валидные
-        if (hasValidData) {
-            this._lastDisplayedData = null;
-        }
-        
-        // Принудительно обновляем UI с данными от BankModuleServer
-        this.updatePreviewUI(bankState);
+
+        console.log('🔄 BankPreview: Получены данные от BankModuleServer:', normalized);
+        this.updatePreviewUI(normalized);
     }
 
     /**
@@ -606,84 +599,124 @@ class BankPreview {
      * Обновление UI превью
      */
     updatePreviewUI(bankData) {
-        if (!this.previewElement || !bankData) return;
-        
-        // Проверяем, изменились ли данные - предотвращаем мигание UI
-        const dataString = JSON.stringify({
-            balance: bankData.balance || 0,
-            income: bankData.income || 0,
-            expenses: bankData.expenses || 0,
-            netIncome: bankData.netIncome || 0,
-            credit: bankData.credit || 0,
-            maxCredit: bankData.maxCredit || 0
-        });
-        
-        // Проверяем валидность входящих данных
-        const incomingHasValidData = (bankData.balance > 0) || (bankData.income > 0) || (bankData.netIncome > 0);
-        
-        // Проверяем есть ли у нас уже валидные данные
-        const currentHasValidData = this._lastDisplayedData && (
-            this._lastDisplayedData.includes('"balance":5') || 
-            this._lastDisplayedData.includes('"balance":10') ||
-            this._lastDisplayedData.includes('"income":10') ||
-            (!this._lastDisplayedData.includes('"balance":0') && !this._lastDisplayedData.includes('"income":0'))
-        );
-        
-        // Разрешаем обновление если:
-        // 1. Это первое обновление
-        // 2. Получаем валидные данные ИЛИ текущих валидных данных нет
-        // 3. Данные действительно изменились (но не нули на нули)
-        const hasDataChanged = this._lastDisplayedData !== dataString;
-        const isZeroData = bankData.balance === 0 && bankData.income === 0;
-        
-        // Более простая логика: обновляем если есть валидные данные или если это первое обновление
-        const shouldUpdate = !this._lastDisplayedData || 
-                           (incomingHasValidData && hasDataChanged) ||
-                           (!currentHasValidData);
-                           
-        if (!shouldUpdate) {
-            // Данные не изменились или пытаемся перезаписать хорошие данные плохими
-            console.log('🔄 BankPreview: Пропускаем обновление UI - защита от перезаписи хороших данных в Safari:', {
-                incomingData: dataString,
-                incomingValid: incomingHasValidData,
-                currentValid: currentHasValidData,
-                dataChanged: hasDataChanged,
-                isZeroData: isZeroData
-            });
+        if (!this.previewElement || !bankData) {
             return;
         }
-        
-        console.log('✅ BankPreview: Обновляем UI с новыми данными:', {
-            data: dataString,
-            incomingValid: incomingHasValidData,
-            currentValid: currentHasValidData
-        });
-        
-        this._lastDisplayedData = dataString;
-        
-        const updateElement = (id, value) => {
-            const element = this.previewElement.querySelector(id);
-            if (element) {
-                const newText = typeof value === 'number' ? `$${this.formatNumber(value)}` : value;
-                element.textContent = newText;
-                console.log(`🔧 BankPreview: Обновлен элемент ${id}: "${newText}"`);
-            } else {
-                console.warn(`⚠️ BankPreview: Элемент ${id} не найден`);
+
+        const normalized = this._normalizeBankData(bankData);
+        const incomingValid = this._isValidSnapshot(normalized);
+        const currentSnapshot = this._lastBankSnapshot;
+        const currentValid = this._isValidSnapshot(currentSnapshot);
+        const snapshotsEqual = this._compareSnapshots(currentSnapshot, normalized);
+
+        // Предотвращаем перезапись валидных данных нулевыми снапшотами,
+        // если только мы не восстанавливаем DOM после перерендера.
+        if (!this._restoring && currentValid && !incomingValid) {
+            console.log('🔄 BankPreview: Сохраняем прежние данные, новые значения пустые');
+            return;
+        }
+
+        if (!this._restoring && snapshotsEqual) {
+            return;
+        }
+
+        if (incomingValid) {
+            console.log('✅ BankPreview: Обновляем UI с новыми данными:', JSON.stringify(normalized));
+        } else if (!currentValid) {
+            console.log('🔄 BankPreview: Устанавливаем fallback значения', JSON.stringify(normalized));
+        }
+
+        this._lastBankSnapshot = normalized;
+        this._lastDisplayedData = JSON.stringify(normalized);
+
+        const updateElement = (selector, value, formatter = (v) => `$${this.formatNumber(v)}`) => {
+            const element = this.previewElement.querySelector(selector);
+            if (!element) {
+                console.warn(`⚠️ BankPreview: Элемент ${selector} не найден`);
+                return;
             }
+            element.textContent = formatter(value);
         };
-        
-        updateElement('#bank-preview-balance', bankData.balance || 0);
-        updateElement('#bank-preview-income', bankData.income || 0);
-        updateElement('#bank-preview-expenses', bankData.expenses || 0);
-        updateElement('#bank-preview-net-income', `${bankData.netIncome || 0}/мес`);
-        updateElement('#bank-preview-credit', bankData.credit || 0);
-        updateElement('#bank-preview-max-credit', bankData.maxCredit || 0);
-        
-        // Обновляем цвет кредита
+
+        updateElement('#bank-preview-balance', normalized.balance);
+        updateElement('#bank-preview-income', normalized.income);
+        updateElement('#bank-preview-expenses', normalized.expenses);
+        updateElement('#bank-preview-net-income', normalized.netIncome, (v) => `$${this.formatNumber(v)}/мес`);
+        updateElement('#bank-preview-credit', normalized.credit);
+        updateElement('#bank-preview-max-credit', normalized.maxCredit);
+
         const creditElement = this.previewElement.querySelector('#bank-preview-credit');
         if (creditElement) {
-            creditElement.style.color = (bankData.credit || 0) > 0 ? '#ef4444' : '#10b981';
+            creditElement.style.color = normalized.credit > 0 ? '#ef4444' : '#10b981';
         }
+    }
+
+    /**
+     * Восстановление последнего валидного снапшота после повторного рендера
+     */
+    restoreLastSnapshot() {
+        if (!this.previewElement || !this._lastBankSnapshot) {
+            return;
+        }
+
+        this._restoring = true;
+        try {
+            this.updatePreviewUI(this._lastBankSnapshot);
+        } finally {
+            this._restoring = false;
+        }
+    }
+
+    /**
+     * Нормализация входящих данных
+     * @private
+     */
+    _normalizeBankData(data = {}) {
+        const toNumber = (value) => {
+            const num = Number(value);
+            return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 0;
+        };
+
+        return {
+            balance: toNumber(data.balance),
+            income: toNumber(data.income),
+            expenses: toNumber(data.expenses),
+            netIncome: toNumber(data.netIncome),
+            credit: toNumber(data.credit),
+            maxCredit: toNumber(data.maxCredit)
+        };
+    }
+
+    /**
+     * Проверка, содержит ли снапшот значимые данные
+     * @private
+     */
+    _isValidSnapshot(snapshot) {
+        if (!snapshot) {
+            return false;
+        }
+
+        return snapshot.balance > 0 ||
+            snapshot.income > 0 ||
+            snapshot.netIncome > 0 ||
+            snapshot.credit > 0;
+    }
+
+    /**
+     * Сравнение двух снапшотов
+     * @private
+     */
+    _compareSnapshots(a, b) {
+        if (!a || !b) {
+            return false;
+        }
+
+        return a.balance === b.balance &&
+            a.income === b.income &&
+            a.expenses === b.expenses &&
+            a.netIncome === b.netIncome &&
+            a.credit === b.credit &&
+            a.maxCredit === b.maxCredit;
     }
 
     /**
@@ -933,6 +966,7 @@ class BankPreview {
         this._initialDataLoaded = false;
         this._isLoadingInitialData = false;
         this._lastDisplayedData = null;
+        this._lastBankSnapshot = null;
         this._lastExtractedData = null;
         
         // СБРОС ФЛАГОВ ДЛЯ КОНТРОЛИРУЕМОЙ РЕИНИЦИАЛИЗАЦИИ
