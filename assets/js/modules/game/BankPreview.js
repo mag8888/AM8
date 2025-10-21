@@ -402,10 +402,12 @@ class BankPreview {
         
         // Предотвращаем множественные одновременные вызовы
         if (this._isUpdating) {
+            console.log('🔄 BankPreview: updatePreviewData уже выполняется, пропускаем');
             return;
         }
         
         this._isUpdating = true;
+        console.log('🔄 BankPreview: Начинаем updatePreviewData');
         
         try {
             // Пытаемся получить данные из BankModuleServer
@@ -461,9 +463,13 @@ class BankPreview {
      * Обновление данных превью из переданного состояния (без дополнительных API запросов)
      */
     updatePreviewDataFromState(state) {
-        if (!this.previewElement || this._isUpdating) return;
+        if (!this.previewElement || this._isUpdating) {
+            console.log('🔄 BankPreview: updatePreviewDataFromState пропущен - уже выполняется или нет элемента');
+            return;
+        }
         
         this._isUpdating = true;
+        console.log('🔄 BankPreview: Начинаем updatePreviewDataFromState');
         
         try {
             let bankData = null;
@@ -637,19 +643,17 @@ class BankPreview {
         const currentValid = this._isValidSnapshot(currentSnapshot);
         const snapshotsEqual = this._compareSnapshots(currentSnapshot, normalized);
 
-        // Предотвращаем перезапись валидных данных нулевыми снапшотами,
-        // если только мы не восстанавливаем DOM после перерендера.
-        if (!this._restoring && currentValid && !incomingValid) {
+        // УПРОЩЕННАЯ ЛОГИКА: Обновляем UI если есть реальные данные игрока
+        if (normalized.balance > 0 && normalized.income > 0) {
+            console.log('🔄 BankPreview: Принудительное обновление - найдены реальные данные игрока');
+            // Принудительно обновляем UI с реальными данными
+        } else if (incomingValid && currentValid && snapshotsEqual) {
+            // Если данные одинаковые - не обновляем
+            console.log('🔄 BankPreview: Данные одинаковые, пропускаем обновление');
+            return;
+        } else if (!this._restoring && currentValid && !incomingValid) {
+            // Сохраняем валидные данные если новые пустые
             console.log('🔄 BankPreview: Сохраняем прежние данные, новые значения пустые');
-            return;
-        }
-
-        // Если входящие данные валидны, но текущие тоже валидны и одинаковы - не обновляем
-        if (incomingValid && currentValid && snapshotsEqual) {
-            return;
-        }
-
-        if (!this._restoring && snapshotsEqual) {
             return;
         }
 
@@ -740,18 +744,12 @@ class BankPreview {
                typeof snapshot.netIncome === 'number' &&
                typeof snapshot.credit === 'number' &&
                typeof snapshot.maxCredit === 'number';
+
+        // Если есть реальные данные игрока (balance > 0 или income > 0), то это валидные данные
+        const hasRealData = snapshot.balance > 0 || snapshot.income > 0;
         
-        // Дополнительная проверка: если все значения равны 0, но типы правильные - это тоже валидные данные
-        const hasValidData = hasValidTypes && (
-            snapshot.balance > 0 || 
-            snapshot.income > 0 || 
-            snapshot.expenses > 0 || 
-            snapshot.netIncome !== 0 || 
-            snapshot.credit > 0 || 
-            snapshot.maxCredit > 0
-        );
-        
-        return hasValidTypes && hasValidData;
+        // Возвращаем true если есть валидные типы ИЛИ реальные данные
+        return hasValidTypes && (hasRealData || snapshot.balance === 0);
     }
 
     /**
