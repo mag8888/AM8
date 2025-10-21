@@ -1085,6 +1085,9 @@ class PlayersPanel {
         }
         
         playerDiv.innerHTML = `
+            <div class="player-avatar">
+                <span class="player-icon">👤</span>
+            </div>
             <div class="player-info">
                 <div class="player-name">${player.username || 'Игрок ' + (index + 1)}</div>
                 <div class="player-status ${isActive ? 'active' : 'inactive'}">
@@ -1966,6 +1969,15 @@ class PlayersPanel {
                 font-weight: 600;
             }
             
+            .player-avatar {
+                flex-shrink: 0;
+                margin-right: 0.75rem;
+            }
+            
+            .player-icon {
+                font-size: 1.2rem;
+                opacity: 0.8;
+            }
 
             /* === НОВЫЙ УЛУЧШЕННЫЙ ДИЗАЙН ПРАВОЙ ПАНЕЛИ === */
             
