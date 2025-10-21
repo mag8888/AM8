@@ -222,7 +222,7 @@ class BankPreview {
             // ПРИОРИТЕТ 1: GameStateManager (актуальные данные игры)
             if (this.gameStateManager && this.gameStateManager._state && this.gameStateManager._state.players && this.gameStateManager._state.players.length > 0) {
                 bankData = this.extractBankDataFromGameState(this.gameStateManager._state);
-                console.log('✅ BankPreview: Получены данные из GameStateManager (приоритет)');
+                // console.log('✅ BankPreview: Получены данные из GameStateManager (приоритет)');
             } 
             // ПРИОРИТЕТ 2: BankModule (только если есть реальные данные, не нули)
             else if (this.bankModule && this.bankModule.bankState && this.bankModule.bankState.balance > 0) {
@@ -351,16 +351,16 @@ class BankPreview {
             // ПРИОРИТЕТ 1: GameStateManager (актуальные данные игры)
             if (this.gameStateManager && this.gameStateManager._state && this.gameStateManager._state.players && this.gameStateManager._state.players.length > 0) {
                 bankData = this.extractBankDataFromGameState(this.gameStateManager._state);
-                console.log('✅ BankPreview: Используем кэшированные данные из GameStateManager (приоритет)');
+                // console.log('✅ BankPreview: Используем кэшированные данные из GameStateManager (приоритет)');
             } 
             // ПРИОРИТЕТ 2: BankModule (только если есть реальные данные, не нули)
             else if (this.bankModule && this.bankModule.bankState && this.bankModule.bankState.balance > 0) {
                 bankData = this.bankModule.bankState;
-                console.log('✅ BankPreview: Используем данные из BankModule (не нулевые)');
+                // console.log('✅ BankPreview: Используем данные из BankModule (не нулевые)');
             } 
             // ПРИОРИТЕТ 3: Fallback данные
             else {
-                console.log('🔄 BankPreview: Используем fallback данные (без API запросов)');
+                // console.log('🔄 BankPreview: Используем fallback данные (без API запросов)');
                 bankData = this.getFallbackBankData();
             }
             
@@ -399,11 +399,11 @@ class BankPreview {
             
             if (this.bankModule && this.bankModule.bankState) {
                 bankData = this.bankModule.bankState;
-                console.log('✅ BankPreview: Обновляем данные из BankModule');
+                // console.log('✅ BankPreview: Обновляем данные из BankModule');
             } else if (state && state.players) {
                 // Используем переданное состояние без дополнительных запросов
                 bankData = this.extractBankDataFromGameState(state);
-                console.log('✅ BankPreview: Обновляем данные из переданного состояния');
+                // console.log('✅ BankPreview: Обновляем данные из переданного состояния');
             }
             
             if (bankData) {
@@ -433,7 +433,7 @@ class BankPreview {
         // Кэширование для предотвращения повторных вычислений
         const now = Date.now();
         if (this._lastExtractedData && (now - this._lastExtractedTimestamp) < 1000) {
-            console.log('🚀 BankPreview: Используем кэшированные данные extractBankDataFromGameState');
+            // console.log('🚀 BankPreview: Используем кэшированные данные extractBankDataFromGameState');
             return this._lastExtractedData;
         }
         
