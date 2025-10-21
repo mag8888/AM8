@@ -297,8 +297,8 @@ class PlayersPanel {
                             <div class="btn-glow"></div>
                         </button>
                         <button class="action-btn move-btn" id="move-btn" type="button" disabled>
-                            <div class="btn-icon">👣</div>
-                            <div class="btn-label">Ходить</div>
+                            <div class="btn-icon">🎲🎲</div>
+                            <div class="btn-label">Бросок</div>
                             <div class="btn-glow"></div>
                         </button>
                         <button class="action-btn pass-btn" id="pass-turn" type="button" disabled>
@@ -1516,12 +1516,12 @@ class PlayersPanel {
             }
         }
         
-        // Кнопка хода - активна если это мой ход и можно двигаться
+        // Кнопка броска - активна если это мой ход (по умолчанию true если не указано иное)
         if (moveBtn) {
-            const canMove = isMyTurn && (state.canMove !== false);
-            moveBtn.disabled = !canMove;
+            const canRoll = isMyTurn && (state.canRoll !== false);
+            moveBtn.disabled = !canRoll;
             
-            if (canMove) {
+            if (canRoll) {
                 moveBtn.classList.add('active');
             } else {
                 moveBtn.classList.remove('active');
@@ -1535,7 +1535,6 @@ class PlayersPanel {
             activePlayerUserId: activePlayer?.userId,
             isMyTurn,
             canRoll: state.canRoll,
-            canMove: state.canMove,
             canEndTurn: state.canEndTurn,
             passBtnDisabled: passBtn?.disabled,
             rollBtnDisabled: rollBtn?.disabled,
@@ -1576,8 +1575,8 @@ class PlayersPanel {
                 <div class="btn-glow"></div>
             </button>
             <button class="action-btn move-btn" id="move-btn" type="button" disabled>
-                <div class="btn-icon">👣</div>
-                <div class="btn-label">Ходить</div>
+                <div class="btn-icon">🎲🎲</div>
+                <div class="btn-label">Бросок</div>
                 <div class="btn-glow"></div>
             </button>
             <button class="action-btn pass-btn" id="pass-turn" type="button" disabled>
@@ -1711,40 +1710,40 @@ class PlayersPanel {
     }
     
     /**
-     * Обработчик кнопки "Ходить"
+     * Обработчик кнопки "Бросок"
      */
-    async handleMove() {
+    async handleDiceRoll() {
         try {
-            console.log('👣 PlayersPanel: Обработка хода игрока');
+            console.log('🎲 PlayersPanel: Обработка броска кубиков');
             
             const app = window.app;
-            const movementService = app && app.getModule ? app.getModule('movementService') : null;
+            const turnService = app && app.getModule ? app.getModule('turnService') : null;
             
-            if (!movementService) {
-                console.warn('⚠️ PlayersPanel: MovementService не найден');
+            if (!turnService) {
+                console.warn('⚠️ PlayersPanel: TurnService не найден');
                 return;
             }
             
-            // Проверяем, можем ли мы двигаться
-            const canMove = movementService.canMove && typeof movementService.canMove === 'function'
-                ? movementService.canMove()
-                : true; // По умолчанию разрешаем движение
+            // Проверяем, можем ли мы бросить кубики
+            const canRoll = turnService.canRoll && typeof turnService.canRoll === 'function'
+                ? turnService.canRoll()
+                : true; // По умолчанию разрешаем бросок
                 
-            if (!canMove) {
-                console.warn('⚠️ PlayersPanel: Движение недоступно');
+            if (!canRoll) {
+                console.warn('⚠️ PlayersPanel: Бросок кубиков недоступен');
                 return;
             }
             
-            // Выполняем движение
-            if (typeof movementService.move === 'function') {
-                await movementService.move();
-                console.log('✅ PlayersPanel: Движение выполнено');
+            // Выполняем бросок кубиков
+            if (typeof turnService.rollDice === 'function') {
+                await turnService.rollDice();
+                console.log('✅ PlayersPanel: Бросок кубиков выполнен');
             } else {
-                console.warn('⚠️ PlayersPanel: Метод move не найден в MovementService');
+                console.warn('⚠️ PlayersPanel: Метод rollDice не найден в TurnService');
             }
             
         } catch (error) {
-            console.error('❌ PlayersPanel: Ошибка выполнения хода:', error);
+            console.error('❌ PlayersPanel: Ошибка броска кубиков:', error);
         }
     }
     
@@ -2997,11 +2996,11 @@ class PlayersPanel {
             });
         }
         
-        // Обработчик кнопки "Ходить"
+        // Обработчик кнопки "Бросок"
         const moveBtn = this.container.querySelector('#move-btn');
         if (moveBtn) {
             moveBtn.addEventListener('click', () => {
-                this.handleMove();
+                this.handleDiceRoll();
             });
         }
         
