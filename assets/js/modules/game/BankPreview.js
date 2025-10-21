@@ -76,6 +76,15 @@ class BankPreview {
             };
             
             this.gameStateManager.on('state:updated', this._stateUpdatedCallback);
+            
+            // Дополнительная подписка на обновления игроков для немедленного обновления банка
+            this.gameStateManager.on('players:updated', (data) => {
+                console.log('🔄 BankPreview: Получено событие players:updated, обновляем банк');
+                setTimeout(() => {
+                    this.updatePreviewData();
+                }, 100);
+            });
+            
             console.log('🔄 BankPreview: Подписан на обновления GameStateManager (конструктор)');
             
             // Проверяем есть ли уже данные в GameStateManager при подписке
@@ -260,17 +269,21 @@ class BankPreview {
                 console.log('🔄 BankPreview: Используем fallback данные для начального отображения');
             }
             
-            // Принудительно обновляем UI с найденными данными
-            if (this.previewElement) {
-                console.log('🏦 BankPreview: Принудительно обновляем UI с данными:', bankData);
-                this._forceUpdateUI(bankData);
+            if (bankData && this.previewElement) {
+                this.updatePreviewUI(bankData);
+            } else if (!bankData) {
+                // Если нет данных, принудительно показываем fallback
+                const fallbackData = this.getFallbackBankData();
+                if (this.previewElement) {
+                    this.updatePreviewUI(fallbackData);
+                }
             }
         } catch (error) {
             console.warn('⚠️ BankPreview: Ошибка загрузки начальных данных:', error);
             // В случае ошибки показываем fallback данные
             const fallbackData = this.getFallbackBankData();
             if (this.previewElement) {
-                this._forceUpdateUI(fallbackData);
+                this.updatePreviewUI(fallbackData);
             }
         } finally {
             // Сбрасываем флаги
@@ -440,11 +453,9 @@ class BankPreview {
             }
             
             if (bankData) {
-                console.log('🔧 BankPreview: Принудительно обновляем UI из updatePreviewData');
-                this._forceUpdateUI(bankData);
+                this.updatePreviewUI(bankData);
             } else {
-                console.log('🔧 BankPreview: Принудительно обновляем UI fallback данными');
-                this._forceUpdateUI(this.getFallbackBankData());
+                this.updatePreviewUI(this.getFallbackBankData());
             }
         } catch (error) {
             console.warn('⚠️ BankPreview: Ошибка обновления данных:', error);
@@ -481,12 +492,10 @@ class BankPreview {
             }
             
             if (this._isValidSnapshot(bankData)) {
-                console.log('🔧 BankPreview: Принудительно обновляем UI из updatePreviewDataFromState');
-                this._forceUpdateUI(bankData);
+                this.updatePreviewUI(bankData);
             } else {
                 // Используем fallback данные вместо нулей для лучшего UX
-                console.log('🔧 BankPreview: Принудительно обновляем UI fallback данными из updatePreviewDataFromState');
-                this._forceUpdateUI(this.getFallbackBankData());
+                this.updatePreviewUI(this.getFallbackBankData());
             }
         } catch (error) {
             console.warn('⚠️ BankPreview: Ошибка обновления данных из состояния:', error);
@@ -621,40 +630,6 @@ class BankPreview {
             credit: 0,
             maxCredit: 0
         };
-    }
-
-    /**
-     * Принудительное обновление UI без проверок
-     * @private
-     */
-    _forceUpdateUI(bankData) {
-        if (!this.previewElement || !bankData) {
-            return;
-        }
-
-        const normalized = this._normalizeBankData(bankData);
-        console.log('🔧 BankPreview: Принудительное обновление UI с данными:', normalized);
-
-        this._lastBankSnapshot = normalized;
-        this._lastDisplayedData = JSON.stringify(normalized);
-
-        const updateElement = (selector, value, formatter = (v) => `$${this.formatNumber(v)}`) => {
-            const element = this.previewElement.querySelector(selector);
-            if (!element) {
-                console.warn(`⚠️ BankPreview: Элемент ${selector} не найден`);
-                return;
-            }
-            element.textContent = formatter(value);
-        };
-
-        updateElement('#bank-preview-balance', normalized.balance);
-        updateElement('#bank-preview-income', normalized.income);
-        updateElement('#bank-preview-expenses', normalized.expenses);
-        updateElement('#bank-preview-net-income', normalized.netIncome);
-        updateElement('#bank-preview-credit', normalized.credit);
-        updateElement('#bank-preview-max-credit', normalized.maxCredit);
-
-        console.log('✅ BankPreview: UI принудительно обновлен');
     }
 
     /**
