@@ -1075,7 +1075,8 @@ class PlayersPanel {
             playerId: player.id,
             activePlayerUsername: activePlayer?.username,
             activePlayerId: activePlayer?.id,
-            isActive: isActive
+            isActive: isActive,
+            status: isActive ? 'Ходит' : 'Ожидание'
         });
         
         // Определяем статус игрока
@@ -1497,9 +1498,9 @@ class PlayersPanel {
             }
         }
         
-        // Кнопка передачи хода - активна если это мой ход и можно завершить ход
+        // Кнопка передачи хода - активна если это мой ход (по умолчанию true если не указано иное)
         if (passBtn) {
-            const canEndTurn = isMyTurn && state.canEndTurn;
+            const canEndTurn = isMyTurn && (state.canEndTurn !== false);
             passBtn.disabled = !canEndTurn;
             
             if (canEndTurn) {
