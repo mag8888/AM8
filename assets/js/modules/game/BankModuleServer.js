@@ -36,6 +36,9 @@ class BankModuleServer {
         this._lastDataLoad = 0;
         this._dataCacheTimeout = 30000; // 30 секунд кэш
         
+        // Кэш DOM элементов для оптимизации производительности
+        this._elementCache = new Map();
+        
         console.log('🏦 BankModuleServer: Инициализирован (v2.0.0)');
         this.init();
     }
@@ -441,43 +444,61 @@ class BankModuleServer {
     }
     
     /**
+     * Получение элемента DOM с кэшированием для оптимизации производительности
+     */
+    getCachedElement(selector) {
+        if (!this._elementCache.has(selector)) {
+            const element = this.ui ? this.ui.querySelector(selector) : null;
+            this._elementCache.set(selector, element);
+        }
+        return this._elementCache.get(selector);
+    }
+
+    /**
      * Обновление UI данными с сервера
      */
     updateUIFromServer() {
-        if (!this.ui) return;
+        if (!this.ui) {
+            // Очищаем кэш если UI недоступен
+            this._elementCache.clear();
+            return;
+        }
+
+        // Используем DocumentFragment для батчевого обновления
+        const updates = [];
         
         // Обновляем баланс
-        const balanceElement = this.ui.querySelector('#bank-balance');
+        const balanceElement = this.getCachedElement('#bank-balance');
         if (balanceElement) {
             balanceElement.textContent = `$${this.formatNumber(this.bankState.balance)}`;
         }
         
         // Обновляем доходы
-        const incomeElement = this.ui.querySelector('#bank-income');
+        const incomeElement = this.getCachedElement('#bank-income');
         if (incomeElement) {
             incomeElement.textContent = `$${this.formatNumber(this.bankState.income)}`;
         }
         
         // Обновляем расходы
-        const expensesElement = this.ui.querySelector('#bank-expenses');
+        const expensesElement = this.getCachedElement('#bank-expenses');
         if (expensesElement) {
             expensesElement.textContent = `$${this.formatNumber(this.bankState.expenses)}`;
         }
         
         // Обновляем чистый доход
-        const netIncomeElement = this.ui.querySelector('#bank-net-income');
+        const netIncomeElement = this.getCachedElement('#bank-net-income');
         if (netIncomeElement) {
             netIncomeElement.textContent = `$${this.formatNumber(this.bankState.netIncome)}/мес`;
         }
         
         // Обновляем зарплату (если есть отдельный элемент)
-        const salaryElement = this.ui.querySelector('#bank-salary');
+        const salaryElement = this.getCachedElement('#bank-salary');
         if (salaryElement) {
             salaryElement.textContent = `$${this.formatNumber(this.bankState.salary)}/мес`;
         }
         
         // Обновляем кредитный баланс
-        const creditElement = this.ui.querySelector('#bank-credit');
+        const creditElement = this.getCachedElement('#bank-credit');
         if (creditElement) {
             creditElement.textContent = `$${this.formatNumber(this.bankState.credit)}`;
             creditElement.style.color = this.bankState.credit > 0 ? '#ef4444' : '#10b981';
@@ -485,20 +506,20 @@ class BankModuleServer {
         }
         
         // Обновляем максимальный кредит
-        const maxCreditElement = this.ui.querySelector('#bank-max-credit');
+        const maxCreditElement = this.getCachedElement('#bank-max-credit');
         if (maxCreditElement) {
             maxCreditElement.textContent = `$${this.formatNumber(this.bankState.maxCredit)}`;
         }
         
         // Обновляем мини-блок кредита
-        const loanBalance = this.ui.querySelector('#loan-balance');
+        const loanBalance = this.getCachedElement('#loan-balance');
         if (loanBalance) {
             loanBalance.textContent = `$${this.formatNumber(this.bankState.credit)}`;
             loanBalance.style.color = this.bankState.credit > 0 ? '#ef4444' : '#10b981';
             loanBalance.style.fontWeight = this.bankState.credit > 0 ? 'bold' : 'normal';
         }
         
-        const loanMax = this.ui.querySelector('#loan-max');
+        const loanMax = this.getCachedElement('#loan-max');
         if (loanMax) {
             loanMax.textContent = `$${this.formatNumber(this.bankState.maxCredit)}`;
             loanMax.style.color = '#10b981';
@@ -518,11 +539,15 @@ class BankModuleServer {
      * Обновление списка игроков данными с сервера
      */
     updatePlayersList() {
-        const recipientSelect = this.ui.querySelector('#transfer-recipient');
+        const recipientSelect = this.getCachedElement('#transfer-recipient');
         if (!recipientSelect) return;
         
-        // Очищаем список
-        recipientSelect.innerHTML = '<option value="">Выберите игрока</option>';
+        // Используем DocumentFragment для батчевого обновления
+        const fragment = document.createDocumentFragment();
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Выберите игрока';
+        fragment.appendChild(defaultOption);
         
         // Добавляем игроков (исключая текущего)
         this.bankState.players.forEach(player => {
@@ -531,9 +556,13 @@ class BankModuleServer {
                 option.value = player.id;
                 const balance = player.balance || player.money || 0;
                 option.textContent = `${player.username || player.name} ($${this.formatNumber(balance)})`;
-                recipientSelect.appendChild(option);
+                fragment.appendChild(option);
             }
         });
+        
+        // Заменяем содержимое за один вызов
+        recipientSelect.innerHTML = '';
+        recipientSelect.appendChild(fragment);
         
         console.log(`👥 BankModuleServer: Обновлен список игроков: ${this.bankState.players.length} игроков`);
     }
@@ -546,6 +575,11 @@ class BankModuleServer {
         if (this.ui && document.body.contains(this.ui)) {
             console.log('🏦 BankModuleServer: UI уже существует');
             return;
+        }
+
+        // Добавляем стили только один раз
+        if (!document.querySelector('#bank-module-server-styles')) {
+            this.addStyles();
         }
 
         // Используем тот же HTML, что и в оригинальном модуле
@@ -677,26 +711,31 @@ class BankModuleServer {
         // Добавляем HTML в body
         document.body.insertAdjacentHTML('beforeend', bankModuleHTML);
         
-        // Ждем следующего тика для гарантии, что DOM обновился
-        setTimeout(() => {
+        // Используем requestAnimationFrame для более плавного создания UI
+        requestAnimationFrame(() => {
             this.ui = document.getElementById('bank-module-server');
             if (!this.ui) {
                 console.error('❌ BankModuleServer: Не удалось найти созданный UI элемент');
                 return;
             }
             
-            // Добавляем стили и настраиваем обработчики
-            this.addStyles();
+            // Настраиваем обработчики
             this.setupEventListeners();
             console.log('🏦 BankModuleServer: UI создан и настроен');
-        }, 0);
+        });
     }
     
     /**
      * Добавление CSS стилей (копируем из оригинального модуля + дополнительные)
      */
     addStyles() {
+        // Проверяем, не добавлены ли уже стили
+        if (document.querySelector('#bank-module-server-styles')) {
+            return;
+        }
+
         const style = document.createElement('style');
+        style.id = 'bank-module-server-styles';
         style.textContent = `
             .bank-module {
                 position: fixed;
@@ -1241,16 +1280,25 @@ class BankModuleServer {
                 console.log('🏦 BankModuleServer: UI не найден, создаем...');
                 this.createUI();
                 
-                // Ждем создания UI с небольшим таймаутом
-                let attempts = 0;
-                while ((!this.ui || !document.body.contains(this.ui)) && attempts < 20) {
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                    attempts++;
-                }
+                // Используем более быстрое ожидание с requestAnimationFrame
+                await new Promise(resolve => {
+                    const checkUI = () => {
+                        if (this.ui && document.body.contains(this.ui)) {
+                            resolve();
+                        } else {
+                            requestAnimationFrame(checkUI);
+                        }
+                    };
+                    requestAnimationFrame(checkUI);
+                });
                 
+                // Fallback timeout для экстремальных случаев
                 if (!this.ui || !document.body.contains(this.ui)) {
-                    console.error('❌ BankModuleServer: Не удалось создать UI');
-                    return;
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    if (!this.ui || !document.body.contains(this.ui)) {
+                        console.error('❌ BankModuleServer: Не удалось создать UI');
+                        return;
+                    }
                 }
             }
             
@@ -1261,20 +1309,25 @@ class BankModuleServer {
                 this.ui.setAttribute('data-listeners-setup', 'true');
             }
             
+            // Показываем UI сразу для быстрого отклика
             this.ui.style.display = 'flex';
             this.isOpen = true;
             
-            // Сначала показываем UI с локальными данными (если есть)
-            if (this.bankState.balance !== 0 || this.bankState.players.length > 0) {
-                console.log('🚀 BankModuleServer: Показываем локальные данные');
-                this.updateUIFromServer();
-            }
+            // Очищаем кэш элементов, так как UI теперь доступен
+            this._elementCache.clear();
             
-            // Затем загружаем данные с сервера в фоне (неблокирующе)
-            this.loadServerData().then(() => {
+            // Показываем локальные данные немедленно для отзывчивости
+            requestAnimationFrame(() => {
                 this.updateUIFromServer();
-            }).catch(error => {
-                console.warn('⚠️ BankModuleServer: Ошибка фоновой загрузки данных:', error);
+                
+                // Затем загружаем актуальные данные в фоне (неблокирующе)
+                setTimeout(() => {
+                    this.loadServerData().then(() => {
+                        this.updateUIFromServer();
+                    }).catch(error => {
+                        console.warn('⚠️ BankModuleServer: Ошибка фоновой загрузки данных:', error);
+                    });
+                }, 100); // Небольшая задержка для плавности
             });
             
             console.log('🏦 BankModuleServer: Открыт');

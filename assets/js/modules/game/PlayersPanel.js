@@ -1148,19 +1148,25 @@ class PlayersPanel {
     openBankModule() {
         console.log('🏦 PlayersPanel: Попытка открыть банк...');
         
-        (async () => {
+        // Используем requestAnimationFrame для неблокирующего выполнения
+        requestAnimationFrame(async () => {
             try {
                 // Используем уже созданный BankModule или создаем новый
                 if (!this.bankModule) {
                     console.log('🏦 PlayersPanel: BankModule не создан, создаем...');
                     this.createBankModule();
                     
-                    // Ждем создания модуля
-                    let attempts = 0;
-                    while (!this.bankModule && attempts < 10) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        attempts++;
-                    }
+                    // Используем более эффективное ожидание
+                    await new Promise(resolve => {
+                        const checkModule = () => {
+                            if (this.bankModule) {
+                                resolve();
+                            } else {
+                                requestAnimationFrame(checkModule);
+                            }
+                        };
+                        requestAnimationFrame(checkModule);
+                    });
                 }
                 
                 if (this.bankModule) {
@@ -1170,9 +1176,8 @@ class PlayersPanel {
                 } else {
                     console.error('❌ PlayersPanel: Не удалось создать BankModule');
                     
-                    // Попробуем повторную попытку с принудительным созданием
-                    console.log('🔄 PlayersPanel: Повторная попытка создания BankModule...');
-                    this.bankModule = null; // Сбрасываем
+                    // Быстрая попытка создания
+                    this.bankModule = null;
                     this.createBankModule();
                     
                     if (this.bankModule) {
@@ -1186,7 +1191,7 @@ class PlayersPanel {
                 console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
                 console.error('❌ PlayersPanel: Детали ошибки:', error.stack);
             }
-        })();
+        });
     }
     
     /**
