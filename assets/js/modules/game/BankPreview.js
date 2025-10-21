@@ -15,6 +15,9 @@ class BankPreview {
         this.container = null;
         this.previewElement = null;
         
+        // Callback для подписки на GameStateManager
+        this._stateUpdatedCallback = null;
+        
         this.init();
     }
 
@@ -34,20 +37,12 @@ class BankPreview {
         
         // setupEventListeners будет вызван в render()
         
-        // Обновляем данные каждые 45 секунд для снижения нагрузки на сервер
-        this.updateInterval = setInterval(() => {
-            this.updatePreviewData();
-        }, 45000);
+        // ИНИЦИАЛИЗАЦИЯ: Периодические обновления теперь централизованы через GameStateManager
+        // Локальные setInterval убраны для предотвращения множественных API запросов
+        this.updateInterval = null;
+        this.cleanupInterval = null;
         
-        // Очищаем зависшие запросы каждые 60 секунд
-        this.cleanupInterval = setInterval(() => {
-            if (window.CommonUtils && window.CommonUtils.gameStateLimiter.clearStaleRequests) {
-                const clearedCount = window.CommonUtils.gameStateLimiter.clearStaleRequests();
-                if (clearedCount > 0) {
-                    console.log(`🧹 BankPreview: Очищено ${clearedCount} зависших запросов`);
-                }
-            }
-        }, 60000);
+        console.log('🔄 BankPreview: Периодические обновления будут управляться через GameStateManager');
         
         // Debounced версия updatePreviewData для предотвращения множественных вызовов
         this.updatePreviewDataDebounced = null;
@@ -145,6 +140,21 @@ class BankPreview {
             e.preventDefault();
             this.openBank();
         });
+        
+        // ПОДПИСКА НА GameStateManager для централизованных обновлений
+        if (this.gameStateManager && typeof this.gameStateManager.on === 'function') {
+            this._stateUpdatedCallback = (state) => {
+                // Обновляем превью при изменении состояния игры
+                if (this.updatePreviewDataDebounced) {
+                    this.updatePreviewDataDebounced();
+                } else {
+                    this.updatePreviewData();
+                }
+            };
+            
+            this.gameStateManager.on('state:updated', this._stateUpdatedCallback);
+            console.log('🔄 BankPreview: Подписан на обновления GameStateManager');
+        }
         
         // Подписываемся на события банка если есть eventBus
         if (this.eventBus) {
@@ -537,12 +547,21 @@ class BankPreview {
      * Уничтожение компонента
      */
     destroy() {
+        // Очищаем интервалы (если они были созданы)
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
+            this.updateInterval = null;
         }
         
         if (this.cleanupInterval) {
             clearInterval(this.cleanupInterval);
+            this.cleanupInterval = null;
+        }
+        
+        // Отписываемся от GameStateManager
+        if (this.gameStateManager && typeof this.gameStateManager.off === 'function' && this._stateUpdatedCallback) {
+            this.gameStateManager.off('state:updated', this._stateUpdatedCallback);
+            this._stateUpdatedCallback = null;
         }
         
         if (this.renderDebounceTimer) {
