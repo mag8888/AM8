@@ -20,6 +20,9 @@ class App {
         this.activeRoomId = null;
         this.gameModulesReady = false;
         
+        // Флаг для предотвращения множественных вызовов forceUpdate у PlayerTokens
+        this._playerTokensForceUpdateCalled = false;
+        
         this._initializeCore();
         this._setupGlobalErrorHandling();
     }
@@ -774,11 +777,7 @@ class App {
         this.logger?.info('Игровые модули инициализированы', null, 'App');
         
         // Оптимизированное обновление фишек игроков - убрана задержка для мгновенного обновления
-        const playerTokens = this.modules.get('playerTokens');
-        if (playerTokens) {
-            console.log('🎯 App: Обновление фишек игроков...');
-            playerTokens.forceUpdate();
-        }
+        this._safePlayerTokensForceUpdate('_finalizeGameModules');
 
         // Удален избыточный retry механизм - вызывает множественную инициализацию модулей
         // setTimeout(() => { /* retry logic */ }, 800); // REMOVED для оптимизации
@@ -1018,10 +1017,7 @@ class App {
             );
         });
 
-        const playerTokens = this.modules.get('playerTokens');
-        if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
-            playerTokens.forceUpdate();
-        }
+        this._safePlayerTokensForceUpdate('_initializeGameModules');
 
         this.gameModulesReady = true;
         this._finalizeGameModules();
@@ -1354,6 +1350,24 @@ class App {
     disableDebugMode() {
         this.config?.setLevel('WARN');
         this.logger?.info('Режим отладки отключен', null, 'App');
+    }
+
+    /**
+     * Централизованный вызов forceUpdate для PlayerTokens с защитой от множественных вызовов
+     * @private
+     */
+    _safePlayerTokensForceUpdate(context = 'unknown') {
+        if (this._playerTokensForceUpdateCalled) {
+            console.log(`🎯 App: Пропускаем forceUpdate PlayerTokens из контекста "${context}" - уже вызывался`);
+            return;
+        }
+
+        const playerTokens = this.modules.get('playerTokens');
+        if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
+            console.log(`🎯 App: forceUpdate PlayerTokens из контекста "${context}"`);
+            this._playerTokensForceUpdateCalled = true;
+            playerTokens.forceUpdate();
+        }
     }
 }
 
