@@ -81,6 +81,12 @@ class GameStateManager {
             );
         } else if (next.players.length && next.currentPlayerIndex >= 0) {
             next.activePlayer = next.players[next.currentPlayerIndex] || null;
+        } else if (next.players.length && !next.activePlayer) {
+            // Автоматически устанавливаем первого игрока как активного если активного игрока нет
+            console.log('🎯 GameStateManager: Автоматически устанавливаем первого игрока как активного');
+            next.currentPlayerIndex = 0;
+            next.activePlayer = next.players[0];
+            activePlayerChanged = true;
         }
 
         if (serverState.roomId && serverState.roomId !== next.roomId) {
@@ -439,6 +445,49 @@ class GameStateManager {
         next.activePlayer = next.players[next.currentPlayerIndex] || null;
         next.updatedAt = Date.now();
         this._commitState(next, previous, { playersChanged: false, activePlayerChanged: true });
+    }
+
+    /**
+     * Принудительно запустить первый ход (если нет активного игрока)
+     */
+    forceStartFirstTurn() {
+        if (!this._state.players.length) {
+            console.warn('⚠️ GameStateManager: Нет игроков для запуска первого хода');
+            return;
+        }
+
+        if (this._state.activePlayer) {
+            console.log('ℹ️ GameStateManager: Активный игрок уже установлен:', this._state.activePlayer.username || this._state.activePlayer.id);
+            return;
+        }
+
+        const previous = this._cloneState(this._state);
+        const next = this._cloneState(this._state);
+
+        console.log('🎯 GameStateManager: Принудительно запускаем первый ход для игрока:', next.players[0].username || next.players[0].id);
+        
+        next.currentPlayerIndex = 0;
+        next.activePlayer = next.players[0];
+        next.updatedAt = Date.now();
+        this._commitState(next, previous, { playersChanged: false, activePlayerChanged: true });
+    }
+
+    /**
+     * Принудительное обновление фишек игроков
+     */
+    forceUpdateTokens() {
+        if (!this._state.players.length) {
+            console.warn('⚠️ GameStateManager: Нет игроков для обновления фишек');
+            return;
+        }
+
+        console.log('🎯 GameStateManager: Принудительное обновление фишек для', this._state.players.length, 'игроков');
+        
+        // Эмитим событие для обновления фишек
+        this.notifyListeners('players:updated', { 
+            players: this._state.players,
+            forceUpdate: true 
+        });
     }
 
     /**

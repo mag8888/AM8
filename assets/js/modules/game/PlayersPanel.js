@@ -552,6 +552,25 @@ class PlayersPanel {
         // Загружаем игроков через GameStateManager
         this.loadPlayersViaGameStateManager();
 
+        // Принудительно запускаем первый ход если нет активного игрока
+        setTimeout(() => {
+            if (this.gameStateManager && typeof this.gameStateManager.forceStartFirstTurn === 'function') {
+                const state = this.gameStateManager.getState();
+                if (state && state.players && state.players.length > 0 && !state.activePlayer) {
+                    console.log('🎯 PlayersPanel: Запускаем принудительный первый ход');
+                    this.gameStateManager.forceStartFirstTurn();
+                }
+            }
+        }, 300);
+
+        // Принудительно обновляем фишки
+        setTimeout(() => {
+            if (this.gameStateManager && typeof this.gameStateManager.forceUpdateTokens === 'function') {
+                console.log('🎯 PlayersPanel: Обновляем фишки игроков');
+                this.gameStateManager.forceUpdateTokens();
+            }
+        }, 600);
+
         // Дополнительная проверка через небольшую задержку
         setTimeout(() => {
             if (this.gameStateManager && typeof this.gameStateManager.getState === 'function') {
