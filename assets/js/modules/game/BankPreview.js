@@ -79,10 +79,13 @@ class BankPreview {
             // Проверяем есть ли уже данные в GameStateManager при подписке
             if (this.gameStateManager._state && this.gameStateManager._state.players) {
                 console.log('🔄 BankPreview: Найдены существующие данные, обновляем сразу');
-                // Убираем setTimeout чтобы избежать дополнительных обновлений
-                // setTimeout(() => {
-                //     this.updatePreviewDataFromState(this.gameStateManager._state);
-                // }, 100);
+                // Обновляем только если данные действительные (не нулевые или не fallback)
+                const currentData = this.extractBankDataFromGameState(this.gameStateManager._state);
+                if (currentData && currentData.balance > 0) {
+                    setTimeout(() => {
+                        this.updatePreviewDataFromState(this.gameStateManager._state);
+                    }, 200);
+                }
             }
         }
     }
@@ -194,10 +197,14 @@ class BankPreview {
         // Загружаем данные НЕМЕДЛЕННО при создании превью
         this.loadInitialData();
         
-        // Убираем дополнительный setTimeout который может вызывать мигание
-        // setTimeout(() => {
-        //     this.updatePreviewData();
-        // }, 500);
+        // Добавляем отложенное обновление для случая, когда данные еще не готовы
+        setTimeout(() => {
+            // Обновляем только если данных нет или они нулевые
+            if (!this._lastDisplayedData || this._lastDisplayedData.includes('"balance":0')) {
+                console.log('🔄 BankPreview: Попытка обновить данные через timeout');
+                this.updatePreviewData();
+            }
+        }, 1000);
     }
 
     /**
@@ -239,6 +246,12 @@ class BankPreview {
             
             if (bankData && this.previewElement) {
                 this.updatePreviewUI(bankData);
+            } else if (!bankData) {
+                // Если нет данных, принудительно показываем fallback
+                const fallbackData = this.getFallbackBankData();
+                if (this.previewElement) {
+                    this.updatePreviewUI(fallbackData);
+                }
             }
         } catch (error) {
             console.warn('⚠️ BankPreview: Ошибка загрузки начальных данных:', error);
@@ -296,10 +309,13 @@ class BankPreview {
      */
     openBank() {
         try {
+            console.log('🏦 BankPreview: Попытка открытия банка...');
+            
             // Получаем банк из window.app или пытаемся найти в DOM
             const app = window.app;
             if (app && app.modules) {
                 this.bankModule = app.modules.get('bankModuleServer') || app.modules.get('bankModule');
+                console.log('🏦 BankPreview: BankModule из app.modules:', !!this.bankModule);
             }
             
             // Если не найден через app, ищем через PlayersPanel
@@ -307,16 +323,38 @@ class BankPreview {
                 const playersPanel = document.querySelector('#players-panel');
                 if (playersPanel && playersPanel._playersPanelInstance) {
                     this.bankModule = playersPanel._playersPanelInstance.bankModule;
+                    console.log('🏦 BankPreview: BankModule из PlayersPanel:', !!this.bankModule);
+                }
+            }
+            
+            // Дополнительный поиск через глобальные объекты
+            if (!this.bankModule) {
+                if (window.app && window.app.getModule) {
+                    this.bankModule = window.app.getModule('bankModuleServer') || window.app.getModule('bankModule');
+                    console.log('🏦 BankPreview: BankModule через getModule:', !!this.bankModule);
                 }
             }
             
             if (this.bankModule && typeof this.bankModule.open === 'function') {
-                // НЕ делаем дополнительных API запросов при открытии банка
-                // BankModuleServer сам загрузит данные при открытии
+                console.log('🏦 BankPreview: Открываем банк...');
                 this.bankModule.open();
-                console.log('🏦 BankPreview: Банк открыт (используем существующие данные)');
+                console.log('✅ BankPreview: Банк открыт успешно');
             } else {
-                console.warn('⚠️ BankPreview: BankModule не найден для открытия');
+                console.warn('⚠️ BankPreview: BankModule не найден, пытаемся создать через PlayersPanel');
+                
+                // Попытка создать BankModule через PlayersPanel
+                if (window.app && window.app.getModule) {
+                    const playersPanel = window.app.getModule('playersPanel');
+                    if (playersPanel && typeof playersPanel.openBankModule === 'function') {
+                        console.log('🏦 BankPreview: Используем PlayersPanel.openBankModule');
+                        playersPanel.openBankModule();
+                    } else {
+                        console.error('❌ BankPreview: Не удалось найти способ открытия банка');
+                        if (window.showNotification) {
+                            window.showNotification('Ошибка открытия банка. Попробуйте обновить страницу.', 'error');
+                        }
+                    }
+                }
             }
         } catch (error) {
             console.error('❌ BankPreview: Ошибка открытия банка:', error);
@@ -540,7 +578,15 @@ class BankPreview {
             maxCredit: bankData.maxCredit || 0
         });
         
-        if (this._lastDisplayedData === dataString) {
+        // Разрешаем обновление если:
+        // 1. Это первое обновление (_lastDisplayedData === null)
+        // 2. Данные действительно изменились
+        // 3. Принудительное обновление (когда balance был 0, а теперь больше 0)
+        const shouldUpdate = !this._lastDisplayedData || 
+                           this._lastDisplayedData !== dataString ||
+                           (this._lastDisplayedData.includes('"balance":0') && !dataString.includes('"balance":0'));
+                           
+        if (!shouldUpdate) {
             // Данные не изменились, пропускаем обновление UI
             return;
         }
