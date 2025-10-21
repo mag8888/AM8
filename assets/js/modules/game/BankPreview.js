@@ -257,7 +257,7 @@ class BankPreview {
             // ПРИОРИТЕТ 3: Fallback данные
             if (!this._isValidSnapshot(bankData)) {
                 bankData = this.getFallbackBankData();
-                console.log('🔄 BankPreview: Используем fallback данные для начального отображения');
+                console.log('🚨 BankPreview: ПРИЧИНА НУЛЕЙ - используем fallback данные для начального отображения');
             }
             
             if (bankData && this.previewElement) {
@@ -450,11 +450,13 @@ class BankPreview {
                     return;
                 }
                 bankData = this.getFallbackBankData();
+                console.log('🚨 BankPreview: ПРИЧИНА НУЛЕЙ - используем fallback данные в updatePreviewData');
             }
             
             if (bankData) {
                 this.updatePreviewUI(bankData);
             } else {
+                console.log('🚨 BankPreview: ПРИЧИНА НУЛЕЙ - вызываем getFallbackBankData в else блоке updatePreviewData');
                 this.updatePreviewUI(this.getFallbackBankData());
             }
         } catch (error) {
@@ -505,6 +507,7 @@ class BankPreview {
                     this.restoreLastSnapshot();
                 } else {
                     // Используем fallback данные только если валидных данных ещё не было
+                    console.log('🚨 BankPreview: ПРИЧИНА НУЛЕЙ - используем fallback данные в updatePreviewDataFromState');
                     this.updatePreviewUI(this.getFallbackBankData());
                 }
             }
@@ -593,7 +596,7 @@ class BankPreview {
                 ? currentPlayer.balance 
                 : 0); // Используем 0 если значения undefined/null
         
-        console.log('💰 BankPreview: Реальный баланс игрока:', balance, 'для игрока:', currentPlayer.username || currentPlayer.id);
+        console.log('✅ BankPreview: extractBankDataFromGameState - реальный баланс игрока:', balance, 'для игрока:', currentPlayer.username || currentPlayer.id);
         
         // Используем данные предпринимателя по умолчанию если это предприниматель
         let bankData;
@@ -633,6 +636,11 @@ class BankPreview {
     getFallbackBankData() {
         const currentUser = this.getCurrentUser();
         
+        console.log('🚨 BankPreview: ВНИМАНИЕ! Вызван getFallbackBankData() - это источник нулевых значений!', {
+            currentUser: currentUser,
+            stackTrace: new Error().stack
+        });
+        
         // Возвращаем данные по умолчанию (если нет данных игрока)
         return {
             balance: 0, // Показываем 0 если нет данных
@@ -658,14 +666,18 @@ class BankPreview {
         const currentValid = this._isValidSnapshot(currentSnapshot);
         const snapshotsEqual = this._compareSnapshots(currentSnapshot, normalized);
 
-        // АНТИ-ЗАТИРАНИЕ: Приоритет реальным данным игрока
+        // АНТИ-ЗАТИРАНИЕ: Строгая защита от переключения на нули
         if (incomingValid) {
-            // Если новые данные валидны И содержат реальные данные игрока - принудительно обновляем
+            // Если новые данные содержат реальные данные игрока - всегда обновляем
             if (normalized.balance > 0 || normalized.income > 0) {
                 console.log('✅ BankPreview: Принудительное обновление - найдены реальные данные игрока');
-            } else if (currentValid && currentSnapshot.balance > 0) {
-                // Если текущие данные содержат реальные данные, а новые нулевые - сохраняем текущие
-                console.log('🔄 BankPreview: Сохраняем реальные данные, новые нулевые');
+            } else if (currentValid && (currentSnapshot.balance > 0 || currentSnapshot.income > 0)) {
+                // СТРОГАЯ ЗАЩИТА: Если текущие данные содержат реальные данные, а новые нулевые - НЕ ОБНОВЛЯЕМ
+                console.log('🛡️ BankPreview: СТРОГАЯ ЗАЩИТА - блокируем затирание реальных данных нулями');
+                return;
+            } else if (normalized.balance === 0 && normalized.income === 0) {
+                // Если новые данные нулевые, но текущих данных нет - все равно не обновляем
+                console.log('🛡️ BankPreview: Блокируем установку нулевых значений');
                 return;
             } else {
                 console.log('✅ BankPreview: Обновляем UI с валидными данными');
