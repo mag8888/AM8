@@ -63,6 +63,14 @@ class BankPreview {
             
             this.gameStateManager.on('state:updated', this._stateUpdatedCallback);
             console.log('🔄 BankPreview: Подписан на обновления GameStateManager (конструктор)');
+            
+            // Проверяем есть ли уже данные в GameStateManager при подписке
+            if (this.gameStateManager._state && this.gameStateManager._state.players) {
+                console.log('🔄 BankPreview: Найдены существующие данные, обновляем сразу');
+                setTimeout(() => {
+                    this.updatePreviewDataFromState(this.gameStateManager._state);
+                }, 100);
+            }
         }
     }
 
@@ -170,8 +178,54 @@ class BankPreview {
         // Настраиваем обработчики событий после создания элемента
         this.setupEventListeners();
         
-        // Загружаем данные
-        this.updatePreviewData();
+        // Загружаем данные НЕМЕДЛЕННО при создании превью
+        this.loadInitialData();
+        
+        // Дополнительная загрузка через небольшой интервал для обновления
+        setTimeout(() => {
+            this.updatePreviewData();
+        }, 500);
+    }
+
+    /**
+     * Загрузка начальных данных сразу при создании превью
+     */
+    loadInitialData() {
+        console.log('🏦 BankPreview: Загружаем начальные данные');
+        
+        try {
+            // Сначала пытаемся получить данные из BankModuleServer
+            const app = window.app;
+            if (app && app.modules) {
+                this.bankModule = app.modules.get('bankModuleServer') || app.modules.get('bankModule');
+            }
+            
+            let bankData = null;
+            
+            // Получаем данные из уже существующего банка или GameStateManager
+            if (this.bankModule && this.bankModule.bankState) {
+                bankData = this.bankModule.bankState;
+                console.log('✅ BankPreview: Получены данные из существующего BankModule');
+            } else if (this.gameStateManager && this.gameStateManager._state && this.gameStateManager._state.players) {
+                bankData = this.extractBankDataFromGameState(this.gameStateManager._state);
+                console.log('✅ BankPreview: Получены данные из GameStateManager');
+            } else {
+                // Используем fallback данные для немедленного отображения
+                bankData = this.getFallbackBankData();
+                console.log('🔄 BankPreview: Используем fallback данные для начального отображения');
+            }
+            
+            if (bankData && this.previewElement) {
+                this.updatePreviewUI(bankData);
+            }
+        } catch (error) {
+            console.warn('⚠️ BankPreview: Ошибка загрузки начальных данных:', error);
+            // В случае ошибки показываем fallback данные
+            const fallbackData = this.getFallbackBankData();
+            if (this.previewElement) {
+                this.updatePreviewUI(fallbackData);
+            }
+        }
     }
 
     /**
@@ -231,13 +285,19 @@ class BankPreview {
             }
             
             if (this.bankModule && typeof this.bankModule.open === 'function') {
+                // НЕ делаем дополнительных API запросов при открытии банка
+                // BankModuleServer сам загрузит данные при открытии
                 this.bankModule.open();
-                console.log('🏦 BankPreview: Банк открыт');
+                console.log('🏦 BankPreview: Банк открыт (используем существующие данные)');
             } else {
                 console.warn('⚠️ BankPreview: BankModule не найден для открытия');
             }
         } catch (error) {
             console.error('❌ BankPreview: Ошибка открытия банка:', error);
+            // Показываем пользователю friendly сообщение вместо технической ошибки
+            if (window.showNotification) {
+                window.showNotification('Временные проблемы с сетью, попробуйте позже', 'warning');
+            }
         }
     }
 
@@ -275,17 +335,11 @@ class BankPreview {
                     if (this.gameStateManager._state && this.gameStateManager._state.players && this.gameStateManager._state.players.length > 0) {
                         console.log('✅ BankPreview: Используем кэшированные данные из GameStateManager');
                         bankData = this.extractBankDataFromGameState(this.gameStateManager._state);
-                    } else if (typeof this.gameStateManager.fetchGameState === 'function') {
-                        // Только если нет кэшированных данных, делаем запрос
-                        console.log('🔄 BankPreview: Делаем fallback запрос через GameStateManager');
-                        try {
-                            const gameState = await this.gameStateManager.fetchGameState(roomId);
-                            if (gameState && gameState.players) {
-                                bankData = this.extractBankDataFromGameState(gameState);
-                            }
-                        } catch (error) {
-                            console.warn('⚠️ BankPreview: Ошибка получения данных через GameStateManager:', error);
-                        }
+                    } else {
+                        // НЕ делаем API запросы из BankPreview для предотвращения HTTP 429
+                        // Используем только кэшированные данные или fallback значения
+                        console.log('🔄 BankPreview: Используем fallback данные (без API запросов)');
+                        bankData = this.getFallbackBankData();
                     }
                 } else if (roomId && !this.gameStateManager) {
                     console.warn('⚠️ BankPreview: GameStateManager недоступен, пропускаем fallback запрос');
@@ -295,18 +349,14 @@ class BankPreview {
             if (bankData) {
                 this.updatePreviewUI(bankData);
             } else {
-                // Показываем заглушку если данных нет
-                this.updatePreviewUI({
-                    balance: 0,
-                    income: 0,
-                    expenses: 0,
-                    netIncome: 0,
-                    credit: 0,
-                    maxCredit: 0
-                });
+                // Используем fallback данные вместо нулей
+                console.log('🔄 BankPreview: Нет данных, используем fallback');
+                this.updatePreviewUI(this.getFallbackBankData());
             }
         } catch (error) {
             console.warn('⚠️ BankPreview: Ошибка обновления данных:', error);
+            // В случае ошибки также используем fallback данные
+            this.updatePreviewUI(this.getFallbackBankData());
         } finally {
             this._isUpdating = false;
         }
@@ -406,6 +456,23 @@ class BankPreview {
             netIncome: (currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000),
             credit: currentPlayer.currentLoan || 0,
             maxCredit: Math.max(((currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000)) * 10, 0)
+        };
+    }
+
+    /**
+     * Получение fallback данных банка
+     */
+    getFallbackBankData() {
+        const currentUser = this.getCurrentUser();
+        
+        // Возвращаем стандартные данные для предпринимателя
+        return {
+            balance: 5000, // Стартовый баланс
+            income: 10000,
+            expenses: 6200,
+            netIncome: 3800,
+            credit: 0,
+            maxCredit: 38000
         };
     }
 
