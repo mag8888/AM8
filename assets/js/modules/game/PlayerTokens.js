@@ -15,6 +15,7 @@ class PlayerTokens {
         this.tokens = new Map(); // Хранение DOM элементов фишек
         this.animatingTokens = new Set(); // Фишки, которые сейчас анимируются
         this._forceUpdateTimer = null; // Дебаунсинг для forceUpdate
+        this._isForceUpdating = false; // Флаг выполняющегося обновления
         
         console.log('🎯 PlayerTokens: Инициализация');
         this.init();
@@ -783,6 +784,12 @@ class PlayerTokens {
      * Принудительное обновление фишек из GameState
      */
     forceUpdate() {
+        // Проверяем, не выполняется ли уже обновление
+        if (this._isForceUpdating) {
+            console.log('🎯 PlayerTokens: Пропускаем forceUpdate - обновление уже выполняется');
+            return;
+        }
+        
         // Дебаунсинг для предотвращения множественных одновременных вызовов
         if (this._forceUpdateTimer) {
             clearTimeout(this._forceUpdateTimer);
@@ -791,19 +798,29 @@ class PlayerTokens {
         this._forceUpdateTimer = setTimeout(() => {
             this._performForceUpdate();
             this._forceUpdateTimer = null;
-        }, 100); // Задержка 100мс для дебаунсинга
+        }, 200); // Увеличена задержка до 200мс для лучшего дебаунсинга
     }
     
     /**
      * Внутренний метод для выполнения принудительного обновления
      */
     _performForceUpdate() {
+        // Проверяем, не выполняется ли уже обновление
+        if (this._isForceUpdating) {
+            console.log('🎯 PlayerTokens: Пропускаем _performForceUpdate - уже выполняется');
+            return;
+        }
+        
+        this._isForceUpdating = true;
+        
         console.log('🎯 PlayerTokens: Принудительное обновление фишек');
         const players = this.getPlayers();
         
         if (players && players.length > 0) {
             console.log('🎯 PlayerTokens: Обновляем фишки для', players.length, 'игроков');
             this.updateTokens(players);
+            // Сбрасываем флаг сразу после успешного обновления
+            this._isForceUpdating = false;
         } else {
             console.log('🎯 PlayerTokens: Игроки не найдены, пытаемся загрузить данные');
             
@@ -821,8 +838,16 @@ class PlayerTokens {
                             console.log('🎯 PlayerTokens: Фишки восстановлены после forceUpdate:', updatedPlayers.length);
                             this.updateTokens(updatedPlayers);
                         }
+                        // Сбрасываем флаг после завершения отложенного обновления
+                        this._isForceUpdating = false;
                     }, 500);
+                } else {
+                    // Если нет GameStateManager, сбрасываем флаг сразу
+                    this._isForceUpdating = false;
                 }
+            } else {
+                // Если нет window.app, сбрасываем флаг сразу
+                this._isForceUpdating = false;
             }
         }
     }
@@ -955,6 +980,9 @@ class PlayerTokens {
             clearTimeout(this._forceUpdateTimer);
             this._forceUpdateTimer = null;
         }
+        
+        // Сбрасываем флаг обновления
+        this._isForceUpdating = false;
         
         // Очищаем коллекции
         this.tokens.clear();
