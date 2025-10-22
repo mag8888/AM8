@@ -472,7 +472,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 10;
-    display: flex;
+    display: none; /* Скрываем логотип */
     align-items: center;
     justify-content: center;
     width: 200px;
@@ -743,7 +743,7 @@
     .center-area {
         width: min(40vmin, 220px);
         height: min(40vmin, 220px);
-        display: flex;
+        display: none; /* Скрываем логотип */
         align-items: center;
         justify-content: center;
     }
@@ -779,7 +779,7 @@
     .center-area {
         width: 200px;
         height: 200px;
-        display: flex;
+        display: none; /* Скрываем логотип */
         align-items: center;
         justify-content: center;
     }
