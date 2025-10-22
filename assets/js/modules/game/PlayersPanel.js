@@ -61,6 +61,30 @@ class PlayersPanel {
         // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопок после инициализации (короткий setTimeout для правильной инициализации)
         setTimeout(() => {
             this.forceUpdateAllButtons();
+            
+            // ДОПОЛНИТЕЛЬНАЯ АКТИВАЦИЯ: принудительно активируем кнопку броска если это ход игрока
+            const rollBtn = document.getElementById('roll-dice-btn');
+            if (rollBtn) {
+                const currentUserId = this.getCurrentUserId();
+                const state = this.gameStateManager?.getState?.() || {};
+                const activePlayer = state.activePlayer;
+                const isMyTurn = activePlayer && currentUserId && 
+                    (activePlayer.id === currentUserId || 
+                     activePlayer.userId === currentUserId || 
+                     activePlayer.username === currentUserId);
+                
+                if (isMyTurn) {
+                    console.log('🚀 PlayersPanel: ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ в init() - это ход игрока');
+                    rollBtn.disabled = false;
+                    rollBtn.classList.add('active');
+                    rollBtn.style.opacity = '1';
+                    rollBtn.style.cursor = 'pointer';
+                    rollBtn.style.pointerEvents = 'auto';
+                    rollBtn.style.backgroundColor = '#4CAF50';
+                    rollBtn.style.color = 'white';
+                    rollBtn.style.transform = 'scale(1.05)';
+                }
+            }
         }, 100);
         
         // Показываем состояние загрузки сразу при инициализации
@@ -1523,7 +1547,6 @@ class PlayersPanel {
         if (rollBtn) {
             // УПРОЩЕННАЯ ЛОГИКА: если это мой ход - кнопка активна (игнорируем state.canRoll)
             const canRoll = isMyTurn;
-            rollBtn.disabled = !canRoll;
             
             console.log('🎲 PlayersPanel: Обновление кнопки бросить:', {
                 isMyTurn,
@@ -1532,23 +1555,48 @@ class PlayersPanel {
                 disabled: !canRoll
             });
             
-            if (canRoll) {
+            // АГРЕССИВНАЯ АКТИВАЦИЯ: если это мой ход, кнопка всегда активна
+            if (isMyTurn) {
+                rollBtn.disabled = false;
                 rollBtn.classList.add('active');
+                
+                // Принудительно обновляем стили
+                rollBtn.style.opacity = '1';
+                rollBtn.style.cursor = 'pointer';
+                rollBtn.style.pointerEvents = 'auto';
+                rollBtn.style.backgroundColor = '#4CAF50';
+                rollBtn.style.color = 'white';
+                rollBtn.style.transform = 'scale(1.05)';
+                
+                console.log('✅ PlayersPanel: Кнопка "Бросок" АКТИВИРОВАНА для хода игрока');
             } else {
+                rollBtn.disabled = true;
                 rollBtn.classList.remove('active');
+                
+                // Принудительно обновляем стили для неактивного состояния
+                rollBtn.style.opacity = '0.5';
+                rollBtn.style.cursor = 'not-allowed';
+                rollBtn.style.pointerEvents = 'none';
+                rollBtn.style.backgroundColor = '';
+                rollBtn.style.color = '';
+                rollBtn.style.transform = '';
             }
             
             // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI для кнопки броска
             this.forceUpdateButtonUI(rollBtn);
             
-            // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ: если кнопка все еще отключена, но это ход игрока
-            if (rollBtn.disabled && isMyTurn) {
-                console.log('🔧 PlayersPanel: ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Бросок"');
-                rollBtn.disabled = false;
-                rollBtn.classList.add('active');
-                
-                // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI
-                this.forceUpdateButtonUI(rollBtn);
+            // ДОПОЛНИТЕЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ через setTimeout
+            if (isMyTurn) {
+                setTimeout(() => {
+                    if (rollBtn && rollBtn.disabled) {
+                        console.log('🔧 PlayersPanel: ДОПОЛНИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Бросок" через setTimeout');
+                        rollBtn.disabled = false;
+                        rollBtn.classList.add('active');
+                        rollBtn.style.opacity = '1';
+                        rollBtn.style.cursor = 'pointer';
+                        rollBtn.style.pointerEvents = 'auto';
+                    }
+                }, 100);
             }
         }
         
@@ -1603,6 +1651,15 @@ class PlayersPanel {
             console.log('🔧 PlayersPanel: ФИНАЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Бросок"');
             rollBtn.disabled = false;
             rollBtn.classList.add('active');
+            
+            // АГРЕССИВНОЕ ОБНОВЛЕНИЕ СТИЛЕЙ
+            rollBtn.style.opacity = '1';
+            rollBtn.style.cursor = 'pointer';
+            rollBtn.style.pointerEvents = 'auto';
+            rollBtn.style.backgroundColor = '#4CAF50';
+            rollBtn.style.color = 'white';
+            rollBtn.style.transform = 'scale(1.05)';
+            
             this.forceUpdateButtonUI(rollBtn);
         }
         
@@ -1611,6 +1668,27 @@ class PlayersPanel {
             moveBtn.disabled = false;
             moveBtn.classList.add('active');
             this.forceUpdateButtonUI(moveBtn);
+        }
+        
+        // СУПЕР АГРЕССИВНАЯ АКТИВАЦИЯ: принудительно активируем кнопку броска если это ход игрока
+        if (isMyTurn && rollBtn) {
+            setTimeout(() => {
+                console.log('🚀 PlayersPanel: СУПЕР АГРЕССИВНАЯ АКТИВАЦИЯ кнопки "Бросок"');
+                rollBtn.disabled = false;
+                rollBtn.classList.add('active');
+                rollBtn.style.opacity = '1';
+                rollBtn.style.cursor = 'pointer';
+                rollBtn.style.pointerEvents = 'auto';
+                rollBtn.style.backgroundColor = '#4CAF50';
+                rollBtn.style.color = 'white';
+                rollBtn.style.transform = 'scale(1.05)';
+                
+                // Принудительно обновляем атрибуты
+                rollBtn.setAttribute('disabled', 'false');
+                rollBtn.removeAttribute('disabled');
+                
+                console.log('✅ PlayersPanel: Кнопка "Бросок" ПРИНУДИТЕЛЬНО АКТИВИРОВАНА');
+            }, 50);
         }
         
         console.log('🎯 PlayersPanel: Обновлены кнопки управления:', {
