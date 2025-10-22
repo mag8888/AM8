@@ -28,6 +28,7 @@ class BankPreview {
         this._updateStateDebounceTimer = null;
         this._lastDisplayedData = null;
         this._lastLogTime = 0;
+        this._lastRenderTime = 0;
         this._logThrottleInterval = 2000; // Логировать максимум раз в 2 секунды
         
         // ПОДПИСКИ В КОНСТРУКТОРЕ - выполняется только один раз
@@ -139,6 +140,14 @@ class BankPreview {
      */
     render() {
         if (!this.container) return;
+        
+        // DEBOUNCING: Предотвращаем слишком частые вызовы render()
+        const now = Date.now();
+        if (this._lastRenderTime && (now - this._lastRenderTime) < 1000) {
+            console.log('🔄 BankPreview: Render пропущен из-за debouncing');
+            return;
+        }
+        this._lastRenderTime = now;
         
         // Проверяем, есть ли уже банк превью в контейнере
         const existingPreview = this.container.querySelector('.bank-preview-card');

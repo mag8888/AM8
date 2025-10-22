@@ -55,7 +55,7 @@ class RoomService {
         // Rate limiting для предотвращения HTTP 429 - оптимизирован для производительности
         this.requestQueue = {
             lastRequest: 0,
-            minInterval: 5000, // Уменьшаем до 5 секунд для нормальной работы игры
+            minInterval: 15000, // Увеличиваем до 15 секунд для предотвращения rate limiting
             backoffMultiplier: 1.5, // Более агрессивный рост backoff
             maxBackoff: 60000, // Увеличиваем максимум до 60 секунд
             currentBackoff: 0,
@@ -388,8 +388,8 @@ class RoomService {
         if (now < nextAllowed) {
             const waitTime = nextAllowed - now;
             
-            // Не ждем дольше 10 секунд, чтобы не блокировать UI
-            const maxWaitTime = 10000;
+            // Не ждем дольше 30 секунд, чтобы не блокировать UI
+            const maxWaitTime = 30000;
             const actualWaitTime = Math.min(waitTime, maxWaitTime);
             
             if (actualWaitTime < waitTime) {

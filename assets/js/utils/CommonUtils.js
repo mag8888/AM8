@@ -256,7 +256,7 @@ class CommonUtils {
      */
     static gameStateLimiter = {
         _lastRequestTime: 0,
-        _minInterval: 10000, // Уменьшаем до 10 секунд для нормальной работы игры
+        _minInterval: 30000, // Увеличиваем до 30 секунд для предотвращения rate limiting
         _pendingRequests: new Map(),
         
         canMakeRequest(roomId = 'default') {
@@ -297,8 +297,8 @@ class CommonUtils {
                 // Если запрос висит больше 5 секунд, перезаписываем его
                 if (elapsedSincePending > 5000) {
                     console.log(`⚠️ GameStateLimiter: Перезаписываем зависший запрос для комнаты ${roomId} (${elapsedSincePending}ms)`);
-                } else if (elapsedSincePending < 2000) {
-                    // Очень быстрые повторные запросы блокируем (увеличено до 2 секунд)
+                } else if (elapsedSincePending < 10000) {
+                    // Очень быстрые повторные запросы блокируем (увеличено до 10 секунд)
                     console.log(`⏳ GameStateLimiter: Слишком частые запросы для комнаты ${roomId} (${elapsedSincePending}ms)`);
                     return false;
                 } else {
