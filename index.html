@@ -357,12 +357,12 @@
     <!-- Основные модули -->
     <script src="assets/js/modules/Router.js?v=10"></script>
     <script src="assets/js/modules/game/BoardLayout.js?v=10"></script>
-    <script src="assets/js/modules/game/CardDeckPanel.js?v=10"></script>
+    <script src="assets/js/modules/game/CardDeckPanel.js?v=11"></script>
     <script src="assets/js/modules/EventBus.js?v=10"></script>
     <script src="assets/js/modules/GameState.js?v=11"></script>
     
     <!-- Новые компоненты для рефакторинга -->
-    <script src="assets/js/modules/GameStateManager.js?v=11"></script>
+    <script src="assets/js/modules/GameStateManager.js?v=12"></script>
     <script src="assets/js/utils/PlayerStatusUtils.js?v=10"></script>
     <script src="assets/js/components/PlayerList.js?v=10"></script>
     
@@ -378,7 +378,7 @@
     <script src="assets/js/modules/game/PlayerTokenRenderer.js?v=10"></script>
     <script src="assets/js/modules/game/TurnController.js?v=10"></script>
     <script src="assets/js/modules/game/BalanceManager.js?v=10"></script>
-    <script src="assets/js/modules/game/PlayersPanel.js?v=16"></script>
+    <script src="assets/js/modules/game/PlayersPanel.js?v=17"></script>
     <script src="assets/js/modules/game/PlayerTokens.js?v=10"></script>
     <script src="assets/js/modules/game/DiceDisplay.js?v=10"></script>
     <script src="assets/js/modules/game/ProfessionSystem.js?v=10"></script>
@@ -397,7 +397,7 @@
     <script src="assets/js/navigation.js?v=10"></script>
 
     <!-- Главный скрипт приложения -->
-    <script src="assets/js/app.js?v=10"></script>
+    <script src="assets/js/app.js?v=11"></script>
     
     <!-- Кнопка ротации хода (показывается на гейм-борде) -->
     <style>
@@ -465,6 +465,14 @@
 
                             if (typeof window.app.init === 'function' && !window.app.isInitialized) {
                                 window.app.init();
+                            }
+                            
+                            // Принудительно инициализируем GameStateManager
+                            if (window.GameStateManager && !window.app.getModule('gameStateManager')) {
+                                console.log('🔧 Index: Принудительная инициализация GameStateManager');
+                                const gameStateManager = new window.GameStateManager();
+                                window.app.services.set('gameStateManager', gameStateManager);
+                                window.app.modules.set('gameStateManager', gameStateManager);
                             }
 
                             return window.app;

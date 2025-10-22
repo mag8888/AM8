@@ -22,7 +22,7 @@ class GameStateManager {
 
         // КРИТИЧНО: Централизованный запросник для предотвращения race conditions
         this._lastFetchTime = 0;
-        this._fetchInterval = 60000; // Увеличиваем до 60 секунд для полного избежания rate limiting
+        this._fetchInterval = 120000; // Увеличиваем до 120 секунд для полного избежания rate limiting
         this._isUpdating = false;
         this._updateTimer = null;
         this._rateLimitUntil = 0;
@@ -220,7 +220,7 @@ class GameStateManager {
         }
 
         if (!retryMs) {
-            this._fetchBackoffMs = this._fetchBackoffMs ? Math.min(this._fetchBackoffMs * 2, 60000) : 5000;
+            this._fetchBackoffMs = this._fetchBackoffMs ? Math.min(this._fetchBackoffMs * 2, 120000) : 10000;
             retryMs = this._fetchBackoffMs;
         } else {
             this._fetchBackoffMs = retryMs;

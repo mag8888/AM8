@@ -41,7 +41,9 @@ class App {
         this.services.set('router', new window.Router());
         
         // Создаем GameStateManager для централизованного управления состоянием
-        this.services.set('gameStateManager', new window.GameStateManager());
+        const gameStateManager = new window.GameStateManager();
+        this.services.set('gameStateManager', gameStateManager);
+        this.modules.set('gameStateManager', gameStateManager);
         
         this.logger?.info('Основные сервисы созданы', {
             services: Array.from(this.services.keys())
@@ -93,6 +95,14 @@ class App {
                 this._checkAuthentication();
                 this._setupPerformanceMonitoring();
             });
+            
+            // Принудительно инициализируем GameStateManager если он не создался
+            if (!this.getModule('gameStateManager') && window.GameStateManager) {
+                console.log('🔧 App: Принудительная инициализация GameStateManager в init()');
+                const gameStateManager = new window.GameStateManager();
+                this.services.set('gameStateManager', gameStateManager);
+                this.modules.set('gameStateManager', gameStateManager);
+            }
 
             this.isInitialized = true;
             this.logger?.info('Приложение успешно инициализировано', {
@@ -667,6 +677,7 @@ class App {
         
         // Инициализируем PlayersPanel с GameStateManager
         if (window.PlayersPanel && !this.modules.get('playersPanel')) {
+            const gameStateManager = this.getModule('gameStateManager');
             const playersPanel = new window.PlayersPanel({
                 gameStateManager: gameStateManager,
                 eventBus: this.getEventBus(),
@@ -827,7 +838,16 @@ class App {
         try {
 
         const eventBus = this.getEventBus();
-        const gameStateManager = this.getGameStateManager();
+        let gameStateManager = this.getGameStateManager();
+        
+        // Принудительно создаем GameStateManager если его нет
+        if (!gameStateManager && window.GameStateManager) {
+            console.log('🔧 App: Создаем GameStateManager принудительно');
+            gameStateManager = new window.GameStateManager();
+            this.services.set('gameStateManager', gameStateManager);
+            this.modules.set('gameStateManager', gameStateManager);
+        }
+        
         const pushClient = this.getPushClient();
 
         if (!this.getModule('gameState') && window.GameState) {
@@ -1192,7 +1212,19 @@ class App {
     }
 
     getModule(name) {
-        return this.modules.get(name);
+        // Сначала проверяем модули
+        let module = this.modules.get(name);
+        if (module) {
+            return module;
+        }
+        
+        // Затем проверяем сервисы
+        module = this.services.get(name);
+        if (module) {
+            return module;
+        }
+        
+        return null;
     }
 
     getService(name) {

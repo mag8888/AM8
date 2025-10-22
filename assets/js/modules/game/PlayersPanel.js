@@ -1208,6 +1208,11 @@ class PlayersPanel {
                 currentPlayerName.textContent = displayName;
                 console.log('✅ PlayersPanel: Обновляем имя активного игрока:', displayName);
                 
+                // Принудительно обновляем DOM
+                currentPlayerName.style.display = 'block';
+                currentPlayerName.style.visibility = 'visible';
+                currentPlayerName.style.opacity = '1';
+                
                 // Обновляем аватар с инициалами игрока или эмодзи
                 if (playerAvatar && displayName) {
                     const initials = displayName.split(' ')
@@ -1241,8 +1246,12 @@ class PlayersPanel {
                 // Принудительно обновляем данные если activePlayer не найден
                 this.forceUpdateGameState();
                 
-                // НЕ показываем "Загрузка..." - пусть остается пустым или показывает последнее известное имя
-                // currentPlayerName.textContent = 'Загрузка...';
+                // Показываем "Загрузка..." если нет данных
+                currentPlayerName.textContent = 'Загрузка...';
+                currentPlayerName.style.display = 'block';
+                currentPlayerName.style.visibility = 'visible';
+                currentPlayerName.style.opacity = '0.7';
+                
                 const avatarText = playerAvatar?.querySelector('.avatar-text');
                 if (avatarText) {
                     avatarText.textContent = '👤';
