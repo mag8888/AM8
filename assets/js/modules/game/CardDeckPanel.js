@@ -32,7 +32,7 @@
             this.eventBus = config.eventBus || null;
             this.refreshInterval = typeof config.refreshInterval === 'number'
                 ? config.refreshInterval
-                : 180000; // Увеличиваем до 3 минут для снижения нагрузки на сервер
+                : 300000; // Увеличиваем до 5 минут для полного избежания rate limiting
 
             this.container = null;
             this.abortController = null;

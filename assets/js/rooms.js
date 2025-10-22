@@ -42,7 +42,7 @@ function startRoomsPolling() {
     let lastRefreshAttempt = 0;
     const minRefreshInterval = 10000; // Уменьшаем до 10 секунд для быстрого отклика
     
-    // Обновляем список комнат каждые 45 секунд для баланса скорости и нагрузки
+    // Обновляем список комнат каждые 120 секунд для полного избежания rate limiting
     setInterval(async () => {
         const now = Date.now();
         if (now - lastRefreshAttempt < minRefreshInterval) {
