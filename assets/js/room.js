@@ -1565,13 +1565,13 @@ function updateReadyStatus() {
     if (canBeReady === true) {
         // Если игрок может быть готов, показываем соответствующую кнопку
         if (actualReadyState === true) {
-            readyButton.innerHTML = '❌ Не готов';
-            readyButton.className = 'btn btn-secondary btn-large';
-            console.log('🔍 Room: Показываем "Не готов" - игрок готов');
-        } else {
             readyButton.innerHTML = '✅ Готов к игре!';
             readyButton.className = 'btn btn-success btn-large';
-            console.log('🔍 Room: Показываем "Готов к игре" - игрок не готов');
+            console.log('🔍 Room: Показываем "Готов к игре" - игрок готов');
+        } else {
+            readyButton.innerHTML = '❌ Не готов';
+            readyButton.className = 'btn btn-secondary btn-large';
+            console.log('🔍 Room: Показываем "Не готов" - игрок не готов');
         }
     } else {
         // Если игрок не может быть готов (не выбрал мечту или фишку)

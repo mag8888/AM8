@@ -1025,7 +1025,18 @@ class RoomService {
                     console.warn('⚠️ RoomService: HTTP 429 при запуске игры, увеличиваем задержку до', backoff, 'мс');
                     throw new Error(`Rate limited! Retry after ${backoff}ms`);
                 }
-                throw new Error(`HTTP error! status: ${response.status}`);
+                
+                // Получаем детали ошибки от сервера
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                    console.error('❌ RoomService: Детали ошибки запуска игры:', errorData);
+                } catch (e) {
+                    console.error('❌ RoomService: Не удалось получить детали ошибки');
+                }
+                
+                throw new Error(errorMessage);
             }
 
             this._resetBackoff();
