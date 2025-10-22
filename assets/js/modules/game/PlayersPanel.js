@@ -2212,6 +2212,17 @@ class PlayersPanel {
     
     getCurrentUsername() {
         try {
+            // Пытаемся получить из currentUser в localStorage
+            const currentUserRaw = localStorage.getItem('currentUser');
+            if (currentUserRaw) {
+                const currentUser = JSON.parse(currentUserRaw);
+                const username = currentUser?.username;
+                if (username) {
+                    console.log('🔍 PlayersPanel: Username из currentUser:', username);
+                    return username;
+                }
+            }
+            
             // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
