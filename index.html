@@ -453,34 +453,46 @@
                     }
                     // Попытка инициализировать игровое состояние из sessionStorage
                     try {
-                        const bundleRaw = sessionStorage.getItem('am_player_bundle');
-                        if (bundleRaw && window.App && window.GameState) {
-                            const bundle = JSON.parse(bundleRaw);
-                            // Инициализация App, если ещё не выполнена
-                            if (!window.app) {
+                        const ensureAppReady = () => {
+                            if (!window.App) {
+                                console.error('❌ Index: Класс App не найден');
+                                return null;
+                            }
+
+                            if (!window.app || !(window.app instanceof window.App)) {
                                 window.app = new window.App();
-                                window.app.init?.();
-                                
-                                // Инициализируем роутер мгновенно для быстрой навигации
-                                const router = window.app.getRouter();
-                                if (router && router.handleCurrentRoute) {
-                                    router.handleCurrentRoute();
-                                }
+                            }
+
+                            if (typeof window.app.init === 'function' && !window.app.isInitialized) {
+                                window.app.init();
+                            }
+
+                            return window.app;
+                        };
+
+                        const bundleRaw = sessionStorage.getItem('am_player_bundle');
+                        const app = ensureAppReady();
+                        if (bundleRaw && app && window.GameState) {
+                            const bundle = JSON.parse(bundleRaw);
+                            // Инициализируем роутер мгновенно для быстрой навигации
+                            const router = app.getRouter();
+                            if (router && router.handleCurrentRoute) {
+                                router.handleCurrentRoute();
                             }
                             
                             // Инициализируем GameState если его нет
-                            if (!window.app.getModule('gameState')) {
-                                const gameState = new window.GameState(window.app.getEventBus());
-                                window.app.modules.set('gameState', gameState);
+                            if (!app.getModule('gameState')) {
+                                const gameState = new window.GameState(app.getEventBus());
+                                app.modules.set('gameState', gameState);
                                 console.log('✅ GameState: Инициализирован для ротации хода');
                             }
                             // Форсируем показ страницы геймборда и загрузку игровых модулей
                             try {
-                                if (window.app && window.app._showGamePage) {
-                                    window.app._showGamePage(roomId);
-                                } else if (window.app && window.app._showPage) {
+                                if (app && app._showGamePage) {
+                                    app._showGamePage(roomId);
+                                } else if (app && app._showPage) {
                                     // Fallback на старый метод
-                                    window.app._showPage('game-page');
+                                    app._showPage('game-page');
                                 }
                                 
                                 // Принудительно обновляем логотип
@@ -498,8 +510,8 @@
                                     BoardLayout: !!window.BoardLayout
                                 });
                                 
-                                if (window.app && window.app._initializeGameModules) {
-                                    window.app._initializeGameModules(roomId);
+                                if (app && typeof app._initializeGameModules === 'function') {
+                                    app._initializeGameModules(roomId);
                                 } else {
                                     console.error('❌ Index: App или _initializeGameModules не найден');
                                 }
@@ -508,15 +520,15 @@
                                 
                                 // Получаем серверное состояние и синхронизируем с GameStateManager
                                 try {
-                                    const api = new window.RoomApi();
-                                    const gameStateManager = window.app.getGameStateManager();
-                                    const gameStateModule = window.app.getModule?.('gameState');
+                                    const gameStateManager = app.getGameStateManager();
+                                    const gameStateModule = app.getModule?.('gameState');
                                     
                                     let isSyncing = false;
                                     let pendingSync = false;
                                     let lastSyncTime = 0;
-                                    const MIN_SYNC_INTERVAL = 1000; // Минимум 1 секунда между синхронизациями для быстрой загрузки
-                                    const syncWithServer = () => {
+                                    const MIN_SYNC_INTERVAL = 5000; // Минимум 5 секунд между синхронизациями
+                                    
+                                    const syncWithServer = ({ force = false } = {}) => {
                                         if (isSyncing) {
                                             pendingSync = true;
                                             return;
@@ -524,7 +536,7 @@
                                         
                                         // Проверяем минимальный интервал между синхронизациями
                                         const now = Date.now();
-                                        if (now - lastSyncTime < MIN_SYNC_INTERVAL) {
+                                        if (!force && now - lastSyncTime < MIN_SYNC_INTERVAL) {
                                             console.log(`🔄 syncWithServer: Слишком рано для синхронизации (${now - lastSyncTime}ms < ${MIN_SYNC_INTERVAL}ms)`);
                                             return;
                                         }
@@ -532,69 +544,61 @@
                                         isSyncing = true;
                                         lastSyncTime = now;
                                         
-                                        api.getGameState(roomId)
-                                            .then(gs => {
-                                                console.log('🔄 syncWithServer: Получены данные от сервера:', gs);
-                                                if (gs && gs.state) {
-                                                    console.log('🔄 syncWithServer: Состояние игры:', gs.state);
-                                                    console.log('🔄 syncWithServer: Игроки в состоянии:', gs.state.players);
+                                        if (!gameStateManager || typeof gameStateManager.fetchGameState !== 'function') {
+                                            console.warn('⚠️ syncWithServer: GameStateManager недоступен');
+                                            isSyncing = false;
+                                            if (pendingSync) {
+                                                pendingSync = false;
+                                                syncWithServer({ force: true });
+                                            }
+                                            return;
+                                        }
+
+                                        gameStateManager.fetchGameState(roomId, force)
+                                            .then(serverState => {
+                                                if (serverState) {
+                                                    console.log('🔄 syncWithServer: Обновлено состояние через GameStateManager');
                                                     if (gameStateModule && typeof gameStateModule.applyState === 'function') {
-                                                        gameStateModule.applyState(gs.state);
-                                                    }
-                                                    if (gameStateManager) {
-                                                        gameStateManager.updateFromServer(gs.state);
-                                                        
-                                                        // Принудительно переподписываем компоненты мгновенно (убрана задержка)
-                                                        if (window.app && window.app.modules) {
-                                                            const turnController = window.app.modules.get('turnController');
-                                                            const playersPanel = window.app.modules.get('playersPanel');
-                                                            
-                                                            // Переподписываемся только если компоненты еще не были инициализированы
-                                                            if (turnController && typeof turnController.setupEventListeners === 'function' && !turnController._eventListenersSetup) {
-                                                                turnController.setupEventListeners();
-                                                                turnController._eventListenersSetup = true;
-                                                                console.log('🔄 syncWithServer: Переподписан TurnController');
-                                                            }
-                                                            
-                                                            if (playersPanel && typeof playersPanel.setupEventListeners === 'function' && !playersPanel._eventListenersSetup) {
-                                                                playersPanel.setupEventListeners();
-                                                                playersPanel._eventListenersSetup = true;
-                                                                console.log('🔄 syncWithServer: Переподписан PlayersPanel');
-                                                            }
-                                                        }
+                                                        gameStateModule.applyState(serverState);
                                                     }
                                                 } else {
-                                                    console.log('🔄 syncWithServer: Нет данных состояния от сервера');
+                                                    console.log('🔄 syncWithServer: GameStateManager вернул null (возможно rate limit)');
+                                                }
+
+                                                // Принудительно переподписываем компоненты мгновенно (убрана задержка)
+                                                if (app && app.modules) {
+                                                    const turnController = app.modules.get('turnController');
+                                                    const playersPanel = app.modules.get('playersPanel');
+                                                    
+                                                    if (turnController && typeof turnController.setupEventListeners === 'function' && !turnController._eventListenersSetup) {
+                                                        turnController.setupEventListeners();
+                                                        turnController._eventListenersSetup = true;
+                                                        console.log('🔄 syncWithServer: Переподписан TurnController');
+                                                    }
+
+                                                    if (playersPanel && typeof playersPanel.setupEventListeners === 'function' && !playersPanel._eventListenersSetup) {
+                                                        playersPanel.setupEventListeners();
+                                                        playersPanel._eventListenersSetup = true;
+                                                        console.log('🔄 syncWithServer: Переподписан PlayersPanel');
+                                                    }
                                                 }
                                             })
                                             .catch(err => {
                                                 console.warn('⚠️ Ошибка получения состояния игры:', err);
-                                                if (err.isRateLimit || (err.message && err.message.includes('429'))) {
-                                                    const retryAfter = Math.max(err.retryAfter || 0, 5000);
-                                                    console.log(`🔄 HTTP 429: Ждем ${retryAfter}мс перед повторным запросом`);
-                                                    setTimeout(() => {
-                                                        isSyncing = false;
-                                                        if (pendingSync) {
-                                                            pendingSync = false;
-                                                            syncWithServer();
-                                                        }
-                                                    }, retryAfter);
-                                                    return;
-                                                }
                                             })
                                             .finally(() => {
                                                 isSyncing = false;
                                                 if (pendingSync) {
                                                     pendingSync = false;
-                                                    syncWithServer();
+                                                    syncWithServer({ force: true });
                                                 }
                                             });
                                     };
                                     
-                                    window.requestRoomSync = syncWithServer;
+                                    window.requestRoomSync = () => syncWithServer({ force: true });
                                     
                                     // Инициализация синхронизации
-                                    syncWithServer();
+                                    syncWithServer({ force: true });
                                     
                                     // Проверяем, есть ли GameStateManager для централизованной синхронизации
                                     let syncInterval = null;
@@ -604,18 +608,19 @@
                                     } else {
                                         // Fallback к старому методу если GameStateManager недоступен
                                         console.log('🔄 index.html: Используем legacy интервал синхронизации');
-                                        syncInterval = setInterval(syncWithServer, 15000);
+                                        syncInterval = setInterval(() => syncWithServer(), 15000);
                                     }
                                     
+                                    const handleFocus = () => syncWithServer({ force: true });
                                     const handleVisibility = () => {
                                         if (!document.hidden) {
-                                            syncWithServer();
+                                            syncWithServer({ force: true });
                                         }
                                     };
                                     
-                                    window.addEventListener('focus', syncWithServer, { passive: true });
+                                    window.addEventListener('focus', handleFocus, { passive: true });
                                     document.addEventListener('visibilitychange', handleVisibility, { passive: true });
-                                    const eventBus = window.app.getEventBus?.();
+                                    const eventBus = app.getEventBus?.();
                                     const handlePushStats = () => syncWithServer();
                                     eventBus?.on('push:stats_updated', handlePushStats);
                                     
@@ -631,7 +636,7 @@
                                         }
                                         
                                         window.requestRoomSync = null;
-                                        window.removeEventListener('focus', syncWithServer);
+                                        window.removeEventListener('focus', handleFocus);
                                         document.removeEventListener('visibilitychange', handleVisibility);
                                         eventBus?.off?.('push:stats_updated', handlePushStats);
                                     });

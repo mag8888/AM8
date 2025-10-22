@@ -1284,7 +1284,8 @@ class App {
             }
             
             // Инициализируем игровые модули
-            this._initGameModules(roomId);
+            const shouldForce = Boolean(this.activeRoomId && this.activeRoomId !== roomId);
+            this._initGameModules(roomId, { force: shouldForce });
             
             this.logger?.info('Игра инициализирована', { roomId }, 'App');
         } catch (error) {
@@ -1298,7 +1299,7 @@ class App {
      * @private
      */
     _initGameModules(roomId, options = {}) {
-        const { force = true } = options;
+        const { force = false } = options;
         try {
             const initialized = this._initializeGameModules(roomId, { force });
             if (initialized) {
@@ -1523,8 +1524,19 @@ if (typeof window !== 'undefined') {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 DOM загружен, инициализируем приложение...');
     
-    // Создаем экземпляр приложения
-    window.app = new App();
+    // Создаем экземпляр приложения, если он еще не был создан
+    if (!window.app || !(window.app instanceof App)) {
+        window.app = new App();
+    }
+
+    // Запускаем полную инициализацию один раз
+    if (typeof window.app.init === 'function' && !window.app.isInitialized) {
+        try {
+            window.app.init();
+        } catch (error) {
+            console.error('❌ App: Ошибка начальной инициализации', error);
+        }
+    }
     
     // Инициализируем игру если мы на игровой странице
     const hash = window.location.hash;
