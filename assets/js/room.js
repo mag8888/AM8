@@ -801,22 +801,30 @@ async function joinRoomIfNeeded() {
         } else {
             console.log('ℹ️ Room: Пользователь уже в комнате, обновляем данные');
             
-            // Сбрасываем состояние готовности при входе в комнату
-            // чтобы игрок не видел "Не готов" сразу
-            console.log('🔄 Room: Сбрасываем состояние готовности при входе в комнату');
-            const resetData = {
-                userId: currentUser.id || currentUser.userId,
-                username: currentUser.username || currentUser.name,
-                name: currentUser.username || currentUser.name,
-                avatar: currentUser.avatar || '',
-                isReady: false,
-                dream: null,
-                token: null
-            };
-            console.log('🔄 Room: Данные для сброса готовности:', resetData);
+            // Проверяем текущее состояние игрока в комнате
+            const currentPlayer = currentRoom.players?.find(p => 
+                p.userId === currentUser.id || p.username === currentUser.username
+            );
             
-            const resetResult = await roomService.updatePlayerInRoom(currentRoom.id, resetData);
-            console.log('🔄 Room: Результат сброса готовности:', resetResult);
+            if (currentPlayer && !currentPlayer.isReady) {
+                // Сбрасываем только если игрок действительно не готов
+                console.log('🔄 Room: Игрок не готов, сбрасываем состояние');
+                const resetData = {
+                    userId: currentUser.id || currentUser.userId,
+                    username: currentUser.username || currentUser.name,
+                    name: currentUser.username || currentUser.name,
+                    avatar: currentUser.avatar || '',
+                    isReady: false,
+                    dream: null,
+                    token: null
+                };
+                console.log('🔄 Room: Данные для сброса готовности:', resetData);
+                
+                const resetResult = await roomService.updatePlayerInRoom(currentRoom.id, resetData);
+                console.log('🔄 Room: Результат сброса готовности:', resetResult);
+            } else {
+                console.log('ℹ️ Room: Игрок уже готов, сохраняем состояние');
+            }
             
             showNotification('Добро пожаловать обратно в комнату!', 'info');
             
@@ -1069,8 +1077,8 @@ function updateStartGameButton() {
     const readyCount = currentRoom.players?.filter(p => Boolean(p.isReady)).length || 0;
     const minPlayers = currentRoom.minPlayers || 2; // Минимум 2 игрока для старта
     const allPlayersReady = currentRoom.players?.every(player => Boolean(player.isReady)) || false;
-    // Игра может начаться только если есть минимум игроков и хотя бы один готов
-    const canStart = playersCount >= minPlayers && readyCount >= 1;
+    // Игра может начаться только если есть минимум игроков и все игроки готовы
+    const canStart = playersCount >= minPlayers && readyCount >= playersCount && readyCount > 0;
     
     console.log('🔍 Room: Кнопка "Начать игру" - состояние:', {
         isHost,
@@ -1102,6 +1110,7 @@ function updateStartGameButton() {
     if (currentRoom.isStarted) {
         startGameButton.textContent = '🎮 Игра начата';
     } else if (!canStart) {
+        // Показываем сколько готово из общего количества игроков
         startGameButton.textContent = `👥 Ждем готовности (${readyCount}/${playersCount})`;
     } else {
         startGameButton.textContent = '🚀 Начать игру';
