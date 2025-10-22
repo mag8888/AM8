@@ -146,9 +146,10 @@ class BankPreview {
     render() {
         if (!this.container) return;
         
-        // DEBOUNCING: Предотвращаем слишком частые вызовы render()
+        // DEBOUNCING: не блокируем ПЕРВЫЙ render и случаи, когда элемента ещё нет
         const now = Date.now();
-        if (this._lastRenderTime && (now - this._lastRenderTime) < 1000) {
+        const hasPreview = !!(this.previewElement || (this.container && this.container.querySelector && this.container.querySelector('.bank-preview-card')));
+        if (hasPreview && this._lastRenderTime && (now - this._lastRenderTime) < 1000) {
             console.log('🔄 BankPreview: Render пропущен из-за debouncing');
             return;
         }
@@ -691,9 +692,11 @@ class BankPreview {
      * Обновление UI превью
      */
     updatePreviewUI(bankData) {
-        if (!this.previewElement || !bankData) {
-            return;
+        // Если элемента ещё нет, делаем немедленный render без дебаунса и продолжаем
+        if (!this.previewElement) {
+            this.render();
         }
+        if (!this.previewElement || !bankData) return;
 
         const normalized = this._normalizeBankData(bankData);
         const incomingValid = this._isValidSnapshot(normalized);
