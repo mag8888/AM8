@@ -58,8 +58,10 @@ class PlayersPanel {
             } catch (_) {}
         }
         
-        // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопок после инициализации (убираем setTimeout для производительности)
-        this.forceUpdateAllButtons();
+        // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопок после инициализации (короткий setTimeout для правильной инициализации)
+        setTimeout(() => {
+            this.forceUpdateAllButtons();
+        }, 100);
         
         // Показываем состояние загрузки сразу при инициализации
         this.showLoadingState();
@@ -374,8 +376,10 @@ class PlayersPanel {
         // Обновляем кнопки управления
         this.updateControlButtons(state);
         
-        // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI после обновления состояния (убираем setTimeout для производительности)
-        this.forceUpdateAllButtons();
+        // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI после обновления состояния (короткий setTimeout для правильной инициализации)
+        setTimeout(() => {
+            this.forceUpdateAllButtons();
+        }, 50);
 
         // Результат кубика больше не отображается в этом компоненте
         
