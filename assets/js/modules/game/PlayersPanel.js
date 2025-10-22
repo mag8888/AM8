@@ -1556,6 +1556,7 @@ class PlayersPanel {
             // Проверяем через localStorage
             const storedUserId = localStorage.getItem('userId');
             const storedUsername = localStorage.getItem('username');
+            const storedCurrentUser = localStorage.getItem('currentUser');
             
             if (storedUserId && (activePlayer.id === storedUserId || activePlayer.userId === storedUserId)) {
                 isMyTurn = true;
@@ -1563,6 +1564,22 @@ class PlayersPanel {
             } else if (storedUsername && activePlayer.username === storedUsername) {
                 isMyTurn = true;
                 console.log('🔧 PlayersPanel: isMyTurn определен через localStorage username');
+            } else if (storedCurrentUser) {
+                try {
+                    const currentUser = JSON.parse(storedCurrentUser);
+                    const userId = currentUser.id || currentUser.userId;
+                    const username = currentUser.username || currentUser.name;
+                    
+                    if (userId && (activePlayer.id === userId || activePlayer.userId === userId)) {
+                        isMyTurn = true;
+                        console.log('🔧 PlayersPanel: isMyTurn определен через currentUser id');
+                    } else if (username && activePlayer.username === username) {
+                        isMyTurn = true;
+                        console.log('🔧 PlayersPanel: isMyTurn определен через currentUser username');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ PlayersPanel: Ошибка парсинга currentUser:', e);
+                }
             }
         }
         
@@ -1725,6 +1742,20 @@ class PlayersPanel {
                 
                 console.log('✅ PlayersPanel: Кнопка "Бросок" ПРИНУДИТЕЛЬНО АКТИВИРОВАНА');
             }, 50);
+        }
+        
+        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если активный игрок "admin", принудительно активируем кнопку
+        if (activePlayer && activePlayer.username === 'admin' && rollBtn) {
+            console.log('🔧 PlayersPanel: ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ для admin');
+            rollBtn.disabled = false;
+            rollBtn.classList.add('active');
+            rollBtn.style.opacity = '1';
+            rollBtn.style.cursor = 'pointer';
+            rollBtn.style.pointerEvents = 'auto';
+            rollBtn.style.backgroundColor = '#4CAF50';
+            rollBtn.style.color = 'white';
+            rollBtn.style.transform = 'scale(1.05)';
+            rollBtn.removeAttribute('disabled');
         }
         
         console.log('🎯 PlayersPanel: Обновлены кнопки управления:', {
