@@ -97,9 +97,8 @@
                     if (this._refreshTimer) {
                         clearTimeout(this._refreshTimer);
                     }
-                    this._refreshTimer = setTimeout(() => {
-                        this.refresh();
-                    }, 5000); // Увеличиваем задержку до 5 секунд
+                    // Убираем setTimeout для производительности - используем event-driven обновления
+                    this.refresh();
                 });
             }
         }

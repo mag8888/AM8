@@ -58,10 +58,8 @@ class PlayersPanel {
             } catch (_) {}
         }
         
-        // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопок после инициализации
-        setTimeout(() => {
-            this.forceUpdateAllButtons();
-        }, 500);
+        // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопок после инициализации (убираем setTimeout для производительности)
+        this.forceUpdateAllButtons();
         
         // Показываем состояние загрузки сразу при инициализации
         this.showLoadingState();
@@ -367,19 +365,17 @@ class PlayersPanel {
         // Обновляем информацию об активном игроке
         this.updateActivePlayerInfo(state.activePlayer);
         
-        // Если activePlayer отсутствует, принудительно обновляем состояние
+        // Если activePlayer отсутствует, принудительно обновляем состояние (убираем setTimeout для производительности)
         if (!state.activePlayer) {
             console.log('⚠️ PlayersPanel: activePlayer отсутствует, запускаем принудительное обновление');
-            setTimeout(() => this.forceUpdateGameState(), 100);
+            this.forceUpdateGameState();
         }
         
         // Обновляем кнопки управления
         this.updateControlButtons(state);
         
-        // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI после обновления состояния
-        setTimeout(() => {
-            this.forceUpdateAllButtons();
-        }, 100);
+        // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI после обновления состояния (убираем setTimeout для производительности)
+        this.forceUpdateAllButtons();
 
         // Результат кубика больше не отображается в этом компоненте
         
@@ -527,29 +523,25 @@ class PlayersPanel {
         // Также загружаем через наш метод
         this.loadPlayersViaGameStateManager();
 
-        // Принудительно обновляем фишки через PlayerTokens
-        setTimeout(() => {
-            if (window.app && typeof window.app.safePlayerTokensForceUpdate === 'function') {
-                console.log('🎯 PlayersPanel: Восстанавливаем фишки через PlayerTokens (защищенный метод)');
-                window.app.safePlayerTokensForceUpdate('PlayersPanel.forceRestorePlayers');
-            } else if (window.app && window.app.getModule) {
-                // Fallback на прямой вызов, если новый метод недоступен
-                const playerTokens = window.app.getModule('playerTokens');
-                if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
-                    console.log('🎯 PlayersPanel: Восстанавливаем фишки через PlayerTokens (fallback)');
-                    playerTokens.forceUpdate();
-                }
+        // Принудительно обновляем фишки через PlayerTokens (убираем setTimeout для производительности)
+        if (window.app && typeof window.app.safePlayerTokensForceUpdate === 'function') {
+            console.log('🎯 PlayersPanel: Восстанавливаем фишки через PlayerTokens (защищенный метод)');
+            window.app.safePlayerTokensForceUpdate('PlayersPanel.forceRestorePlayers');
+        } else if (window.app && window.app.getModule) {
+            // Fallback на прямой вызов, если новый метод недоступен
+            const playerTokens = window.app.getModule('playerTokens');
+            if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
+                console.log('🎯 PlayersPanel: Восстанавливаем фишки через PlayerTokens (fallback)');
+                playerTokens.forceUpdate();
             }
-        }, 200);
+        }
 
-        // Дополнительное обновление через EventBus
-        setTimeout(() => {
-            if (this.eventBus && typeof this.eventBus.emit === 'function') {
-                console.log('🔄 PlayersPanel: Отправляем событие для восстановления игроков');
-                this.eventBus.emit('players:restore');
-                this.eventBus.emit('game:playersUpdated', { players: [] });
-            }
-        }, 500);
+        // Дополнительное обновление через EventBus (убираем setTimeout для производительности)
+        if (this.eventBus && typeof this.eventBus.emit === 'function') {
+            console.log('🔄 PlayersPanel: Отправляем событие для восстановления игроков');
+            this.eventBus.emit('players:restore');
+            this.eventBus.emit('game:playersUpdated', { players: [] });
+        }
     }
 
     /**
