@@ -55,11 +55,18 @@ class RoomService {
         // Rate limiting для предотвращения HTTP 429 - оптимизирован для производительности
         this.requestQueue = {
             lastRequest: 0,
-            minInterval: 5000, // Уменьшаем до 5 секунд для лучшего UX
-            backoffMultiplier: 1.5, // Умеренный рост backoff
-            maxBackoff: 30000, // Уменьшаем максимум до 30 секунд
+            minInterval: 2000, // Уменьшаем до 2 секунд для лучшего UX
+            backoffMultiplier: 1.3, // Более мягкий рост backoff
+            maxBackoff: 15000, // Уменьшаем максимум до 15 секунд
             currentBackoff: 0,
-            rateLimitedUntil: 0
+            rateLimitedUntil: 0,
+            // Система приоритетов
+            priorities: {
+                CRITICAL: 0,    // Игровые действия (бросок, ход)
+                HIGH: 1,        // Состояние игры, банк
+                NORMAL: 2,      // Список комнат, статистика
+                LOW: 3          // Фоновые обновления
+            }
         };
     }
 
@@ -311,7 +318,7 @@ class RoomService {
      */
     async _fetchRoomsFromAPI() {
         // Проверяем локальный rate limiting перед запросом
-        await this._waitForRateLimit();
+        await this._waitForRateLimit('NORMAL');
         
         // Проверяем глобальный rate limiter для RoomService
         if (window.CommonUtils && !window.CommonUtils.canMakeRoomsRequest()) {
@@ -375,25 +382,40 @@ class RoomService {
     }
 
     /**
-     * Ожидание для соблюдения rate limit
+     * Ожидание для соблюдения rate limit с поддержкой приоритетов
+     * @param {string} priority - Приоритет запроса
      * @private
      */
-    async _waitForRateLimit() {
-        const now = Date.now();
-        const dynamicBackoff = this.requestQueue.minInterval + this.requestQueue.currentBackoff;
-        const nextAllowedByInterval = this.requestQueue.lastRequest + dynamicBackoff;
-        const nextAllowedByRateLimit = this.requestQueue.rateLimitedUntil || 0;
-        const nextAllowed = Math.max(nextAllowedByInterval, nextAllowedByRateLimit);
-
-        if (now < nextAllowed) {
-            const waitTime = nextAllowed - now;
+    async _waitForRateLimit(priority = 'NORMAL') {
+        // Проверяем возможность выполнения запроса с учетом приоритета
+        if (!this._canMakeRequest(priority)) {
+            const priorityLevel = this.requestQueue.priorities[priority] || 2;
+            const baseInterval = this.requestQueue.minInterval;
+            const priorityMultiplier = Math.pow(2, priorityLevel);
+            const requiredInterval = baseInterval * priorityMultiplier;
+            const now = Date.now();
+            const waitTime = requiredInterval - (now - this.requestQueue.lastRequest);
             
-            // Для коротких ожиданий просто ждем
-            if (waitTime <= 5000) {
+            if (waitTime > 0) {
+                console.log(`⏳ RoomService: Приоритет ${priority}, ожидание ${waitTime}мс`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+        }
+
+        // Проверяем rate limiting от сервера
+        const now = Date.now();
+        const nextAllowedByRateLimit = this.requestQueue.rateLimitedUntil || 0;
+        
+        if (now < nextAllowedByRateLimit) {
+            const waitTime = nextAllowedByRateLimit - now;
+            
+            // Для критичных запросов ждем меньше
+            if (priority === 'CRITICAL' && waitTime > 10000) {
+                console.log(`⚠️ RoomService: Критичный запрос, игнорируем длительный rate limit (${waitTime}мс)`);
+            } else if (waitTime <= 5000) {
                 console.log(`⏳ RoomService: Короткое ожидание ${waitTime}мс`);
                 await new Promise(resolve => setTimeout(resolve, waitTime));
             } else {
-                // Для длительных ожиданий бросаем ошибку
                 console.log(`⏳ RoomService: Rate limited. Следующая попытка через ${waitTime}мс`);
                 this._scheduleRetry(waitTime);
                 throw new Error(`Rate limited. Следующая попытка через ${waitTime}мс`);
@@ -427,8 +449,11 @@ class RoomService {
         let newBackoff = 0;
         
         if (preferredMs && preferredMs > 0) {
-            // Если сервер указал конкретное время ожидания — уважаем полностью
-            newBackoff = preferredMs;
+            // Если сервер указал конкретное время ожидания — ограничиваем разумными пределами
+            const maxServerWait = 60000; // Максимум 60 секунд от сервера
+            const minServerWait = 2000;  // Минимум 2 секунды от сервера
+            newBackoff = Math.min(Math.max(preferredMs, minServerWait), maxServerWait);
+            console.log(`🔄 RoomService: Сервер запросил ${preferredMs}мс, ограничиваем до ${newBackoff}мс`);
         } else if (this.requestQueue.currentBackoff === 0) {
             // Первая ошибка - минимальная задержка
             newBackoff = this.requestQueue.minInterval;
@@ -454,6 +479,39 @@ class RoomService {
     _resetBackoff() {
         this.requestQueue.currentBackoff = 0;
         this.requestQueue.rateLimitedUntil = 0;
+    }
+
+    /**
+     * Проверка возможности выполнения запроса с учетом приоритета
+     * @param {string} priority - Приоритет запроса
+     * @returns {boolean}
+     * @private
+     */
+    _canMakeRequest(priority = 'NORMAL') {
+        const now = Date.now();
+        const priorityLevel = this.requestQueue.priorities[priority] || 2;
+        
+        // Критичные запросы всегда разрешены (с минимальной задержкой)
+        if (priorityLevel === 0) {
+            const minCriticalDelay = 500; // 500мс для критичных запросов
+            if (now - this.requestQueue.lastRequest < minCriticalDelay) {
+                console.log(`⏳ RoomService: Критичный запрос, минимальная задержка ${minCriticalDelay}мс`);
+                return false;
+            }
+            return true;
+        }
+        
+        // Обычные проверки для остальных приоритетов
+        const baseInterval = this.requestQueue.minInterval;
+        const priorityMultiplier = Math.pow(2, priorityLevel); // 1, 2, 4, 8
+        const requiredInterval = baseInterval * priorityMultiplier;
+        
+        if (now - this.requestQueue.lastRequest < requiredInterval) {
+            console.log(`⏳ RoomService: Приоритет ${priority} (${priorityLevel}), требуется ${requiredInterval}мс`);
+            return false;
+        }
+        
+        return true;
     }
 
     _parseRetryAfter(response) {
@@ -943,7 +1001,7 @@ class RoomService {
      */
     async _fetchStatsFromAPI() {
         // Проверяем локальный rate limiting перед запросом
-        await this._waitForRateLimit();
+        await this._waitForRateLimit('LOW');
         
         // Проверяем глобальный rate limiter для RoomService
         if (window.CommonUtils && !window.CommonUtils.canMakeStatsRequest()) {
@@ -1010,7 +1068,7 @@ class RoomService {
     async startGame(roomId, userId) {
         try {
             console.log('🏠 RoomService: Запуск игры в комнате:', roomId);
-            await this._waitForRateLimit();
+            await this._waitForRateLimit('CRITICAL');
             
             const response = await fetch(`${this.config.baseUrl}/${roomId}/start`, {
                 method: 'POST',

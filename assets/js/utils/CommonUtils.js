@@ -256,7 +256,7 @@ class CommonUtils {
      */
     static gameStateLimiter = {
         _lastRequestTime: 0,
-        _minInterval: 30000, // Увеличиваем до 30 секунд для предотвращения rate limiting
+        _minInterval: 5000, // Уменьшаем до 5 секунд для лучшего UX
         _pendingRequests: new Map(),
         
         canMakeRequest(roomId = 'default') {
