@@ -362,7 +362,7 @@ class CommonUtils {
     static roomServiceLimiter = {
         _lastRoomsRequest: 0,
         _lastStatsRequest: 0,
-        _minInterval: 60000, // Увеличиваем до 60 секунд для предотвращения rate limiting
+        _minInterval: 10000, // Уменьшаем до 10 секунд для лучшего UX
         _pendingRequests: new Map(),
         
         canMakeRoomsRequest() {

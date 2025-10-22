@@ -55,9 +55,9 @@ class RoomService {
         // Rate limiting для предотвращения HTTP 429 - оптимизирован для производительности
         this.requestQueue = {
             lastRequest: 0,
-            minInterval: 30000, // Увеличиваем до 30 секунд для предотвращения rate limiting
-            backoffMultiplier: 2.0, // Более агрессивный рост backoff
-            maxBackoff: 120000, // Увеличиваем максимум до 120 секунд
+            minInterval: 5000, // Уменьшаем до 5 секунд для лучшего UX
+            backoffMultiplier: 1.5, // Умеренный рост backoff
+            maxBackoff: 30000, // Уменьшаем максимум до 30 секунд
             currentBackoff: 0,
             rateLimitedUntil: 0
         };
@@ -388,11 +388,15 @@ class RoomService {
         if (now < nextAllowed) {
             const waitTime = nextAllowed - now;
             
-            // Уважаем полное время ожидания от сервера, но не блокируем UI
-            if (waitTime > 0) {
-                this._scheduleRetry(waitTime);
-                console.log(`⏳ RoomService: Rate limited. Следующая попытка через ${waitTime}мс`);
+            // Для коротких ожиданий просто ждем
+            if (waitTime <= 5000) {
+                console.log(`⏳ RoomService: Короткое ожидание ${waitTime}мс`);
                 await new Promise(resolve => setTimeout(resolve, waitTime));
+            } else {
+                // Для длительных ожиданий бросаем ошибку
+                console.log(`⏳ RoomService: Rate limited. Следующая попытка через ${waitTime}мс`);
+                this._scheduleRetry(waitTime);
+                throw new Error(`Rate limited. Следующая попытка через ${waitTime}мс`);
             }
         }
 

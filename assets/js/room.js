@@ -1611,6 +1611,13 @@ async function toggleReadyStatus() {
         }
         window._toggleReadyStatusInProgress = true;
         
+        // Отключаем кнопку во время обработки
+        const readyButton = document.getElementById('ready-button');
+        if (readyButton) {
+            readyButton.disabled = true;
+            readyButton.textContent = '⏳ Обрабатываем...';
+        }
+        
         if (!currentRoom || !currentUser || !selectedToken) {
             console.warn('⚠️ Room: Недостаточно данных для переключения готовности');
             window._toggleReadyStatusInProgress = false;
@@ -1678,7 +1685,14 @@ async function toggleReadyStatus() {
             console.log('✅ Room: Игрок обновлен в комнате');
         } catch (error) {
             console.error('❌ Room: Ошибка обновления игрока в комнате:', error);
-            showNotification('Ошибка обновления игрока', 'error');
+            
+            // Проверяем, это rate limiting или другая ошибка
+            if (error.message && error.message.includes('Rate limited')) {
+                showNotification('Слишком частые запросы. Попробуйте через несколько секунд', 'warning');
+            } else {
+                showNotification('Ошибка обновления игрока', 'error');
+            }
+            
             window._toggleReadyStatusInProgress = false;
             return;
         }
@@ -1716,6 +1730,13 @@ async function toggleReadyStatus() {
     } finally {
         // Очищаем флаг выполнения
         window._toggleReadyStatusInProgress = false;
+        
+        // Восстанавливаем кнопку
+        const readyButton = document.getElementById('ready-button');
+        if (readyButton) {
+            readyButton.disabled = false;
+            // Текст кнопки будет обновлен в updateReadyStatus()
+        }
     }
 }
 
