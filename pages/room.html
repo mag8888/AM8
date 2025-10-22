@@ -11,6 +11,27 @@
     <link rel="stylesheet" href="../assets/css/room.css?v=1">
     <link rel="stylesheet" href="../assets/css/modals.css">
     <link rel="stylesheet" href="../assets/css/fixes.css">
+    <style>
+        @keyframes skeleton-loading {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skeleton-text {
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .skeleton-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+        }
+        .skeleton-player {
+            opacity: 0.7;
+        }
+    </style>
 </head>
 <body>
     <!-- Навигация -->
@@ -64,11 +85,15 @@
                         <h3>📊 Информация о комнате</h3>
                         <div class="info-item">
                             <span class="info-label">Название:</span>
-                            <span class="info-value" id="room-name">Загрузка...</span>
+                            <span class="info-value" id="room-name">
+                                <div class="skeleton-text" style="width: 120px; height: 16px; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite;"></div>
+                            </span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Создатель:</span>
-                            <span class="info-value" id="room-creator">Загрузка...</span>
+                            <span class="info-value" id="room-creator">
+                                <div class="skeleton-text" style="width: 80px; height: 16px; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite;"></div>
+                            </span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Игроки:</span>
@@ -83,11 +108,15 @@
                     <div class="players-card">
                         <h3>👥 Игроки в комнате</h3>
                         <div class="players-list" id="players-list">
-                            <div class="player-item">
-                                <div class="player-avatar">U</div>
+                            <div class="player-item skeleton-player">
+                                <div class="player-avatar skeleton-avatar"></div>
                                 <div class="player-info">
-                                    <div class="player-name">Загрузка...</div>
-                                    <div class="player-status">Готовится</div>
+                                    <div class="player-name">
+                                        <div class="skeleton-text" style="width: 100px; height: 16px; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite;"></div>
+                                    </div>
+                                    <div class="player-status">
+                                        <div class="skeleton-text" style="width: 60px; height: 14px; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite;"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -191,19 +220,43 @@
     <!-- Уведомления -->
     <div class="notifications-container" id="notifications-container"></div>
 
-    <!-- Загрузка JavaScript модулей -->
+    <!-- Контейнер для уведомлений -->
+    <div id="notifications" class="notifications-container"></div>
+    
+    <!-- Критически важные скрипты загружаем сразу -->
     <script src="../assets/js/utils/ModalUtils.js"></script>
     <script src="../assets/js/modules/Logger.js"></script>
     <script src="../assets/js/modules/ErrorHandler.js"></script>
     <script src="../assets/js/modules/Config.js"></script>
-    <script src="../assets/js/modules/Router.js"></script>
-    <!-- Контейнер для уведомлений -->
-    <div id="notifications" class="notifications-container"></div>
     
-    <script src="../assets/js/modules/RoomService.js?v=1760461000"></script>
-    <script src="../assets/js/modules/NotificationService.js"></script>
-    <script src="../assets/js/modules/UserModel.js"></script>
-    <script src="../assets/js/room.js?v=1760467000"></script>
-    <script src="../assets/js/auth.js"></script>
+    <!-- Остальные скрипты загружаем асинхронно после первого рендера -->
+    <script>
+        // Fallback для requestIdleCallback
+        if (!window.requestIdleCallback) {
+            window.requestIdleCallback = (callback) => {
+                return setTimeout(callback, 1);
+            };
+        }
+        
+        // Загружаем остальные модули после первого рендера
+        requestIdleCallback(() => {
+            const scripts = [
+                '../assets/js/modules/Router.js',
+                '../assets/js/modules/RoomService.js?v=1760461000',
+                '../assets/js/modules/NotificationService.js',
+                '../assets/js/modules/UserModel.js',
+                '../assets/js/room.js?v=1760467000',
+                '../assets/js/auth.js'
+            ];
+            
+            scripts.forEach(src => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.async = true;
+                script.defer = true; // Дополнительная оптимизация
+                document.head.appendChild(script);
+            });
+        });
+    </script>
 </body>
 </html>

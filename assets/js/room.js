@@ -191,23 +191,40 @@ const TOKENS_CONFIG = [
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🏠 Room: Инициализация страницы комнаты');
     
-    initializeServices();
-    setupEventListeners();
-    loadRoomData();
+    // Сначала показываем кэшированные данные для мгновенного отображения
+    loadCachedRoomData();
+    
+    // Критически важные функции выполняем сразу
     displayUserInfo();
     loadDreams();
     loadTokens();
     
-    // Отложенное обновление кнопок после загрузки всех данных
-    setTimeout(() => {
-        console.log('🔄 Room: Отложенное обновление кнопок');
-        updateStartGameButton();
-        updateReadyStatus();
-    }, 1000);
-    
-    // Запускаем периодическое обновление данных комнаты для получения изменений в реальном времени
-    startRoomDataPolling();
+    // Остальные функции выполняем асинхронно
+    requestIdleCallback(() => {
+        initializeServices();
+        setupEventListeners();
+        
+        // Затем загружаем актуальные данные с сервера
+        loadRoomData();
+        
+        // Отложенное обновление кнопок после загрузки всех данных
+        setTimeout(() => {
+            console.log('🔄 Room: Отложенное обновление кнопок');
+            updateStartGameButton();
+            updateReadyStatus();
+        }, 1000);
+        
+        // Запускаем периодическое обновление данных комнаты для получения изменений в реальном времени
+        startRoomDataPolling();
+    });
 });
+
+// Fallback для requestIdleCallback
+if (!window.requestIdleCallback) {
+    window.requestIdleCallback = (callback) => {
+        return setTimeout(callback, 1);
+    };
+}
 
 // Единая функция перехода к игровому полю без обратного редиректа в комнату
 function navigateToGameBoard(roomId) {
@@ -270,17 +287,35 @@ function navigateToGameBoard(roomId) {
 }
 
 /**
- * Запуск периодического обновления данных комнаты
+ * Запуск периодического обновления данных комнаты с оптимизацией
  */
 function startRoomDataPolling() {
-    // Обновляем данные комнаты каждые 45 секунд для быстрого отклика
-    setInterval(async () => {
-        if (currentRoom && currentUser) {
-            await refreshRoomData();
-        }
-    }, 45000); // Уменьшаем интервал до 45 секунд для быстрого отклика
+    let lastUpdate = 0;
+    const minUpdateInterval = 30000; // Минимум 30 секунд между обновлениями
     
-    console.log('🔄 Room: Запущено периодическое обновление данных комнаты');
+    // Обновляем данные комнаты с адаптивным интервалом
+    setInterval(async () => {
+        const now = Date.now();
+        
+        // Проверяем, не слишком ли часто обновляемся
+        if (now - lastUpdate < minUpdateInterval) {
+            console.log('⏳ Room: Пропускаем обновление, слишком рано');
+            return;
+        }
+        
+        if (currentRoom && currentUser) {
+            try {
+                await refreshRoomData();
+                lastUpdate = now;
+            } catch (error) {
+                console.warn('⚠️ Room: Ошибка периодического обновления:', error);
+                // При ошибке увеличиваем интервал
+                lastUpdate = now + 30000; // Ждем еще 30 секунд
+            }
+        }
+    }, 15000); // Проверяем каждые 15 секунд, но обновляем не чаще чем раз в 30
+    
+    console.log('🔄 Room: Запущено оптимизированное периодическое обновление данных комнаты');
 }
 
 /**
@@ -438,7 +473,130 @@ function setupEventListeners() {
 }
 
 /**
- * Загрузка данных комнаты
+ * Загрузка кэшированных данных комнаты для мгновенного отображения
+ */
+function loadCachedRoomData() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('id');
+        
+        if (!roomId) return;
+        
+        // Пытаемся загрузить кэшированные данные комнаты
+        const cacheKey = `am_room_cache_${roomId}`;
+        const cached = localStorage.getItem(cacheKey);
+        
+        if (cached) {
+            try {
+                const roomData = JSON.parse(cached);
+                const cacheAge = Date.now() - (roomData.cachedAt || 0);
+                const maxAge = 5 * 60 * 1000; // 5 минут
+                
+                if (cacheAge < maxAge) {
+                    console.log('⚡ Room: Загружаем кэшированные данные комнаты');
+                    currentRoom = roomData.room;
+                    updateRoomInfo();
+                    updatePlayersList();
+                    return;
+                } else {
+                    console.log('⏰ Room: Кэш устарел, загружаем свежие данные');
+                }
+            } catch (error) {
+                console.warn('⚠️ Room: Ошибка парсинга кэша:', error);
+            }
+        }
+        
+        console.log('📦 Room: Кэш не найден, показываем skeleton UI');
+        
+    } catch (error) {
+        console.error('❌ Room: Ошибка загрузки кэша:', error);
+    }
+}
+
+/**
+ * Сохранение данных комнаты в кэш
+ */
+function saveRoomToCache(room) {
+    try {
+        const cacheKey = `am_room_cache_${room.id}`;
+        const cacheData = {
+            room: room,
+            cachedAt: Date.now()
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        console.log('💾 Room: Данные комнаты сохранены в кэш');
+    } catch (error) {
+        console.warn('⚠️ Room: Ошибка сохранения в кэш:', error);
+    }
+}
+
+/**
+ * Оптимизированная загрузка данных комнаты одним запросом
+ */
+async function loadRoomDataOptimized(roomId) {
+    try {
+        console.log('🚀 Room: Оптимизированная загрузка данных комнаты');
+        
+        // Пытаемся получить данные комнаты с дополнительной информацией одним запросом
+        const response = await fetch(`/api/rooms/${roomId}?include=players,ready,status`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            if (response.status === 429) {
+                const retryAfter = response.headers.get('Retry-After');
+                const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 30000; // 30 секунд по умолчанию
+                
+                console.warn(`⚠️ Room: Rate limited, ожидание ${waitTime}мс`);
+                
+                // Показываем уведомление пользователю
+                showNotification(`Слишком частые запросы. Повторим через ${Math.ceil(waitTime/1000)} секунд`, 'warning');
+                
+                // Планируем повторную попытку
+                setTimeout(() => {
+                    console.log('🔄 Room: Повторная попытка загрузки после rate limit');
+                    loadRoomData();
+                }, waitTime);
+                
+                return null;
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Ошибка получения комнаты');
+        }
+        
+        // Преобразуем формат данных с сервера в формат клиента
+        const room = data.data;
+        return {
+            id: room.id,
+            name: room.name,
+            description: room.description || '',
+            maxPlayers: room.maxPlayers,
+            playerCount: room.playerCount,
+            status: room.status,
+            isStarted: room.isStarted,
+            isFull: room.isFull,
+            creator: room.creator,
+            turnTime: room.turnTime,
+            assignProfessions: room.assignProfessions,
+            players: room.players || [],
+            createdAt: room.createdAt,
+            updatedAt: room.updatedAt
+        };
+        
+    } catch (error) {
+        console.error('❌ Room: Ошибка оптимизированной загрузки:', error);
+        return null;
+    }
+}
+
+/**
+ * Загрузка данных комнаты с оптимизацией
  */
 async function loadRoomData() {
     try {
@@ -455,8 +613,8 @@ async function loadRoomData() {
         
         console.log('🏠 Room: Загрузка данных комнаты:', roomId);
         
-        // Получаем данные комнаты
-        const room = await roomService.getRoomById(roomId);
+        // Пытаемся загрузить данные комнаты с дополнительной информацией одним запросом
+        const room = await loadRoomDataOptimized(roomId);
         
         if (!room) {
             console.warn('⚠️ Room: Комната не найдена в API, пробуем мок-данные');
@@ -513,6 +671,10 @@ async function loadRoomData() {
         }
         
         currentRoom = room;
+        
+        // Сохраняем в кэш для быстрой загрузки в следующий раз
+        saveRoomToCache(room);
+        
         updateRoomInfo();
         
         // Проверяем, запущена ли игра
