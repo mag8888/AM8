@@ -225,7 +225,7 @@ class CommonUtils {
      */
     static rateLimiter = {
         _lastRequestTime: 0,
-        _minInterval: 2000, // Минимальный интервал 2 секунды
+        _minInterval: 1000, // Оптимизируем до 1 секунды для более быстрого отклика
         
         canMakeRequest() {
             const now = Date.now();
@@ -256,7 +256,7 @@ class CommonUtils {
      */
     static gameStateLimiter = {
         _lastRequestTime: 0,
-        _minInterval: 15000, // Увеличено до 15 секунд для предотвращения rate limiting
+        _minInterval: 8000, // Оптимизируем до 8 секунд для лучшего баланса
         _pendingRequests: new Map(),
         
         canMakeRequest(roomId = 'default') {
@@ -362,7 +362,7 @@ class CommonUtils {
     static roomServiceLimiter = {
         _lastRoomsRequest: 0,
         _lastStatsRequest: 0,
-        _minInterval: 30000, // Минимальный интервал 30 секунд для RoomService запросов
+        _minInterval: 15000, // Оптимизируем до 15 секунд для RoomService запросов
         _pendingRequests: new Map(),
         
         canMakeRoomsRequest() {

@@ -27,7 +27,7 @@ class RoomService {
             baseUrl: isLocal ? 'http://localhost:3002/api/rooms' : 'https://am8-production.up.railway.app/api/rooms',
             useMockData: false, // Используем реальный API для работы с сервером
             localStorageKey: 'aura_money_dynamic_rooms',
-            cacheTimeout: 60000, // Увеличиваем до 60 секунд для снижения нагрузки
+            cacheTimeout: 30000, // Оптимизируем до 30 секунд для баланса между производительностью и актуальностью
             maxRetries: 3,
             useDynamicRooms: false // Отключаем динамические комнаты, используем серверную БД
         };
@@ -52,12 +52,12 @@ class RoomService {
         };
         this.roomsCacheKey = 'am_rooms_cache_v1';
         
-        // Rate limiting для предотвращения HTTP 429 - оптимизирован для стабильности
+        // Rate limiting для предотвращения HTTP 429 - оптимизирован для производительности
         this.requestQueue = {
             lastRequest: 0,
-            minInterval: 10000, // Увеличиваем до 10 секунд для предотвращения rate limiting
-            backoffMultiplier: 1.3, // Уменьшаем множитель для менее агрессивного роста
-            maxBackoff: 120000, // Увеличиваем максимум до 2 минут
+            minInterval: 2000, // Уменьшаем до 2 секунд для более быстрого отклика
+            backoffMultiplier: 1.2, // Более мягкий рост backoff
+            maxBackoff: 30000, // Уменьшаем максимум до 30 секунд
             currentBackoff: 0,
             rateLimitedUntil: 0
         };
@@ -388,8 +388,8 @@ class RoomService {
         if (now < nextAllowed) {
             const waitTime = nextAllowed - now;
             
-            // Не ждем дольше 30 секунд, чтобы не блокировать UI
-            const maxWaitTime = 30000;
+            // Не ждем дольше 10 секунд, чтобы не блокировать UI
+            const maxWaitTime = 10000;
             const actualWaitTime = Math.min(waitTime, maxWaitTime);
             
             if (actualWaitTime < waitTime) {
@@ -397,7 +397,10 @@ class RoomService {
                 throw new Error(`Rate limited! Server requests ${waitTime}ms wait but UI limit is ${maxWaitTime}ms`);
             }
             
-            console.log(`⏳ RoomService: Ожидание ${actualWaitTime}мс для соблюдения rate limit`);
+            // Показываем уведомление только для длительных задержек (>2 секунд)
+            if (actualWaitTime > 2000) {
+                console.log(`⏳ RoomService: Ожидание ${actualWaitTime}мс для соблюдения rate limit`);
+            }
             await new Promise(resolve => setTimeout(resolve, actualWaitTime));
         }
 
