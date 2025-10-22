@@ -2022,7 +2022,28 @@ class PlayersPanel {
             const passBtn = document.getElementById('pass-turn');
             const moveBtn = document.getElementById('move-btn');
             
+            // Принудительно активируем кнопку "Бросок" если это ход игрока
             if (rollBtn) {
+                const currentUserId = this.getCurrentUserId();
+                const state = this.gameStateManager?.getState?.() || {};
+                const activePlayer = state.activePlayer;
+                const isMyTurn = activePlayer && currentUserId && 
+                    (activePlayer.id === currentUserId || 
+                     activePlayer.userId === currentUserId || 
+                     activePlayer.username === currentUserId);
+                
+                if (isMyTurn) {
+                    console.log('🔧 PlayersPanel: Принудительная активация кнопки "Бросок"');
+                    rollBtn.disabled = false;
+                    rollBtn.classList.add('active');
+                    rollBtn.style.opacity = '1';
+                    rollBtn.style.cursor = 'pointer';
+                    rollBtn.style.pointerEvents = 'auto';
+                    rollBtn.style.backgroundColor = '#4CAF50';
+                    rollBtn.style.color = 'white';
+                    rollBtn.removeAttribute('disabled');
+                }
+                
                 this.forceUpdateButtonUI(rollBtn);
             }
             
