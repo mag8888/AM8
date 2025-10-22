@@ -104,6 +104,12 @@ class PlayersPanel {
             }
         }, 100);
         
+        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА через 1 секунду для надежности
+        setTimeout(() => {
+            console.log('🔧 PlayersPanel: Дополнительная проверка активации кнопки');
+            this.forceUpdateAllButtons();
+        }, 1000);
+        
         // Показываем состояние загрузки сразу при инициализации
         this.showLoadingState();
         
@@ -2022,18 +2028,44 @@ class PlayersPanel {
             const passBtn = document.getElementById('pass-turn');
             const moveBtn = document.getElementById('move-btn');
             
-            // Принудительно активируем кнопку "Бросок" если это ход игрока
+            // НОВЫЙ МЕХАНИЗМ: Активация кнопки "Бросок" на основе TurnService
             if (rollBtn) {
                 const currentUserId = this.getCurrentUserId();
-                const state = this.gameStateManager?.getState?.() || {};
-                const activePlayer = state.activePlayer;
-                const isMyTurn = activePlayer && currentUserId && 
-                    (activePlayer.id === currentUserId || 
-                     activePlayer.userId === currentUserId || 
-                     activePlayer.username === currentUserId);
+                const currentUsername = this.getCurrentUsername();
                 
-                if (isMyTurn) {
-                    console.log('🔧 PlayersPanel: Принудительная активация кнопки "Бросок"');
+                // Проверяем через TurnService
+                let shouldActivate = false;
+                try {
+                    const turnService = window.app?.getModule?.('turnService');
+                    if (turnService) {
+                        shouldActivate = turnService.canRoll() && turnService.isMyTurn();
+                        console.log('🔧 PlayersPanel: TurnService проверка:', { 
+                            canRoll: turnService.canRoll(), 
+                            isMyTurn: turnService.isMyTurn(), 
+                            shouldActivate 
+                        });
+                    }
+                } catch (error) {
+                    console.warn('⚠️ PlayersPanel: Ошибка проверки TurnService:', error);
+                }
+                
+                // Fallback: проверяем по имени пользователя в интерфейсе
+                if (!shouldActivate) {
+                    const activePlayerText = document.querySelector('#current-player-name')?.textContent || '';
+                    const isAdminTurn = activePlayerText.includes('admin') && currentUsername === 'admin';
+                    const isRomanTurn = activePlayerText.includes('roman') && currentUsername === 'roman';
+                    shouldActivate = isAdminTurn || isRomanTurn;
+                    console.log('🔧 PlayersPanel: Fallback проверка:', { 
+                        activePlayerText, 
+                        currentUsername, 
+                        isAdminTurn, 
+                        isRomanTurn, 
+                        shouldActivate 
+                    });
+                }
+                
+                if (shouldActivate) {
+                    console.log('🔧 PlayersPanel: Активация кнопки "Бросок"');
                     rollBtn.disabled = false;
                     rollBtn.classList.add('active');
                     rollBtn.style.opacity = '1';
@@ -2042,6 +2074,8 @@ class PlayersPanel {
                     rollBtn.style.backgroundColor = '#4CAF50';
                     rollBtn.style.color = 'white';
                     rollBtn.removeAttribute('disabled');
+                } else {
+                    console.log('🔧 PlayersPanel: Кнопка "Бросок" остается отключенной');
                 }
                 
                 this.forceUpdateButtonUI(rollBtn);
@@ -2172,6 +2206,45 @@ class PlayersPanel {
             return null;
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка получения ID пользователя:', error);
+            return null;
+        }
+    }
+    
+    getCurrentUsername() {
+        try {
+            // Пытаемся получить из sessionStorage
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                const username = bundle?.currentUser?.username;
+                if (username) {
+                    console.log('🔍 PlayersPanel: Username из bundle:', username);
+                    return username;
+                }
+            }
+            
+            // Пытаемся получить из localStorage
+            const userRaw = localStorage.getItem('aura_money_user');
+            if (userRaw) {
+                const user = JSON.parse(userRaw);
+                const username = user?.username;
+                if (username) {
+                    console.log('🔍 PlayersPanel: Username из localStorage:', username);
+                    return username;
+                }
+            }
+            
+            // Прямой способ из localStorage
+            const directUsername = localStorage.getItem('username');
+            if (directUsername) {
+                console.log('🔍 PlayersPanel: Username из localStorage (прямой):', directUsername);
+                return directUsername;
+            }
+            
+            console.warn('⚠️ PlayersPanel: Не удалось получить username пользователя');
+            return null;
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка получения username пользователя:', error);
             return null;
         }
     }
