@@ -13,6 +13,7 @@ class App {
         this.logger = window.logger;
         this.errorHandler = window.errorHandler;
         this.config = window.config;
+        this.performanceMonitor = window.performanceMonitor;
         
         this.modules = new Map();
         this.services = new Map();
@@ -25,6 +26,7 @@ class App {
         
         this._initializeCore();
         this._setupGlobalErrorHandling();
+        this._startPerformanceMonitoring();
     }
 
     /**
@@ -1494,6 +1496,26 @@ if (typeof window !== 'undefined') {
     };
     
     console.log('✅ Global: Функция window.forceUpdateAllComponents() доступна');
+}
+
+/**
+ * Запуск мониторинга производительности
+ * @private
+ */
+_startPerformanceMonitoring() {
+    if (this.performanceMonitor) {
+        this.performanceMonitor.start();
+        this.logger?.info('Мониторинг производительности запущен', null, 'App');
+        
+        // Выводим отчет каждые 30 секунд в development режиме
+        if (this.config?.environment === 'development') {
+            setInterval(() => {
+                this.performanceMonitor.printReport();
+            }, 30000);
+        }
+    } else {
+        this.logger?.warn('PerformanceMonitor не найден', null, 'App');
+    }
 }
 
 // Автоматическая инициализация при загрузке страницы

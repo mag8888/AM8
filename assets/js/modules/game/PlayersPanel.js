@@ -28,6 +28,14 @@ class PlayersPanel {
         
         // Rate limiting для предотвращения 429 ошибок
         this._lastApiRequestTime = 0;
+        
+        // Флаги защиты от race conditions
+        this._isUpdating = false;
+        this._isInitializing = false;
+        this._isDestroyed = false;
+        this._isUpdatingPlayers = false;
+        this._isUpdatingButtons = false;
+        this._isUpdatingActivePlayer = false;
         this._minRequestInterval = 3000; // Минимум 3 секунды между запросами
         
         console.log('👥 PlayersPanel v2.0: Инициализация');
@@ -38,9 +46,18 @@ class PlayersPanel {
      * Инициализация компонента
      */
     init() {
+        // Защита от повторной инициализации
+        if (this._isInitializing || this._isDestroyed) {
+            console.log('⚠️ PlayersPanel: Инициализация уже выполняется или компонент уничтожен');
+            return;
+        }
+        
+        this._isInitializing = true;
+        
         this.container = document.getElementById(this.containerId);
         if (!this.container) {
             console.error('❌ PlayersPanel: Контейнер не найден:', this.containerId);
+            this._isInitializing = false;
             return;
         }
         
@@ -90,6 +107,10 @@ class PlayersPanel {
         // Показываем состояние загрузки сразу при инициализации
         this.showLoadingState();
         
+        // Завершаем инициализацию
+        this._isInitializing = false;
+        this._isInitialized = true;
+        
         // Используем GameStateManager для загрузки данных вместо прямых API вызовов
         this.loadPlayersViaGameStateManager();
         
@@ -112,17 +133,17 @@ class PlayersPanel {
             return;
         }
         
-        try {
-            const app = window.app;
-            if (!app) {
-                console.warn('⚠️ PlayersPanel: App не найден');
-                return;
-            }
-            
-            const gameState = app.getModule('gameState');
-            const eventBus = app.getEventBus();
-            const roomApi = app.getModule('roomApi');
-            const professionSystem = app.getModule('professionSystem');
+                try {
+                    const app = window.app;
+                    if (!app) {
+                        console.warn('⚠️ PlayersPanel: App не найден');
+                        return;
+                    }
+                    
+                    const gameState = app.getModule('gameState');
+                    const eventBus = app.getEventBus();
+                    const roomApi = app.getModule('roomApi');
+                    const professionSystem = app.getModule('professionSystem');
             
             console.log('🏦 PlayersPanel: Создаем BankModuleServer с модулями:', {
                 gameState: !!gameState,
@@ -131,25 +152,25 @@ class PlayersPanel {
                 professionSystem: !!professionSystem,
                 gameStateManager: !!this.gameStateManager
             });
-            
-            this.bankModule = new window.BankModuleServer({
-                gameState: gameState,
-                eventBus: eventBus,
-                roomApi: roomApi,
-                professionSystem: professionSystem,
-                gameStateManager: this.gameStateManager
-            });
-            
+                    
+                    this.bankModule = new window.BankModuleServer({
+                        gameState: gameState,
+                        eventBus: eventBus,
+                        roomApi: roomApi,
+                        professionSystem: professionSystem,
+                        gameStateManager: this.gameStateManager
+                    });
+                    
             // Сохраняем в app.modules
             if (app.modules && typeof app.modules.set === 'function') {
-                app.modules.set('bankModuleServer', this.bankModule);
+                    app.modules.set('bankModuleServer', this.bankModule);
             }
-            
+                    
             console.log('✅ PlayersPanel: BankModuleServer создан успешно');
-        } catch (error) {
-            console.error('❌ PlayersPanel: Ошибка создания BankModuleServer:', error);
+                } catch (error) {
+                    console.error('❌ PlayersPanel: Ошибка создания BankModuleServer:', error);
             console.error('❌ PlayersPanel: Стек ошибки:', error.stack);
-        }
+                }
     }
     
     
@@ -373,6 +394,15 @@ class PlayersPanel {
      * @param {Object} state - Состояние игры
      */
     updateFromGameState(state) {
+        // Защита от race conditions
+        if (this._isUpdating || this._isDestroyed) {
+            console.log('⚠️ PlayersPanel: updateFromGameState пропущен - уже обновляется или уничтожен');
+            return;
+        }
+        
+        this._isUpdating = true;
+        
+        try {
         // Throttling: обновляем только если состояние действительно изменилось
         const stateKey = JSON.stringify({
             activePlayer: state.activePlayer?.id,
@@ -399,7 +429,7 @@ class PlayersPanel {
         
         // Обновляем кнопки управления
         this.updateControlButtons(state);
-        
+
         // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI после обновления состояния (короткий setTimeout для правильной инициализации)
         setTimeout(() => {
             this.forceUpdateAllButtons();
@@ -427,6 +457,12 @@ class PlayersPanel {
             console.log('⚠️ PlayersPanel: state.players:', state.players);
             // Если игроки не переданы или невалидные, используем GameStateManager
             this.loadPlayersViaGameStateManager();
+        }
+        
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка в updateFromGameState:', error);
+        } finally {
+            this._isUpdating = false;
         }
     }
     
@@ -1375,7 +1411,7 @@ class PlayersPanel {
                     // Используем более эффективное ожидание
                     await new Promise(resolve => {
                         const checkModule = () => {
-                            if (this.bankModule) {
+                if (this.bankModule) {
                                 resolve();
                             } else {
                                 requestAnimationFrame(checkModule);
@@ -1394,7 +1430,7 @@ class PlayersPanel {
                     
                     // Быстрая попытка создания
                     this.bankModule = null;
-                    this.createBankModule();
+                        this.createBankModule();
                     
                     if (this.bankModule) {
                         await this.bankModule.open();
@@ -3398,7 +3434,7 @@ class PlayersPanel {
     destroy() {
         console.log('👥 PlayersPanel v2.0: Уничтожение с очисткой памяти...');
         
-        // Очищаем все таймеры
+        // Очищаем ВСЕ таймеры (включая скрытые setTimeout)
         if (this.timerId) {
             clearTimeout(this.timerId);
             this.timerId = null;
@@ -3407,6 +3443,22 @@ class PlayersPanel {
         if (this._rollingTimer) {
             clearInterval(this._rollingTimer);
             this._rollingTimer = null;
+        }
+        
+        // Очищаем дополнительные таймеры
+        if (this._updateTimer) {
+            clearTimeout(this._updateTimer);
+            this._updateTimer = null;
+        }
+        
+        if (this._forceUpdateTimer) {
+            clearTimeout(this._forceUpdateTimer);
+            this._forceUpdateTimer = null;
+        }
+        
+        if (this._buttonUpdateTimer) {
+            clearTimeout(this._buttonUpdateTimer);
+            this._buttonUpdateTimer = null;
         }
         
         // Отменяем текущие запросы
@@ -3421,27 +3473,54 @@ class PlayersPanel {
             this._playersCache = null;
         }
         
+        // Очищаем кэш времени последнего обновления
+        this._lastFetchTime = 0;
+        this._lastUpdateTime = 0;
+        
         // Уничтожаем BankModule
         if (this.bankModule && typeof this.bankModule.destroy === 'function') {
             this.bankModule.destroy();
             this.bankModule = null;
         }
         
-        // Отписываемся от событий
+        // Отписываемся от ВСЕХ событий
         if (this.eventBus) {
             this.eventBus.off('game:started');
             this.eventBus.off('game:playersUpdated');
             this.eventBus.off('game:turnChanged');
             this.eventBus.off('dice:rolled');
+            this.eventBus.off('players:updated');
+            this.eventBus.off('game:stateUpdated');
         }
         
-        // Очищаем ссылки
+        // Отписываемся от GameStateManager
+        if (this.gameStateManager && typeof this.gameStateManager.off === 'function') {
+            this.gameStateManager.off('state:updated');
+        }
+        
+        // Удаляем event listeners с DOM элементов
+        if (this.container) {
+            const buttons = this.container.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.removeEventListener('click', this.handleDiceRoll);
+                button.removeEventListener('click', this.handlePassTurn);
+                button.removeEventListener('click', this.handleMove);
+            });
+        }
+        
+        // Очищаем все ссылки
         this.container = null;
         this.gameStateManager = null;
         this.eventBus = null;
         this.playerList = null;
+        this.activePlayerInfo = null;
+        this.controlButtons = null;
         
-        console.log('✅ PlayersPanel v2.0: Полностью очищен');
+        // Сбрасываем флаги состояния
+        this._isInitialized = false;
+        this._isDestroyed = true;
+        
+        console.log('✅ PlayersPanel v2.0: Полностью очищен с улучшенной очисткой памяти');
     }
 }
 

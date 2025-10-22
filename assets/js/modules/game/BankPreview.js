@@ -23,6 +23,11 @@ class BankPreview {
         this._eventBusSubscribed = false;
         this._initialDataLoaded = false;
         this._isLoadingInitialData = false;
+        
+        // Флаги синхронизации
+        this._isUpdating = false;
+        this._isDestroyed = false;
+        this._lastSyncTime = 0;
         this._lastExtractedData = null;
         this._lastExtractedTimestamp = 0;
         this._updateStateDebounceTimer = null;
@@ -224,7 +229,7 @@ class BankPreview {
         
         // Настраиваем обработчики событий после создания элемента
         this.setupEventListeners();
-
+        
         this._renderVersion += 1;
         this.previewElement.setAttribute('data-render-version', String(this._renderVersion));
         this.restoreLastSnapshot();
