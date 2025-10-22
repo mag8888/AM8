@@ -128,6 +128,50 @@
             color: rgba(255, 255, 255, 0.5);
         }
         
+        /* Стили для контейнера с кнопкой показа пароля */
+        .password-input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .password-input-container input {
+            padding-right: 3rem;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+        }
+        
+        .password-toggle:hover {
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .password-toggle:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        
+        .toggle-icon {
+            font-size: 1rem;
+            line-height: 1;
+        }
+        
         .auth-btn {
             width: 100%;
             padding: 1rem;
@@ -287,7 +331,12 @@
             
             <div class="form-group">
                 <label for="login-password">Пароль</label>
-                <input type="password" id="login-password" placeholder="Введите пароль" required>
+                <div class="password-input-container">
+                    <input type="password" id="login-password" placeholder="Введите пароль" required>
+                    <button type="button" id="toggle-login-password" class="password-toggle" aria-label="Показать пароль">
+                        <span class="toggle-icon">👁️</span>
+                    </button>
+                </div>
             </div>
             
             <button type="submit" class="auth-btn">Войти</button>
@@ -322,12 +371,22 @@
             
             <div class="form-group">
                 <label for="register-password">Пароль</label>
-                <input type="password" id="register-password" placeholder="Придумайте пароль" required>
+                <div class="password-input-container">
+                    <input type="password" id="register-password" placeholder="Придумайте пароль" required>
+                    <button type="button" id="toggle-register-password" class="password-toggle" aria-label="Показать пароль">
+                        <span class="toggle-icon">👁️</span>
+                    </button>
+                </div>
             </div>
             
             <div class="form-group">
                 <label for="register-confirm">Подтвердите пароль</label>
-                <input type="password" id="register-confirm" placeholder="Подтвердите пароль" required>
+                <div class="password-input-container">
+                    <input type="password" id="register-confirm" placeholder="Подтвердите пароль" required>
+                    <button type="button" id="toggle-register-confirm-password" class="password-toggle" aria-label="Показать пароль">
+                        <span class="toggle-icon">👁️</span>
+                    </button>
+                </div>
             </div>
             
             <button type="submit" class="auth-btn">Зарегистрироваться</button>
@@ -430,6 +489,42 @@
             if (target) {
                 e.preventDefault();
                 window.history.back();
+            }
+        });
+        
+        // Функция переключения видимости пароля
+        function togglePasswordVisibility(input, toggleButton) {
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            
+            const icon = toggleButton.querySelector('.toggle-icon');
+            icon.textContent = isPassword ? '🙈' : '👁️';
+            
+            // Добавляем визуальный эффект
+            toggleButton.style.transform = 'translateY(-50%) scale(1.1)';
+            setTimeout(() => {
+                toggleButton.style.transform = 'translateY(-50%) scale(1)';
+            }, 150);
+        }
+        
+        // Обработчики для кнопок показа пароля
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#toggle-login-password')) {
+                const input = document.getElementById('login-password');
+                const button = document.getElementById('toggle-login-password');
+                togglePasswordVisibility(input, button);
+            }
+            
+            if (e.target.closest('#toggle-register-password')) {
+                const input = document.getElementById('register-password');
+                const button = document.getElementById('toggle-register-password');
+                togglePasswordVisibility(input, button);
+            }
+            
+            if (e.target.closest('#toggle-register-confirm-password')) {
+                const input = document.getElementById('register-confirm');
+                const button = document.getElementById('toggle-register-confirm-password');
+                togglePasswordVisibility(input, button);
             }
         });
         
