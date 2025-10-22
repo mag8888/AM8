@@ -150,7 +150,7 @@ class BankPreview {
         const now = Date.now();
         const hasPreview = !!(this.previewElement || (this.container && this.container.querySelector && this.container.querySelector('.bank-preview-card')));
         if (hasPreview && this._lastRenderTime && (now - this._lastRenderTime) < 1000) {
-            console.log('🔄 BankPreview: Render пропущен из-за debouncing');
+            // Убираем спам логирование - debouncing работает нормально
             return;
         }
         this._lastRenderTime = now;
@@ -158,7 +158,7 @@ class BankPreview {
         // Проверяем, есть ли уже банк превью в контейнере
         const existingPreview = this.container.querySelector('.bank-preview-card');
         if (existingPreview) {
-            console.log('🔄 BankPreview: Элемент уже существует, используем существующий');
+            // Убираем спам логирование - элемент переиспользуется нормально
             this.previewElement = existingPreview;
             return; // Не пересоздаем HTML, используем существующий
         }
@@ -166,7 +166,7 @@ class BankPreview {
         // Создаем элемент превью банка только если его нет
         this.previewElement = document.createElement('div');
         this.previewElement.className = 'bank-preview-card';
-        console.log('🔧 BankPreview: Создаем HTML структуру для банка');
+        // Убираем спам логирование - HTML создается нормально
         this.previewElement.innerHTML = `
             <div class="bank-preview-header">
                 <div class="bank-preview-icon">🏦</div>
@@ -219,11 +219,7 @@ class BankPreview {
         // Проверяем, что элементы создались в DOM
         const balanceElement = this.previewElement.querySelector('#bank-preview-balance');
         const incomeElement = this.previewElement.querySelector('#bank-preview-income');
-        console.log('🔧 BankPreview: Проверка DOM элементов после создания:', {
-            balanceElement: balanceElement,
-            incomeElement: incomeElement,
-            previewElementHTML: this.previewElement.outerHTML.substring(0, 200)
-        });
+        // Убираем спам логирование - DOM элементы проверяются нормально
         
         // Сбрасываем флаг обработчиков чтобы переустановить их
         this._eventListenersSetup = false;
@@ -261,7 +257,7 @@ class BankPreview {
         }
         
         this._isLoadingInitialData = true;
-        console.log('🏦 BankPreview: Загружаем начальные данные');
+        // Убираем спам логирование - данные загружаются нормально
         
         try {
             // Сначала пытаемся получить данные из BankModuleServer
@@ -514,7 +510,7 @@ class BankPreview {
         }
         
         this._isUpdating = true;
-        console.log('🔄 BankPreview: Начинаем updatePreviewDataFromState');
+        // Убираем спам логирование - метод вызывается часто
         
         try {
             let bankData = null;
@@ -614,11 +610,7 @@ class BankPreview {
             p.username === currentUser.username
         );
         
-        console.log('🔍 BankPreview: Поиск игрока:', {
-            currentUser: currentUser,
-            players: gameState.players.map(p => ({ id: p.id, userId: p.userId, username: p.username, money: p.money, balance: p.balance })),
-            foundPlayer: currentPlayer
-        });
+        // Убираем спам логирование - поиск игрока работает нормально
         
         if (!currentPlayer) {
             console.warn('⚠️ BankPreview: currentPlayer не найден в gameState.players');
@@ -632,7 +624,7 @@ class BankPreview {
                 ? currentPlayer.balance 
                 : 0); // Используем 0 если значения undefined/null
         
-        console.log('✅ BankPreview: extractBankDataFromGameState - реальный баланс игрока:', balance, 'для игрока:', currentPlayer.username || currentPlayer.id);
+        // Убираем спам логирование - баланс извлекается нормально
         
         // Используем данные предпринимателя по умолчанию если это предприниматель
         let bankData;
@@ -672,10 +664,7 @@ class BankPreview {
     getFallbackBankData() {
         const currentUser = this.getCurrentUser();
         
-        console.log('🚨 BankPreview: ВНИМАНИЕ! Вызван getFallbackBankData() - это источник нулевых значений!', {
-            currentUser: currentUser,
-            stackTrace: new Error().stack
-        });
+        // Убираем спам логирование - fallback данные используются редко
         
         // Возвращаем данные по умолчанию (если нет данных игрока)
         return {
@@ -708,31 +697,24 @@ class BankPreview {
         if (incomingValid) {
             // Если новые данные содержат реальные данные игрока - всегда обновляем
             if (normalized.balance > 0 || normalized.income > 0) {
-                console.log('✅ BankPreview: Принудительное обновление - найдены реальные данные игрока');
+                // Убираем спам логирование - обновление работает нормально
             } else if (currentValid && (currentSnapshot.balance > 0 || currentSnapshot.income > 0)) {
                 // СТРОГАЯ ЗАЩИТА: Если текущие данные содержат реальные данные, а новые нулевые - НЕ ОБНОВЛЯЕМ
-                console.log('🛡️ BankPreview: СТРОГАЯ ЗАЩИТА - блокируем затирание реальных данных нулями');
+                // Убираем спам логирование - защита работает нормально
                 return;
             } else if (normalized.balance === 0 && normalized.income === 0) {
                 // Если новые данные нулевые, но текущих данных нет - все равно не обновляем
-                console.log('🛡️ BankPreview: Блокируем установку нулевых значений');
+                // Убираем спам логирование - защита работает нормально
                 return;
             } else {
-                console.log('✅ BankPreview: Обновляем UI с валидными данными');
+                // Убираем спам логирование - UI обновляется нормально
             }
         } else {
             console.log('⚠️ BankPreview: Пропускаем обновление - данные невалидны');
             return;
         }
 
-        if (incomingValid) {
-            // Throttle логирование - максимум раз в 2 секунды
-            const now = Date.now();
-            if (now - this._lastLogTime > this._logThrottleInterval) {
-                console.log('✅ BankPreview: Обновляем UI с новыми данными:', JSON.stringify(normalized));
-                this._lastLogTime = now;
-            }
-        }
+        // Убираем спам логирование - данные обновляются нормально
 
         this._lastBankSnapshot = normalized;
         this._lastDisplayedData = JSON.stringify(normalized);
@@ -746,7 +728,7 @@ class BankPreview {
                 });
                 return;
             }
-            console.log(`✅ BankPreview: Обновляем элемент ${selector} значением ${formatter(value)}`);
+            // Убираем спам логирование - элементы обновляются нормально
             element.textContent = formatter(value);
         };
 
