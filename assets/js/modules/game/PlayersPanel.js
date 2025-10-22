@@ -58,6 +58,11 @@ class PlayersPanel {
             } catch (_) {}
         }
         
+        // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопок после инициализации
+        setTimeout(() => {
+            this.forceUpdateAllButtons();
+        }, 500);
+        
         // Показываем состояние загрузки сразу при инициализации
         this.showLoadingState();
         
@@ -370,6 +375,11 @@ class PlayersPanel {
         
         // Обновляем кнопки управления
         this.updateControlButtons(state);
+        
+        // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI после обновления состояния
+        setTimeout(() => {
+            this.forceUpdateAllButtons();
+        }, 100);
 
         // Результат кубика больше не отображается в этом компоненте
         
@@ -1532,11 +1542,17 @@ class PlayersPanel {
                 rollBtn.classList.remove('active');
             }
             
+            // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI для кнопки броска
+            this.forceUpdateButtonUI(rollBtn);
+            
             // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ: если кнопка все еще отключена, но это ход игрока
             if (rollBtn.disabled && isMyTurn) {
                 console.log('🔧 PlayersPanel: ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Бросок"');
                 rollBtn.disabled = false;
                 rollBtn.classList.add('active');
+                
+                // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI
+                this.forceUpdateButtonUI(rollBtn);
             }
         }
         
@@ -1550,6 +1566,9 @@ class PlayersPanel {
             } else {
                 passBtn.classList.remove('active');
             }
+            
+            // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI для кнопки передачи хода
+            this.forceUpdateButtonUI(passBtn);
         }
         
         // Кнопка броска - активна если это мой ход (упрощенная логика)
@@ -1578,6 +1597,24 @@ class PlayersPanel {
             } else {
                 moveBtn.classList.remove('active');
             }
+            
+            // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI для кнопки движения
+            this.forceUpdateButtonUI(moveBtn);
+        }
+        
+        // ДОПОЛНИТЕЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ: если это ход игрока, но кнопки все еще отключены
+        if (isMyTurn && rollBtn && rollBtn.disabled) {
+            console.log('🔧 PlayersPanel: ФИНАЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Бросок"');
+            rollBtn.disabled = false;
+            rollBtn.classList.add('active');
+            this.forceUpdateButtonUI(rollBtn);
+        }
+        
+        if (isMyTurn && moveBtn && moveBtn.disabled) {
+            console.log('🔧 PlayersPanel: ФИНАЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Движение"');
+            moveBtn.disabled = false;
+            moveBtn.classList.add('active');
+            this.forceUpdateButtonUI(moveBtn);
         }
         
         console.log('🎯 PlayersPanel: Обновлены кнопки управления:', {
@@ -1590,6 +1627,7 @@ class PlayersPanel {
             canEndTurn: state.canEndTurn,
             passBtnDisabled: passBtn?.disabled,
             rollBtnDisabled: rollBtn?.disabled,
+            moveBtnDisabled: moveBtn?.disabled,
             shouldBeDisabled: !isMyTurn || !state.canEndTurn,
             turnCheckDetails: {
                 idMatch: activePlayer?.id === currentUserId,
@@ -1768,6 +1806,15 @@ class PlayersPanel {
         try {
             console.log('🎲 PlayersPanel: Обработка броска кубиков');
             
+            // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки перед броском
+            const rollBtn = document.getElementById('roll-dice-btn');
+            if (rollBtn && rollBtn.disabled) {
+                console.log('🔧 PlayersPanel: Принудительная активация кнопки перед броском');
+                rollBtn.disabled = false;
+                rollBtn.classList.add('active');
+                this.forceUpdateButtonUI(rollBtn);
+            }
+            
             const app = window.app;
             const turnService = app && app.getModule ? app.getModule('turnService') : null;
             
@@ -1820,6 +1867,87 @@ class PlayersPanel {
             if (window.NotificationService) {
                 window.NotificationService.show('Ошибка броска кубика: ' + error.message, 'error');
             }
+        }
+    }
+    
+    /**
+     * Принудительное обновление всех кнопок управления
+     */
+    forceUpdateAllButtons() {
+        try {
+            console.log('🔧 PlayersPanel: Принудительное обновление всех кнопок');
+            
+            const rollBtn = document.getElementById('roll-dice-btn');
+            const passBtn = document.getElementById('pass-turn');
+            const moveBtn = document.getElementById('move-btn');
+            
+            if (rollBtn) {
+                this.forceUpdateButtonUI(rollBtn);
+            }
+            
+            if (passBtn) {
+                this.forceUpdateButtonUI(passBtn);
+            }
+            
+            if (moveBtn) {
+                this.forceUpdateButtonUI(moveBtn);
+            }
+            
+            console.log('✅ PlayersPanel: Все кнопки обновлены принудительно');
+            
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка принудительного обновления всех кнопок:', error);
+        }
+    }
+    
+    /**
+     * Принудительное обновление UI кнопки
+     * @param {HTMLElement} button - Кнопка для обновления
+     */
+    forceUpdateButtonUI(button) {
+        if (!button) return;
+        
+        try {
+            console.log('🔧 PlayersPanel: Принудительное обновление UI кнопки:', {
+                id: button.id,
+                disabled: button.disabled,
+                classList: Array.from(button.classList)
+            });
+            
+            // Принудительно обновляем атрибуты
+            button.setAttribute('disabled', button.disabled ? 'true' : 'false');
+            
+            // Принудительно обновляем стили
+            if (button.disabled) {
+                button.style.opacity = '0.5';
+                button.style.cursor = 'not-allowed';
+                button.style.pointerEvents = 'none';
+            } else {
+                button.style.opacity = '1';
+                button.style.cursor = 'pointer';
+                button.style.pointerEvents = 'auto';
+            }
+            
+            // Принудительно обновляем классы
+            if (button.classList.contains('active')) {
+                button.style.backgroundColor = '#4CAF50';
+                button.style.color = 'white';
+                button.style.transform = 'scale(1.05)';
+            } else {
+                button.style.backgroundColor = '';
+                button.style.color = '';
+                button.style.transform = '';
+            }
+            
+            // Принудительно перерисовываем элемент
+            button.style.display = 'none';
+            button.offsetHeight; // Принудительный reflow
+            button.style.display = '';
+            
+            console.log('✅ PlayersPanel: UI кнопки обновлен принудительно');
+            
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка принудительного обновления UI:', error);
         }
     }
     
