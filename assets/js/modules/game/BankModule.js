@@ -1295,56 +1295,73 @@ class BankModule {
         
         // Загружаем актуальные данные игрока с сервера
         if (roomId && currentPlayer.id) {
-            // Атомарная проверка и установка pending флага
-            if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                console.log('🚫 BankModule: Пропускаем запрос из-за глобального rate limiting или concurrent request');
-                return;
+            const gameStateManager = this.gameStateManager || window.app?.services?.get('gameStateManager');
+            let gameStateData = null;
+
+            if (gameStateManager && typeof gameStateManager.fetchGameState === 'function') {
+                try {
+                    gameStateData = await gameStateManager.fetchGameState(roomId);
+                } catch (error) {
+                    console.warn('⚠️ BankModule: Не удалось получить состояние через GameStateManager:', error);
+                }
             }
-            
-            try {
-                console.log('🌐 BankModule: Загружаем данные игрока с сервера...', { roomId, playerId: currentPlayer.id });
+
+            // Fallback только если GameStateManager недоступен
+            if (!gameStateData && (!gameStateManager || typeof gameStateManager.fetchGameState !== 'function')) {
+                if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+                    console.log('🚫 BankModule: Пропускаем запрос из-за глобального rate limiting или concurrent request');
+                    return;
+                }
                 
-                const response = await fetch(`/api/rooms/${roomId}/game-state`);
-                if (response.ok) {
-                    const gameStateData = await response.json();
-                    if (gameStateData.success && gameStateData.state?.players) {
-                        // Находим данные текущего игрока на сервере
-                        serverPlayerData = gameStateData.state.players.find(p => 
-                            p.id === currentPlayer.id || 
-                            p.username === currentPlayer.username ||
-                            (currentPlayer.userId && p.userId === currentPlayer.userId)
-                        );
-                        
-                        if (serverPlayerData) {
-                            console.log('✅ BankModule: Данные игрока загружены с сервера:', {
-                                id: serverPlayerData.id,
-                                balance: serverPlayerData.balance || serverPlayerData.money,
-                                currentLoan: serverPlayerData.currentLoan,
-                                username: serverPlayerData.username
-                            });
-                            
-                            // Обновляем локальные данные игрока серверными данными
-                            Object.assign(currentPlayer, serverPlayerData);
-                            
-                            // Синхронизируем с GameState
-                            if (this.gameState && typeof this.gameState.updatePlayer === 'function') {
-                                this.gameState.updatePlayer(currentPlayer.id, currentPlayer);
-                            }
-                        } else {
-                            console.warn('⚠️ BankModule: Серверные данные игрока не найдены:', {
-                                searchId: currentPlayer.id,
-                                searchUsername: currentPlayer.username,
-                                availablePlayers: gameStateData.state.players.map(p => ({ id: p.id, username: p.username }))
-                            });
+                try {
+                    console.log('🌐 BankModule: Загружаем данные игрока с сервера (fallback)...', { roomId, playerId: currentPlayer.id });
+                    const response = await fetch(`/api/rooms/${roomId}/game-state`, {
+                        headers: {
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache'
+                        }
+                    });
+                    if (response.ok) {
+                        const parsed = await response.json();
+                        if (parsed.success && parsed.state) {
+                            gameStateData = parsed.state;
                         }
                     }
+                } catch (error) {
+                    console.warn('⚠️ BankModule: Ошибка загрузки данных с сервера (fallback):', error);
+                } finally {
+                    if (window.CommonUtils) {
+                        window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+                    }
                 }
-            } catch (error) {
-                console.warn('⚠️ BankModule: Ошибка загрузки данных с сервера:', error);
-            } finally {
-                // Очищаем флаг pending в глобальном limiter
-                if (window.CommonUtils) {
-                    window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+            }
+
+            if (gameStateData?.players) {
+                serverPlayerData = gameStateData.players.find(p =>
+                    p.id === currentPlayer.id ||
+                    p.username === currentPlayer.username ||
+                    (currentPlayer.userId && p.userId === currentPlayer.userId)
+                );
+
+                if (serverPlayerData) {
+                    console.log('✅ BankModule: Данные игрока загружены:', {
+                        id: serverPlayerData.id,
+                        balance: serverPlayerData.balance || serverPlayerData.money,
+                        currentLoan: serverPlayerData.currentLoan,
+                        username: serverPlayerData.username
+                    });
+
+                    Object.assign(currentPlayer, serverPlayerData);
+
+                    if (this.gameState && typeof this.gameState.updatePlayer === 'function') {
+                        this.gameState.updatePlayer(currentPlayer.id, currentPlayer);
+                    }
+                } else {
+                    console.warn('⚠️ BankModule: Серверные данные игрока не найдены:', {
+                        searchId: currentPlayer.id,
+                        searchUsername: currentPlayer.username,
+                        availablePlayers: gameStateData.players.map(p => ({ id: p.id, username: p.username }))
+                    });
                 }
             }
         }
@@ -1612,39 +1629,54 @@ class BankModule {
         
         // Загружаем актуальные данные игроков с сервера
         if (roomId) {
-            // Атомарная проверка и установка pending флага
-            if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                console.log('🚫 BankModule: Пропускаем запрос из-за глобального rate limiting или concurrent request');
-                return;
+            const gameStateManager = this.gameStateManager || window.app?.services?.get('gameStateManager');
+            let serverState = null;
+
+            if (gameStateManager && typeof gameStateManager.fetchGameState === 'function') {
+                try {
+                    serverState = await gameStateManager.fetchGameState(roomId);
+                } catch (error) {
+                    console.warn('⚠️ BankModule: Не удалось получить список игроков через GameStateManager:', error);
+                }
             }
-            
-            try {
-                console.log('🌐 BankModule: Загружаем список игроков с сервера...', { roomId });
-                
-                const response = await fetch(`/api/rooms/${roomId}/game-state`);
-                if (response.ok) {
-                    const gameStateData = await response.json();
-                    if (gameStateData.success && gameStateData.state?.players) {
-                        players = gameStateData.state.players;
-                        console.log('✅ BankModule: Игроки загружены с сервера:', players.length);
-                        
-                        // Обновляем локальный GameState серверными данными
-                        if (this.gameState && typeof this.gameState.updatePlayers === 'function') {
-                            this.gameState.updatePlayers(players);
-                        } else if (this.gameStateManager && typeof this.gameStateManager.updateFromServer === 'function') {
-                            // Обновляем через gameStateManager правильным методом
-                            this.gameStateManager.updateFromServer({
-                                players: players
-                            });
+
+            if (!serverState && (!gameStateManager || typeof gameStateManager.fetchGameState !== 'function')) {
+                if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+                    console.log('🚫 BankModule: Пропускаем запрос из-за глобального rate limiting или concurrent request');
+                    return;
+                }
+
+                try {
+                    console.log('🌐 BankModule: Загружаем список игроков с сервера (fallback)...', { roomId });
+                    const response = await fetch(`/api/rooms/${roomId}/game-state`, {
+                        headers: {
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache'
+                        }
+                    });
+                    if (response.ok) {
+                        const parsed = await response.json();
+                        if (parsed.success && parsed.state) {
+                            serverState = parsed.state;
                         }
                     }
+                } catch (error) {
+                    console.warn('⚠️ BankModule: Ошибка загрузки игроков с сервера (fallback):', error);
+                } finally {
+                    if (window.CommonUtils) {
+                        window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+                    }
                 }
-            } catch (error) {
-                console.warn('⚠️ BankModule: Ошибка загрузки игроков с сервера, используем локальные данные:', error);
-            } finally {
-                // Очищаем флаг pending в глобальном limiter
-                if (window.CommonUtils) {
-                    window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+            }
+
+            if (serverState?.players) {
+                players = serverState.players;
+                console.log('✅ BankModule: Игроки загружены:', players.length);
+
+                if (this.gameState && typeof this.gameState.updatePlayers === 'function') {
+                    this.gameState.updatePlayers(players);
+                } else if (gameStateManager && typeof gameStateManager.updateFromServer === 'function') {
+                    gameStateManager.updateFromServer({ players });
                 }
             }
         }
@@ -2590,4 +2622,3 @@ class BankModule {
 
 // Экспорт для глобального использования
 window.BankModule = BankModule;
-

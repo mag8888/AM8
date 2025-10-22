@@ -131,13 +131,8 @@ class GameState {
     /**
      * Загрузка игроков из текущей комнаты (fallback без GameStateManager)
      */
-    loadPlayersFromCurrentRoom(force = false) {
+    async loadPlayersFromCurrentRoom(force = false) {
         try {
-            if (this.gameStateManager && !force) {
-                console.warn('⚠️ GameState: GameStateManager доступен, пропускаем прямой fetch');
-                return;
-            }
-            
             // Получаем roomId из URL
             const hash = window.location.hash;
             const roomIdMatch = hash.match(/roomId=([^&]+)/);
@@ -150,7 +145,29 @@ class GameState {
             const roomId = roomIdMatch[1];
             this.roomId = roomId;
             
-            console.log('🏠 GameState: Загружаем игроков из комнаты:', roomId);
+            const manager = this.gameStateManager || window.app?.getGameStateManager?.();
+            if (manager && typeof manager.fetchGameState === 'function') {
+                console.log('🏠 GameState: Загружаем игроков через GameStateManager:', { roomId, force });
+                try {
+                    const serverState = await manager.fetchGameState(roomId, force);
+                    const resolvedState = serverState || manager.getState?.();
+                    const players = resolvedState?.players || [];
+
+                    if (Array.isArray(players) && players.length > 0) {
+                        console.log('✅ GameState: Игроки обновлены через GameStateManager:', players.length);
+                        this.loadPlayersFromRoom(resolvedState);
+                        return;
+                    }
+
+                    console.log('⚠️ GameState: GameStateManager не вернул игроков, добавляем тестовых');
+                    this.addTestPlayers();
+                    return;
+                } catch (error) {
+                    console.warn('⚠️ GameState: Не удалось получить состояние через GameStateManager, используем fallback', error);
+                }
+            }
+            
+            console.log('🏠 GameState: Загружаем игроков напрямую из комнаты (fallback):', roomId);
             
             // Проверяем глобальный rate limiter для game-state
             if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
@@ -167,27 +184,30 @@ class GameState {
             }
             
             // Загружаем данные комнаты
-            fetch(`/api/rooms/${roomId}/game-state`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.state && data.state.players && data.state.players.length > 0) {
-                        console.log('✅ GameState: Игроки загружены из комнаты:', data.state.players.length);
-                        this.loadPlayersFromRoom(data.state);
-                    } else {
-                        console.log('⚠️ GameState: Данные комнаты не найдены, добавляем тестовых игроков');
-                        this.addTestPlayers();
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ GameState: Ошибка загрузки игроков из комнаты:', error);
-                    this.addTestPlayers();
-                })
-                .finally(() => {
-                    // Очищаем флаг pending в глобальном limiter
-                    if (window.CommonUtils) {
-                        window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+            try {
+                const response = await fetch(`/api/rooms/${roomId}/game-state`, {
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
                     }
                 });
+                const data = await response.json();
+                if (data.success && data.state && data.state.players && data.state.players.length > 0) {
+                    console.log('✅ GameState: Игроки загружены из комнаты:', data.state.players.length);
+                    this.loadPlayersFromRoom(data.state);
+                } else {
+                    console.log('⚠️ GameState: Данные комнаты не найдены, добавляем тестовых игроков');
+                    this.addTestPlayers();
+                }
+            } catch (error) {
+                console.error('❌ GameState: Ошибка загрузки игроков из комнаты:', error);
+                this.addTestPlayers();
+            } finally {
+                // Очищаем флаг pending в глобальном limiter
+                if (window.CommonUtils) {
+                    window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
+                }
+            }
         } catch (error) {
             console.error('❌ GameState: Ошибка загрузки игроков:', error);
             this.addTestPlayers();

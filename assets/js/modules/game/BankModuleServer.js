@@ -77,7 +77,7 @@ class BankModuleServer {
             console.log('🌐 BankModuleServer: Загружаем данные с сервера для комнаты:', roomId);
             
             // Загружаем только состояние игры, баланс получаем из него
-            const gameStateData = await this.fetchGameState(roomId);
+            const gameStateData = await this.fetchGameState(roomId, force);
             
             if (gameStateData) {
                 // Обновляем состояние банка данными из gameState
@@ -114,17 +114,20 @@ class BankModuleServer {
     /**
      * Загрузка состояния игры с сервера
      */
-    async fetchGameState(roomId) {
-        // Атомарная проверка и установка pending флага
+    async fetchGameState(roomId, force = false) {
+        const manager = this.gameStateManager || window.app?.services?.get('gameStateManager');
+        if (manager && typeof manager.fetchGameState === 'function') {
+            return await manager.fetchGameState(roomId, force);
+        }
+
         if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
             console.log('🚫 BankModuleServer: Пропускаем запрос из-за глобального rate limiting или concurrent request');
             return null;
         }
-        
-        // Добавляем таймаут для предотвращения блокировки UI
+
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // Уменьшаем таймаут до 5 секунд для быстрого переключения
-        
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
         try {
             const response = await fetch(`/api/rooms/${roomId}/game-state`, {
                 signal: controller.signal,
@@ -134,15 +137,15 @@ class BankModuleServer {
                 }
             });
             clearTimeout(timeoutId);
-            
+
             if (!response.ok) {
                 if (response.status === 404) {
                     console.warn('⚠️ BankModuleServer: Комната не найдена, используем локальные данные');
-                    return null; // Вернем null вместо ошибки
+                    return null;
                 }
                 throw new Error(`Ошибка загрузки состояния игры: ${response.status}`);
             }
-            
+
             let data;
             try {
                 data = await response.json();
@@ -150,28 +153,26 @@ class BankModuleServer {
                 console.warn('⚠️ BankModuleServer: Ошибка парсинга JSON ответа:', jsonError);
                 return null;
             }
-            
+
             if (!data.success) {
                 throw new Error(data.message || 'Ошибка получения данных игры');
             }
-            
+
             return data.state;
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
                 console.warn('⚠️ BankModuleServer: Таймаут загрузки данных, используем локальные данные');
-                return null; // Возвращаем null вместо ошибки
+                return null;
             }
-            
-            // Обработка сетевых ошибок
+
             if (error.message?.includes('Load failed') || error.name === 'TypeError') {
                 console.warn('⚠️ BankModuleServer: Сетевая ошибка, используем локальные данные');
                 return null;
             }
-            
+
             throw error;
         } finally {
-            // Очищаем флаг pending в глобальном limiter
             if (window.CommonUtils) {
                 window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
             }

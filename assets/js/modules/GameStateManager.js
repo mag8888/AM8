@@ -25,6 +25,8 @@ class GameStateManager {
         this._fetchInterval = 60000; // Увеличиваем до 60 секунд для полного избежания rate limiting
         this._isUpdating = false;
         this._updateTimer = null;
+        this._rateLimitUntil = 0;
+        this._fetchBackoffMs = 0;
 
         const roomIdFromHash = this._parseRoomIdFromHash();
         if (roomIdFromHash) {
@@ -134,6 +136,13 @@ class GameStateManager {
             return null;
         }
 
+        // Проверяем активный rate limit, выставленный сервером
+        if (!force && this._rateLimitUntil > Date.now()) {
+            const waitMs = this._rateLimitUntil - Date.now();
+            console.log(`⏳ GameStateManager: Пропускаем fetch до окончания rate limit (${waitMs}ms осталось)`);
+            return null;
+        }
+
         // Проверяем rate limiting через общую систему
         if (!force && window.CommonUtils) {
             if (!window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
@@ -164,12 +173,15 @@ class GameStateManager {
                 if (gameStateData.success && gameStateData.state) {
                     this.updateFromServer(gameStateData.state);
                     this._lastFetchTime = Date.now();
+                    this._fetchBackoffMs = 0;
+                    this._rateLimitUntil = 0;
                     console.log('✅ GameStateManager: Успешно обновлено состояние');
                     return gameStateData.state;
                 }
             } else {
                 if (response.status === 429) {
-                    console.warn('⚠️ GameStateManager: Rate limited (HTTP 429), используем текущее состояние');
+                    const retryMs = this._applyRateLimitFromResponse(response);
+                    console.warn(`⚠️ GameStateManager: Rate limited (HTTP 429), пауза ${retryMs}мс`);
                 } else {
                     console.warn('⚠️ GameStateManager: Неудачный запрос game-state:', response.status);
                 }
@@ -188,6 +200,34 @@ class GameStateManager {
         }
 
         return null;
+    }
+
+    /**
+     * Обновление локального состояния rate limit на основании ответа сервера
+     * @param {Response} response
+     * @returns {number} задержка в миллисекундах
+     * @private
+     */
+    _applyRateLimitFromResponse(response) {
+        const header = response?.headers?.get?.('Retry-After') || response?.headers?.get?.('retry-after');
+        let retryMs = 0;
+
+        if (header) {
+            const retrySeconds = Number(header);
+            if (!Number.isNaN(retrySeconds) && retrySeconds >= 0) {
+                retryMs = retrySeconds * 1000;
+            }
+        }
+
+        if (!retryMs) {
+            this._fetchBackoffMs = this._fetchBackoffMs ? Math.min(this._fetchBackoffMs * 2, 60000) : 5000;
+            retryMs = this._fetchBackoffMs;
+        } else {
+            this._fetchBackoffMs = retryMs;
+        }
+
+        this._rateLimitUntil = Date.now() + retryMs;
+        return retryMs;
     }
 
     /**
