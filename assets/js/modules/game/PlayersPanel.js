@@ -1475,7 +1475,7 @@ class PlayersPanel {
         const currentUserId = this.getCurrentUserId();
         const activePlayer = state.activePlayer;
         
-        // Расширенная проверка isMyTurn
+        // Расширенная проверка isMyTurn с дополнительными проверками
         let isMyTurn = false;
         if (activePlayer && currentUserId) {
             isMyTurn = 
@@ -1483,6 +1483,21 @@ class PlayersPanel {
                 activePlayer.userId === currentUserId ||
                 activePlayer.username === currentUserId ||
                 (activePlayer.username && currentUserId && activePlayer.username === currentUserId);
+        }
+        
+        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если isMyTurn все еще false, попробуем альтернативные способы
+        if (!isMyTurn && activePlayer) {
+            // Проверяем через localStorage
+            const storedUserId = localStorage.getItem('userId');
+            const storedUsername = localStorage.getItem('username');
+            
+            if (storedUserId && (activePlayer.id === storedUserId || activePlayer.userId === storedUserId)) {
+                isMyTurn = true;
+                console.log('🔧 PlayersPanel: isMyTurn определен через localStorage userId');
+            } else if (storedUsername && activePlayer.username === storedUsername) {
+                isMyTurn = true;
+                console.log('🔧 PlayersPanel: isMyTurn определен через localStorage username');
+            }
         }
         
         console.log('🔍 PlayersPanel: Проверка isMyTurn:', {
@@ -1498,9 +1513,10 @@ class PlayersPanel {
             }
         });
         
-        // Логика для кнопки "Бросить" - активна если это мой ход и можно бросать
+        // Логика для кнопки "Бросить" - активна если это мой ход (упрощенная логика)
         if (rollBtn) {
-            const canRoll = isMyTurn && (state.canRoll !== false);
+            // УПРОЩЕННАЯ ЛОГИКА: если это мой ход - кнопка активна (игнорируем state.canRoll)
+            const canRoll = isMyTurn;
             rollBtn.disabled = !canRoll;
             
             console.log('🎲 PlayersPanel: Обновление кнопки бросить:', {
@@ -1514,6 +1530,13 @@ class PlayersPanel {
                 rollBtn.classList.add('active');
             } else {
                 rollBtn.classList.remove('active');
+            }
+            
+            // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ: если кнопка все еще отключена, но это ход игрока
+            if (rollBtn.disabled && isMyTurn) {
+                console.log('🔧 PlayersPanel: ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Бросок"');
+                rollBtn.disabled = false;
+                rollBtn.classList.add('active');
             }
         }
         
@@ -1749,30 +1772,54 @@ class PlayersPanel {
             const turnService = app && app.getModule ? app.getModule('turnService') : null;
             
             if (!turnService) {
-                console.warn('⚠️ PlayersPanel: TurnService не найден');
+                console.warn('⚠️ PlayersPanel: TurnService не найден, пытаемся найти альтернативные способы');
+                
+                // АЛЬТЕРНАТИВНЫЙ СПОСОБ: прямой вызов API
+                const roomId = this.getRoomId();
+                if (roomId) {
+                    console.log('🔧 PlayersPanel: Прямой вызов API для броска кубика');
+                    const response = await fetch(`/api/rooms/${roomId}/roll`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ diceChoice: 'single' })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('✅ PlayersPanel: Прямой бросок кубика выполнен:', result);
+                        return;
+                    } else {
+                        console.error('❌ PlayersPanel: Ошибка прямого API вызова:', response.status);
+                    }
+                }
                 return;
             }
             
-            // Проверяем, можем ли мы бросить кубики
+            // Проверяем, можем ли мы бросить кубики (упрощенная проверка)
             const canRoll = turnService.canRoll && typeof turnService.canRoll === 'function'
                 ? turnService.canRoll()
                 : true; // По умолчанию разрешаем бросок
                 
-            if (!canRoll) {
-                console.warn('⚠️ PlayersPanel: Бросок кубиков недоступен');
-                return;
-            }
+            console.log('🎲 PlayersPanel: canRoll проверка:', canRoll);
             
             // Выполняем бросок кубиков
             if (typeof turnService.roll === 'function') {
-                await turnService.roll({ diceChoice: 'single' });
-                console.log('✅ PlayersPanel: Бросок кубиков выполнен');
+                console.log('🎲 PlayersPanel: Вызываем turnService.roll()');
+                const result = await turnService.roll({ diceChoice: 'single' });
+                console.log('✅ PlayersPanel: Бросок кубиков выполнен:', result);
             } else {
                 console.warn('⚠️ PlayersPanel: Метод roll не найден в TurnService');
             }
             
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка броска кубиков:', error);
+            
+            // Показываем уведомление пользователю
+            if (window.NotificationService) {
+                window.NotificationService.show('Ошибка броска кубика: ' + error.message, 'error');
+            }
         }
     }
     
@@ -1818,10 +1865,57 @@ class PlayersPanel {
                 }
             }
             
+            // ДОПОЛНИТЕЛЬНЫЕ СПОСОБЫ: проверяем другие источники
+            const directUserId = localStorage.getItem('userId');
+            if (directUserId) {
+                console.log('🔍 PlayersPanel: ID пользователя из localStorage (прямой):', directUserId);
+                return directUserId;
+            }
+            
+            const directUsername = localStorage.getItem('username');
+            if (directUsername) {
+                console.log('🔍 PlayersPanel: Username из localStorage (прямой):', directUsername);
+                return directUsername;
+            }
+            
             console.warn('⚠️ PlayersPanel: Не удалось получить ID пользователя');
             return null;
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка получения ID пользователя:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * Получение ID комнаты
+     * @returns {string|null} ID комнаты
+     */
+    getRoomId() {
+        try {
+            // Пытаемся получить из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomId = urlParams.get('roomId');
+            if (roomId) {
+                return roomId;
+            }
+            
+            // Пытаемся получить из hash
+            const hash = window.location.hash;
+            const hashMatch = hash.match(/roomId=([^&]+)/);
+            if (hashMatch) {
+                return hashMatch[1];
+            }
+            
+            // Пытаемся получить из localStorage
+            const storedRoomId = localStorage.getItem('currentRoomId');
+            if (storedRoomId) {
+                return storedRoomId;
+            }
+            
+            console.warn('⚠️ PlayersPanel: Не удалось получить ID комнаты');
+            return null;
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка получения ID комнаты:', error);
             return null;
         }
     }

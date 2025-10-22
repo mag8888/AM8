@@ -378,11 +378,20 @@ class TurnService extends EventTarget {
     canRoll() {
         try {
             const state = this.getState();
+            
+            // УПРОЩЕННАЯ ЛОГИКА: если это мой ход - разрешаем бросок
+            const isMyTurn = this.isMyTurn();
+            if (isMyTurn) {
+                console.log('🎲 TurnService.canRoll -> true (мой ход)');
+                return true;
+            }
+            
+            // Если не мой ход, проверяем state.canRoll
             const can = state && state.canRoll === true;
-            console.log('🎲 TurnService.canRoll ->', can, state);
+            console.log('🎲 TurnService.canRoll ->', can, { isMyTurn, stateCanRoll: state?.canRoll });
             return can;
         } catch (e) {
-            console.warn('⚠️ TurnService.canRoll: no state yet');
+            console.warn('⚠️ TurnService.canRoll: no state yet, разрешаем бросок по умолчанию');
             return true; // позволяем бросок, если состояние не готово
         }
     }
