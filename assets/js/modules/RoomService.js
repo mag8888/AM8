@@ -388,23 +388,31 @@ class RoomService {
         if (now < nextAllowed) {
             const waitTime = nextAllowed - now;
             
-            // Не ждем дольше 30 секунд, чтобы не блокировать UI
-            const maxWaitTime = 30000;
-            const actualWaitTime = Math.min(waitTime, maxWaitTime);
-            
-            if (actualWaitTime < waitTime) {
-                console.log(`⚠️ RoomService: Rate limit требует ожидания ${waitTime}мс, но ограничиваем до ${maxWaitTime}мс для UI`);
-                throw new Error(`Rate limited! Server requests ${waitTime}ms wait but UI limit is ${maxWaitTime}ms`);
+            // Уважаем полное время ожидания от сервера, но не блокируем UI
+            if (waitTime > 0) {
+                this._scheduleRetry(waitTime);
+                console.log(`⏳ RoomService: Rate limited. Следующая попытка через ${waitTime}мс`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
             }
-            
-            // Показываем уведомление только для длительных задержек (>2 секунд)
-            if (actualWaitTime > 2000) {
-                console.log(`⏳ RoomService: Ожидание ${actualWaitTime}мс для соблюдения rate limit`);
-            }
-            await new Promise(resolve => setTimeout(resolve, actualWaitTime));
         }
 
         this.requestQueue.lastRequest = Date.now();
+    }
+
+    /**
+     * Планировщик одиночной повторной попытки после лимита
+     * @private
+     */
+    _scheduleRetry(waitMs) {
+        if (this._retryTimer) {
+            clearTimeout(this._retryTimer);
+            this._retryTimer = null;
+        }
+        this._retryTimer = setTimeout(() => {
+            this._retryTimer = null;
+            try { this.refreshRoomsList?.(); } catch (_) {}
+            try { this.getStats?.(); } catch (_) {}
+        }, Math.max(0, waitMs));
     }
 
     /**
@@ -415,8 +423,8 @@ class RoomService {
         let newBackoff = 0;
         
         if (preferredMs && preferredMs > 0) {
-            // Если сервер указал конкретное время ожидания
-            newBackoff = Math.min(preferredMs, this.requestQueue.maxBackoff);
+            // Если сервер указал конкретное время ожидания — уважаем полностью
+            newBackoff = preferredMs;
         } else if (this.requestQueue.currentBackoff === 0) {
             // Первая ошибка - минимальная задержка
             newBackoff = this.requestQueue.minInterval;
