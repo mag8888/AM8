@@ -291,7 +291,7 @@ function navigateToGameBoard(roomId) {
  */
 function startRoomDataPolling() {
     let lastUpdate = 0;
-    const minUpdateInterval = 30000; // Минимум 30 секунд между обновлениями
+    const minUpdateInterval = 60000; // Минимум 60 секунд между обновлениями
     
     // Обновляем данные комнаты с адаптивным интервалом
     setInterval(async () => {
@@ -309,11 +309,11 @@ function startRoomDataPolling() {
                 lastUpdate = now;
             } catch (error) {
                 console.warn('⚠️ Room: Ошибка периодического обновления:', error);
-                // При ошибке увеличиваем интервал
-                lastUpdate = now + 30000; // Ждем еще 30 секунд
+                // При ошибке увеличиваем интервал еще больше
+                lastUpdate = now + 120000; // Ждем еще 120 секунд
             }
         }
-    }, 15000); // Проверяем каждые 15 секунд, но обновляем не чаще чем раз в 30
+    }, 30000); // Проверяем каждые 30 секунд, но обновляем не чаще чем раз в 60
     
     console.log('🔄 Room: Запущено оптимизированное периодическое обновление данных комнаты');
 }
@@ -345,6 +345,27 @@ function setupEventListeners() {
     if (backButton) {
         backButton.addEventListener('click', () => {
             window.location.href = 'rooms.html';
+        });
+    }
+    
+    // Кнопка "Обновить"
+    const refreshButton = document.getElementById('refresh-room');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', async () => {
+            console.log('🔄 Room: Ручное обновление данных комнаты');
+            refreshButton.disabled = true;
+            refreshButton.textContent = '⏳ Обновляем...';
+            
+            try {
+                await loadRoomData();
+                showNotification('Данные комнаты обновлены', 'success');
+            } catch (error) {
+                console.error('❌ Room: Ошибка ручного обновления:', error);
+                showNotification('Ошибка обновления данных', 'error');
+            } finally {
+                refreshButton.disabled = false;
+                refreshButton.textContent = '🔄 Обновить';
+            }
         });
     }
     
@@ -546,18 +567,15 @@ async function loadRoomDataOptimized(roomId) {
         if (!response.ok) {
             if (response.status === 429) {
                 const retryAfter = response.headers.get('Retry-After');
-                const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 30000; // 30 секунд по умолчанию
+                const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 60000; // 60 секунд по умолчанию
                 
                 console.warn(`⚠️ Room: Rate limited, ожидание ${waitTime}мс`);
                 
                 // Показываем уведомление пользователю
                 showNotification(`Слишком частые запросы. Повторим через ${Math.ceil(waitTime/1000)} секунд`, 'warning');
                 
-                // Планируем повторную попытку
-                setTimeout(() => {
-                    console.log('🔄 Room: Повторная попытка загрузки после rate limit');
-                    loadRoomData();
-                }, waitTime);
+                // НЕ планируем автоматическую повторную попытку - пусть пользователь сам обновит
+                console.log('🚫 Room: Автоматическая повторная попытка отключена для предотвращения спама');
                 
                 return null;
             }
