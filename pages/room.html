@@ -255,6 +255,26 @@
                 script.async = true;
                 script.defer = true; // Дополнительная оптимизация
                 document.head.appendChild(script);
+                
+                // Принудительно запускаем инициализацию после загрузки room.js
+                if (src.includes('room.js')) {
+                    script.onload = () => {
+                        console.log('🚀 Room.js загружен, запускаем инициализацию');
+                        // Небольшая задержка для полной загрузки
+                        setTimeout(() => {
+                            if (typeof loadCachedRoomData === 'function') loadCachedRoomData();
+                            if (typeof displayUserInfo === 'function') displayUserInfo();
+                            if (typeof loadDreams === 'function') loadDreams();
+                            if (typeof loadTokens === 'function') loadTokens();
+                            
+                            requestIdleCallback(() => {
+                                if (typeof initializeServices === 'function') initializeServices();
+                                if (typeof setupEventListeners === 'function') setupEventListeners();
+                                if (typeof loadRoomData === 'function') loadRoomData();
+                            });
+                        }, 100);
+                    };
+                }
             });
         });
     </script>
