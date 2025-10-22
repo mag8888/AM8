@@ -1232,7 +1232,14 @@ class BankModuleServer {
         
         // Закрытие модуля
         const closeBtn = this.ui.querySelector('#bank-close-server');
-        closeBtn.addEventListener('click', () => this.close());
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                console.log('🏦 BankModuleServer: Клик по кнопке закрытия');
+                this.close();
+            });
+        } else {
+            console.warn('⚠️ BankModuleServer: Кнопка закрытия не найдена');
+        }
         
         // Обновление данных с сервера
         const refreshBtn = this.ui.querySelector('#refresh-server-data');
@@ -1340,10 +1347,18 @@ class BankModuleServer {
      * Закрытие банк модуля
      */
     close() {
-        if (this.ui) {
-            this.ui.style.display = 'none';
-            this.isOpen = false;
-            console.log('🏦 BankModuleServer: Закрыт');
+        try {
+            console.log('🏦 BankModuleServer: Закрытие модуля...');
+            
+            if (this.ui) {
+                this.ui.style.display = 'none';
+                this.isOpen = false;
+                console.log('✅ BankModuleServer: Модуль закрыт успешно');
+            } else {
+                console.warn('⚠️ BankModuleServer: UI не найден при закрытии');
+            }
+        } catch (error) {
+            console.error('❌ BankModuleServer: Ошибка при закрытии:', error);
         }
     }
     

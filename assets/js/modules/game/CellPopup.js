@@ -11,6 +11,11 @@ class CellPopup {
         
         console.log('📋 CellPopup: Инициализация');
         this.init();
+        
+        // Делаем экземпляр доступным глобально
+        if (typeof window !== 'undefined') {
+            window.cellPopup = this;
+        }
     }
     
     /**
@@ -86,6 +91,20 @@ class CellPopup {
             }
         };
         document.addEventListener('keydown', this.boundHandleKeydown);
+        
+        // Обработчик для кнопок действий
+        this.popupElement.addEventListener('click', (e) => {
+            const action = e.target.dataset.action;
+            if (action === 'close') {
+                this.hide();
+            } else if (action === 'start') {
+                this.handleStartAction();
+            } else if (action === 'dream') {
+                this.handleDreamAction();
+            } else if (action === 'profession') {
+                this.handleProfessionAction();
+            }
+        });
     }
     
     /**
@@ -326,14 +345,23 @@ class CellPopup {
      * Скрыть попап
      */
     hide() {
-        this.popupElement.classList.remove('show');
-        this.isVisible = false;
-        this.currentCellData = null;
-        
-        // Разблокируем скролл страницы
-        document.body.style.overflow = '';
-        
-        console.log('📋 CellPopup: Попап скрыт');
+        try {
+            console.log('📋 CellPopup: Скрытие попапа...');
+            
+            if (this.popupElement) {
+                this.popupElement.classList.remove('show');
+            }
+            
+            this.isVisible = false;
+            this.currentCellData = null;
+            
+            // Разблокируем скролл страницы
+            document.body.style.overflow = '';
+            
+            console.log('✅ CellPopup: Попап скрыт успешно');
+        } catch (error) {
+            console.error('❌ CellPopup: Ошибка при скрытии попапа:', error);
+        }
     }
     
     /**
@@ -476,7 +504,7 @@ class CellPopup {
         
         // Общие действия
         actions.push(`
-            <button class="popup-btn popup-btn-secondary" onclick="window.cellPopup.hide()">
+            <button class="popup-btn popup-btn-secondary" data-action="close">
                 Закрыть
             </button>
         `);
@@ -484,7 +512,7 @@ class CellPopup {
         // Специфичные действия в зависимости от типа
         if (cellData.type === 'start') {
             actions.push(`
-                <button class="popup-btn popup-btn-primary" onclick="window.cellPopup.handleStartAction()">
+                <button class="popup-btn popup-btn-primary" data-action="start">
                     Начать игру
                 </button>
             `);
@@ -492,7 +520,7 @@ class CellPopup {
         
         if (cellData.type === 'dream') {
             actions.push(`
-                <button class="popup-btn popup-btn-primary" onclick="window.cellPopup.handleDreamAction()">
+                <button class="popup-btn popup-btn-primary" data-action="dream">
                     Выбрать мечту
                 </button>
             `);
@@ -500,7 +528,7 @@ class CellPopup {
         
         if (cellData.type === 'profession') {
             actions.push(`
-                <button class="popup-btn popup-btn-primary" onclick="window.cellPopup.handleProfessionAction()">
+                <button class="popup-btn popup-btn-primary" data-action="profession">
                     Получить профессию
                 </button>
             `);
