@@ -1413,6 +1413,26 @@ class App {
         this._playerTokensForceUpdateCalled = false;
         console.log('🎯 App: Сброшен флаг _playerTokensForceUpdateCalled');
     }
+    
+    /**
+     * Запуск мониторинга производительности
+     * @private
+     */
+    _startPerformanceMonitoring() {
+        if (this.performanceMonitor) {
+            this.performanceMonitor.start();
+            this.logger?.info('Мониторинг производительности запущен', null, 'App');
+            
+            // Выводим отчет каждые 30 секунд в development режиме
+            if (this.config?.environment === 'development') {
+                setInterval(() => {
+                    this.performanceMonitor.printReport();
+                }, 30000);
+            }
+        } else {
+            this.logger?.warn('PerformanceMonitor не найден', null, 'App');
+        }
+    }
 }
 
 // Экспорт
@@ -1498,25 +1518,6 @@ if (typeof window !== 'undefined') {
     console.log('✅ Global: Функция window.forceUpdateAllComponents() доступна');
 }
 
-/**
- * Запуск мониторинга производительности
- * @private
- */
-_startPerformanceMonitoring() {
-    if (this.performanceMonitor) {
-        this.performanceMonitor.start();
-        this.logger?.info('Мониторинг производительности запущен', null, 'App');
-        
-        // Выводим отчет каждые 30 секунд в development режиме
-        if (this.config?.environment === 'development') {
-            setInterval(() => {
-                this.performanceMonitor.printReport();
-            }, 30000);
-        }
-    } else {
-        this.logger?.warn('PerformanceMonitor не найден', null, 'App');
-    }
-}
 
 // Автоматическая инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
