@@ -32,7 +32,7 @@
             this.eventBus = config.eventBus || null;
             this.refreshInterval = typeof config.refreshInterval === 'number'
                 ? config.refreshInterval
-                : 120000; // Оптимизируем до 2 минут для лучшего баланса
+                : 180000; // Увеличиваем до 3 минут для снижения нагрузки на сервер
 
             this.container = null;
             this.abortController = null;
