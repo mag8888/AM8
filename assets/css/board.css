@@ -475,8 +475,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 220px;
-    height: 220px;
+    width: 200px;
+    height: 200px;
     pointer-events: none; /* Клики через область */
 }
 
@@ -777,8 +777,8 @@
     }
     
     .center-area {
-        width: min(40vmin, 220px);
-        height: min(40vmin, 220px);
+        width: 200px;
+        height: 200px;
         display: flex;
         align-items: center;
         justify-content: center;
