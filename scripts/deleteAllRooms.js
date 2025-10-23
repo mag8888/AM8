@@ -6,14 +6,11 @@
  */
 
 const { MongoClient } = require('mongodb');
+const config = require('../config/database');
 
-// Конфигурация MongoDB
+// Конфигурация
 const CONFIG = {
-    MONGODB_USERNAME: process.env.MONGODB_USERNAME || 'xqrmedia_db_user',
-    MONGODB_PASSWORD: process.env.MONGODB_PASSWORD || 'pOs1rKxSv9Y3e7rl',
-    MONGODB_CLUSTER: process.env.MONGODB_CLUSTER || 'cluster0.wvumcaj.mongodb.net',
-    MONGODB_DATABASE: process.env.MONGODB_DATABASE || process.env.MONGODB_DB || 'aura_money',
-    MONGODB_OPTIONS: process.env.MONGODB_OPTIONS || 'retryWrites=true&w=majority&appName=Cluster0',
+    ...config.MONGODB,
     DRY_RUN: process.argv.includes('--dry-run'),
     VERBOSE: process.argv.includes('--verbose')
 };
@@ -23,17 +20,17 @@ async function deleteAllRooms() {
     
     try {
         // Подключение к MongoDB
-        const uri = `mongodb+srv://${CONFIG.MONGODB_USERNAME}:${CONFIG.MONGODB_PASSWORD}@${CONFIG.MONGODB_CLUSTER}/${CONFIG.MONGODB_DATABASE}?${CONFIG.MONGODB_OPTIONS}`;
+        const uri = CONFIG.URI;
         
         console.log('🔍 Подключение к MongoDB Atlas...');
         client = new MongoClient(uri);
         await client.connect();
         
-        const db = client.db(CONFIG.MONGODB_DATABASE);
+        const db = client.db(CONFIG.DATABASE);
         console.log('✅ Подключение установлено');
         
         // Получаем все комнаты
-        const rooms = await db.collection('rooms').find({}).toArray();
+        const rooms = await db.collection(config.COLLECTIONS.ROOMS).find({}).toArray();
         console.log(`📊 Всего комнат для удаления: ${rooms.length}`);
         
         if (rooms.length === 0) {
@@ -58,12 +55,12 @@ async function deleteAllRooms() {
         
         for (const room of rooms) {
             try {
-                // Удаляем игроков комнаты
-                const playersResult = await db.collection('room_players').deleteMany({ room_id: room.id });
+                        // Удаляем игроков комнаты
+                        const playersResult = await db.collection(config.COLLECTIONS.PLAYERS).deleteMany({ room_id: room.id });
                 console.log(`✅ Удалены игроки комнаты ${room.name} (${playersResult.deletedCount} записей)`);
                 
                 // Удаляем саму комнату
-                const roomResult = await db.collection('rooms').deleteOne({ _id: room._id });
+                const roomResult = await db.collection(config.COLLECTIONS.ROOMS).deleteOne({ _id: room._id });
                 
                 if (roomResult.deletedCount > 0) {
                     deletedCount++;
@@ -92,7 +89,7 @@ async function deleteAllRooms() {
         }
         
         // Проверяем результат
-        const remainingRooms = await db.collection('rooms').find({}).count();
+        const remainingRooms = await db.collection(config.COLLECTIONS.ROOMS).find({}).count();
         console.log(`📊 Осталось комнат в базе: ${remainingRooms}`);
         
         if (remainingRooms === 0) {

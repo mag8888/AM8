@@ -1,11 +1,13 @@
 const { MongoClient } = require('mongodb');
+const config = require('../config/database');
 
 let cachedClient = null;
 let cachedDb = null;
 
 async function connectMongo() {
-    const uri = process.env.MONGODB_URI || process.env.MONGO_URL;
-    const dbName = process.env.MONGODB_DB || 'aura_money';
+    // Используем стандартизированную конфигурацию
+    const uri = process.env.MONGODB_URI || process.env.MONGO_URL || config.MONGODB.URI;
+    const dbName = config.MONGODB.DATABASE;
 
     if (!uri) {
         throw new Error('MongoDB URI is not provided (MONGODB_URI/MONGO_URL)');
@@ -15,18 +17,15 @@ async function connectMongo() {
         return { client: cachedClient, db: cachedDb };
     }
 
-    const client = new MongoClient(uri, { 
-        maxPoolSize: 10,
-        serverSelectionTimeoutMS: 5000
-    });
+    const client = new MongoClient(uri, config.CONNECTION);
     await client.connect();
     const db = client.db(dbName);
     cachedClient = client;
     cachedDb = db;
 
     // Indexes
-    await db.collection('rooms').createIndex({ id: 1 }, { unique: true });
-    await db.collection('rooms').createIndex({ status: 1, createdAt: -1 });
+    await db.collection(config.COLLECTIONS.ROOMS).createIndex({ id: 1 }, { unique: true });
+    await db.collection(config.COLLECTIONS.ROOMS).createIndex({ status: 1, createdAt: -1 });
 
     return { client, db };
 }

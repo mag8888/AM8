@@ -6,14 +6,11 @@
  */
 
 const { MongoClient } = require('mongodb');
+const config = require('../config/database');
 
-// Конфигурация MongoDB
+// Конфигурация
 const CONFIG = {
-    MONGODB_USERNAME: process.env.MONGODB_USERNAME || 'xqrmedia_db_user',
-    MONGODB_PASSWORD: process.env.MONGODB_PASSWORD || 'pOs1rKxSv9Y3e7rl',
-    MONGODB_CLUSTER: process.env.MONGODB_CLUSTER || 'cluster0.wvumcaj.mongodb.net',
-    MONGODB_DATABASE: process.env.MONGODB_DATABASE || process.env.MONGODB_DB || 'aura_money',
-    MONGODB_OPTIONS: process.env.MONGODB_OPTIONS || 'retryWrites=true&w=majority&appName=Cluster0'
+    ...config.MONGODB
 };
 
 async function checkRoomsAge() {
@@ -21,17 +18,17 @@ async function checkRoomsAge() {
     
     try {
         // Подключение к MongoDB
-        const uri = `mongodb+srv://${CONFIG.MONGODB_USERNAME}:${CONFIG.MONGODB_PASSWORD}@${CONFIG.MONGODB_CLUSTER}/${CONFIG.MONGODB_DATABASE}?${CONFIG.MONGODB_OPTIONS}`;
+        const uri = CONFIG.URI;
         
         console.log('🔍 Подключение к MongoDB Atlas...');
         client = new MongoClient(uri);
         await client.connect();
         
-        const db = client.db(CONFIG.MONGODB_DATABASE);
+        const db = client.db(CONFIG.DATABASE);
         console.log('✅ Подключение установлено');
         
         // Получаем все комнаты
-        const rooms = await db.collection('rooms').find({}).toArray();
+        const rooms = await db.collection(config.COLLECTIONS.ROOMS).find({}).toArray();
         console.log(`📊 Всего комнат: ${rooms.length}`);
         
         // Анализируем возраст комнат
