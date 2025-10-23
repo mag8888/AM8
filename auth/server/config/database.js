@@ -22,8 +22,19 @@ class DatabaseConfig {
      * @returns {string} Строка подключения
      */
     buildConnectionString() {
-        // Сначала проверяем, есть ли полная строка подключения
+        // Приоритет Railway MongoDB переменных
+        console.log('📊 Database: RAILWAY_MONGODB_URI:', process.env.RAILWAY_MONGODB_URI ? 'SET' : 'NOT SET');
         console.log('📊 Database: MONGODB_URI:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
+        
+        // 1. Сначала проверяем Railway MongoDB
+        if (process.env.RAILWAY_MONGODB_URI) {
+            console.log('📊 Database: Используется Railway MongoDB');
+            console.log('📊 Database: URI length:', process.env.RAILWAY_MONGODB_URI.length);
+            console.log('📊 Database: URI starts with:', process.env.RAILWAY_MONGODB_URI.substring(0, 20));
+            return process.env.RAILWAY_MONGODB_URI;
+        }
+        
+        // 2. Затем проверяем обычный MONGODB_URI
         if (process.env.MONGODB_URI) {
             console.log('📊 Database: Используется MONGODB_URI');
             console.log('📊 Database: URI length:', process.env.MONGODB_URI.length);
@@ -39,6 +50,7 @@ class DatabaseConfig {
             return uri;
         }
 
+        // 3. Fallback к старой конфигурации (только если нет других вариантов)
         const username = process.env.MONGODB_USERNAME || 'aura_money_user';
         const password = process.env.MONGODB_PASSWORD || 'password123';
         const cluster = process.env.MONGODB_CLUSTER || 'cluster0.xyz123.mongodb.net';
@@ -49,7 +61,7 @@ class DatabaseConfig {
         const encodedPassword = encodeURIComponent(password);
         const connectionString = `mongodb+srv://${username}:${encodedPassword}@${cluster}/${database}?${options}`;
         
-        console.log('📊 Database: Connection string built');
+        console.log('📊 Database: Connection string built (fallback)');
         console.log('📊 Database: Username:', username);
         console.log('📊 Database: Cluster:', cluster);
         console.log('📊 Database: Database:', database);
@@ -92,8 +104,14 @@ class DatabaseConfig {
                 return;
             }
 
-            console.log('📊 Database: Подключение к MongoDB Atlas...');
-            console.log(`📊 Database: Cluster: ${process.env.MONGODB_CLUSTER || 'cluster0.xyz123.mongodb.net'}`);
+            if (process.env.RAILWAY_MONGODB_URI) {
+                console.log('📊 Database: Подключение к Railway MongoDB...');
+            } else if (process.env.MONGODB_URI) {
+                console.log('📊 Database: Подключение к MongoDB Atlas...');
+            } else {
+                console.log('📊 Database: Подключение к MongoDB Atlas (fallback)...');
+                console.log(`📊 Database: Cluster: ${process.env.MONGODB_CLUSTER || 'cluster0.xyz123.mongodb.net'}`);
+            }
 
             // Закрываем существующие подключения только если они есть
             if (mongoose.connection.readyState !== 0) {
@@ -104,7 +122,11 @@ class DatabaseConfig {
             await mongoose.connect(this.connectionString, this.options);
 
             this.isConnected = true;
-            console.log('✅ Database: Успешно подключено к MongoDB Atlas');
+            if (process.env.RAILWAY_MONGODB_URI) {
+                console.log('✅ Database: Успешно подключено к Railway MongoDB');
+            } else {
+                console.log('✅ Database: Успешно подключено к MongoDB Atlas');
+            }
 
             // Обработчики событий (устанавливаем только один раз)
             if (!this.eventHandlersSet) {
