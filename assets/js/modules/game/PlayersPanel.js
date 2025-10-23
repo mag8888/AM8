@@ -75,33 +75,9 @@ class PlayersPanel {
             } catch (_) {}
         }
         
-        // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопок после инициализации (короткий setTimeout для правильной инициализации)
+        // Активация кнопок после инициализации
         setTimeout(() => {
             this.forceUpdateAllButtons();
-            
-            // ДОПОЛНИТЕЛЬНАЯ АКТИВАЦИЯ: принудительно активируем кнопку броска если это ход игрока
-            const rollBtn = document.getElementById('roll-dice-btn');
-            if (rollBtn) {
-                const currentUserId = this.getCurrentUserId();
-                const state = this.gameStateManager?.getState?.() || {};
-                const activePlayer = state.activePlayer;
-                const isMyTurn = activePlayer && currentUserId && 
-                    (activePlayer.id === currentUserId || 
-                     activePlayer.userId === currentUserId || 
-                     activePlayer.username === currentUserId);
-                
-                if (isMyTurn) {
-                    console.log('🚀 PlayersPanel: ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ в init() - это ход игрока');
-                    rollBtn.disabled = false;
-                    rollBtn.classList.add('active');
-                    rollBtn.style.opacity = '1';
-                    rollBtn.style.cursor = 'pointer';
-                    rollBtn.style.pointerEvents = 'auto';
-                    rollBtn.style.backgroundColor = '#4CAF50';
-                    rollBtn.style.color = 'white';
-                    rollBtn.style.transform = 'scale(1.05)';
-                }
-            }
         }, 100);
         
         // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА через 1 секунду для надежности
@@ -1653,19 +1629,6 @@ class PlayersPanel {
             // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI для кнопки броска
             this.forceUpdateButtonUI(rollBtn);
             
-            // ДОПОЛНИТЕЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ через setTimeout
-            if (isMyTurn) {
-                setTimeout(() => {
-                    if (rollBtn && rollBtn.disabled) {
-                        console.log('🔧 PlayersPanel: ДОПОЛНИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Бросок" через setTimeout');
-                        rollBtn.disabled = false;
-                        rollBtn.classList.add('active');
-                        rollBtn.style.opacity = '1';
-                        rollBtn.style.cursor = 'pointer';
-                        rollBtn.style.pointerEvents = 'auto';
-                    }
-                }, 100);
-            }
         }
         
         // Кнопка передачи хода - активна если это мой ход (по умолчанию true если не указано иное)
@@ -1714,64 +1677,7 @@ class PlayersPanel {
             this.forceUpdateButtonUI(moveBtn);
         }
         
-        // ДОПОЛНИТЕЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ: если это ход игрока, но кнопки все еще отключены
-        if (isMyTurn && rollBtn && rollBtn.disabled) {
-            console.log('🔧 PlayersPanel: ФИНАЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Бросок"');
-            rollBtn.disabled = false;
-            rollBtn.classList.add('active');
-            
-            // АГРЕССИВНОЕ ОБНОВЛЕНИЕ СТИЛЕЙ
-            rollBtn.style.opacity = '1';
-            rollBtn.style.cursor = 'pointer';
-            rollBtn.style.pointerEvents = 'auto';
-            rollBtn.style.backgroundColor = '#4CAF50';
-            rollBtn.style.color = 'white';
-            rollBtn.style.transform = 'scale(1.05)';
-            
-            this.forceUpdateButtonUI(rollBtn);
-        }
         
-        if (isMyTurn && moveBtn && moveBtn.disabled) {
-            console.log('🔧 PlayersPanel: ФИНАЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Движение"');
-            moveBtn.disabled = false;
-            moveBtn.classList.add('active');
-            this.forceUpdateButtonUI(moveBtn);
-        }
-        
-        // СУПЕР АГРЕССИВНАЯ АКТИВАЦИЯ: принудительно активируем кнопку броска если это ход игрока
-        if (isMyTurn && rollBtn) {
-            setTimeout(() => {
-                console.log('🚀 PlayersPanel: СУПЕР АГРЕССИВНАЯ АКТИВАЦИЯ кнопки "Бросок"');
-                rollBtn.disabled = false;
-                rollBtn.classList.add('active');
-                rollBtn.style.opacity = '1';
-                rollBtn.style.cursor = 'pointer';
-                rollBtn.style.pointerEvents = 'auto';
-                rollBtn.style.backgroundColor = '#4CAF50';
-                rollBtn.style.color = 'white';
-                rollBtn.style.transform = 'scale(1.05)';
-                
-                // Принудительно обновляем атрибуты
-                rollBtn.setAttribute('disabled', 'false');
-                rollBtn.removeAttribute('disabled');
-                
-                console.log('✅ PlayersPanel: Кнопка "Бросок" ПРИНУДИТЕЛЬНО АКТИВИРОВАНА');
-            }, 50);
-        }
-        
-        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если активный игрок "admin", принудительно активируем кнопку
-        if (activePlayer && activePlayer.username === 'admin' && rollBtn) {
-            console.log('🔧 PlayersPanel: ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ для admin');
-            rollBtn.disabled = false;
-            rollBtn.classList.add('active');
-            rollBtn.style.opacity = '1';
-            rollBtn.style.cursor = 'pointer';
-            rollBtn.style.pointerEvents = 'auto';
-            rollBtn.style.backgroundColor = '#4CAF50';
-            rollBtn.style.color = 'white';
-            rollBtn.style.transform = 'scale(1.05)';
-            rollBtn.removeAttribute('disabled');
-        }
         
         console.log('🎯 PlayersPanel: Обновлены кнопки управления:', {
             currentUserId,
@@ -1962,14 +1868,6 @@ class PlayersPanel {
         try {
             console.log('🎲 PlayersPanel: Обработка броска кубиков');
             
-            // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки перед броском
-            const rollBtn = document.getElementById('roll-dice-btn');
-            if (rollBtn && rollBtn.disabled) {
-                console.log('🔧 PlayersPanel: Принудительная активация кнопки перед броском');
-                rollBtn.disabled = false;
-                rollBtn.classList.add('active');
-                this.forceUpdateButtonUI(rollBtn);
-            }
             
             const app = window.app;
             const turnService = app && app.getModule ? app.getModule('turnService') : null;
@@ -2037,114 +1935,21 @@ class PlayersPanel {
             const passBtn = document.getElementById('pass-turn');
             const moveBtn = document.getElementById('move-btn');
             
-            // НОВЫЙ МЕХАНИЗМ: Активация кнопки "Бросок" на основе TurnService
+            // ОБЩАЯ ФУНКЦИЯ: Активация кнопок броска на основе TurnService
+            const shouldActivate = this.checkIfShouldActivateDiceButtons();
+            
+            // Активация кнопки "Бросить" (roll-dice-btn)
             if (rollBtn) {
-                const currentUserId = this.getCurrentUserId();
-                const currentUsername = this.getCurrentUsername();
-                
-                // Проверяем через TurnService
-                let shouldActivate = false;
-                try {
-                    const turnService = window.app?.getModule?.('turnService');
-                    if (turnService) {
-                        shouldActivate = turnService.canRoll() && turnService.isMyTurn();
-                        console.log('🔧 PlayersPanel: TurnService проверка:', { 
-                            canRoll: turnService.canRoll(), 
-                            isMyTurn: turnService.isMyTurn(), 
-                            shouldActivate 
-                        });
-                    }
-                } catch (error) {
-                    console.warn('⚠️ PlayersPanel: Ошибка проверки TurnService:', error);
-                }
-                
-                // Fallback: проверяем по имени пользователя в интерфейсе
-                if (!shouldActivate) {
-                    const activePlayerText = document.querySelector('#current-player-name')?.textContent || '';
-                    const isAdminTurn = activePlayerText.includes('admin') && currentUsername === 'admin';
-                    const isRomanTurn = activePlayerText.includes('roman') && currentUsername === 'roman';
-                    shouldActivate = isAdminTurn || isRomanTurn;
-                    console.log('🔧 PlayersPanel: Fallback проверка:', { 
-                        activePlayerText, 
-                        currentUsername, 
-                        isAdminTurn, 
-                        isRomanTurn, 
-                        shouldActivate 
-                    });
-                }
-                
-                if (shouldActivate) {
-                    console.log('🔧 PlayersPanel: Активация кнопки "Бросок"');
-                    rollBtn.disabled = false;
-                    rollBtn.classList.add('active');
-                    rollBtn.style.opacity = '1';
-                    rollBtn.style.cursor = 'pointer';
-                    rollBtn.style.pointerEvents = 'auto';
-                    rollBtn.style.backgroundColor = '#4CAF50';
-                    rollBtn.style.color = 'white';
-                    rollBtn.removeAttribute('disabled');
-                } else {
-                    console.log('🔧 PlayersPanel: Кнопка "Бросок" остается отключенной');
-                }
-                
-                this.forceUpdateButtonUI(rollBtn);
+                this.activateDiceButton(rollBtn, 'Бросить', shouldActivate);
             }
             
             if (passBtn) {
                 this.forceUpdateButtonUI(passBtn);
             }
             
+            // Активация кнопки "🎲🎲 Бросок" (move-btn) - основная кнопка в интерфейсе
             if (moveBtn) {
-                // АКТИВАЦИЯ КНОПКИ "🎲🎲 БРОСОК" (move-btn) - основная кнопка в интерфейсе
-                const currentUserId = this.getCurrentUserId();
-                const currentUsername = this.getCurrentUsername();
-                
-                // Проверяем через TurnService
-                let shouldActivate = false;
-                try {
-                    const turnService = window.app?.getModule?.('turnService');
-                    if (turnService) {
-                        shouldActivate = turnService.canRoll() && turnService.isMyTurn();
-                        console.log('🔧 PlayersPanel: TurnService проверка для move-btn:', { 
-                            canRoll: turnService.canRoll(), 
-                            isMyTurn: turnService.isMyTurn(), 
-                            shouldActivate 
-                        });
-                    }
-                } catch (error) {
-                    console.warn('⚠️ PlayersPanel: Ошибка проверки TurnService для move-btn:', error);
-                }
-                
-                // Fallback: проверяем по имени пользователя в интерфейсе
-                if (!shouldActivate) {
-                    const activePlayerText = document.querySelector('#current-player-name')?.textContent || '';
-                    const isAdminTurn = activePlayerText.includes('admin') && currentUsername === 'admin';
-                    const isRomanTurn = activePlayerText.includes('roman') && currentUsername === 'roman';
-                    shouldActivate = isAdminTurn || isRomanTurn;
-                    console.log('🔧 PlayersPanel: Fallback проверка для move-btn:', { 
-                        activePlayerText, 
-                        currentUsername, 
-                        isAdminTurn, 
-                        isRomanTurn, 
-                        shouldActivate 
-                    });
-                }
-                
-                if (shouldActivate) {
-                    console.log('🔧 PlayersPanel: Активация кнопки "🎲🎲 Бросок"');
-                    moveBtn.disabled = false;
-                    moveBtn.classList.add('active');
-                    moveBtn.style.opacity = '1';
-                    moveBtn.style.cursor = 'pointer';
-                    moveBtn.style.pointerEvents = 'auto';
-                    moveBtn.style.backgroundColor = '#4CAF50';
-                    moveBtn.style.color = 'white';
-                    moveBtn.removeAttribute('disabled');
-                } else {
-                    console.log('🔧 PlayersPanel: Кнопка "🎲🎲 Бросок" остается отключенной');
-                }
-                
-                this.forceUpdateButtonUI(moveBtn);
+                this.activateDiceButton(moveBtn, '🎲🎲 Бросок', shouldActivate);
             }
             
             console.log('✅ PlayersPanel: Все кнопки обновлены принудительно');
@@ -3735,6 +3540,72 @@ class PlayersPanel {
         this._isDestroyed = true;
         
         console.log('✅ PlayersPanel v2.0: Полностью очищен с улучшенной очисткой памяти');
+    }
+    
+    /**
+     * Проверка, должна ли активироваться кнопка броска кубика
+     * @returns {boolean} true, если кнопка должна быть активна
+     */
+    checkIfShouldActivateDiceButtons() {
+        const currentUserId = this.getCurrentUserId();
+        const currentUsername = this.getCurrentUsername();
+        
+        // Проверяем через TurnService
+        let shouldActivate = false;
+        try {
+            const turnService = window.app?.getModule?.('turnService');
+            if (turnService) {
+                shouldActivate = turnService.canRoll() && turnService.isMyTurn();
+                console.log('🔧 PlayersPanel: TurnService проверка:', { 
+                    canRoll: turnService.canRoll(), 
+                    isMyTurn: turnService.isMyTurn(), 
+                    shouldActivate 
+                });
+            }
+        } catch (error) {
+            console.warn('⚠️ PlayersPanel: Ошибка проверки TurnService:', error);
+        }
+        
+        // Fallback: проверяем по имени пользователя в интерфейсе
+        if (!shouldActivate) {
+            const activePlayerText = document.querySelector('#current-player-name')?.textContent || '';
+            const isAdminTurn = activePlayerText.includes('admin') && currentUsername === 'admin';
+            const isRomanTurn = activePlayerText.includes('roman') && currentUsername === 'roman';
+            shouldActivate = isAdminTurn || isRomanTurn;
+            console.log('🔧 PlayersPanel: Fallback проверка:', { 
+                activePlayerText, 
+                currentUsername, 
+                isAdminTurn, 
+                isRomanTurn, 
+                shouldActivate 
+            });
+        }
+        
+        return shouldActivate;
+    }
+    
+    /**
+     * Активация кнопки броска кубика
+     * @param {HTMLElement} button - Элемент кнопки
+     * @param {string} buttonName - Название кнопки для логов
+     * @param {boolean} shouldActivate - Должна ли кнопка быть активна
+     */
+    activateDiceButton(button, buttonName, shouldActivate) {
+        if (shouldActivate) {
+            console.log(`🔧 PlayersPanel: Активация кнопки "${buttonName}"`);
+            button.disabled = false;
+            button.classList.add('active');
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+            button.style.pointerEvents = 'auto';
+            button.style.backgroundColor = '#4CAF50';
+            button.style.color = 'white';
+            button.removeAttribute('disabled');
+        } else {
+            console.log(`🔧 PlayersPanel: Кнопка "${buttonName}" остается отключенной`);
+        }
+        
+        this.forceUpdateButtonUI(button);
     }
 }
 
