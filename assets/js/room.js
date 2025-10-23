@@ -898,7 +898,17 @@ function updatePlayersList() {
         // Используем name или username для отображения
         const playerName = player.name || player.username || 'Неизвестный игрок';
         const avatar = player.avatar || playerName.charAt(0).toUpperCase();
-        const status = Boolean(player.isReady) ? 'Готов' : 'Готовится';
+        // Определяем статус игрока более точно
+        let status = 'Готовится';
+        if (Boolean(player.isReady)) {
+            status = 'Готов';
+        } else if (player.dream && player.token) {
+            // Если мечта и фишка выбраны, но игрок еще не отметился как готов
+            status = 'Готовится';
+        } else {
+            // Если что-то не выбрано
+            status = 'Выбирает';
+        }
         
         playerItem.innerHTML = `
             <div class="player-avatar">${avatar}</div>
@@ -1569,9 +1579,9 @@ function updateReadyStatus() {
             readyButton.className = 'btn btn-success btn-large';
             console.log('🔍 Room: Показываем "Готов к игре" - игрок готов');
         } else {
-            readyButton.innerHTML = '❌ Не готов';
-            readyButton.className = 'btn btn-secondary btn-large';
-            console.log('🔍 Room: Показываем "Не готов" - игрок не готов');
+            readyButton.innerHTML = '✅ Я готов к игре!';
+            readyButton.className = 'btn btn-primary btn-large';
+            console.log('🔍 Room: Показываем "Я готов к игре" - игрок может быть готов');
         }
     } else {
         // Если игрок не может быть готов (не выбрал мечту или фишку)
