@@ -848,10 +848,11 @@ router.post('/', async (req, res, next) => {
             const playerId = uuidv4();
 
             // Создаем комнату
+            const createdAt = new Date().toISOString();
             db.run(
-                `INSERT INTO rooms (id, name, description, max_players, current_players, turn_time, assign_professions, creator_id) 
-                 VALUES (?, ?, ?, ?, 1, ?, ?, ?)`,
-                [roomId, name, description, maxPlayers, turnTime, assignProfessions ? 1 : 0, user.id],
+                `INSERT INTO rooms (id, name, description, max_players, current_players, turn_time, assign_professions, creator_id, created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
+                [roomId, name, description, maxPlayers, turnTime, assignProfessions ? 1 : 0, user.id, createdAt, createdAt],
                 function(err) {
                     if (err) {
                         return next(err);
