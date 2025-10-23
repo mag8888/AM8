@@ -655,6 +655,39 @@ function updateUserInfo() {
 }
 
 /**
+ * Добавление комнаты в список без API запроса
+ */
+function addRoomToList(room) {
+    try {
+        console.log('🏠 Rooms: Добавляем комнату в список:', room.name);
+        
+        const roomsList = document.getElementById('rooms-list');
+        if (!roomsList) {
+            console.warn('⚠️ Rooms: Элемент rooms-list не найден');
+            return;
+        }
+        
+        // Создаем карточку комнаты
+        const roomCard = createRoomCard(room, true); // true = isNewRoom для анимации
+        
+        // Добавляем в начало списка
+        roomsList.insertAdjacentHTML('afterbegin', roomCard);
+        
+        // Обновляем счетчик комнат
+        const roomsCount = document.getElementById('rooms-count');
+        if (roomsCount) {
+            const currentCount = parseInt(roomsCount.textContent) || 0;
+            roomsCount.textContent = `${currentCount + 1} комнат`;
+        }
+        
+        console.log('✅ Rooms: Комната добавлена в список');
+        
+    } catch (error) {
+        console.error('❌ Rooms: Ошибка добавления комнаты в список:', error);
+    }
+}
+
+/**
  * Создание карточки комнаты
  */
 function createRoomCard(room, isNewRoom = false) {
@@ -967,8 +1000,13 @@ async function handleCreateRoom(event) {
         hideCreateRoomModal();
         showNotification('Комната создана успешно!', 'success');
         
-        // Перезагружаем список комнат
-        await loadRooms();
+        // Немедленно добавляем комнату в список без API запроса
+        addRoomToList(room);
+        
+        // Перезагружаем список комнат (с rate limiting)
+        setTimeout(async () => {
+            await loadRooms();
+        }, 2000); // Задержка 2 секунды для rate limiting
         
         // Принудительно обновляем список комнат для других пользователей
         await forceRefreshRooms();

@@ -55,17 +55,17 @@ class RoomService {
         // Rate limiting для предотвращения HTTP 429 - оптимизирован для игровых действий
         this.requestQueue = {
             lastRequest: 0,
-            minInterval: 5000, // 5 секунд между запросами для предотвращения 429
-            backoffMultiplier: 1.3, // Умеренный рост backoff
-            maxBackoff: 30000, // Максимум 30 секунд backoff
+            minInterval: 1000, // 1 секунда между запросами (было 5 секунд)
+            backoffMultiplier: 1.2, // Более мягкий рост backoff (было 1.3)
+            maxBackoff: 5000, // Максимум 5 секунд backoff (было 30 секунд)
             currentBackoff: 0,
             rateLimitedUntil: 0,
             // Система приоритетов
             priorities: {
                 CRITICAL: 0,    // Игровые действия (бросок, ход)
                 HIGH: 1,        // Состояние игры, банк
-                NORMAL: 2,      // Список комнат, статистика
-                LOW: 3          // Фоновые обновления
+                NORMAL: 1,      // Список комнат, статистика (было 2)
+                LOW: 2          // Фоновые обновления (было 3)
             }
         };
     }
