@@ -12,7 +12,7 @@ const CONFIG = {
     MONGODB_USERNAME: process.env.MONGODB_USERNAME || 'xqrmedia_db_user',
     MONGODB_PASSWORD: process.env.MONGODB_PASSWORD || 'pOs1rKxSv9Y3e7rl',
     MONGODB_CLUSTER: process.env.MONGODB_CLUSTER || 'cluster0.wvumcaj.mongodb.net',
-    MONGODB_DATABASE: process.env.MONGODB_DATABASE || 'energy_money_game',
+    MONGODB_DATABASE: process.env.MONGODB_DATABASE || process.env.MONGODB_DB || 'aura_money',
     MONGODB_OPTIONS: process.env.MONGODB_OPTIONS || 'retryWrites=true&w=majority&appName=Cluster0',
     DRY_RUN: process.argv.includes('--dry-run'),
     VERBOSE: process.argv.includes('--verbose')
