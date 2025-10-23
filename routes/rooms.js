@@ -1624,3 +1624,4 @@ router.delete('/:id/players/:playerId', async (req, res, next) => {
         next(error);
     }
 });
+

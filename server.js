@@ -225,7 +225,16 @@ async function startServer() {
             console.log('✅ MongoDB подключена');
 
             const { initializeCards } = require('./scripts/initCards');
-            await initializeCards();
+
+// Railway MongoDB Configuration
+// Приоритет: RAILWAY_MONGODB_URI > MONGODB_URI > MONGO_URL
+if (process.env.RAILWAY_MONGODB_URI) {
+    console.log('🗄️ DB: Используем Railway MongoDB');
+} else if (process.env.MONGODB_URI) {
+    console.log('🗄️ DB: Используем MongoDB Atlas');
+} else {
+    console.log('🗄️ DB: Используем локальную SQLite');
+}            await initializeCards();
             console.log('✅ Карточные колоды инициализированы');
         } catch (cardsError) {
             console.error('❌ Ошибка подключения к MongoDB или инициализации карточных колод:', cardsError);
@@ -253,6 +262,21 @@ async function startServer() {
             console.log('🛑 Получен SIGINT, завершаем сервер...');
             server.close(() => {
                 console.log('✅ Сервер завершен');
+                process.exit(0);
+            });
+        });
+
+    } catch (error) {
+        console.error('❌ Ошибка запуска сервера:', error);
+        process.exit(1);
+    }
+}
+
+// Запускаем сервер
+startServer();
+
+module.exports = app;
+
                 process.exit(0);
             });
         });

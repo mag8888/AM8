@@ -686,7 +686,7 @@ class BankPreview {
             this.render();
         }
         if (!this.previewElement || !bankData) return;
-
+        
         const normalized = this._normalizeBankData(bankData);
         const incomingValid = this._isValidSnapshot(normalized);
         const currentSnapshot = this._lastBankSnapshot;

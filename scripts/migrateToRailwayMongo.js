@@ -4,7 +4,7 @@
  * Скрипт миграции данных из MongoDB Atlas в MongoDB на Railway
  * 
  * Использование:
- * node scripts/migrateToRailwayMongo.js
+ * node scripts/migrateToRailwayMongo.js [--dry-run] [--verbose]
  */
 
 const { MongoClient } = require('mongodb');

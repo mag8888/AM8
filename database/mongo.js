@@ -5,16 +5,16 @@ let cachedClient = null;
 let cachedDb = null;
 
 async function connectMongo() {
-    // Используем стандартизированную конфигурацию
-    // Приоритет: Railway MongoDB -> MongoDB Atlas -> Config
-const uri = process.env.RAILWAY_MONGODB_URI || 
-            process.env.MONGODB_URI || 
-            process.env.MONGO_URL || 
-            config.MONGODB.URI;
-    const dbName = config.MONGODB.DATABASE;
+    // Приоритет Railway MongoDB переменных
+    const uri = process.env.RAILWAY_MONGODB_URI || 
+                process.env.MONGODB_URI || 
+                process.env.MONGO_URL || 
+                config.MONGODB.URI;
+    const dbName = process.env.RAILWAY_MONGODB_DATABASE || 
+                   config.MONGODB.DATABASE;
 
     if (!uri) {
-        throw new Error('MongoDB URI is not provided (MONGODB_URI/MONGO_URL)');
+        throw new Error('MongoDB URI is not provided (RAILWAY_MONGODB_URI/MONGODB_URI/MONGO_URL)');
     }
 
     if (cachedClient && cachedDb) {
@@ -27,7 +27,7 @@ const uri = process.env.RAILWAY_MONGODB_URI ||
     cachedClient = client;
     cachedDb = db;
 
-    // Indexes
+    // Создаем индексы
     await db.collection(config.COLLECTIONS.ROOMS).createIndex({ id: 1 }, { unique: true });
     await db.collection(config.COLLECTIONS.ROOMS).createIndex({ status: 1, createdAt: -1 });
 
@@ -35,10 +35,7 @@ const uri = process.env.RAILWAY_MONGODB_URI ||
 }
 
 function getDbSync() {
-    // Return cached if exists, otherwise null to force async path
     return cachedDb;
 }
 
 module.exports = { connectMongo, getDbSync };
-
-

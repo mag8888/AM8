@@ -36,7 +36,13 @@ class AuthServer {
     async init() {
         try {
             console.log('🚀 AuthServer: Инициализация...');
-            
+
+// Railway MongoDB Detection
+if (process.env.RAILWAY_MONGODB_URI) {
+    console.log('🗄️ Auth: Используется Railway MongoDB для хранения пользователей');
+} else {
+    console.log('🗄️ Auth: Используется MongoDB Atlas для хранения пользователей');
+}            
             // Подключение к базе данных (только для MongoDB)
             const useMongoDB = process.env.USE_MONGODB !== 'false';
             if (useMongoDB) {
