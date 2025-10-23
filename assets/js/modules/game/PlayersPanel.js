@@ -1950,6 +1950,19 @@ class PlayersPanel {
             // Активация кнопки "🎲🎲 Бросок" (move-btn) - основная кнопка в интерфейсе
             if (moveBtn) {
                 this.activateDiceButton(moveBtn, '🎲🎲 Бросок', shouldActivate);
+                
+                // ДОПОЛНИТЕЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ для move-btn
+                if (shouldActivate && moveBtn.disabled) {
+                    console.log('🔧 PlayersPanel: ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ move-btn');
+                    moveBtn.disabled = false;
+                    moveBtn.classList.add('active');
+                    moveBtn.style.opacity = '1';
+                    moveBtn.style.cursor = 'pointer';
+                    moveBtn.style.pointerEvents = 'auto';
+                    moveBtn.style.backgroundColor = '#4CAF50';
+                    moveBtn.style.color = 'white';
+                    moveBtn.removeAttribute('disabled');
+                }
             }
             
             console.log('✅ PlayersPanel: Все кнопки обновлены принудительно');
