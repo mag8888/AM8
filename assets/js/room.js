@@ -899,7 +899,7 @@ function updatePlayersList() {
         const playerName = player.name || player.username || 'Неизвестный игрок';
         const avatar = player.avatar || playerName.charAt(0).toUpperCase();
         // Определяем статус игрока более точно
-        let status = 'Готовится';
+        let status = 'Выбирает';
         if (Boolean(player.isReady)) {
             status = 'Готов';
         } else if (player.dream && player.token) {
@@ -909,6 +909,16 @@ function updatePlayersList() {
             // Если что-то не выбрано
             status = 'Выбирает';
         }
+        
+        // Дополнительная отладка для понимания статуса игрока
+        console.log('🔍 Room: Статус игрока:', {
+            playerName: playerName,
+            isReady: player.isReady,
+            isReadyType: typeof player.isReady,
+            dream: player.dream,
+            token: player.token,
+            status: status
+        });
         
         playerItem.innerHTML = `
             <div class="player-avatar">${avatar}</div>
@@ -1740,6 +1750,14 @@ async function toggleReadyStatus() {
         console.log('🔄 Room: Обновляем кнопку готовности...');
         updateReadyStatus();
         console.log('✅ Room: Кнопка готовности обновлена');
+        
+        // Дополнительное обновление для синхронизации статуса
+        setTimeout(async () => {
+            console.log('🔄 Room: Дополнительное обновление для синхронизации статуса...');
+            await refreshRoomData();
+            updateReadyStatus();
+            console.log('✅ Room: Дополнительное обновление завершено');
+        }, 1000);
         
         console.log('🎉 Room: toggleReadyStatus завершена успешно!');
         
