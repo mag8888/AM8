@@ -2095,6 +2095,55 @@ class PlayersPanel {
             }
             
             if (moveBtn) {
+                // АКТИВАЦИЯ КНОПКИ "🎲🎲 БРОСОК" (move-btn) - основная кнопка в интерфейсе
+                const currentUserId = this.getCurrentUserId();
+                const currentUsername = this.getCurrentUsername();
+                
+                // Проверяем через TurnService
+                let shouldActivate = false;
+                try {
+                    const turnService = window.app?.getModule?.('turnService');
+                    if (turnService) {
+                        shouldActivate = turnService.canRoll() && turnService.isMyTurn();
+                        console.log('🔧 PlayersPanel: TurnService проверка для move-btn:', { 
+                            canRoll: turnService.canRoll(), 
+                            isMyTurn: turnService.isMyTurn(), 
+                            shouldActivate 
+                        });
+                    }
+                } catch (error) {
+                    console.warn('⚠️ PlayersPanel: Ошибка проверки TurnService для move-btn:', error);
+                }
+                
+                // Fallback: проверяем по имени пользователя в интерфейсе
+                if (!shouldActivate) {
+                    const activePlayerText = document.querySelector('#current-player-name')?.textContent || '';
+                    const isAdminTurn = activePlayerText.includes('admin') && currentUsername === 'admin';
+                    const isRomanTurn = activePlayerText.includes('roman') && currentUsername === 'roman';
+                    shouldActivate = isAdminTurn || isRomanTurn;
+                    console.log('🔧 PlayersPanel: Fallback проверка для move-btn:', { 
+                        activePlayerText, 
+                        currentUsername, 
+                        isAdminTurn, 
+                        isRomanTurn, 
+                        shouldActivate 
+                    });
+                }
+                
+                if (shouldActivate) {
+                    console.log('🔧 PlayersPanel: Активация кнопки "🎲🎲 Бросок"');
+                    moveBtn.disabled = false;
+                    moveBtn.classList.add('active');
+                    moveBtn.style.opacity = '1';
+                    moveBtn.style.cursor = 'pointer';
+                    moveBtn.style.pointerEvents = 'auto';
+                    moveBtn.style.backgroundColor = '#4CAF50';
+                    moveBtn.style.color = 'white';
+                    moveBtn.removeAttribute('disabled');
+                } else {
+                    console.log('🔧 PlayersPanel: Кнопка "🎲🎲 Бросок" остается отключенной');
+                }
+                
                 this.forceUpdateButtonUI(moveBtn);
             }
             

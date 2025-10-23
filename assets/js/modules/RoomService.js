@@ -317,8 +317,8 @@ class RoomService {
      * @private
      */
     async _fetchRoomsFromAPI() {
-        // Проверяем локальный rate limiting перед запросом
-        await this._waitForRateLimit('NORMAL');
+        // Отключаем rate limiting для получения списка комнат
+        // await this._waitForRateLimit('NORMAL');
         
         // Проверяем глобальный rate limiter для RoomService
         if (window.CommonUtils && !window.CommonUtils.canMakeRoomsRequest()) {
@@ -901,7 +901,8 @@ class RoomService {
      * @private
      */
     async _joinRoomViaAPI(roomId, player) {
-        await this._waitForRateLimit();
+        // Отключаем rate limiting для присоединения к комнате
+        // await this._waitForRateLimit();
 
         const requestData = {
             player: {
@@ -1068,7 +1069,8 @@ class RoomService {
     async startGame(roomId, userId) {
         try {
             console.log('🏠 RoomService: Запуск игры в комнате:', roomId);
-            await this._waitForRateLimit('CRITICAL');
+            // Отключаем rate limiting для запуска игры
+            // await this._waitForRateLimit('CRITICAL');
             
             const response = await fetch(`${this.config.baseUrl}/${roomId}/start`, {
                 method: 'POST',

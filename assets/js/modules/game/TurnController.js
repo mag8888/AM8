@@ -359,6 +359,10 @@ class TurnController {
             // Проверяем, что players является массивом
             if (Array.isArray(players)) {
                 this.playerList.updatePlayers(players);
+            } else if (players && players.players && Array.isArray(players.players)) {
+                // Если передан объект с полем players, извлекаем массив
+                console.log('🎯 TurnController: Извлекаем массив игроков из объекта');
+                this.playerList.updatePlayers(players.players);
             } else {
                 console.warn('TurnController: players не является массивом:', typeof players, players);
                 // Fallback: получаем игроков из GameStateManager
