@@ -22,7 +22,7 @@ class GameStateManager {
 
         // КРИТИЧНО: Централизованный запросник для предотвращения race conditions
         this._lastFetchTime = 0;
-        this._fetchInterval = 120000; // Увеличиваем до 120 секунд для полного избежания rate limiting
+        this._fetchInterval = 30000; // 30 секунд для игровых действий
         this._isUpdating = false;
         this._updateTimer = null;
         this._rateLimitUntil = 0;

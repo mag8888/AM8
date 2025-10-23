@@ -38,9 +38,9 @@ ALLOWED_ORIGINS=https://am8-production.up.railway.app
 # Database Selection
 USE_MONGODB=true
 
-# Rate Limiting
+# Rate Limiting - оптимизировано для игрового приложения
 RATE_LIMIT_WINDOW=900000
-RATE_LIMIT_MAX=100
+RATE_LIMIT_MAX=1000
 ```
 
 ### Frontend Service

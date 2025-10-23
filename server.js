@@ -66,21 +66,44 @@ app.use((req, res, next) => {
     next();
 });
 
-// Rate limiting
-const limiter = rateLimit({
+// Rate limiting - более гибкая система
+const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 минут
-    max: 1000, // максимум 1000 запросов на IP за 15 минут (увеличено для игрового приложения)
+    max: 2000, // увеличиваем лимит для игрового приложения
     message: {
         error: 'Слишком много запросов с этого IP, попробуйте позже'
     },
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
-        // Пропускаем rate limiting для health check
-        return req.path === '/health';
+        // Пропускаем rate limiting для health check и игровых действий
+        return req.path === '/health' || 
+               req.path.includes('/roll') || 
+               req.path.includes('/move') || 
+               req.path.includes('/end-turn') ||
+               req.path.includes('/game-state');
     }
 });
-app.use('/api/', limiter);
+
+// Специальный rate limiting для игровых API - более мягкий
+const gameLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 минута
+    max: 120, // 120 запросов в минуту для игровых действий
+    message: {
+        error: 'Слишком много игровых запросов, попробуйте через минуту'
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+// Применяем общий rate limiting ко всем API маршрутам
+app.use('/api/', generalLimiter);
+
+// Применяем более мягкий rate limiting к игровым API
+app.use('/api/rooms/*/roll', gameLimiter);
+app.use('/api/rooms/*/move', gameLimiter);
+app.use('/api/rooms/*/end-turn', gameLimiter);
+app.use('/api/rooms/*/game-state', gameLimiter);
 
 // Логирование
 app.use(morgan('combined'));

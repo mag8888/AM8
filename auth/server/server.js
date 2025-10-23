@@ -107,10 +107,10 @@ class AuthServer {
             allowedHeaders: ['Content-Type', 'Authorization']
         }));
 
-        // Rate limiting
+        // Rate limiting - увеличиваем лимиты для игрового приложения
         const limiter = rateLimit({
             windowMs: parseInt(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000, // 15 минут
-            max: parseInt(process.env.RATE_LIMIT_MAX) || 100, // 100 запросов
+            max: parseInt(process.env.RATE_LIMIT_MAX) || 1000, // увеличиваем до 1000 запросов
             message: {
                 success: false,
                 message: 'Слишком много запросов, попробуйте позже',
