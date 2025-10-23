@@ -36,7 +36,11 @@ class PlayersPanel {
         this._isUpdatingPlayers = false;
         this._isUpdatingButtons = false;
         this._isUpdatingActivePlayer = false;
-        this._minRequestInterval = 3000; // Минимум 3 секунды между запросами
+        this._minRequestInterval = 1000; // Минимум 1 секунда между запросами (было 3)
+        
+        // Дебаунсинг для UI обновлений
+        this._uiUpdateTimeout = null;
+        this._uiUpdateDelay = 200; // 200ms дебаунсинг для UI обновлений
         
         console.log('👥 PlayersPanel v2.0: Инициализация');
         this.init();
@@ -1925,9 +1929,24 @@ class PlayersPanel {
     }
     
     /**
-     * Принудительное обновление всех кнопок управления
+     * Принудительное обновление всех кнопок управления с дебаунсингом
      */
     forceUpdateAllButtons() {
+        // Дебаунсинг для предотвращения избыточных обновлений
+        if (this._uiUpdateTimeout) {
+            clearTimeout(this._uiUpdateTimeout);
+        }
+        
+        this._uiUpdateTimeout = setTimeout(() => {
+            this._performButtonUpdate();
+        }, this._uiUpdateDelay);
+    }
+    
+    /**
+     * Выполнение обновления кнопок
+     * @private
+     */
+    _performButtonUpdate() {
         try {
             console.log('🔧 PlayersPanel: Принудительное обновление всех кнопок');
             
@@ -3491,6 +3510,12 @@ class PlayersPanel {
         if (this._buttonUpdateTimer) {
             clearTimeout(this._buttonUpdateTimer);
             this._buttonUpdateTimer = null;
+        }
+        
+        // Очищаем дебаунсинг таймаут
+        if (this._uiUpdateTimeout) {
+            clearTimeout(this._uiUpdateTimeout);
+            this._uiUpdateTimeout = null;
         }
         
         // Отменяем текущие запросы

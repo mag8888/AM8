@@ -52,12 +52,20 @@ class RoomService {
         };
         this.roomsCacheKey = 'am_rooms_cache_v1';
         
-        // Rate limiting для предотвращения HTTP 429 - КАРДИНАЛЬНО ОПТИМИЗИРОВАН
+        // Батчинг запросов для оптимизации производительности
+        this.requestBatch = {
+            pending: new Map(),
+            batchTimeout: null,
+            batchDelay: 100, // 100ms для батчинга запросов
+            maxBatchSize: 5
+        };
+        
+        // Rate limiting для предотвращения HTTP 429 - СУПЕР ОПТИМИЗИРОВАН
         this.requestQueue = {
             lastRequest: 0,
-            minInterval: 100, // 0.1 секунды между запросами (было 5 секунд)
-            backoffMultiplier: 1.1, // Очень мягкий рост backoff (было 1.3)
-            maxBackoff: 2000, // Максимум 2 секунды backoff (было 30 секунд)
+            minInterval: 50, // 0.05 секунды между запросами (еще быстрее)
+            backoffMultiplier: 1.05, // Очень мягкий рост backoff
+            maxBackoff: 1000, // Максимум 1 секунда backoff
             currentBackoff: 0,
             rateLimitedUntil: 0,
             // Система приоритетов - ВСЕ БЕЗ ЗАДЕРЖЕК
