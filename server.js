@@ -88,7 +88,7 @@ const generalLimiter = rateLimit({
 // Специальный rate limiting для игровых API - более мягкий
 const gameLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 минута
-    max: 120, // 120 запросов в минуту для игровых действий
+    max: 300, // 300 запросов в минуту для игровых действий
     message: {
         error: 'Слишком много игровых запросов, попробуйте через минуту'
     },
@@ -104,6 +104,8 @@ app.use('/api/rooms/*/roll', gameLimiter);
 app.use('/api/rooms/*/move', gameLimiter);
 app.use('/api/rooms/*/end-turn', gameLimiter);
 app.use('/api/rooms/*/game-state', gameLimiter);
+app.use('/api/rooms/*/players', gameLimiter);
+app.use('/api/rooms/*/update-player', gameLimiter);
 
 // Логирование
 app.use(morgan('combined'));

@@ -1717,7 +1717,10 @@ async function toggleReadyStatus() {
             
             // Проверяем, это rate limiting или другая ошибка
             if (error.message && error.message.includes('Rate limited')) {
-                showNotification('Слишком частые запросы. Попробуйте через несколько секунд', 'warning');
+                const retryAfter = error.retryAfter || 60;
+                const retrySeconds = Math.ceil(retryAfter / 1000);
+                showNotification(`Слишком частые запросы. Попробуйте через ${retrySeconds} секунд`, 'warning');
+                console.log(`⏳ Room: Rate limited, следующая попытка через ${retrySeconds}с`);
             } else {
                 showNotification('Ошибка обновления игрока', 'error');
             }

@@ -27,7 +27,7 @@ class RoomService {
             baseUrl: isLocal ? 'http://localhost:3002/api/rooms' : 'https://am8-production.up.railway.app/api/rooms',
             useMockData: false, // Используем реальный API для работы с сервером
             localStorageKey: 'aura_money_dynamic_rooms',
-            cacheTimeout: 120000, // Увеличиваем до 120 секунд для устранения перегрузки
+            cacheTimeout: 300000, // Увеличиваем до 5 минут для устранения перегрузки
             maxRetries: 3,
             useDynamicRooms: false // Отключаем динамические комнаты, используем серверную БД
         };
@@ -55,9 +55,9 @@ class RoomService {
         // Rate limiting для предотвращения HTTP 429 - оптимизирован для игровых действий
         this.requestQueue = {
             lastRequest: 0,
-            minInterval: 1000, // 1 секунда между запросами для игровых действий
-            backoffMultiplier: 1.1, // Более мягкий рост backoff
-            maxBackoff: 3000, // Максимум 3 секунды backoff
+            minInterval: 5000, // 5 секунд между запросами для предотвращения 429
+            backoffMultiplier: 1.3, // Умеренный рост backoff
+            maxBackoff: 30000, // Максимум 30 секунд backoff
             currentBackoff: 0,
             rateLimitedUntil: 0,
             // Система приоритетов
