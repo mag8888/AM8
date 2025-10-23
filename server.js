@@ -276,18 +276,3 @@ if (process.env.RAILWAY_MONGODB_URI) {
 startServer();
 
 module.exports = app;
-
-                process.exit(0);
-            });
-        });
-
-    } catch (error) {
-        console.error('❌ Ошибка запуска сервера:', error);
-        process.exit(1);
-    }
-}
-
-// Запускаем сервер
-startServer();
-
-module.exports = app;
