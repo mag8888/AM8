@@ -19,6 +19,19 @@ const errorHandler = require('./middleware/errorHandler');
 const { initializeDatabase } = require('./database/init');
 
 const app = express();
+// Логирование используемой базы данных
+const dbUri = process.env.RAILWAY_MONGODB_URI || process.env.MONGODB_URI || process.env.MONGO_URL;
+if (dbUri) {
+    if (dbUri.includes('railway')) {
+        console.log('🗄️ Database: Используется Railway MongoDB');
+    } else if (dbUri.includes('mongodb.net')) {
+        console.log('🗄️ Database: Используется MongoDB Atlas');
+    } else {
+        console.log('🗄️ Database: Используется локальная MongoDB');
+    }
+} else {
+    console.log('⚠️ Database: URI не найден, проверьте переменные окружения');
+}
 const PORT = process.env.PORT || 3002;
 
 // Настройка доверия к прокси (для Railway)

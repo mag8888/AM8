@@ -6,7 +6,11 @@ let cachedDb = null;
 
 async function connectMongo() {
     // Используем стандартизированную конфигурацию
-    const uri = process.env.MONGODB_URI || process.env.MONGO_URL || config.MONGODB.URI;
+    // Приоритет: Railway MongoDB -> MongoDB Atlas -> Config
+const uri = process.env.RAILWAY_MONGODB_URI || 
+            process.env.MONGODB_URI || 
+            process.env.MONGO_URL || 
+            config.MONGODB.URI;
     const dbName = config.MONGODB.DATABASE;
 
     if (!uri) {
