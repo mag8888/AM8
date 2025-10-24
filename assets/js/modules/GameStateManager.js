@@ -696,12 +696,25 @@ class GameStateManager {
         if (!this.listeners.has(event)) {
             return;
         }
-        for (const callback of this.listeners.get(event)) {
-            try {
-                callback(data);
-            } catch (error) {
-                console.error(`❌ GameStateManager listener error (${event})`, error);
+        
+        // Защита от рекурсии
+        if (this._notifying) {
+            console.warn('⚠️ GameStateManager: Предотвращена рекурсия в notifyListeners');
+            return;
+        }
+        
+        this._notifying = true;
+        
+        try {
+            for (const callback of this.listeners.get(event)) {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error(`❌ GameStateManager listener error (${event})`, error);
+                }
             }
+        } finally {
+            this._notifying = false;
         }
     }
 
@@ -896,12 +909,23 @@ class GameStateManager {
 
     _persistState() {
         if (!this._storage) return;
+        
+        // Защита от рекурсии при сохранении состояния
+        if (this._persisting) {
+            console.warn('⚠️ GameStateManager: Предотвращена рекурсия в _persistState');
+            return;
+        }
+        
+        this._persisting = true;
+        
         try {
             const key = this._buildStorageKey();
             const payload = this._cloneState(this._state);
             this._storage.setItem(key, JSON.stringify(payload));
         } catch (error) {
             console.warn('⚠️ GameStateManager: failed to persist state', error);
+        } finally {
+            this._persisting = false;
         }
     }
 }

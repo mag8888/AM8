@@ -447,6 +447,11 @@ class PlayersPanel {
         
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка в updateFromGameState:', error);
+            // В случае ошибки устанавливаем флаг, чтобы предотвратить рекурсию
+            this._isUpdating = true;
+            setTimeout(() => {
+                this._isUpdating = false;
+            }, 1000);
         } finally {
             this._isUpdating = false;
         }
@@ -473,10 +478,10 @@ class PlayersPanel {
             console.log('🚀 PlayersPanel: Используем кэшированные данные через GameStateManager');
             this.updatePlayersList(cachedData, this.gameStateManager?.getState?.()?.activePlayer);
             
-            // Обновляем GameStateManager с кэшированными данными
-            if (this.gameStateManager) {
-                this.gameStateManager.updateFromServer({ players: cachedData });
-            }
+            // НЕ обновляем GameStateManager с кэшированными данными, чтобы избежать рекурсии
+            // if (this.gameStateManager) {
+            //     this.gameStateManager.updateFromServer({ players: cachedData });
+            // }
             
             // Запускаем периодические обновления через GameStateManager
             this.startPeriodicUpdatesViaGameStateManager(roomId);
