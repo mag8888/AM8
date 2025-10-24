@@ -1,4 +1,4 @@
-# 🎮 Aura Money - Стабильная Версия v1.0.0
+# 🎮 Энергия денег - Стабильная Версия v1.0.0
 
 [![Stable Release](https://img.shields.io/badge/version-v1.0.0--stable-green.svg)](https://github.com/mag8888/AM8/releases/tag/v1.0.0-stable)
 [![Deployment](https://img.shields.io/badge/deployed-Railway-blue.svg)](https://am8-production.up.railway.app)

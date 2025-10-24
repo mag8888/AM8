@@ -1,7 +1,7 @@
 {
-  "name": "aura-money-server",
+  "name": "energy-money-server",
   "version": "1.0.0",
-  "description": "Aura Money Game Server",
+  "description": "Энергия денег Game Server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -38,6 +38,6 @@
     "rooms",
     "users"
   ],
-  "author": "Aura Money Team",
+  "author": "Энергия денег Team",
   "license": "MIT"
 }

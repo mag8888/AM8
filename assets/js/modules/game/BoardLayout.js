@@ -49,6 +49,17 @@ class BoardLayout {
         this.outerTrackElement = null;
         this.innerTrackElement = null;
 
+        this.cellCentersCache = {
+            outer: [],
+            inner: []
+        };
+        this.trackRectCache = {
+            outer: null,
+            inner: null
+        };
+        this.pendingPositionFrame = null;
+        this._lastOuterRadius = 0;
+
         this.highlightTimers = new Map();
         this.eventSubscriptions = [];
         this.boundHandleDelegatedClick = this.handleDelegatedClick.bind(this);
@@ -82,6 +93,7 @@ class BoardLayout {
     renderTracks() {
         this._debug('renderTracks called');
         this.ensureTrackElements();
+        this.invalidateCellCaches();
 
         if (!this.outerTrackElement || !this.innerTrackElement) {
             this._error('Track elements not found - render aborted', {
@@ -254,77 +266,122 @@ class BoardLayout {
     positionCells() {
         this.ensureTrackElements();
 
-        if (!this.outerTrackElement || !this.innerTrackElement) {
-            return;
-        }
-
-        const outerCells = Array.from(this.outerTrackElement.children);
-        const innerCells = Array.from(this.innerTrackElement.children);
+        const outerCells = this.outerTrackElement
+            ? Array.from(this.outerTrackElement.children)
+            : [];
+        const innerCells = this.innerTrackElement
+            ? Array.from(this.innerTrackElement.children)
+            : [];
 
         if (outerCells.length === 0 && innerCells.length === 0) {
+            this.invalidateCellCaches();
             return;
         }
 
         const supportsLayout =
-            typeof this.outerTrackElement.getBoundingClientRect === 'function' &&
             typeof window !== 'undefined' &&
-            typeof window.requestAnimationFrame === 'function';
+            typeof window.requestAnimationFrame === 'function' &&
+            (!this.outerTrackElement ||
+                typeof this.outerTrackElement.getBoundingClientRect === 'function') &&
+            (!this.innerTrackElement ||
+                typeof this.innerTrackElement.getBoundingClientRect === 'function');
 
         if (!supportsLayout) {
+            this.invalidateCellCaches();
             return;
         }
 
-        window.requestAnimationFrame(() => {
-            const outerRect = this.outerTrackElement.getBoundingClientRect();
-            const firstOuterCell = outerCells[0];
+        if (this.pendingPositionFrame) {
+            cancelAnimationFrame(this.pendingPositionFrame);
+            this.pendingPositionFrame = null;
+        }
 
-            if (!firstOuterCell || typeof firstOuterCell.getBoundingClientRect !== 'function') {
-                return;
+        this.pendingPositionFrame = window.requestAnimationFrame(() => {
+            this.pendingPositionFrame = null;
+
+            if (this.outerTrackElement && outerCells.length) {
+                const outerRect = this.outerTrackElement.getBoundingClientRect();
+                const firstOuterCell = outerCells[0];
+                if (!firstOuterCell || typeof firstOuterCell.getBoundingClientRect !== 'function') {
+                    this.cellCentersCache.outer = [];
+                    this.trackRectCache.outer = null;
+                    this._lastOuterRadius = 0;
+                } else {
+                    const outerCellRect = firstOuterCell.getBoundingClientRect();
+                    const boardSize = Math.min(outerRect.width, outerRect.height);
+                    const baseOuterRadius =
+                        boardSize / 2 - outerCellRect.width / 2 - 6;
+                    const outerRadius = Math.max(baseOuterRadius, 0);
+
+                    outerCells.forEach((cell, index) => {
+                        this.positionOuterCellOnPerimeter({
+                            cell,
+                            index,
+                            total: outerCells.length,
+                            boardSize
+                        });
+                        cell.style.zIndex = String(100 + index);
+                    });
+
+                    this.trackRectCache.outer = this._snapshotRect(outerRect);
+                    this.cellCentersCache.outer = this._computeCellCenters(
+                        outerCells,
+                        outerRect
+                    );
+
+                    // Используем радиус внешнего круга как базу для внутреннего
+                    this._lastOuterRadius = outerRadius;
+                }
+            } else {
+                this.cellCentersCache.outer = [];
+                this.trackRectCache.outer = null;
+                this._lastOuterRadius = 0;
             }
 
-            const outerCellRect = firstOuterCell.getBoundingClientRect();
-            const baseOuterRadius =
-                Math.min(outerRect.width, outerRect.height) / 2 -
-                outerCellRect.width / 2 -
-                6;
-            const outerRadius = Math.max(baseOuterRadius, 0);
-
-            outerCells.forEach((cell, index) => {
-                this.positionOuterCellOnPerimeter({
-                    cell,
-                    index,
-                    total: outerCells.length,
-                    boardSize: Math.min(outerRect.width, outerRect.height)
-                });
-                cell.style.zIndex = String(100 + index);
-            });
-
-            const innerRect = this.innerTrackElement.getBoundingClientRect();
-            const firstInnerCell = innerCells[0];
-            const innerCellRect =
-                firstInnerCell && typeof firstInnerCell.getBoundingClientRect === 'function'
+            if (this.innerTrackElement && innerCells.length) {
+                const innerRect = this.innerTrackElement.getBoundingClientRect();
+                const firstInnerCell = innerCells[0];
+                const referenceCell = firstInnerCell && typeof firstInnerCell.getBoundingClientRect === 'function'
                     ? firstInnerCell.getBoundingClientRect()
-                    : outerCellRect;
+                    : (outerCells.length > 0 ? outerCells[0].getBoundingClientRect() : null);
 
-            const computedInnerRadius =
-                Math.min(innerRect.width, innerRect.height) / 2 -
-                innerCellRect.width / 2 -
-                6;
-            const fallbackInnerRadius = outerRadius * 0.88;
-            const innerRadius = Math.max(
-                Number.isFinite(computedInnerRadius) ? computedInnerRadius : fallbackInnerRadius,
-                0
-            );
+                const fallbackInnerRadius = Math.max(
+                    this._lastOuterRadius
+                        ? this._lastOuterRadius * 0.88
+                        : Math.min(innerRect.width, innerRect.height) / 2 -
+                          (referenceCell ? referenceCell.width / 2 : 24),
+                    0
+                );
+                const computedInnerRadius =
+                    referenceCell
+                        ? Math.min(innerRect.width, innerRect.height) / 2 - referenceCell.width / 2 - 6
+                        : fallbackInnerRadius;
+                const innerRadius = Math.max(
+                    Number.isFinite(computedInnerRadius) ? computedInnerRadius : fallbackInnerRadius,
+                    0
+                );
 
-            innerCells.forEach((cell, index) => {
-                this.positionCellAtAngle({
-                    cell,
-                    index,
-                    total: innerCells.length,
-                    radius: innerRadius
+                innerCells.forEach((cell, index) => {
+                    this.positionCellAtAngle({
+                        cell,
+                        index,
+                        total: innerCells.length,
+                        radius: innerRadius
+                    });
+                    cell.style.zIndex = String(200 + index);
                 });
-                cell.style.zIndex = String(200 + index);
-            });
+
+                this.trackRectCache.inner = this._snapshotRect(innerRect);
+                this.cellCentersCache.inner = this._computeCellCenters(
+                    innerCells,
+                    innerRect
+                );
+            } else {
+                this.cellCentersCache.inner = [];
+                this.trackRectCache.inner = null;
+            }
+
+            this._emitCellsPositioned();
         });
     }
 
@@ -614,6 +671,47 @@ class BoardLayout {
     }
 
     /**
+     * Invalidate cached cell positions.
+     */
+    invalidateCellCaches() {
+        this.cellCentersCache.outer = [];
+        this.cellCentersCache.inner = [];
+        this.trackRectCache.outer = null;
+        this.trackRectCache.inner = null;
+        this._lastOuterRadius = 0;
+    }
+
+    /**
+     * Retrieve cached cell center coordinates.
+     * @param {number} position
+     * @param {boolean} isInner
+     * @returns {{x:number,y:number,width:number,height:number}|null}
+     */
+    getCellCenter(position, isInner) {
+        const cache = isInner ? this.cellCentersCache.inner : this.cellCentersCache.outer;
+        return cache?.[position] || null;
+    }
+
+    /**
+     * Retrieve all cached centers for a track.
+     * @param {boolean} isInner
+     * @returns {Array}
+     */
+    getCellCenters(isInner) {
+        const cache = isInner ? this.cellCentersCache.inner : this.cellCentersCache.outer;
+        return Array.isArray(cache) ? cache.slice() : [];
+    }
+
+    /**
+     * Retrieve cached track rect.
+     * @param {boolean} isInner
+     * @returns {{width:number,height:number,left:number,top:number}|null}
+     */
+    getTrackRect(isInner) {
+        return isInner ? this.trackRectCache.inner : this.trackRectCache.outer;
+    }
+
+    /**
      * Build a unique key used for highlight timers.
      * @param {number} position
      * @param {boolean} isInner
@@ -621,6 +719,49 @@ class BoardLayout {
      */
     getHighlightKey(position, isInner) {
         return `${isInner ? 'inner' : 'outer'}-${position}`;
+    }
+
+    _computeCellCenters(cells, containerRect) {
+        if (!containerRect) {
+            return [];
+        }
+        return cells.map((cell) => {
+            if (!cell || typeof cell.getBoundingClientRect !== 'function') {
+                return null;
+            }
+            const rect = cell.getBoundingClientRect();
+            return {
+                x: rect.left - containerRect.left + rect.width / 2,
+                y: rect.top - containerRect.top + rect.height / 2,
+                width: rect.width,
+                height: rect.height
+            };
+        });
+    }
+
+    _snapshotRect(rect) {
+        if (!rect) {
+            return null;
+        }
+        return {
+            width: rect.width,
+            height: rect.height,
+            left: rect.left,
+            top: rect.top
+        };
+    }
+
+    _emitCellsPositioned() {
+        if (!this.eventBus || typeof this.eventBus.emit !== 'function') {
+            return;
+        }
+        this.eventBus.emit('board:cellsPositioned', {
+            outer: this.cellCentersCache.outer.slice(),
+            inner: this.cellCentersCache.inner.slice(),
+            outerTrackRect: this.trackRectCache.outer,
+            innerTrackRect: this.trackRectCache.inner,
+            timestamp: Date.now()
+        });
     }
 
     /**
@@ -671,12 +812,18 @@ class BoardLayout {
         }
         this.isDestroyed = true;
 
+        if (this.pendingPositionFrame) {
+            cancelAnimationFrame(this.pendingPositionFrame);
+            this.pendingPositionFrame = null;
+        }
+
         this.detachTrackListeners();
         if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
             window.removeEventListener('resize', this.boundHandleResize);
         }
         this._removeEventBusListeners();
         this._clearHighlightTimers();
+        this.invalidateCellCaches();
 
         if (this.cellPopup) {
             try {
