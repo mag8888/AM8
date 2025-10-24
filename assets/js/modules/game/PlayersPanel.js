@@ -390,12 +390,11 @@ class PlayersPanel {
         
         try {
         // Throttling: обновляем только если состояние действительно изменилось
+        // Оптимизация: используем только критически важные поля для уменьшения нагрузки
         const stateKey = JSON.stringify({
             activePlayer: state.activePlayer?.id,
             canRoll: state.canRoll,
             canMove: state.canMove,
-            canEndTurn: state.canEndTurn,
-            lastDiceResult: state.lastDiceResult?.total,
             playersCount: state.players?.length || 0
         });
         

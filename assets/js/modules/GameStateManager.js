@@ -697,11 +697,19 @@ class GameStateManager {
             return;
         }
         
-        // Защита от рекурсии
+        // Защита от рекурсии и оптимизация производительности
         if (this._notifying) {
             console.warn('⚠️ GameStateManager: Предотвращена рекурсия в notifyListeners');
             return;
         }
+        
+        // Ограничиваем частоту уведомлений для производительности
+        const now = Date.now();
+        if (this._lastNotificationTime && (now - this._lastNotificationTime) < 100) {
+            console.log('🚀 GameStateManager: Пропускаем уведомление для оптимизации производительности');
+            return;
+        }
+        this._lastNotificationTime = now;
         
         this._notifying = true;
         

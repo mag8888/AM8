@@ -47,10 +47,47 @@ class BankModuleServer {
      * Инициализация модуля
      */
     init() {
+        this.initCurrentUser();
         this.createUI();
         this.setupEventListeners();
     }
     
+    /**
+     * Инициализация текущего пользователя
+     */
+    initCurrentUser() {
+        try {
+            // Пробуем получить пользователя из разных источников
+            let userData = localStorage.getItem('currentUser');
+            if (!userData) {
+                userData = sessionStorage.getItem('am_player_bundle');
+            }
+            
+            if (userData) {
+                const user = JSON.parse(userData);
+                this.bankState.playerId = user.id || user.userId;
+                this.bankState.roomId = user.roomId || this._getCurrentRoomId();
+                console.log('✅ BankModuleServer: Пользователь инициализирован:', {
+                    playerId: this.bankState.playerId,
+                    roomId: this.bankState.roomId
+                });
+            } else {
+                console.warn('⚠️ BankModuleServer: Данные пользователя не найдены');
+            }
+        } catch (error) {
+            console.error('❌ BankModuleServer: Ошибка инициализации пользователя:', error);
+        }
+    }
+    
+    /**
+     * Получение ID комнаты из URL
+     */
+    _getCurrentRoomId() {
+        const hash = window.location.hash;
+        const match = hash.match(/roomId=([^&]+)/);
+        return match ? match[1] : null;
+    }
+
     /**
      * Получение данных с сервера
      */
@@ -1330,12 +1367,13 @@ class BankModuleServer {
                 
                 // Затем загружаем актуальные данные в фоне (неблокирующе)
                 setTimeout(() => {
-                    this.loadServerData().then(() => {
+                    this.loadServerData(true).then(() => {
                         this.updateUIFromServer();
+                        console.log('✅ BankModuleServer: Данные банка загружены с сервера');
                     }).catch(error => {
                         console.warn('⚠️ BankModuleServer: Ошибка фоновой загрузки данных:', error);
                     });
-                }, 100); // Небольшая задержка для плавности
+                }, 50); // Уменьшили задержку для быстрой загрузки
             });
             
             console.log('🏦 BankModuleServer: Открыт');

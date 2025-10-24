@@ -47,8 +47,8 @@ class PlayerTokens {
         
         // Принудительно обновляем фишки через небольшую задержку
         setTimeout(() => {
-            this.forceUpdate();
-        }, 300); // Уменьшили с 1000ms до 300ms
+            this.forceUpdateFromGameState();
+        }, 100); // Уменьшили задержку для быстрой загрузки фишек
         
         this._info('PlayerTokens инициализирован');
     }
