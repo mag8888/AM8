@@ -652,10 +652,7 @@ class PlayersPanel {
         }, 500);
     }
 
-    /**
-     * Принудительная загрузка игроков (deprecated - использовать loadPlayersViaGameStateManager)
-     */
-    forceLoadPlayers() {
+    // Удалена deprecated функция forceLoadPlayers()
         // Улучшенное извлечение roomId из разных источников
         let roomId = null;
         
@@ -767,11 +764,7 @@ class PlayersPanel {
             });
     }
     
-    /**
-     * Основная загрузка игроков с API 
-     * @deprecated Используйте loadPlayersViaGameStateManager() вместо этого
-     */
-    _fetchPlayersFromAPI(roomId) {
+    // Удалена deprecated функция _fetchPlayersFromAPI()
         // Атомарная проверка и установка pending флага для предотвращения race condition
         if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
             console.log('🚫 PlayersPanel: Пропускаем основной запрос из-за глобального rate limiting или concurrent request');
