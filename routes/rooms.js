@@ -1339,19 +1339,33 @@ router.post('/:id/start', async (req, res, next) => {
         if (!db) {
             // Mongo-first start: обновляем статус комнаты и инициализируем server-state
             try {
+                console.log('🎮 Mongo start: Начинаем запуск игры для комнаты:', id);
                 const repo = new RoomRepository();
                 const room = await repo.getById(id);
-                if (!room) return res.status(404).json({ success: false, message: 'Комната не найдена' });
+                if (!room) {
+                    console.error('❌ Mongo start: Комната не найдена:', id);
+                    return res.status(404).json({ success: false, message: 'Комната не найдена' });
+                }
 
-                await repo.updateStatus(id, { isStarted: true, status: 'playing' });
+                console.log('✅ Mongo start: Комната найдена:', { id: room.id, name: room.name, players: room.players?.length || 0 });
+
+                const updateResult = await repo.updateStatus(id, { isStarted: true, status: 'playing' });
+                if (!updateResult) {
+                    console.error('❌ Mongo start: Не удалось обновить статус комнаты');
+                    return res.status(500).json({ success: false, message: 'Ошибка обновления статуса комнаты' });
+                }
+
+                console.log('✅ Mongo start: Статус комнаты обновлен');
 
                 // ensure game state
                 const state = gameStateByRoomId.get(id) || buildState(room.players || []);
                 if (!state.players || !state.players.length) {
                     const rebuilt = buildState(room.players || []);
                     gameStateByRoomId.set(id, rebuilt);
+                    console.log('✅ Mongo start: Игровое состояние пересоздано');
                 } else {
                     gameStateByRoomId.set(id, state);
+                    console.log('✅ Mongo start: Игровое состояние обновлено');
                 }
 
                 // push notify (safe)
@@ -1361,10 +1375,11 @@ router.post('/:id/start', async (req, res, next) => {
                     activePlayer: state.activePlayer
                 }).catch(err => console.error('❌ Ошибка отправки push о начале игры:', err));
 
+                console.log('🎮 Mongo start: Игра успешно запущена');
                 return res.json({ success: true, message: 'Игра успешно запущена', data: { roomId: id, isStarted: true, status: 'playing' } });
             } catch (e) {
                 console.error('❌ Mongo start error:', e);
-                return res.status(503).json({ success: false, message: 'Сервис недоступен' });
+                return res.status(503).json({ success: false, message: 'Сервис недоступен', error: e.message });
             }
         }
 

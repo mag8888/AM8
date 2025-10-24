@@ -70,13 +70,32 @@ class RoomRepository {
     }
 
     async updateStatus(id, patch) {
-        const db = await this.ensureDb();
-        await db.collection('rooms').updateOne(
-            { id },
-            { $set: { ...patch, updatedAt: new Date().toISOString() } },
-            { upsert: false }
-        );
-        return this.getById(id);
+        try {
+            const db = await this.ensureDb();
+            console.log('🔄 RoomRepository: Обновление статуса комнаты:', { id, patch });
+            
+            const result = await db.collection('rooms').updateOne(
+                { id },
+                { $set: { ...patch, updatedAt: new Date().toISOString() } },
+                { upsert: false }
+            );
+            
+            console.log('✅ RoomRepository: Результат обновления:', { 
+                matchedCount: result.matchedCount, 
+                modifiedCount: result.modifiedCount,
+                acknowledged: result.acknowledged 
+            });
+            
+            if (result.matchedCount === 0) {
+                console.warn('⚠️ RoomRepository: Комната не найдена для обновления:', id);
+                return null;
+            }
+            
+            return this.getById(id);
+        } catch (error) {
+            console.error('❌ RoomRepository: Ошибка обновления статуса:', error);
+            throw error;
+        }
     }
 }
 

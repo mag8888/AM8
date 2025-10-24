@@ -1096,6 +1096,7 @@ class RoomService {
                 
                 // Получаем детали ошибки от сервера
                 let errorMessage = `HTTP error! status: ${response.status}`;
+                let errorDetails = null;
                 try {
                     const errorData = await response.json();
                     errorMessage = errorData.message || errorMessage;
