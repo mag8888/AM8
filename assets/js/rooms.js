@@ -479,18 +479,28 @@ async function loadRooms() {
         const rooms = await roomService.getAllRooms();
         // Если API вернул пусто, используем последние сохранённые/мок-данные, чтобы не показывать 0 комнат
         const safeRooms = rooms && rooms.length > 0 ? rooms : (roomService.state?.rooms || roomService.mockRooms || []);
+        
+        console.log('🏠 Rooms: API вернул:', rooms?.length || 0, 'комнат');
+        console.log('🏠 Rooms: RoomService.state.rooms:', roomService.state?.rooms?.length || 0);
+        console.log('🏠 Rooms: RoomService.mockRooms:', roomService.mockRooms?.length || 0);
+        
+        console.log('🏠 Rooms: Загружено комнат:', safeRooms.length, 'из API:', rooms?.length || 0);
         renderRooms(safeRooms);
         
         // Обновляем счетчик комнат
         const roomsCount = document.getElementById('rooms-count');
         if (roomsCount) {
             roomsCount.textContent = `${(safeRooms || []).length} комнат`;
+            console.log('🏠 Rooms: Обновлен счетчик комнат:', (safeRooms || []).length);
         }
         
     } catch (error) {
         console.error('❌ Rooms: Ошибка загрузки комнат:', error);
         showErrorState('Ошибка загрузки комнат');
         showNotification('Не удалось загрузить список комнат', 'error');
+    } finally {
+        // Всегда сбрасываем флаг загрузки
+        isLoadingRooms = false;
     }
 }
 
@@ -523,7 +533,7 @@ async function loadStats() {
             renderStats({
                 totalRooms: 0,
                 activeRooms: 0,
-                gamesInProgress: 0,
+                gamesStarted: 0,
                 playersOnline: 0
             });
         }
@@ -545,6 +555,8 @@ function showLoadingState() {
                 <p>Загрузка комнат...</p>
             </div>
         `;
+        
+        console.log('🏠 Rooms: Показано состояние загрузки');
     }
 }
 
@@ -564,6 +576,8 @@ function showErrorState(message) {
                 </button>
             </div>
         `;
+        
+        console.log('🏠 Rooms: Показано состояние ошибки:', message);
     }
 }
 
@@ -583,6 +597,8 @@ function showEmptyState() {
                 </button>
             </div>
         `;
+        
+        console.log('🏠 Rooms: Показано пустое состояние');
     }
 }
 
@@ -596,9 +612,12 @@ function renderRooms(rooms, animateNewRooms = false) {
     }
     
     if (!rooms || rooms.length === 0) {
+        console.log('🏠 Rooms: Нет комнат для отображения, показываем пустое состояние');
         showEmptyState();
         return;
     }
+    
+    console.log('🏠 Rooms: Отрисовываем', rooms.length, 'комнат');
     
     // Получаем текущие ID комнат для определения новых
     const currentRoomIds = Array.from(roomsList.querySelectorAll('.room-card'))
@@ -847,8 +866,8 @@ function renderStats(stats) {
     const elements = {
         'total-rooms': stats.totalRooms || 0,
         'active-rooms': stats.activeRooms || 0,
-        'started-games': stats.startedGames || 0,
-        'total-players': stats.totalPlayers || 0
+        'started-games': stats.gamesStarted || 0,
+        'total-players': stats.playersOnline || 0
     };
     
     Object.entries(elements).forEach(([id, value]) => {

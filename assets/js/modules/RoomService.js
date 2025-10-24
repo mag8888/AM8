@@ -25,7 +25,7 @@ class RoomService {
         this.config = {
             isLocal,
             baseUrl: isLocal ? 'http://localhost:3002/api/rooms' : 'https://am8-production.up.railway.app/api/rooms',
-            useMockData: false, // Используем реальный API для работы с сервером
+            useMockData: true, // Временно включаем мок-данные для тестирования
             localStorageKey: 'aura_money_dynamic_rooms',
             cacheTimeout: 300000, // Увеличиваем до 5 минут для устранения перегрузки
             maxRetries: 3,
@@ -136,6 +136,35 @@ class RoomService {
                     { id: 'p5', username: 'player3', name: 'player3', isHost: false }
                 ],
                 createdAt: new Date(now - 30000).toISOString()
+            }),
+            this._createMockRoomObject({
+                id: 'room-quick-1',
+                name: 'Быстрая игра',
+                maxPlayers: 2,
+                playerCount: 1,
+                creator: 'quick_player',
+                turnTime: 15,
+                assignProfessions: true,
+                players: [
+                    { id: 'p6', username: 'quick_player', name: 'quick_player', isHost: true }
+                ],
+                createdAt: new Date(now - 10000).toISOString()
+            }),
+            this._createMockRoomObject({
+                id: 'room-strategy-1',
+                name: 'Стратегическая игра',
+                maxPlayers: 8,
+                playerCount: 4,
+                creator: 'strategy_master',
+                turnTime: 120,
+                assignProfessions: false,
+                players: [
+                    { id: 'p7', username: 'strategy_master', name: 'strategy_master', isHost: true },
+                    { id: 'p8', username: 'player4', name: 'player4', isHost: false },
+                    { id: 'p9', username: 'player5', name: 'player5', isHost: false },
+                    { id: 'p10', username: 'player6', name: 'player6', isHost: false }
+                ],
+                createdAt: new Date(now - 5000).toISOString()
             }),
             this._createMockRoomObject({
                 id: 'room-public-1',
