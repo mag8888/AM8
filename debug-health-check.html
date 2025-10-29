@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 Диагностика здоровья модулей - Aura Money</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-good { color: #28a745; }
+        .status-warning { color: #ffc107; }
+        .status-error { color: #dc3545; }
+        .module-check { 
+            margin: 10px 0; 
+            padding: 10px; 
+            border-left: 4px solid #ccc; 
+            background: #f8f9fa;
+        }
+        .module-check.good { border-color: #28a745; }
+        .module-check.warning { border-color: #ffc107; }
+        .module-check.error { border-color: #dc3545; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .logs {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 4px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Диагностика здоровья модулей</h1>
+        <p>Этот инструмент проверяет состояние всех игровых модулей и выявляет потенциальные проблемы.</p>
+        
+        <div>
+            <button onclick="runFullCheck()">🔍 Полная проверка</button>
+            <button onclick="runSafeCheck()">✅ Безопасная проверка</button>
+            <button onclick="clearLogs()">🧹 Очистить логи</button>
+            <button onclick="testGameFlow()">🎮 Тест игрового потока</button>
+        </div>
+
+        <div class="progress">
+            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+        </div>
+        
+        <div id="status">Готов к проверке...</div>
+        
+        <div class="logs" id="logs">
+Система диагностики готова.
+Нажмите "Полная проверка" для начала анализа.
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let checkResults = {};
+        let logCount = 0;
+        const MAX_LOGS = 100;
+
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'warning' ? '⚠️' : '✅';
+            
+            logs.innerHTML += `[${timestamp}] ${prefix} ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+            
+            // Ограничиваем количество логов
+            logCount++;
+            if (logCount > MAX_LOGS) {
+                const lines = logs.innerHTML.split('\n');
+                logs.innerHTML = lines.slice(-MAX_LOGS).join('\n');
+                logCount = MAX_LOGS;
+            }
+        }
+
+        function updateProgress(percent) {
+            document.getElementById('progressBar').style.width = percent + '%';
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = 'Логи очищены.\n';
+            logCount = 0;
+        }
+
+        async function checkModule(moduleName, checkFn) {
+            try {
+                updateStatus(`Проверка ${moduleName}...`);
+                const result = await checkFn();
+                checkResults[moduleName] = result;
+                
+                if (result.status === 'good') {
+                    log(`${moduleName}: ${result.message}`, 'info');
+                } else if (result.status === 'warning') {
+                    log(`${moduleName}: ${result.message}`, 'warning');
+                } else {
+                    log(`${moduleName}: ${result.message}`, 'error');
+                }
+                
+                return result;
+            } catch (error) {
+                const errorResult = {
+                    status: 'error',
+                    message: `Ошибка проверки: ${error.message}`,
+                    details: error.stack
+                };
+                checkResults[moduleName] = errorResult;
+                log(`${moduleName}: ${errorResult.message}`, 'error');
+                return errorResult;
+            }
+        }
+
+        async function runSafeCheck() {
+            log('🚀 Начало безопасной проверки...');
+            updateProgress(0);
+            
+            const checks = [
+                ['WindowGlobals', checkWindowGlobals],
+                ['BasicModules', checkBasicModules],
+                ['Memory', checkMemoryUsage]
+            ];
+            
+            for (let i = 0; i < checks.length; i++) {
+                await checkModule(checks[i][0], checks[i][1]);
+                updateProgress(((i + 1) / checks.length) * 100);
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            displayResults();
+            log('✅ Безопасная проверка завершена');
+            updateStatus('Безопасная проверка завершена');
+        }
+
+        async function runFullCheck() {
+            log('🚀 Начало полной проверки системы...');
+            updateProgress(0);
+            
+            const checks = [
+                ['WindowGlobals', checkWindowGlobals],
+                ['BasicModules', checkBasicModules],
+                ['GameStateManager', checkGameStateManager],
+                ['EventSystem', checkEventSystem],
+                ['Memory', checkMemoryUsage],
+                ['Performance', checkPerformance],
+                ['Dependencies', checkDependencies]
+            ];
+            
+            for (let i = 0; i < checks.length; i++) {
+                await checkModule(checks[i][0], checks[i][1]);
+                updateProgress(((i + 1) / checks.length) * 100);
+                // Небольшая пауза между проверками для предотвращения зависания
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            displayResults();
+            log('✅ Полная проверка завершена');
+            updateStatus('Полная проверка завершена');
+        }
+
+        function checkWindowGlobals() {
+            const requiredGlobals = [
+                'EventBus', 'GameStateManager', 'GameState', 'App',
+                'Router', 'Logger', 'ErrorHandler', 'PerformanceMonitor'
+            ];
+            
+            const missing = requiredGlobals.filter(name => !window[name]);
+            const available = requiredGlobals.filter(name => window[name]);
+            
+            if (missing.length === 0) {
+                return {
+                    status: 'good',
+                    message: `Все глобальные объекты доступны (${available.length})`
+                };
+            } else if (missing.length <= 2) {
+                return {
+                    status: 'warning',
+                    message: `Отсутствуют: ${missing.join(', ')}`
+                };
+            } else {
+                return {
+                    status: 'error',
+                    message: `Критично отсутствуют: ${missing.join(', ')}`
+                };
+            }
+        }
+
+        function checkBasicModules() {
+            let errorCount = 0;
+            let warningCount = 0;
+            
+            // Проверяем app
+            if (window.app) {
+                if (typeof window.app.init === 'function') {
+                    // OK
+                } else {
+                    errorCount++;
+                }
+            } else {
+                errorCount++;
+            }
+            
+            // Проверяем logger
+            if (window.logger) {
+                if (typeof window.logger.info === 'function') {
+                    // OK
+                } else {
+                    warningCount++;
+                }
+            } else {
+                warningCount++;
+            }
+            
+            if (errorCount > 0) {
+                return {
+                    status: 'error',
+                    message: `Критические ошибки: ${errorCount}, предупреждения: ${warningCount}`
+                };
+            } else if (warningCount > 0) {
+                return {
+                    status: 'warning',
+                    message: `Предупреждения: ${warningCount}`
+                };
+            } else {
+                return {
+                    status: 'good',
+                    message: 'Все базовые модули работают корректно'
+                };
+            }
+        }
+
+        function checkGameStateManager() {
+            if (!window.GameStateManager) {
+                return {
+                    status: 'error',
+                    message: 'GameStateManager не загружен'
+                };
+            }
+            
+            // Проверяем количество экземпляров
+            let instanceCount = 0;
+            if (window.app?.getModule?.('gameStateManager')) instanceCount++;
+            if (window.app?.services?.has?.('gameStateManager')) instanceCount++;
+            
+            if (instanceCount === 0) {
+                return {
+                    status: 'warning',
+                    message: 'GameStateManager не инициализирован'
+                };
+            } else if (instanceCount === 1) {
+                return {
+                    status: 'good',
+                    message: 'GameStateManager корректно инициализирован (1 экземпляр)'
+                };
+            } else {
+                return {
+                    status: 'error',
+                    message: `Обнаружено ${instanceCount} экземпляров GameStateManager!`
+                };
+            }
+        }
+
+        function checkEventSystem() {
+            if (!window.EventBus) {
+                return {
+                    status: 'error',
+                    message: 'EventBus не загружен'
+                };
+            }
+            
+            const eventBus = window.app?.getEventBus?.();
+            if (!eventBus) {
+                return {
+                    status: 'warning',
+                    message: 'EventBus не инициализирован в App'
+                };
+            }
+            
+            // Тестируем базовую функциональность
+            try {
+                let testPassed = false;
+                eventBus.on('health-check', () => { testPassed = true; });
+                eventBus.emit('health-check');
+                
+                if (testPassed) {
+                    return {
+                        status: 'good',
+                        message: 'EventBus работает корректно'
+                    };
+                } else {
+                    return {
+                        status: 'warning',
+                        message: 'EventBus не отвечает на тестовые события'
+                    };
+                }
+            } catch (error) {
+                return {
+                    status: 'error',
+                    message: `Ошибка EventBus: ${error.message}`
+                };
+            }
+        }
+
+        function checkMemoryUsage() {
+            if (!performance.memory) {
+                return {
+                    status: 'warning',
+                    message: 'Информация о памяти недоступна'
+                };
+            }
+            
+            const used = performance.memory.usedJSHeapSize;
+            const limit = performance.memory.jsHeapSizeLimit;
+            const usagePercent = (used / limit) * 100;
+            
+            if (usagePercent < 50) {
+                return {
+                    status: 'good',
+                    message: `Использование памяти: ${usagePercent.toFixed(1)}% (${Math.round(used/1024/1024)}MB)`
+                };
+            } else if (usagePercent < 80) {
+                return {
+                    status: 'warning',
+                    message: `Высокое использование памяти: ${usagePercent.toFixed(1)}% (${Math.round(used/1024/1024)}MB)`
+                };
+            } else {
+                return {
+                    status: 'error',
+                    message: `КРИТИЧЕСКОЕ использование памяти: ${usagePercent.toFixed(1)}% (${Math.round(used/1024/1024)}MB)`
+                };
+            }
+        }
+
+        function checkPerformance() {
+            const start = performance.now();
+            
+            // Простой тест производительности
+            let sum = 0;
+            for (let i = 0; i < 100000; i++) {
+                sum += Math.random();
+            }
+            
+            const end = performance.now();
+            const duration = end - start;
+            
+            if (duration < 10) {
+                return {
+                    status: 'good',
+                    message: `Производительность отличная: ${duration.toFixed(2)}ms`
+                };
+            } else if (duration < 50) {
+                return {
+                    status: 'warning',
+                    message: `Производительность удовлетворительная: ${duration.toFixed(2)}ms`
+                };
+            } else {
+                return {
+                    status: 'error',
+                    message: `НИЗКАЯ производительность: ${duration.toFixed(2)}ms`
+                };
+            }
+        }
+
+        function checkDependencies() {
+            const dependencies = [
+                { name: 'fetch', check: () => typeof fetch === 'function' },
+                { name: 'Promise', check: () => typeof Promise === 'function' },
+                { name: 'localStorage', check: () => typeof localStorage === 'object' },
+                { name: 'sessionStorage', check: () => typeof sessionStorage === 'object' },
+                { name: 'WebSocket', check: () => typeof WebSocket === 'function' }
+            ];
+            
+            const missing = dependencies.filter(dep => !dep.check()).map(dep => dep.name);
+            const available = dependencies.filter(dep => dep.check()).map(dep => dep.name);
+            
+            if (missing.length === 0) {
+                return {
+                    status: 'good',
+                    message: `Все зависимости доступны (${available.length})`
+                };
+            } else {
+                return {
+                    status: 'warning',
+                    message: `Отсутствуют зависимости: ${missing.join(', ')}`
+                };
+            }
+        }
+
+        function displayResults() {
+            const resultsDiv = document.getElementById('results');
+            let html = '<h3>📊 Результаты проверки</h3>';
+            
+            for (const [moduleName, result] of Object.entries(checkResults)) {
+                const statusClass = result.status;
+                html += `
+                    <div class="module-check ${statusClass}">
+                        <strong>${moduleName}</strong>: ${result.message}
+                    </div>
+                `;
+            }
+            
+            // Сводка
+            const good = Object.values(checkResults).filter(r => r.status === 'good').length;
+            const warnings = Object.values(checkResults).filter(r => r.status === 'warning').length;
+            const errors = Object.values(checkResults).filter(r => r.status === 'error').length;
+            
+            html += `
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                    <h4>📈 Сводка</h4>
+                    <div class="status-good">✅ Исправно: ${good}</div>
+                    <div class="status-warning">⚠️ Предупреждения: ${warnings}</div>
+                    <div class="status-error">❌ Ошибки: ${errors}</div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        async function testGameFlow() {
+            log('🎮 Начало тестирования игрового потока...');
+            
+            try {
+                // Проверяем инициализацию App
+                if (window.app) {
+                    log('App найден, проверяем инициализацию...');
+                    
+                    if (typeof window.app.init === 'function') {
+                        log('Метод init доступен');
+                        
+                        // Осторожно тестируем навигацию
+                        const router = window.app.getRouter?.();
+                        if (router) {
+                            log('Router доступен');
+                        } else {
+                            log('Router недоступен', 'warning');
+                        }
+                        
+                        // Проверяем GameStateManager
+                        const gsm = window.app.getGameStateManager?.();
+                        if (gsm) {
+                            log('GameStateManager доступен и готов');
+                        } else {
+                            log('GameStateManager недоступен', 'error');
+                        }
+                        
+                    } else {
+                        log('Метод App.init недоступен', 'error');
+                    }
+                } else {
+                    log('App не найден', 'error');
+                }
+                
+            } catch (error) {
+                log(`Ошибка при тестировании: ${error.message}`, 'error');
+            }
+            
+            log('🏁 Тест игрового потока завершен');
+        }
+
+        // Автоматический запуск базовой проверки при загрузке
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('🌟 Система диагностики загружена');
+                log('💡 Подсказка: Запустите "Безопасная проверка" для базовой диагностики');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
+

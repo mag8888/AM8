@@ -3,13 +3,16 @@
  */
 import BoardLayout from './modules/game/BoardLayout.js';
 
-// Инициализация после загрузки DOM
+// ИСПРАВЛЕНО: Проверяем, что app.js не управляет уже этими модулями
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Инициализация игры Aura Money');
+    console.log('🚀 main.js: Инициализация (проверяем конфликты с app.js)');
 
-    // Создание экземпляров
-    const eventBus = new window.EventBus();
-    const gameState = new window.GameState(eventBus);
+    // ИСПРАВЛЕНО: Используем глобальные экземпляры, если они есть
+    const eventBus = window.app?.getEventBus?.() || new window.EventBus();
+    const gameState = window.app?.getModule?.('gameState') || new window.GameState(eventBus);
+    
+    console.log('📋 main.js: Используем eventBus:', eventBus ? '✅' : '❌');
+    console.log('📋 main.js: Используем gameState:', gameState ? '✅' : '❌');
 
     // Создание BoardLayout
     const boardLayout = new BoardLayout({

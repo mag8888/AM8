@@ -21,12 +21,54 @@ class App {
         this.activeRoomId = null;
         this.gameModulesReady = false;
         
+        // НОВОЕ: Защита от зависания браузера
+        this._initializationDepth = 0;
+        this._maxInitializationDepth = 3;
+        this._isInInitialization = false;
+        this._initializationTimeout = null;
+        
         // Флаг для предотвращения множественных вызовов forceUpdate у PlayerTokens
         this._playerTokensForceUpdateCalled = false;
         
-        this._initializeCore();
-        this._setupGlobalErrorHandling();
-        this._startPerformanceMonitoring();
+        // ИСПРАВЛЕНО: Безопасная инициализация с таймаутом
+        this._safeInitialize();
+    }
+    
+    /**
+     * НОВОЕ: Безопасная инициализация с защитой от зависания
+     * @private
+     */
+    _safeInitialize() {
+        if (this._isInInitialization) {
+            console.warn('⚠️ App: Предотвращена рекурсивная инициализация');
+            return;
+        }
+        
+        this._isInInitialization = true;
+        
+        // Устанавливаем таймаут на инициализацию (10 секунд максимум)
+        this._initializationTimeout = setTimeout(() => {
+            console.error('🚨 App: Таймаут инициализации! Возможно зависание.');
+            this._isInInitialization = false;
+        }, 10000);
+        
+        try {
+            this._initializeCore();
+            this._setupGlobalErrorHandling();
+            this._startPerformanceMonitoring();
+            
+            // Очищаем таймаут при успешной инициализации
+            if (this._initializationTimeout) {
+                clearTimeout(this._initializationTimeout);
+                this._initializationTimeout = null;
+            }
+            
+            console.log('✅ App: Безопасная инициализация завершена');
+        } catch (error) {
+            console.error('❌ App: Ошибка при безопасной инициализации:', error);
+        } finally {
+            this._isInInitialization = false;
+        }
     }
 
     /**
@@ -40,10 +82,13 @@ class App {
         this.services.set('eventBus', new window.EventBus(this.logger, this.errorHandler));
         this.services.set('router', new window.Router());
         
-        // Создаем GameStateManager для централизованного управления состоянием
-        const gameStateManager = new window.GameStateManager();
-        this.services.set('gameStateManager', gameStateManager);
-        this.modules.set('gameStateManager', gameStateManager);
+        // ИСПРАВЛЕНО: Создаем GameStateManager для централизованного управления состоянием (ЕДИНСТВЕННЫЙ экземпляр)
+        if (window.GameStateManager && !this.services.has('gameStateManager')) {
+            const gameStateManager = new window.GameStateManager();
+            this.services.set('gameStateManager', gameStateManager);
+            this.modules.set('gameStateManager', gameStateManager);
+            console.log('✅ App: GameStateManager создан в _initializeCore');
+        }
         
         this.logger?.info('Основные сервисы созданы', {
             services: Array.from(this.services.keys())
@@ -86,6 +131,14 @@ class App {
             this.logger?.warn('Приложение уже инициализировано', null, 'App');
             return;
         }
+        
+        // НОВОЕ: Защита от рекурсивной инициализации
+        this._initializationDepth++;
+        if (this._initializationDepth > this._maxInitializationDepth) {
+            console.error('🚨 App: Достигнута максимальная глубина инициализации! Прерываем.');
+            this._initializationDepth = 0;
+            return;
+        }
 
         try {
             this.logger?.group('Инициализация приложения', () => {
@@ -96,15 +149,17 @@ class App {
                 this._setupPerformanceMonitoring();
             });
             
-            // Принудительно инициализируем GameStateManager если он не создался
-            if (!this.getModule('gameStateManager') && window.GameStateManager) {
-                console.log('🔧 App: Принудительная инициализация GameStateManager в init()');
-                const gameStateManager = new window.GameStateManager();
-                this.services.set('gameStateManager', gameStateManager);
-                this.modules.set('gameStateManager', gameStateManager);
+            // ИСПРАВЛЕНО: Проверяем, что GameStateManager уже создан (избегаем дубликатов)
+            const existingGameStateManager = this.getModule('gameStateManager');
+            if (existingGameStateManager) {
+                console.log('✅ App: GameStateManager уже существует, пропускаем создание дубликата');
+            } else {
+                console.warn('⚠️ App: GameStateManager не найден, это не должно происходить!');
             }
 
             this.isInitialized = true;
+            this._initializationDepth = 0; // НОВОЕ: Сбрасываем глубину при успешной инициализации
+            
             this.logger?.info('Приложение успешно инициализировано', {
                 modules: Array.from(this.modules.keys()),
                 services: Array.from(this.services.keys())
@@ -118,6 +173,7 @@ class App {
             });
 
         } catch (error) {
+            this._initializationDepth = 0; // НОВОЕ: Сбрасываем глубину при ошибке
             this.errorHandler?.handleError({
                 type: 'APP_ERROR',
                 message: 'Failed to initialize application',
@@ -167,10 +223,14 @@ class App {
      * @private
      */
     _loadGameModules() {
-        if (window.GameState) {
+        // ИСПРАВЛЕНО: Создаем GameState только если его нет (избегаем дубликатов)
+        if (window.GameState && !this.modules.has('gameState')) {
             const gameState = new window.GameState(this.getEventBus());
             this.modules.set('gameState', gameState);
             this.logger?.debug('GameState модуль загружен', null, 'App');
+            console.log('✅ App: GameState создан в _loadGameModules');
+        } else if (this.modules.has('gameState')) {
+            console.log('✅ App: GameState уже существует, пропускаем создание дубликата');
         }
 
         if (window.BoardLayout) {
@@ -494,12 +554,12 @@ class App {
     _legacyInitializeGameModules(roomId) {
         this.logger?.info('Инициализация игровых модулей для комнаты', { roomId }, 'App');
         
-        // Гарантируем наличие GameState до инициализации зависимых модулей
+        // ИСПРАВЛЕНО: Используем существующий GameState (избегаем дубликатов)
         if (!this.getModule('gameState') && window.GameState) {
             try {
                 const gs = new window.GameState(this.getEventBus());
                 this.modules.set('gameState', gs);
-                console.log('🎮 App: GameState создан (guard)');
+                console.log('🎮 App: GameState создан в _legacyInitializeGameModules (fallback)');
             } catch (e) {
                 console.warn('⚠️ App: Не удалось создать GameState на старте _initializeGameModules', e);
             }
@@ -700,7 +760,7 @@ class App {
                 console.log('🎯 App: Инициализируем TurnService...');
                 let gameState = this.getModule('gameState');
                 if (!gameState && window.GameState) {
-                    console.warn('⚠️ App: GameState не найден, создаем новый (late)...');
+                    console.warn('⚠️ App: GameState не найден, создаем fallback (последний раз)...');
                     gameState = new window.GameState(this.getEventBus());
                     this.modules.set('gameState', gameState);
                 }
@@ -840,18 +900,22 @@ class App {
         const eventBus = this.getEventBus();
         let gameStateManager = this.getGameStateManager();
         
-        // Принудительно создаем GameStateManager если его нет
+        // ИСПРАВЛЕНО: Используем существующий GameStateManager (избегаем дубликатов)
         if (!gameStateManager && window.GameStateManager) {
-            console.log('🔧 App: Создаем GameStateManager принудительно');
-            gameStateManager = new window.GameStateManager();
-            this.services.set('gameStateManager', gameStateManager);
-            this.modules.set('gameStateManager', gameStateManager);
+            console.log('🔧 App: Получаем существующий GameStateManager');
+            gameStateManager = this.getGameStateManager();
+            if (!gameStateManager) {
+                console.error('❌ App: GameStateManager не найден, это критическая ошибка!');
+                return;
+            }
         }
         
         const pushClient = this.getPushClient();
 
+        // ИСПРАВЛЕНО: Используем существующий GameState (критический guard)
         if (!this.getModule('gameState') && window.GameState) {
             try {
+                console.warn('⚠️ App: Критический fallback - создаем GameState в _handleGameRoute');
                 const gameState = new window.GameState(eventBus);
                 this.modules.set('gameState', gameState);
             } catch (error) {

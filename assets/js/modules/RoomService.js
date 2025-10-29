@@ -10,9 +10,11 @@
  */
 class RoomService {
     constructor() {
+        console.log('🔧 RoomService: Инициализация RoomService');
         this._initializeConfiguration();
         this._initializeState();
         this._initializeData();
+        console.log('✅ RoomService: RoomService инициализирован');
     }
 
     /**
@@ -31,6 +33,12 @@ class RoomService {
             maxRetries: 3,
             useDynamicRooms: false // Отключаем динамические комнаты, используем серверную БД
         };
+        
+        console.log('🔧 RoomService: Конфигурация инициализирована:', {
+            isLocal,
+            useMockData: this.config.useMockData,
+            baseUrl: this.config.baseUrl
+        });
         
         // Дублируем для совместимости
         this.useMockData = false;
@@ -51,6 +59,8 @@ class RoomService {
             error: null
         };
         this.roomsCacheKey = 'am_rooms_cache_v1';
+        
+        console.log('🔧 RoomService: Состояние инициализировано');
         
         // Батчинг запросов для оптимизации производительности
         this.requestBatch = {
@@ -83,9 +93,11 @@ class RoomService {
      * @private
      */
     _initializeData() {
+        console.log('🔧 RoomService: Инициализация данных, useMockData:', this.config.useMockData);
         if (this.config.useMockData) {
             this._initializeMockData();
             this._loadPersistedRooms();
+            console.log('✅ RoomService: Мок-данные инициализированы, комнат:', this.mockRooms?.length || 0);
         }
     }
 
@@ -104,6 +116,7 @@ class RoomService {
      * @private
      */
     _initializeMockData() {
+        console.log('🔧 RoomService: Инициализация мок-данных');
         const now = Date.now();
         
         // Базовые комнаты - одинаковые для всех браузеров
@@ -197,6 +210,7 @@ class RoomService {
         ];
 
         console.log('🏠 RoomService: Базовые мок-данные инициализированы (4 комнаты)');
+        console.log('🏠 RoomService: Список комнат:', this.mockRooms.map(r => r.name));
     }
 
     /**
@@ -284,10 +298,11 @@ class RoomService {
      */
     async getAllRooms() {
         try {
-            console.log('🏠 RoomService: Получение списка комнат');
+            console.log('🏠 RoomService: Получение списка комнат, useMockData:', this.config.useMockData);
             
             // Используем мок-данные если настроено
             if (this.config.useMockData) {
+                console.log('🔧 RoomService: Используем мок-данные');
                 return this._getMockRooms();
             }
 
@@ -337,6 +352,8 @@ class RoomService {
      * @private
      */
     _getMockRooms() {
+        console.log('🔧 RoomService: Получение мок-комнат, всего:', this.mockRooms?.length || 0);
+        
         // Сортируем комнаты по дате создания (новые вверху)
         const sortedRooms = [...this.mockRooms].sort((a, b) => 
             new Date(b.createdAt) - new Date(a.createdAt)
@@ -346,6 +363,7 @@ class RoomService {
         this.state.lastUpdate = Date.now();
         this._writeRoomsCache(sortedRooms);
         
+        console.log('✅ RoomService: Возвращаем мок-комнаты:', sortedRooms.length);
         return sortedRooms;
     }
 
@@ -1146,7 +1164,13 @@ class RoomService {
             }
 
             this.state.currentRoom = data.data;
-            return data.data;
+            
+            // Возвращаем объект в том же формате, что ожидает вызывающий код
+            return {
+                success: true,
+                message: data.message || 'Игра успешно запущена',
+                data: data.data
+            };
             
         } catch (error) {
             console.error('❌ RoomService: Ошибка запуска игры:', error);

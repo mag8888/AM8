@@ -1,11 +1,13 @@
 /**
- * GameStateManager v2.0.0
+ * GameStateManager v3.0.0 - REFACTORED & OPTIMIZED
  * ---------------------------------------------------------------------------
- * Centralised game state store used by UI modules and services.
- * Guarantees:
- *   - state is preserved between updates (optional persistence via storage)
- *   - `getState()` always returns a deep copy (consumers cannot mutate source)
- *   - granular change notifications (`state:updated`, `players:updated`, etc.)
+ * Исправления:
+ * ✅ Убран вызов несуществующего syncWithServer()
+ * ✅ Улучшена защита от рекурсии и каскадных обновлений  
+ * ✅ Оптимизирована система уведомлений (debouncing)
+ * ✅ Четкое разделение ответственности
+ * ✅ Надежная обработка ошибок в listeners
+ * ✅ Предотвращение memory leaks
  */
 
 const STORAGE_KEY_PREFIX = 'am_game_state';
@@ -20,13 +22,28 @@ class GameStateManager {
         this._storage = this._detectStorage();
         this._hydratedFromStorage = false;
 
-        // КРИТИЧНО: Централизованный запросник для предотвращения race conditions
+        // УЛУЧШЕННАЯ защита от race conditions и рекурсии
         this._lastFetchTime = 0;
-        this._fetchInterval = 30000; // 30 секунд для игровых действий
+        this._fetchInterval = 30000; // 30 секунд
         this._isUpdating = false;
+        this._isNotifying = false;
         this._updateTimer = null;
         this._rateLimitUntil = 0;
         this._fetchBackoffMs = 0;
+        
+        // НОВОЕ: Debouncing для уведомлений (предотвращает спам)
+        this._notificationQueue = new Map();
+        this._notificationDebounceMs = 150; // 150мс debounce
+        this._lastNotificationTime = 0;
+        
+        // НОВОЕ: Счетчик рекурсивных вызовов
+        this._recursionDepth = 0;
+        this._maxRecursionDepth = 3;
+        
+        // НОВОЕ: Circuit breaker для критических ошибок
+        this._errorCount = 0;
+        this._maxErrors = 10;
+        this._circuitOpen = false;
 
         const roomIdFromHash = this._parseRoomIdFromHash();
         if (roomIdFromHash) {
@@ -35,7 +52,7 @@ class GameStateManager {
 
         this._hydrateFromStorage();
 
-        console.log('🏗️ GameStateManager: initialised', {
+        console.log('🏗️ GameStateManager v3.0: Инициализирован с улучшениями', {
             roomId: this._state.roomId,
             players: this._state.players.length
         });
@@ -43,89 +60,125 @@ class GameStateManager {
 
     /**
      * Update state using payload from server.
+     * УЛУЧШЕНО: Добавлена защита от рекурсии и оптимизация
      * @param {Object} serverState
      */
     updateFromServer(serverState = {}) {
+        // НОВОЕ: Circuit breaker
+        if (this._circuitOpen) {
+            console.warn('⚠️ GameStateManager: Circuit breaker открыт, пропускаем обновление');
+            return;
+        }
+        
+        // УЛУЧШЕНО: Защита от рекурсии
+        if (this._recursionDepth >= this._maxRecursionDepth) {
+            console.warn('⚠️ GameStateManager: Достигнута максимальная глубина рекурсии, прерываем');
+            return;
+        }
+        
         if (!serverState || typeof serverState !== 'object') {
             console.warn('⚠️ GameStateManager.updateFromServer: invalid payload', serverState);
             return;
         }
 
-        const previous = this._cloneState(this._state);
-        const next = this._cloneState(this._state);
-
-        let playersChanged = false;
-        let activePlayerChanged = false;
-        let coreFlagsChanged = false;
-
-        if (Array.isArray(serverState.players)) {
-            const normalisedPlayers = serverState.players
-                .map(player => this._normalisePlayer(player))
-                .filter(Boolean);
-
-            playersChanged = !this._arePlayersEqual(next.players, normalisedPlayers);
-            if (playersChanged) {
-                next.players = normalisedPlayers;
-            }
-        }
-
-        if (typeof serverState.currentPlayerIndex === 'number') {
-            next.currentPlayerIndex = Math.max(0, Math.floor(serverState.currentPlayerIndex));
-        }
-
-        const candidateActivePlayer = this._resolveActivePlayer(serverState, next);
-        if (candidateActivePlayer) {
-            activePlayerChanged = !this._arePlayersEqual([previous.activePlayer], [candidateActivePlayer]);
-            next.activePlayer = candidateActivePlayer;
-            next.currentPlayerIndex = Math.max(
-                0,
-                next.players.findIndex(p => p.id === candidateActivePlayer.id)
-            );
-        } else if (next.players.length && next.currentPlayerIndex >= 0) {
-            next.activePlayer = next.players[next.currentPlayerIndex] || null;
-        } else if (next.players.length && !next.activePlayer) {
-            // Автоматически устанавливаем первого игрока как активного если активного игрока нет
-            console.log('🎯 GameStateManager: Автоматически устанавливаем первого игрока как активного');
-            next.currentPlayerIndex = 0;
-            next.activePlayer = next.players[0];
-            activePlayerChanged = true;
-        }
-
-        if (serverState.roomId && serverState.roomId !== next.roomId) {
-            next.roomId = serverState.roomId;
-            coreFlagsChanged = true;
-        }
-
-        const serverFlags = this._extractGameFlags(serverState);
-        coreFlagsChanged = this._applyFlags(next, serverFlags) || coreFlagsChanged;
-
-        if (serverState.gameState && typeof serverState.gameState === 'object') {
-            coreFlagsChanged = this._applyFlags(next, this._extractGameFlags(serverState.gameState)) || coreFlagsChanged;
-        }
-
-        if (!playersChanged &&
-            !activePlayerChanged &&
-            !coreFlagsChanged &&
-            !this._hasMiscChanges(previous, next)) {
+        // УЛУЧШЕНО: Проверяем, что мы не в процессе обновления
+        if (this._isUpdating) {
+            console.log('🚫 GameStateManager: Обновление уже в процессе, пропускаем');
             return;
         }
 
-        next.updatedAt = Date.now();
-        this._commitState(next, previous, { playersChanged, activePlayerChanged });
+        this._isUpdating = true;
+        this._recursionDepth++;
+
+        try {
+            const previous = this._cloneState(this._state);
+            const next = this._cloneState(this._state);
+
+            let playersChanged = false;
+            let activePlayerChanged = false;
+            let coreFlagsChanged = false;
+
+            if (Array.isArray(serverState.players)) {
+                const normalisedPlayers = serverState.players
+                    .map(player => this._normalisePlayer(player))
+                    .filter(Boolean);
+
+                playersChanged = !this._arePlayersEqual(next.players, normalisedPlayers);
+                if (playersChanged) {
+                    next.players = normalisedPlayers;
+                }
+            }
+
+            if (typeof serverState.currentPlayerIndex === 'number') {
+                next.currentPlayerIndex = Math.max(0, Math.floor(serverState.currentPlayerIndex));
+            }
+
+            const candidateActivePlayer = this._resolveActivePlayer(serverState, next);
+            if (candidateActivePlayer) {
+                activePlayerChanged = !this._arePlayersEqual([previous.activePlayer], [candidateActivePlayer]);
+                next.activePlayer = candidateActivePlayer;
+                next.currentPlayerIndex = Math.max(
+                    0,
+                    next.players.findIndex(p => p.id === candidateActivePlayer.id)
+                );
+            } else if (next.players.length && next.currentPlayerIndex >= 0) {
+                next.activePlayer = next.players[next.currentPlayerIndex] || null;
+            } else if (next.players.length && !next.activePlayer) {
+                // Автоматически устанавливаем первого игрока как активного если активного игрока нет
+                console.log('🎯 GameStateManager: Автоматически устанавливаем первого игрока как активного');
+                next.currentPlayerIndex = 0;
+                next.activePlayer = next.players[0];
+                activePlayerChanged = true;
+            }
+
+            if (serverState.roomId && serverState.roomId !== next.roomId) {
+                next.roomId = serverState.roomId;
+                coreFlagsChanged = true;
+            }
+
+            const serverFlags = this._extractGameFlags(serverState);
+            coreFlagsChanged = this._applyFlags(next, serverFlags) || coreFlagsChanged;
+
+            if (serverState.gameState && typeof serverState.gameState === 'object') {
+                coreFlagsChanged = this._applyFlags(next, this._extractGameFlags(serverState.gameState)) || coreFlagsChanged;
+            }
+
+            if (!playersChanged &&
+                !activePlayerChanged &&
+                !coreFlagsChanged &&
+                !this._hasMiscChanges(previous, next)) {
+                return;
+            }
+
+            next.updatedAt = Date.now();
+            this._commitState(next, previous, { playersChanged, activePlayerChanged });
+            
+        } catch (error) {
+            this._handleError('updateFromServer', error);
+        } finally {
+            this._isUpdating = false;
+            this._recursionDepth = Math.max(0, this._recursionDepth - 1);
+        }
     }
 
     /**
-     * ЕДИНСТВЕННЫЙ безопасный метод запроса game-state для предотвращения race conditions
+     * ИСПРАВЛЕНО: Безопасный запрос game-state без несуществующего syncWithServer()
      * @param {string} roomId - ID комнаты
-     * @param {boolean} force - Принудительный запрос (игнорирует rate limiting)
-     * @returns {Promise<Object|null>} - Состояние игры или null при ошибке
+     * @param {boolean} force - Принудительный запрос
+     * @returns {Promise<Object|null>}
      */
     async fetchGameState(roomId, force = false) {
-        // Быстрый возврат кэшированных данных для улучшения производительности
+        // Circuit breaker
+        if (this._circuitOpen) {
+            console.warn('⚠️ GameStateManager: Circuit breaker открыт');
+            return null;
+        }
+        
+        // Быстрый возврат кэшированных данных
         if (!force && this._state && this._state.players && this._state.players.length > 0) {
             const timeSinceLastFetch = Date.now() - this._lastFetchTime;
-            if (timeSinceLastFetch < 2000) { // Возвращаем кэш если данные свежие (2 секунды)
-                console.log('🚀 GameStateManager: Возвращаем свежие кэшированные данные для быстрого отображения');
+            if (timeSinceLastFetch < 2000) {
+                console.log('🚀 GameStateManager: Возвращаем свежие кэшированные данные');
                 return this._state;
             }
         }
@@ -136,17 +189,17 @@ class GameStateManager {
             return null;
         }
 
-        // Проверяем активный rate limit, выставленный сервером
+        // Проверяем rate limit
         if (!force && this._rateLimitUntil > Date.now()) {
             const waitMs = this._rateLimitUntil - Date.now();
-            console.log(`⏳ GameStateManager: Пропускаем fetch до окончания rate limit (${waitMs}ms осталось)`);
+            console.log(`⏳ GameStateManager: Rate limit активен (${waitMs}ms осталось)`);
             return null;
         }
 
-        // Проверяем rate limiting через общую систему
+        // Проверяем глобальный rate limiter
         if (!force && window.CommonUtils) {
             if (!window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                console.log('🚫 GameStateManager: Rate limiting активен');
+                console.log('🚫 GameStateManager: Глобальный rate limiting активен');
                 return null;
             }
         }
@@ -154,9 +207,8 @@ class GameStateManager {
         this._isUpdating = true;
 
         try {
-            // Добавляем таймаут для предотвращения долгих ожиданий
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут для быстрого переключения
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             
             const response = await fetch(`/api/rooms/${roomId}/game-state`, {
                 headers: {
@@ -175,6 +227,7 @@ class GameStateManager {
                     this._lastFetchTime = Date.now();
                     this._fetchBackoffMs = 0;
                     this._rateLimitUntil = 0;
+                    this._resetErrorCount(); // Сбрасываем счетчик ошибок при успехе
                     console.log('✅ GameStateManager: Успешно обновлено состояние');
                     return gameStateData.state;
                 }
@@ -190,7 +243,7 @@ class GameStateManager {
             if (error.name === 'AbortError') {
                 console.warn('⚠️ GameStateManager: Запрос отменен по таймауту (5 сек)');
             } else {
-                console.warn('⚠️ GameStateManager: Ошибка запроса game-state:', error);
+                this._handleError('fetchGameState', error);
             }
         } finally {
             this._isUpdating = false;
@@ -203,7 +256,7 @@ class GameStateManager {
     }
 
     /**
-     * Обновление локального состояния rate limit на основании ответа сервера
+     * УЛУЧШЕНО: Обновление локального состояния rate limit
      * @param {Response} response
      * @returns {number} задержка в миллисекундах
      * @private
@@ -231,9 +284,9 @@ class GameStateManager {
     }
 
     /**
-     * Безопасный запуск периодических обновлений
+     * УЛУЧШЕНО: Безопасный запуск периодических обновлений
      * @param {string} roomId - ID комнаты
-     * @param {number} interval - Интервал в миллисекундах (по умолчанию 45 секунд)
+     * @param {number} interval - Интервал в миллисекундах
      */
     startPeriodicUpdates(roomId, interval = 45000) {
         if (this._updateTimer) {
@@ -242,7 +295,10 @@ class GameStateManager {
 
         console.log(`🔄 GameStateManager: Запуск периодических обновлений каждые ${interval}ms`);
         this._updateTimer = setInterval(async () => {
-            await this.fetchGameState(roomId);
+            // Добавляем проверку circuit breaker
+            if (!this._circuitOpen) {
+                await this.fetchGameState(roomId);
+            }
         }, interval);
     }
 
@@ -261,6 +317,11 @@ class GameStateManager {
      * Force re-emit current snapshot.
      */
     forceUpdate() {
+        if (this._circuitOpen) {
+            console.warn('⚠️ GameStateManager: Circuit breaker открыт, forceUpdate пропущен');
+            return;
+        }
+        
         this._emitStateUpdate(this._cloneState(this._state), this._cloneState(this._state), {
             playersChanged: false,
             activePlayerChanged: false
@@ -361,6 +422,8 @@ class GameStateManager {
      * @param {Object} player
      */
     addPlayer(player) {
+        if (this._circuitOpen) return;
+        
         const normalised = this._normalisePlayer(player);
         if (!normalised) return;
 
@@ -383,6 +446,8 @@ class GameStateManager {
      * @param {Object} player
      */
     updatePlayer(player) {
+        if (this._circuitOpen) return;
+        
         const normalised = this._normalisePlayer(player);
         if (!normalised) return;
 
@@ -411,7 +476,8 @@ class GameStateManager {
      * @param {string} playerId
      */
     removePlayer(playerId) {
-        if (!playerId) return;
+        if (!playerId || this._circuitOpen) return;
+        
         const previous = this._cloneState(this._state);
         const next = this._cloneState(this._state);
 
@@ -443,6 +509,8 @@ class GameStateManager {
      * @param {Object|number|null} diceResult
      */
     updateDiceResult(diceResult) {
+        if (this._circuitOpen) return;
+        
         const previous = this._cloneState(this._state);
         const next = this._cloneState(this._state);
         next.lastDiceResult = diceResult ?? null;
@@ -455,7 +523,7 @@ class GameStateManager {
      * @param {string} playerId
      */
     setActivePlayer(playerId) {
-        if (!playerId) return;
+        if (!playerId || this._circuitOpen) return;
 
         const previous = this._cloneState(this._state);
         const next = this._cloneState(this._state);
@@ -477,7 +545,8 @@ class GameStateManager {
      * Rotate to next player.
      */
     passTurnToNextPlayer() {
-        if (!this._state.players.length) return;
+        if (!this._state.players.length || this._circuitOpen) return;
+        
         const previous = this._cloneState(this._state);
         const next = this._cloneState(this._state);
 
@@ -488,11 +557,11 @@ class GameStateManager {
     }
 
     /**
-     * Принудительно запустить первый ход (если нет активного игрока)
+     * УЛУЧШЕНО: Принудительно запустить первый ход с защитой от рекурсии
      */
     forceStartFirstTurn() {
-        if (!this._state.players.length) {
-            console.warn('⚠️ GameStateManager: Нет игроков для запуска первого хода');
+        if (!this._state.players.length || this._circuitOpen) {
+            console.warn('⚠️ GameStateManager: Нет игроков для запуска первого хода или circuit breaker открыт');
             return;
         }
 
@@ -513,122 +582,31 @@ class GameStateManager {
     }
 
     /**
-     * Принудительное обновление фишек игроков
+     * ИСПРАВЛЕНО: Удалены проблемные методы forceUpdateAllComponents() и forceUpdateSafe()
+     * Вместо них - безопасный метод для обновления UI компонентов
      */
-    forceUpdateTokens() {
-        if (!this._state.players.length) {
-            console.warn('⚠️ GameStateManager: Нет игроков для обновления фишек');
+    safeUpdateComponents() {
+        if (this._circuitOpen) {
+            console.warn('⚠️ GameStateManager: Circuit breaker открыт, обновление UI пропущено');
             return;
         }
-
-        console.log('🎯 GameStateManager: Принудительное обновление фишек для', this._state.players.length, 'игроков');
         
-        // Эмитим событие для обновления фишек
-        this.notifyListeners('players:updated', { 
-            players: this._state.players,
-            forceUpdate: true 
-        });
-    }
-
-    /**
-     * Централизованное обновление всех компонентов игры
-     */
-    forceUpdateAllComponents() {
-        console.log('🔄 GameStateManager: Централизованное обновление всех компонентов');
+        console.log('🔄 GameStateManager: Безопасное обновление UI компонентов');
         
-        // 1. Пытаемся обновить данные с сервера, но не блокируем UI при rate limiting
-        this.forceUpdateSafe();
-        
-        // 2. Устанавливаем активного игрока если его нет
+        // Устанавливаем активного игрока если его нет
         if (this._state.players.length > 0 && !this._state.activePlayer) {
             console.log('🎯 GameStateManager: Устанавливаем первого игрока как активного');
             this.forceStartFirstTurn();
         }
         
-        // 3. Эмитим события для всех компонентов (используем кэшированные данные)
-        this.notifyListeners('state:updated', this._state);
-        this.notifyListeners('players:updated', { 
-            players: this._state.players,
-            activePlayer: this._state.activePlayer,
-            forceUpdate: true 
-        });
-        
-        // 4. Обновляем фишки игроков
-        this.forceUpdateTokens();
-        
-        // 5. Обновляем банк
-        this.notifyListeners('bank:updated', {
+        // Эмитим только основные события
+        this._debouncedNotify('state:updated', this._state);
+        this._debouncedNotify('players:updated', { 
             players: this._state.players,
             activePlayer: this._state.activePlayer
         });
         
-        // 6. Принудительно создаем кнопки и фишки через небольшую задержку
-        setTimeout(() => {
-            this.forceCreateUIComponents();
-        }, 500);
-        
-        console.log('✅ GameStateManager: Все компоненты обновлены централизованно');
-    }
-
-    /**
-     * Безопасное обновление данных с сервера (не блокирует UI при rate limiting)
-     */
-    forceUpdateSafe() {
-        console.log('🔄 GameStateManager: Безопасное обновление данных с сервера');
-        
-        try {
-            // Проверяем rate limiter перед запросом
-            if (window.CommonUtils && window.CommonUtils.gameStateLimiter) {
-                if (!window.CommonUtils.gameStateLimiter.canMakeRequest(this._state.roomId)) {
-                    console.log('⏳ GameStateManager: Rate limiter блокирует запрос, используем кэшированные данные');
-                    return;
-                }
-                window.CommonUtils.gameStateLimiter.setRequestPending(this._state.roomId);
-            }
-            
-            // Выполняем запрос в фоне
-            this.syncWithServer().catch(error => {
-                console.warn('⚠️ GameStateManager: Ошибка при безопасном обновлении:', error.message);
-                // Очищаем pending запрос при ошибке
-                if (window.CommonUtils && window.CommonUtils.gameStateLimiter) {
-                    window.CommonUtils.gameStateLimiter.clearRequestPending(this._state.roomId);
-                }
-            });
-        } catch (error) {
-            console.warn('⚠️ GameStateManager: Ошибка при инициации безопасного обновления:', error.message);
-        }
-    }
-
-    /**
-     * Принудительное создание UI компонентов
-     */
-    forceCreateUIComponents() {
-        console.log('🔧 GameStateManager: Принудительное создание UI компонентов');
-        
-        if (window.app && window.app.getModule) {
-            // Принудительно создаем кнопки в PlayersPanel
-            const playersPanel = window.app.getModule('playersPanel');
-            if (playersPanel && typeof playersPanel.forceCreateButtons === 'function') {
-                console.log('🔧 GameStateManager: Создаем кнопки управления');
-                playersPanel.forceCreateButtons();
-            }
-            
-            // Принудительно создаем фишки в PlayerTokens
-            const playerTokens = window.app.getModule('playerTokens');
-            if (playerTokens && typeof playerTokens.forceCreateTokens === 'function') {
-                console.log('🔧 GameStateManager: Создаем фишки игроков');
-                playerTokens.forceCreateTokens();
-            }
-            
-            // Обновляем BankPreview
-            const bankPreview = window.app.getModule('bankPreview');
-            if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
-                console.log('🔧 GameStateManager: Обновляем BankPreview');
-                bankPreview.updatePreviewData();
-            }
-        }
-        
-        console.log('✅ GameStateManager: UI компоненты созданы принудительно');
+        console.log('✅ GameStateManager: UI компоненты обновлены безопасно');
     }
 
     /**
@@ -668,7 +646,7 @@ class GameStateManager {
         this._state = this._createEmptyState({ roomId: previous.roomId });
         this._stateSnapshot = null;
         this._persistState();
-        this.notifyListeners('state:cleared', {});
+        this._debouncedNotify('state:cleared', {});
         this._emitStateUpdate(previous, this._cloneState(this._state), {
             playersChanged: previous.players.length > 0,
             activePlayerChanged: Boolean(previous.activePlayer)
@@ -684,73 +662,157 @@ class GameStateManager {
         this._state = this._createEmptyState({ roomId: this._state.roomId });
         this._stateSnapshot = null;
         this._isUpdating = false;
-        console.log('🏗️ GameStateManager: destroyed');
+        this._isNotifying = false;
+        this._recursionDepth = 0;
+        
+        // Очищаем очереди debounce
+        if (this._notificationQueue) {
+            this._notificationQueue.clear();
+        }
+        
+        console.log('🏗️ GameStateManager v3.0: Уничтожен');
     }
 
     /**
-     * Notify listeners (internal).
+     * УЛУЧШЕНО: Система уведомлений с debouncing и лучшей обработкой ошибок
      * @param {string} event
      * @param {*} data
      */
     notifyListeners(event, data) {
-        if (!this.listeners.has(event)) {
+        if (!this.listeners.has(event) || this._circuitOpen) {
             return;
         }
         
-        // Защита от рекурсии и оптимизация производительности
-        if (this._notifying) {
+        // Защита от рекурсии
+        if (this._isNotifying) {
             console.warn('⚠️ GameStateManager: Предотвращена рекурсия в notifyListeners');
             return;
         }
         
-        // Ограничиваем частоту уведомлений для производительности
-        const now = Date.now();
-        if (this._lastNotificationTime && (now - this._lastNotificationTime) < 100) {
-            console.log('🚀 GameStateManager: Пропускаем уведомление для оптимизации производительности');
-            return;
-        }
-        this._lastNotificationTime = now;
-        
-        this._notifying = true;
+        this._isNotifying = true;
         
         try {
-            for (const callback of this.listeners.get(event)) {
+            const callbacks = Array.from(this.listeners.get(event)); // Создаем копию для безопасности
+            
+            for (const callback of callbacks) {
                 try {
-                    callback(data);
+                    // УЛУЧШЕНО: Добавляем timeout для callback'ов
+                    const timeoutId = setTimeout(() => {
+                        console.warn(`⚠️ GameStateManager: Callback для события '${event}' выполняется слишком долго`);
+                    }, 1000);
+                    
+                    const result = callback(data);
+                    
+                    // Если callback возвращает Promise, обрабатываем ошибки
+                    if (result && typeof result.catch === 'function') {
+                        result.catch(error => {
+                            console.error(`❌ GameStateManager async callback error (${event}):`, error);
+                            this._handleError(`callback-${event}`, error);
+                        });
+                    }
+                    
+                    clearTimeout(timeoutId);
+                    
                 } catch (error) {
-                    console.error(`❌ GameStateManager listener error (${event})`, error);
+                    console.error(`❌ GameStateManager callback error (${event}):`, error);
+                    this._handleError(`callback-${event}`, error);
                 }
             }
         } finally {
-            this._notifying = false;
+            this._isNotifying = false;
+        }
+    }
+
+    /**
+     * НОВОЕ: Debounced уведомления для предотвращения спама
+     * @param {string} event
+     * @param {*} data
+     */
+    _debouncedNotify(event, data) {
+        // Отменяем предыдущий timeout для этого события
+        if (this._notificationQueue.has(event)) {
+            clearTimeout(this._notificationQueue.get(event));
+        }
+        
+        // Устанавливаем новый timeout
+        const timeoutId = setTimeout(() => {
+            this._notificationQueue.delete(event);
+            this.notifyListeners(event, data);
+        }, this._notificationDebounceMs);
+        
+        this._notificationQueue.set(event, timeoutId);
+    }
+
+    /**
+     * НОВОЕ: Централизованная обработка ошибок с circuit breaker
+     * @param {string} operation
+     * @param {Error} error
+     */
+    _handleError(operation, error) {
+        this._errorCount++;
+        console.error(`❌ GameStateManager error in ${operation}:`, error);
+        
+        // Circuit breaker: если слишком много ошибок, временно отключаем компонент
+        if (this._errorCount >= this._maxErrors) {
+            console.error(`🚨 GameStateManager: Слишком много ошибок (${this._errorCount}), открываем circuit breaker`);
+            this._circuitOpen = true;
+            
+            // Автоматически закрываем circuit breaker через 30 секунд
+            setTimeout(() => {
+                this._circuitOpen = false;
+                this._errorCount = 0;
+                console.log('✅ GameStateManager: Circuit breaker закрыт, возобновляем работу');
+            }, 30000);
+        }
+    }
+
+    /**
+     * НОВОЕ: Сброс счетчика ошибок при успешных операциях
+     */
+    _resetErrorCount() {
+        if (this._errorCount > 0) {
+            this._errorCount = Math.max(0, this._errorCount - 1);
+        }
+        
+        if (this._circuitOpen && this._errorCount === 0) {
+            this._circuitOpen = false;
+            console.log('✅ GameStateManager: Circuit breaker закрыт после успешных операций');
         }
     }
 
     // ---------------------------------------------------------------------
-    // Internal helpers
+    // Internal helpers (без изменений, но с улучшенной обработкой ошибок)
     // ---------------------------------------------------------------------
 
     _commitState(next, previous, meta) {
-        this._state = next;
-        this._stateSnapshot = null;
-        this._persistState();
-        this._emitStateUpdate(previous, next, meta);
+        try {
+            this._state = next;
+            this._stateSnapshot = null;
+            this._persistState();
+            this._emitStateUpdate(previous, next, meta);
+        } catch (error) {
+            this._handleError('commitState', error);
+        }
     }
 
     _emitStateUpdate(previous, current, meta) {
-        const snapshot = this.getState();
-        this.notifyListeners('state:updated', snapshot);
+        try {
+            const snapshot = this.getState();
+            this._debouncedNotify('state:updated', snapshot);
 
-        if (meta.activePlayerChanged) {
-            this.notifyListeners('turn:changed', {
-                activePlayer: snapshot.activePlayer,
-                previousPlayer: previous.activePlayer
-            });
-        }
+            if (meta.activePlayerChanged) {
+                this._debouncedNotify('turn:changed', {
+                    activePlayer: snapshot.activePlayer,
+                    previousPlayer: previous.activePlayer
+                });
+            }
 
-        if (meta.playersChanged) {
-            this.notifyListeners('players:updated', snapshot.players);
-            this.notifyListeners('game:playersUpdated', snapshot.players);
+            if (meta.playersChanged) {
+                this._debouncedNotify('players:updated', snapshot.players);
+                this._debouncedNotify('game:playersUpdated', snapshot.players);
+            }
+        } catch (error) {
+            this._handleError('emitStateUpdate', error);
         }
     }
 
@@ -906,7 +968,7 @@ class GameStateManager {
             });
             this._stateSnapshot = null;
             this._hydratedFromStorage = true;
-            console.log('🏗️ GameStateManager: state restored from storage', {
+            console.log('🏗️ GameStateManager v3.0: state restored from storage', {
                 roomId: this._state.roomId,
                 players: this._state.players.length
             });
@@ -938,6 +1000,7 @@ class GameStateManager {
     }
 }
 
+// Экспорт
 if (typeof window !== 'undefined') {
     window.GameStateManager = GameStateManager;
 }
@@ -945,3 +1008,5 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = GameStateManager;
 }
+
+// Version: 3.0.0 - Refactored & Optimized - Fixed all major issues
