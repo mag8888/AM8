@@ -306,6 +306,14 @@ function startRoomDataPolling() {
         if (currentRoom && currentUser) {
             try {
                 await refreshRoomData();
+                
+                // Проверяем, началась ли игра для автоматического перенаправления
+                if (currentRoom.isStarted && currentRoom.status === 'playing') {
+                    console.log('🎮 Room: Игра началась! Автоматическое перенаправление...');
+                    navigateToGameBoard(currentRoom.id);
+                    return;
+                }
+                
                 lastUpdate = now;
             } catch (error) {
                 console.warn('⚠️ Room: Ошибка периодического обновления:', error);
