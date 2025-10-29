@@ -508,37 +508,37 @@ class BankModuleServer {
         // Обновляем баланс
         const balanceElement = this.getCachedElement('#bank-balance');
         if (balanceElement) {
-            balanceElement.textContent = `$${this.formatNumber(this.bankState.balance)}`;
+            balanceElement.textContent = `$${CommonUtils.formatNumber(this.bankState.balance)}`;
         }
         
         // Обновляем доходы
         const incomeElement = this.getCachedElement('#bank-income');
         if (incomeElement) {
-            incomeElement.textContent = `$${this.formatNumber(this.bankState.income)}`;
+            incomeElement.textContent = `$${CommonUtils.formatNumber(this.bankState.income)}`;
         }
         
         // Обновляем расходы
         const expensesElement = this.getCachedElement('#bank-expenses');
         if (expensesElement) {
-            expensesElement.textContent = `$${this.formatNumber(this.bankState.expenses)}`;
+            expensesElement.textContent = `$${CommonUtils.formatNumber(this.bankState.expenses)}`;
         }
         
         // Обновляем чистый доход
         const netIncomeElement = this.getCachedElement('#bank-net-income');
         if (netIncomeElement) {
-            netIncomeElement.textContent = `$${this.formatNumber(this.bankState.netIncome)}/мес`;
+            netIncomeElement.textContent = `$${CommonUtils.formatNumber(this.bankState.netIncome)}/мес`;
         }
         
         // Обновляем зарплату (если есть отдельный элемент)
         const salaryElement = this.getCachedElement('#bank-salary');
         if (salaryElement) {
-            salaryElement.textContent = `$${this.formatNumber(this.bankState.salary)}/мес`;
+            salaryElement.textContent = `$${CommonUtils.formatNumber(this.bankState.salary)}/мес`;
         }
         
         // Обновляем кредитный баланс
         const creditElement = this.getCachedElement('#bank-credit');
         if (creditElement) {
-            creditElement.textContent = `$${this.formatNumber(this.bankState.credit)}`;
+            creditElement.textContent = `$${CommonUtils.formatNumber(this.bankState.credit)}`;
             creditElement.style.color = this.bankState.credit > 0 ? '#ef4444' : '#10b981';
             creditElement.style.fontWeight = this.bankState.credit > 0 ? 'bold' : 'normal';
         }
@@ -546,20 +546,20 @@ class BankModuleServer {
         // Обновляем максимальный кредит
         const maxCreditElement = this.getCachedElement('#bank-max-credit');
         if (maxCreditElement) {
-            maxCreditElement.textContent = `$${this.formatNumber(this.bankState.maxCredit)}`;
+            maxCreditElement.textContent = `$${CommonUtils.formatNumber(this.bankState.maxCredit)}`;
         }
         
         // Обновляем мини-блок кредита
         const loanBalance = this.getCachedElement('#loan-balance');
         if (loanBalance) {
-            loanBalance.textContent = `$${this.formatNumber(this.bankState.credit)}`;
+            loanBalance.textContent = `$${CommonUtils.formatNumber(this.bankState.credit)}`;
             loanBalance.style.color = this.bankState.credit > 0 ? '#ef4444' : '#10b981';
             loanBalance.style.fontWeight = this.bankState.credit > 0 ? 'bold' : 'normal';
         }
         
         const loanMax = this.getCachedElement('#loan-max');
         if (loanMax) {
-            loanMax.textContent = `$${this.formatNumber(this.bankState.maxCredit)}`;
+            loanMax.textContent = `$${CommonUtils.formatNumber(this.bankState.maxCredit)}`;
             loanMax.style.color = '#10b981';
             loanMax.style.fontWeight = 'bold';
         }
@@ -593,7 +593,7 @@ class BankModuleServer {
                 const option = document.createElement('option');
                 option.value = player.id;
                 const balance = player.balance || player.money || 0;
-                option.textContent = `${player.username || player.name} ($${this.formatNumber(balance)})`;
+                option.textContent = `${player.username || player.name} ($${CommonUtils.formatNumber(balance)})`;
                 fragment.appendChild(option);
             }
         });
@@ -1447,7 +1447,7 @@ class BankModuleServer {
             const result = await response.json();
             
             if (result.success) {
-                this.showNotification(`Перевод $${this.formatNumber(amount)} выполнен`, 'success');
+                this.showNotification(`Перевод $${CommonUtils.formatNumber(amount)} выполнен`, 'success');
                 
                 // Добавляем операцию в историю
                 const recipient = this.bankState.players.find(p => p.id === recipientId);
@@ -1489,7 +1489,7 @@ class BankModuleServer {
         
         const maxAmount = this.bankState.maxCredit - this.bankState.credit;
         if (amount > maxAmount) {
-            this.showNotification(`Превышен лимит кредита. Доступно: $${this.formatNumber(maxAmount)}`, 'error');
+            this.showNotification(`Превышен лимит кредита. Доступно: $${CommonUtils.formatNumber(maxAmount)}`, 'error');
             return;
         }
         
@@ -1509,13 +1509,13 @@ class BankModuleServer {
             const result = await response.json();
             
             if (result.success) {
-                this.showNotification(`Кредит $${this.formatNumber(amount)} взят успешно`, 'success');
+                this.showNotification(`Кредит $${CommonUtils.formatNumber(amount)} взят успешно`, 'success');
                 
                 // Добавляем операцию в историю
                 this.addTransaction({
                     type: 'credit',
                     amount: amount,
-                    description: `Взят кредит на сумму $${this.formatNumber(amount)}`
+                    description: `Взят кредит на сумму $${CommonUtils.formatNumber(amount)}`
                 });
                 
                 amountInput.value = '';
@@ -1550,7 +1550,7 @@ class BankModuleServer {
         }
         
         if (amount > this.bankState.credit) {
-            this.showNotification(`Нельзя погасить больше, чем задолжано. Задолженность: $${this.formatNumber(this.bankState.credit)}`, 'error');
+            this.showNotification(`Нельзя погасить больше, чем задолжано. Задолженность: $${CommonUtils.formatNumber(this.bankState.credit)}`, 'error');
             return;
         }
         
@@ -1570,13 +1570,13 @@ class BankModuleServer {
             const result = await response.json();
             
             if (result.success) {
-                this.showNotification(`Кредит погашен на $${this.formatNumber(amount)}`, 'success');
+                this.showNotification(`Кредит погашен на $${CommonUtils.formatNumber(amount)}`, 'success');
                 
                 // Добавляем операцию в историю
                 this.addTransaction({
                     type: 'credit',
                     amount: -amount, // Отрицательная сумма для погашения
-                    description: `Погашен кредит на сумму $${this.formatNumber(amount)}`
+                    description: `Погашен кредит на сумму $${CommonUtils.formatNumber(amount)}`
                 });
                 
                 amountInput.value = '';
@@ -1688,43 +1688,13 @@ class BankModuleServer {
     /**
      * Форматирование чисел (использует CommonUtils)
      */
-    formatNumber(num) {
-        // Используем общую утилиту, если доступна
-        if (window.CommonUtils) {
-            return window.CommonUtils.formatNumber(num);
-        }
-        // Fallback для обратной совместимости
-        return new Intl.NumberFormat('ru-RU').format(num);
-    }
+    // formatNumber удален - используется CommonUtils.formatNumber
     
     /**
      * Показ уведомлений
      */
     showNotification(message, type = 'info') {
-        console.log(`🏦 BankModuleServer: ${type.toUpperCase()} - ${message}`);
-        
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            z-index: 10001;
-            font-weight: 600;
-            max-width: 400px;
-        `;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 3000);
+        return notificationManager.show(message, type);
     }
     
     /**
@@ -1872,7 +1842,7 @@ class BankModuleServer {
             }
         }
 
-        const amountText = amount ? `$${this.formatNumber(Math.abs(amount))}` : '';
+        const amountText = amount ? `$${CommonUtils.formatNumber(Math.abs(amount))}` : '';
         const amountClass = amount > 0 ? 'positive' : amount < 0 ? 'negative' : '';
 
         div.innerHTML = `

@@ -276,7 +276,7 @@ function navigateToGameBoard(roomId) {
         };
         
         console.log('🎮 Room: Сохраняем bundle в sessionStorage:', bundle);
-        sessionStorage.setItem('am_player_bundle', JSON.stringify(bundle));
+        CommonUtils.sessionStorage.set('am_player_bundle', bundle);
         
         console.log('🎮 Room: Переходим к игровому полю...');
         // Переходим на игровую доску SPA
@@ -513,7 +513,7 @@ function loadCachedRoomData() {
         
         // Пытаемся загрузить кэшированные данные комнаты
         const cacheKey = `am_room_cache_${roomId}`;
-        const cached = localStorage.getItem(cacheKey);
+        const cached = CommonUtils.storage.get(cacheKey);
         
         if (cached) {
             try {
@@ -552,7 +552,7 @@ function saveRoomToCache(room) {
             room: room,
             cachedAt: Date.now()
         };
-        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+        CommonUtils.storage.set(cacheKey, cacheData);
         console.log('💾 Room: Данные комнаты сохранены в кэш');
     } catch (error) {
         console.warn('⚠️ Room: Ошибка сохранения в кэш:', error);
@@ -1328,15 +1328,10 @@ function handleDreamSelection() {
 }
 
 /**
- * Форматирование валюты
+ * Форматирование валюты (использует CommonUtils)
  */
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(amount);
+    return CommonUtils.formatCurrency(amount);
 }
 
 /**
@@ -1362,7 +1357,7 @@ function loadTokens() {
     });
     
     // Восстанавливаем выбранную фишку из localStorage
-    const savedToken = localStorage.getItem('selected_token');
+    const savedToken = CommonUtils.storage.get('selected_token');
     if (savedToken) {
         const savedCard = document.querySelector(`[data-token-id="${savedToken}"]`);
         if (savedCard) {
@@ -1400,7 +1395,7 @@ async function selectToken(tokenId) {
             selectedToken = tokenId;
             
             // Сохраняем выбор в localStorage
-            localStorage.setItem('selected_token', tokenId);
+            CommonUtils.storage.set('selected_token', tokenId);
             
             console.log('✅ Room: Фишка выбрана:', tokenId);
             console.log('✅ Room: Класс selected добавлен к элементу:', selectedCard);
@@ -2321,12 +2316,7 @@ function updateTokensAvailability() {
 }
 
 function showNotification(message, type = 'info') {
-    if (window.notificationService) {
-        window.notificationService.show(message, type);
-    } else {
-        // Fallback уведомление
-        alert(message);
-    }
+    return notificationManager.show(message, type);
 }
 
 // Экспорт функций и переменных для глобального доступа
