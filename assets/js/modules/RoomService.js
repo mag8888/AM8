@@ -1,5 +1,5 @@
 /**
- * RoomService v2.0.0 - Refactored
+ * RoomService v2.0.1 - Fixed Mock Data Issue
  * Клиентский сервис для работы с игровыми комнатами
  * 
  * Основные улучшения:
@@ -7,6 +7,7 @@
  * - Улучшена архитектура управления данными
  * - Добавлена система кэширования
  * - Оптимизирована инициализация
+ * - ИСПРАВЛЕНО: Отключены мок-данные для работы с сервером
  */
 class RoomService {
     constructor() {
@@ -27,7 +28,7 @@ class RoomService {
         this.config = {
             isLocal,
             baseUrl: isLocal ? 'http://localhost:3002/api/rooms' : 'https://am8-production.up.railway.app/api/rooms',
-            useMockData: true, // Временно включаем мок-данные для тестирования
+            useMockData: false, // Отключаем мок-данные для работы с сервером
             localStorageKey: 'aura_money_dynamic_rooms',
             cacheTimeout: 300000, // Увеличиваем до 5 минут для устранения перегрузки
             maxRetries: 3,
@@ -37,13 +38,14 @@ class RoomService {
         console.log('🔧 RoomService: Конфигурация инициализирована:', {
             isLocal,
             useMockData: this.config.useMockData,
-            baseUrl: this.config.baseUrl
+            baseUrl: this.config.baseUrl,
+            version: 'v2.0.1 - FIXED MOCK DATA'
         });
         
         // Дублируем для совместимости
         this.useMockData = false;
 
-        console.log(`🏠 RoomService v2.0.0: Инициализация ${isLocal ? 'локального' : 'продакшн'} режима`);
+        console.log(`🏠 RoomService v2.0.1: Инициализация ${isLocal ? 'локального' : 'продакшн'} режима`);
     }
 
     /**
