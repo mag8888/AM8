@@ -227,6 +227,7 @@
     <div id="notifications" class="notifications-container"></div>
     
     <!-- Критически важные скрипты загружаем сразу -->
+    <script src="../assets/js/utils/CommonUtils.js"></script>
     <script src="../assets/js/utils/ModalUtils.js"></script>
     <script src="../assets/js/modules/Logger.js"></script>
     <script src="../assets/js/modules/ErrorHandler.js"></script>
@@ -248,7 +249,7 @@
                 '../assets/js/modules/RoomService.js?v=1760461000',
                 '../assets/js/modules/NotificationService.js',
                 '../assets/js/modules/UserModel.js',
-                '../assets/js/room.js?v=1760467000',
+                '../assets/js/room.js?v=' + Date.now(),
                 '../assets/js/auth.js'
             ];
             
@@ -265,15 +266,45 @@
                         console.log('🚀 Room.js загружен, запускаем инициализацию');
                         // Небольшая задержка для полной загрузки
                         setTimeout(() => {
-                            if (typeof loadCachedRoomData === 'function') loadCachedRoomData();
-                            if (typeof displayUserInfo === 'function') displayUserInfo();
-                            if (typeof loadDreams === 'function') loadDreams();
-                            if (typeof loadTokens === 'function') loadTokens();
+                            try {
+                                if (typeof loadCachedRoomData === 'function') loadCachedRoomData();
+                            } catch (e) {
+                                console.warn('⚠️ Room: Ошибка loadCachedRoomData:', e);
+                            }
+                            try {
+                                if (typeof displayUserInfo === 'function') displayUserInfo();
+                            } catch (e) {
+                                console.warn('⚠️ Room: Ошибка displayUserInfo:', e);
+                            }
+                            try {
+                                if (typeof loadDreams === 'function') {
+                                    console.log('🔍 Room: Вызываем loadDreams');
+                                    loadDreams();
+                                } else {
+                                    console.error('❌ Room: loadDreams не определена');
+                                }
+                            } catch (e) {
+                                console.error('❌ Room: Ошибка loadDreams:', e);
+                            }
+                            try {
+                                if (typeof loadTokens === 'function') {
+                                    console.log('🔍 Room: Вызываем loadTokens');
+                                    loadTokens();
+                                } else {
+                                    console.error('❌ Room: loadTokens не определена');
+                                }
+                            } catch (e) {
+                                console.error('❌ Room: Ошибка loadTokens:', e);
+                            }
                             
                             requestIdleCallback(() => {
-                                if (typeof initializeServices === 'function') initializeServices();
-                                if (typeof setupEventListeners === 'function') setupEventListeners();
-                                if (typeof loadRoomData === 'function') loadRoomData();
+                                try {
+                                    if (typeof initializeServices === 'function') initializeServices();
+                                    if (typeof setupEventListeners === 'function') setupEventListeners();
+                                    if (typeof loadRoomData === 'function') loadRoomData();
+                                } catch (e) {
+                                    console.warn('⚠️ Room: Ошибка инициализации:', e);
+                                }
                             });
                         }, 100);
                     };

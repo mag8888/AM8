@@ -13,8 +13,19 @@ class AuthService {
                            window.location.hostname !== '127.0.0.1';
         
         if (isProduction) {
-            // Production: Railway бэкенд сервис
-            this.apiBase = 'https://web-production-fc48b.up.railway.app/api/auth';
+            // Production: Railway - используем относительный путь или определяем динамически
+            // Если auth service на том же домене, используем относительный путь
+            // Иначе используем стандартный Railway домен для auth service
+            const hostname = window.location.hostname;
+            if (hostname.includes('railway.app')) {
+                // Определяем auth service URL на основе текущего домена
+                // Если frontend на am8-production, auth может быть на web-production или отдельном домене
+                // Используем относительный путь для работы через прокси или отдельный домен
+                this.apiBase = 'https://web-production-fc48b.up.railway.app/api/auth';
+            } else {
+                // Для других production доменов используем относительный путь
+                this.apiBase = '/api/auth';
+            }
         } else {
             // Development: localhost
             this.apiBase = 'http://localhost:3001/api/auth';

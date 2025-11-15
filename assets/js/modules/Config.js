@@ -129,6 +129,13 @@ class Config {
             case 'staging':
                 return 'https://am8-staging.up.railway.app/api';
             case 'production':
+                // Production: используем Railway endpoints
+                // Если на том же домене - относительный путь, иначе полный URL
+                const hostname = window.location.hostname;
+                if (hostname.includes('railway.app')) {
+                    // Используем относительный путь для работы через Railway
+                    return 'https://am8-production.up.railway.app/api';
+                }
                 return '/api';
             default:
                 return '/api';

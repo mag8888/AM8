@@ -187,17 +187,37 @@ const TOKENS_CONFIG = [
     }
 ];
 
-// Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
+// Функция инициализации
+function initializeRoomPage() {
     console.log('🏠 Room: Инициализация страницы комнаты');
     
     // Сначала показываем кэшированные данные для мгновенного отображения
-    loadCachedRoomData();
+    try {
+        loadCachedRoomData();
+    } catch (e) {
+        console.warn('⚠️ Room: Ошибка loadCachedRoomData:', e);
+    }
     
     // Критически важные функции выполняем сразу
-    displayUserInfo();
-    loadDreams();
-    loadTokens();
+    try {
+        displayUserInfo();
+    } catch (e) {
+        console.warn('⚠️ Room: Ошибка displayUserInfo:', e);
+    }
+    
+    try {
+        console.log('🔍 Room: Вызываем loadDreams из initializeRoomPage');
+        loadDreams();
+    } catch (e) {
+        console.error('❌ Room: Ошибка loadDreams:', e);
+    }
+    
+    try {
+        console.log('🔍 Room: Вызываем loadTokens из initializeRoomPage');
+        loadTokens();
+    } catch (e) {
+        console.error('❌ Room: Ошибка loadTokens:', e);
+    }
     
     // Остальные функции выполняем асинхронно
     requestIdleCallback(() => {
@@ -217,7 +237,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Запускаем периодическое обновление данных комнаты для получения изменений в реальном времени
         startRoomDataPolling();
     });
-});
+}
+
+// Инициализация при загрузке страницы
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeRoomPage);
+} else {
+    // DOM уже загружен, вызываем сразу
+    initializeRoomPage();
+}
 
 // Fallback для requestIdleCallback
 if (!window.requestIdleCallback) {
@@ -276,7 +304,16 @@ function navigateToGameBoard(roomId) {
         };
         
         console.log('🎮 Room: Сохраняем bundle в sessionStorage:', bundle);
-        CommonUtils.sessionStorage.set('am_player_bundle', bundle);
+        if (typeof CommonUtils !== 'undefined' && CommonUtils.sessionStorage) {
+            CommonUtils.sessionStorage.set('am_player_bundle', bundle);
+        } else {
+            // Fallback на прямой sessionStorage
+            try {
+                sessionStorage.setItem('am_player_bundle', JSON.stringify(bundle));
+            } catch (e) {
+                console.warn('⚠️ Room: Не удалось сохранить bundle:', e);
+            }
+        }
         
         console.log('🎮 Room: Переходим к игровому полю...');
         // Переходим на игровую доску SPA
@@ -513,7 +550,20 @@ function loadCachedRoomData() {
         
         // Пытаемся загрузить кэшированные данные комнаты
         const cacheKey = `am_room_cache_${roomId}`;
-        const cached = CommonUtils.storage.get(cacheKey);
+        let cached = null;
+        if (typeof CommonUtils !== 'undefined' && CommonUtils.storage) {
+            cached = CommonUtils.storage.get(cacheKey);
+        } else {
+            // Fallback на прямой localStorage
+            try {
+                const cachedStr = localStorage.getItem(cacheKey);
+                if (cachedStr) {
+                    cached = JSON.parse(cachedStr);
+                }
+            } catch (e) {
+                console.warn('⚠️ Room: Не удалось загрузить кэш:', e);
+            }
+        }
         
         if (cached) {
             try {
@@ -552,7 +602,16 @@ function saveRoomToCache(room) {
             room: room,
             cachedAt: Date.now()
         };
-        CommonUtils.storage.set(cacheKey, cacheData);
+        if (typeof CommonUtils !== 'undefined' && CommonUtils.storage) {
+            CommonUtils.storage.set(cacheKey, cacheData);
+        } else {
+            // Fallback на прямой localStorage
+            try {
+                localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+            } catch (e) {
+                console.warn('⚠️ Room: Не удалось сохранить кэш:', e);
+            }
+        }
         console.log('💾 Room: Данные комнаты сохранены в кэш');
     } catch (error) {
         console.warn('⚠️ Room: Ошибка сохранения в кэш:', error);
@@ -1255,11 +1314,22 @@ function showAuthRequired() {
  * Загрузка мечт в выпадающий список
  */
 function loadDreams() {
+    console.log('🔍 Room: loadDreams вызвана');
     const dreamSelect = document.getElementById('dream-select');
-    if (!dreamSelect) return;
+    if (!dreamSelect) {
+        console.warn('⚠️ Room: Элемент dream-select не найден');
+        return;
+    }
+    
+    console.log('🔍 Room: DREAMS_CONFIG длина:', DREAMS_CONFIG ? DREAMS_CONFIG.length : 'не определена');
     
     // Очищаем список (кроме первого элемента)
     dreamSelect.innerHTML = '<option value="">Выберите свою мечту...</option>';
+    
+    if (!DREAMS_CONFIG || DREAMS_CONFIG.length === 0) {
+        console.error('❌ Room: DREAMS_CONFIG пуст или не определен');
+        return;
+    }
     
     DREAMS_CONFIG.forEach(dream => {
         const option = document.createElement('option');
@@ -1268,7 +1338,7 @@ function loadDreams() {
         dreamSelect.appendChild(option);
     });
     
-    console.log('✅ Room: Мечты загружены');
+    console.log('✅ Room: Мечты загружены, добавлено опций:', DREAMS_CONFIG.length);
 }
 
 /**
@@ -1331,17 +1401,39 @@ function handleDreamSelection() {
  * Форматирование валюты (использует CommonUtils)
  */
 function formatCurrency(amount) {
-    return CommonUtils.formatCurrency(amount);
+    if (typeof CommonUtils !== 'undefined' && CommonUtils.formatCurrency) {
+        return CommonUtils.formatCurrency(amount);
+    }
+    // Fallback если CommonUtils еще не загружен
+    if (typeof amount !== 'number' || isNaN(amount)) {
+        return '$0';
+    }
+    const formatted = amount.toLocaleString('ru-RU', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+    return `$${formatted}`;
 }
 
 /**
  * Загрузка фишек
  */
 function loadTokens() {
+    console.log('🔍 Room: loadTokens вызвана');
     const tokensGrid = document.getElementById('tokens-grid');
-    if (!tokensGrid) return;
+    if (!tokensGrid) {
+        console.warn('⚠️ Room: Элемент tokens-grid не найден');
+        return;
+    }
+    
+    console.log('🔍 Room: TOKENS_CONFIG длина:', TOKENS_CONFIG ? TOKENS_CONFIG.length : 'не определена');
     
     tokensGrid.innerHTML = '';
+    
+    if (!TOKENS_CONFIG || TOKENS_CONFIG.length === 0) {
+        console.error('❌ Room: TOKENS_CONFIG пуст или не определен');
+        return;
+    }
     
     TOKENS_CONFIG.forEach(token => {
         const tokenCard = document.createElement('div');
@@ -1357,7 +1449,17 @@ function loadTokens() {
     });
     
     // Восстанавливаем выбранную фишку из localStorage
-    const savedToken = CommonUtils.storage.get('selected_token');
+    let savedToken = null;
+    if (typeof CommonUtils !== 'undefined' && CommonUtils.storage) {
+        savedToken = CommonUtils.storage.get('selected_token');
+    } else {
+        // Fallback на прямой localStorage
+        try {
+            savedToken = localStorage.getItem('selected_token');
+        } catch (e) {
+            console.warn('⚠️ Room: Не удалось получить сохраненную фишку:', e);
+        }
+    }
     if (savedToken) {
         const savedCard = document.querySelector(`[data-token-id="${savedToken}"]`);
         if (savedCard) {
@@ -1395,7 +1497,16 @@ async function selectToken(tokenId) {
             selectedToken = tokenId;
             
             // Сохраняем выбор в localStorage
-            CommonUtils.storage.set('selected_token', tokenId);
+            if (typeof CommonUtils !== 'undefined' && CommonUtils.storage) {
+                CommonUtils.storage.set('selected_token', tokenId);
+            } else {
+                // Fallback на прямой localStorage
+                try {
+                    localStorage.setItem('selected_token', tokenId);
+                } catch (e) {
+                    console.warn('⚠️ Room: Не удалось сохранить выбранную фишку:', e);
+                }
+            }
             
             console.log('✅ Room: Фишка выбрана:', tokenId);
             console.log('✅ Room: Класс selected добавлен к элементу:', selectedCard);
