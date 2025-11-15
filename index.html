@@ -129,42 +129,58 @@
             padding: 0.5rem; /* Минимальные отступы */
         }
 
-        /* Контейнер для панели игроков */
-        .players-panel-container {
-            grid-area: players-panel;
+        /* Стили для игровой страницы */
+        .game-page {
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
             width: 100%;
-            max-width: 400px;
+            gap: 1rem;
+            padding: 0.5rem;
         }
 
-        /* Специальная навигация для игровой комнаты */
-        .app-navigation.game-room-nav {
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 0.75rem 0;
+        /* Центральное игровое поле */
+        .game-board-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            height: 100vh;
+            position: relative;
         }
 
-        .game-room-nav .nav-container {
-            justify-content: flex-end;
+        /* Правая панель: Банк, Карточки, Игроки, Управление ходом */
+        .players-panel-container {
+            flex: 0 0 auto;
+            width: 380px;
+            min-width: 320px;
+            max-width: 420px;
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: rgba(15, 23, 42, 0.95);
+            border-left: 2px solid rgba(148, 163, 184, 0.3);
+            padding: 1rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
 
-        .game-room-nav .nav-logo,
-        .game-room-nav .nav-menu,
-        .game-room-nav .nav-button[href="/admin/"] {
-            display: none;
+        /* Контейнер для банка и карточек внутри правой панели */
+        #card-decks-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
 
-        .game-room-nav .nav-user {
-            margin-left: auto;
-        }
-        
-        /* Оптимизированное игровое поле для главной страницы */
+        /* Оптимизированное игровое поле - квадратное с сохранением пропорций */
         .game-page .board-wrapper {
-            width: min(100vmin, 1000px) !important;
-            height: min(100vmin, 1000px) !important;
-            border: 3px solid rgba(99, 102, 241, 0.4) !important;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-            border-radius: 12px !important;
+            width: min(90vmin, 90vw, 800px) !important;
+            height: min(90vmin, 90vw, 800px) !important;
+            aspect-ratio: 1 / 1;
+            margin: auto;
         }
         
         .game-page .track-cell {
@@ -183,110 +199,91 @@
             font-size: 0.5rem !important;
             line-height: 16px !important;
         }
-        
-        /* Стили кнопки удалены - только логотип */
-        
-        /* Стили для кнопок */
-        .btn {
-            display: inline-block;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin: 0.5rem;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #6b7280, #4b5563);
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #4b5563, #374151);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
-        }
-        
-        .center-actions {
-            margin-top: 1.5rem;
-        }
 
-        /* Удалены стили game-control-panel - функциональность интегрирована в PlayersPanel */
-
-        /* Адаптивность для средних экранов - Grid система */
+        /* Адаптивность для планшетов */
         @media (max-width: 1024px) and (min-width: 769px) {
             .game-page {
-                grid-template-columns: 1fr;
-                grid-template-rows: 1fr auto;
-                grid-template-areas: 
-                    "game-board"
-                    "players-panel";
-                gap: 1.5rem;
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .game-board-container {
+                width: 100%;
+                height: auto;
+                min-height: 60vh;
+                order: 1;
             }
             
             .players-panel-container {
+                width: 100%;
                 max-width: 100%;
+                height: auto;
+                max-height: 40vh;
+                order: 2;
+                border-left: none;
+                border-top: 2px solid rgba(148, 163, 184, 0.3);
+            }
+            
+            .game-page .board-wrapper {
+                width: min(85vmin, 85vw, 700px) !important;
+                height: min(85vmin, 85vw, 700px) !important;
             }
         }
 
-        /* Адаптивность для мобильных - Grid система */
+        /* Адаптивность для мобильных - сохраняем структуру поля */
         @media (max-width: 768px) {
             .app-content {
                 padding: 0;
             }
 
             .game-page {
-                padding: 0.25rem; /* Минимальные отступы */
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto;
-                grid-template-areas: 
-                    "card-decks"
-                    "game-board"
-                    "players-panel";
-                gap: 0.5rem; /* Уменьшенный отступ */
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+                padding: 0.25rem;
+                gap: 0.5rem;
             }
 
-            .card-decks-container {
-                flex-direction: column;
-                justify-content: flex-start;
-                overflow-y: auto;
-                max-height: 500px;
-                padding: 0.5rem;
+            .game-board-container {
+                width: 100%;
+                height: auto;
+                min-height: 50vh;
+                order: 1;
             }
             
             .players-panel-container {
+                width: 100%;
                 max-width: 100%;
+                height: auto;
+                max-height: 50vh;
+                order: 2;
+                border-left: none;
+                border-top: 2px solid rgba(148, 163, 184, 0.3);
+                padding: 0.75rem;
             }
             
+            /* Сохраняем квадратную форму и структуру поля на мобильных */
             .game-page .board-wrapper {
-                width: min(88vmin, 520px) !important; /* Уменьшаем размер */
-                height: min(88vmin, 520px) !important;
+                width: min(95vmin, 95vw) !important;
+                height: min(95vmin, 95vw) !important;
             }
         }
         
         @media (max-width: 480px) {
             .game-page {
-                padding: 0.1rem; /* Минимальные отступы */
+                padding: 0.1rem;
             }
             
+            .players-panel-container {
+                padding: 0.5rem;
+                max-height: 45vh;
+            }
+            
+            /* На очень маленьких экранах сохраняем структуру */
             .game-page .board-wrapper {
-                width: min(85vmin, 400px) !important; /* Уменьшаем размер */
-                height: min(85vmin, 400px) !important;
+                width: min(98vmin, 98vw) !important;
+                height: min(98vmin, 98vw) !important;
             }
         }
     </style>
@@ -300,11 +297,6 @@
             <!-- Страница игры (BoardLayout) -->
             <div id="game-page" class="page active">
                 <div class="game-page">
-                    <!-- Колоды карточек -->
-                    <aside class="card-decks-container" id="card-decks-panel">
-                        <!-- CardDeckPanel отрисует содержимое -->
-                    </aside>
-                    
                     <!-- Игровая доска -->
                     <div class="game-board-container">
                         <div class="board-wrapper">
@@ -323,8 +315,13 @@
                         </div>
                     </div>
 
-                    <!-- Панель игроков -->
-                    <div id="players-panel" class="players-panel-container"></div>
+                    <!-- Правая панель: Банк, Карточки, Игроки, Управление ходом -->
+                    <div id="players-panel" class="players-panel-container">
+                        <!-- Банк и карточки будут отрисованы здесь -->
+                        <div id="card-decks-panel"></div>
+                        <!-- Игроки будут отрисованы здесь через PlayersPanel -->
+                        <div id="players-list-container"></div>
+                    </div>
                 </div>
                 
                 <!-- Кнопки навигации скрыты в режиме геймборда (перенесены в CSS через класс .game-board-only) -->
@@ -403,14 +400,12 @@
     <!-- Главный скрипт приложения -->
     <script src="assets/js/app.js?v=11"></script>
     
-    <!-- Кнопка ротации хода (показывается на гейм-борде) -->
+    <!-- Кнопка ротации хода (внутри правой панели) -->
     <style>
         #pass-turn-btn {
-            position: fixed;
-            right: 16px;
-            bottom: 16px;
-            z-index: 9999;
-            padding: 10px 14px;
+            width: 100%;
+            margin-top: 1rem;
+            padding: 12px 16px;
             border: none;
             border-radius: 8px;
             background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -419,10 +414,15 @@
             cursor: pointer;
             box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
             display: none;
+            transition: transform 0.2s ease;
         }
-        #pass-turn-btn:hover { transform: translateY(-1px); }
+        #pass-turn-btn:hover { 
+            transform: translateY(-1px); 
+        }
+        #pass-turn-btn:active {
+            transform: translateY(0);
+        }
     </style>
-    <button id="pass-turn-btn">➡️ Передать ход</button>
     
     <!-- Скрипты для страницы авторизации -->
     <script>
@@ -690,9 +690,25 @@
             });
         }
         
-        // Кнопка "Передать ход" — работает, когда инициализировано приложение и GameState
+        // Кнопка "Передать ход" — добавляем в правую панель
         (function initPassTurnButton() {
-            const btn = document.getElementById('pass-turn-btn');
+            const playersPanel = document.getElementById('players-panel');
+            if (!playersPanel) {
+                console.warn('⚠️ Players panel not found, retrying...');
+                setTimeout(initPassTurnButton, 500);
+                return;
+            }
+            
+            // Создаем кнопку если её нет и добавляем в конец правой панели
+            let btn = document.getElementById('pass-turn-btn');
+            if (!btn) {
+                btn = document.createElement('button');
+                btn.id = 'pass-turn-btn';
+                btn.textContent = '➡️ Передать ход';
+                // Добавляем в конец правой панели, после всех элементов
+                playersPanel.appendChild(btn);
+            }
+            
             const updateVisibility = () => {
                 const onGame = (window.location.hash || '').includes('game');
                 btn.style.display = onGame ? 'block' : 'none';

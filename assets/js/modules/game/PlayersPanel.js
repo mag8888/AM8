@@ -8,7 +8,7 @@ class PlayersPanel {
     constructor(config = {}) {
         this.gameStateManager = config.gameStateManager || null;
         this.eventBus = config.eventBus || null;
-        this.containerId = config.containerId || 'players-panel';
+        this.containerId = config.containerId || 'players-list-container';
         
         // Создаем PlayerList для отображения игроков
         this.playerList = null;
