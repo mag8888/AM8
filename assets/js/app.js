@@ -622,7 +622,7 @@ class App {
         const initBankPreview = () => {
             if (window.BankPreview && window.BankPreview.getInstance) {
                 const bankPreview = window.BankPreview.getInstance({
-                    containerSelector: '#card-decks-panel',
+                    containerSelector: '#bank-preview-container',
                     eventBus: this.getEventBus(),
                     gameStateManager: gameStateManager
                 });

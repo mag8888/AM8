@@ -7,7 +7,7 @@
 
 class BankPreview {
     constructor(config = {}) {
-        this.containerSelector = config.containerSelector || '#card-decks-panel';
+        this.containerSelector = config.containerSelector || '#bank-preview-container';
         this.eventBus = config.eventBus || null;
         this.gameStateManager = config.gameStateManager || null;
         this.bankModule = null;
