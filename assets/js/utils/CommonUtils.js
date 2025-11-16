@@ -5,6 +5,24 @@
 
 class CommonUtils {
     /**
+     * Безопасный querySelector с защитой от ошибок
+     * @param {string} selector
+     * @param {ParentNode} root
+     * @param {any} fallback
+     * @returns {Element|null}
+     */
+    static safeQuerySelector(selector, root = document, fallback = null) {
+        try {
+            if (!selector || !root || typeof root.querySelector !== 'function') {
+                return fallback;
+            }
+            const el = root.querySelector(selector);
+            return el || fallback;
+        } catch (_) {
+            return fallback;
+        }
+    }
+    /**
      * Форматирование валюты
      * @param {number} amount - Сумма для форматирования
      * @param {string} currency - Валюта (по умолчанию '$')

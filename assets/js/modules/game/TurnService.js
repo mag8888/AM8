@@ -422,6 +422,12 @@ class TurnService extends EventTarget {
         try {
             const state = this.getState();
             if (!state || !state.activePlayer) {
+                // В демо/одиночной игре разрешаем действия как "мой ход"
+                const playersCount = Array.isArray(state?.players) ? state.players.length : 0;
+                const roomId = state?.roomId || this.state?.getRoomId?.();
+                if (roomId === 'demo' || playersCount <= 1) {
+                    return true;
+                }
                 console.warn('⚠️ TurnService.isMyTurn: Нет активного игрока');
                 return false;
             }
@@ -441,6 +447,14 @@ class TurnService extends EventTarget {
                 (activePlayer.username && currentUsername && activePlayer.username === currentUsername) ||
                 // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если username совпадает, считаем это нашим ходом
                 (activePlayer.username === currentUsername);
+            
+            // Разрешаем ход в демо/одиночном режиме для удобства тестирования
+            const playersCount = Array.isArray(state.players) ? state.players.length : 0;
+            const roomId = state?.roomId || this.state?.getRoomId?.();
+            const demoOverride = (roomId === 'demo' || playersCount <= 1);
+            if (!isMyTurn && demoOverride) {
+                return true;
+            }
             
             // Убираем избыточное логирование для предотвращения спама
             if (this._lastIsMyTurnLog !== isMyTurn) {
