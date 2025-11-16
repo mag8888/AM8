@@ -473,6 +473,9 @@
                 console.warn('⚠️ ensureBoardInitialized error:', e);
             }
         })();
+        // Повторные попытки, если модули инициализировались с задержкой
+        setTimeout(() => { try { window.__boardLayoutInstance?.renderTracks?.(); } catch(_){} }, 500);
+        setTimeout(() => { try { window.__boardLayoutInstance?.renderTracks?.(); } catch(_){} }, 1500);
     </script>
     
     <!-- Кнопка ротации хода (внутри правой панели) -->
