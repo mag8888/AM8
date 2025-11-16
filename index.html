@@ -478,8 +478,30 @@
             }
             
             try {
-                const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
-                const roomId = params.get('roomId');
+                const paramsFromHash = new URLSearchParams(window.location.hash.split('?')[1] || '');
+                let roomId = paramsFromHash.get('roomId');
+                
+                // Фоллбэки: если roomId отсутствует в hash
+                if (!roomId) {
+                    // 1) Пробуем взять из query (?roomId=...)
+                    const paramsFromSearch = new URLSearchParams(window.location.search || '');
+                    roomId = paramsFromSearch.get('roomId');
+                }
+                if (!roomId) {
+                    // 2) Пробуем взять из sessionStorage am_room_data
+                    try {
+                        const roomDataRaw = sessionStorage.getItem('am_room_data');
+                        if (roomDataRaw) {
+                            const parsed = JSON.parse(roomDataRaw);
+                            roomId = parsed?.roomId || parsed?.id || null;
+                        }
+                    } catch (_) {}
+                }
+                if (!roomId) {
+                    // 3) Безопасный дефолт для отображения поля (демо)
+                    roomId = 'demo';
+                }
+                
                 if (roomId) {
                     // Проверяем авторизацию: доступ только авторизованным
                     try {
