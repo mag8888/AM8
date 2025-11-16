@@ -3439,7 +3439,22 @@ class PlayersPanel {
         try {
             const turnService = window.app?.getModule?.('turnService');
             if (turnService) {
-                shouldActivate = turnService.canRoll() && turnService.isMyTurn();
+                // Базовое правило: ход и право броска
+                shouldActivate = Boolean(turnService.canRoll() && turnService.isMyTurn());
+                
+                // Допуск в одиночной игре/демо: если игроков <= 1 или нет активного игрока — разрешаем бросок
+                if (!shouldActivate) {
+                    const gsm = window.app?.getGameStateManager?.();
+                    const state = typeof gsm?.getState === 'function' ? gsm.getState() : null;
+                    const gsModule = window.app?.getModule?.('gameState');
+                    const playersFromGS = Array.isArray(gsModule?.players) ? gsModule.players : [];
+                    const playersFromState = Array.isArray(state?.players) ? state.players : [];
+                    const playersCount = playersFromState.length || playersFromGS.length || 0;
+                    const noActivePlayer = !state?.activePlayer && !gsModule?.activePlayer;
+                    if (playersCount <= 1 || noActivePlayer) {
+                        shouldActivate = Boolean(turnService.canRoll());
+                    }
+                }
                 console.log('🔧 PlayersPanel: TurnService проверка:', { 
                     canRoll: turnService.canRoll(), 
                     isMyTurn: turnService.isMyTurn(), 
