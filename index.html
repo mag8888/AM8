@@ -205,8 +205,11 @@
 
         /* Оптимизированное игровое поле - квадратное с сохранением пропорций */
         .game-page .board-wrapper {
-            width: min(90vmin, 90vw, 800px) !important;
-            height: min(90vmin, 90vw, 800px) !important;
+            /* Ограничиваем размерами контейнера и сохраняем квадрат */
+            width: min(100%, 90vmin);
+            max-width: 100%;
+            height: auto;
+            max-height: 100%;
             aspect-ratio: 1 / 1;
             margin: auto;
         }
