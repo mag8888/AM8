@@ -267,12 +267,12 @@
 
             .game-page {
                 padding: 0.25rem;
-                gap: 0.25rem;
+                gap: 0.5rem;
             }
 
             .top-panel-container {
-                max-height: 30vh;
                 padding: 0.5rem;
+                overflow: visible;
             }
 
             .top-panel-content {
@@ -284,10 +284,21 @@
                 max-width: 100%;
             }
 
-            /* Сохраняем квадратную форму и структуру поля на мобильных */
+            /* Поле: квадрат по ширине экрана, не перекрывает сверху/снизу */
+            .game-board-container {
+                padding: 0;
+                margin: 0;
+            }
             .game-page .board-wrapper {
-                width: min(100vw, 80vh) !important;
-                height: min(100vw, 80vh) !important;
+                width: 100vw !important;
+                height: 100vw !important;
+                max-height: calc(100vh - 360px) !important; /* оставляем место для игроков и банка */
+                margin: 0 auto !important;
+            }
+            
+            /* Банк под полем */
+            #bank-section {
+                padding: 0.5rem;
             }
         }
         
