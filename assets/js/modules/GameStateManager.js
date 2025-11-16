@@ -197,7 +197,7 @@ class GameStateManager {
         }
 
         // Проверяем глобальный rate limiter
-        if (!force && window.CommonUtils) {
+        if (!force && window.CommonUtils && window.CommonUtils.gameStateLimiter && typeof window.CommonUtils.gameStateLimiter.setRequestPending === 'function') {
             if (!window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
                 console.log('🚫 GameStateManager: Глобальный rate limiting активен');
                 return null;
@@ -247,7 +247,7 @@ class GameStateManager {
             }
         } finally {
             this._isUpdating = false;
-            if (window.CommonUtils) {
+            if (window.CommonUtils && window.CommonUtils.gameStateLimiter && typeof window.CommonUtils.gameStateLimiter.clearRequestPending === 'function') {
                 window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
             }
         }
