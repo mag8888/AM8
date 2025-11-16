@@ -115,11 +115,10 @@
             z-index: 0;
             order: initial;
         }
-        /* Поле должно быть поверх фонов секций */
-        .game-board-container { z-index: 100; isolation: isolate; }
-        .top-panel-container, #bank-section { z-index: 0; }
-        .top-panel-container { margin-bottom: 0.75rem; }
-        #bank-section { margin-top: 0.75rem; }
+        /* Порядок и слои: верхняя панель над полем, поле над банком */
+        .top-panel-container { z-index: 10; margin-bottom: 0.75rem; order: 1; }
+        .game-board-container { z-index: 0; margin-top: 0.5rem; order: 2; }
+        #bank-section { z-index: 0; margin-top: 0.75rem; order: 3; }
         /* Явный порядок секций: 1) игроки, 2) поле, 3) банк */
         .top-panel-container { order: 1; }
         .game-board-container { order: 2; }
@@ -302,7 +301,7 @@
             /* Поле: квадрат по ширине экрана, не перекрывает сверху/снизу */
             .game-board-container {
                 padding: 0;
-                margin: 0;
+                margin: 0.5rem 0 0 0; /* зазор сверху, чтобы поле не упиралось в панель */
                 min-height: 50vh; /* резерв по высоте на мобилках */
             }
             .game-page .board-wrapper {
