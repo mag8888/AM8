@@ -448,6 +448,32 @@
 
     <!-- Главный скрипт приложения -->
     <script src="assets/js/app.js?v=11"></script>
+    <script>
+        (function ensureBoardInitialized() {
+            try {
+                const hasTracks = document.getElementById('outer-track') && document.getElementById('inner-track');
+                const alreadyInit = window.__boardLayoutInstance;
+                const BoardLayoutCtor = window.BoardLayout;
+                if (!alreadyInit && hasTracks && typeof BoardLayoutCtor === 'function') {
+                    const eventBus = window.app?.getEventBus?.() || window.EventBus && new window.EventBus();
+                    const gameState = window.app?.getModule?.('gameState') || (window.GameState && new window.GameState(eventBus));
+                    window.__boardLayoutInstance = new BoardLayoutCtor({
+                        outerTrackSelector: '#outer-track',
+                        innerTrackSelector: '#inner-track',
+                        gameState,
+                        eventBus
+                    });
+                    // Перерисуем на случай поздней инициализации
+                    if (typeof window.__boardLayoutInstance.renderTracks === 'function') {
+                        window.__boardLayoutInstance.renderTracks();
+                    }
+                    console.log('✅ BoardLayout: принудительная инициализация выполнена');
+                }
+            } catch (e) {
+                console.warn('⚠️ ensureBoardInitialized error:', e);
+            }
+        })();
+    </script>
     
     <!-- Кнопка ротации хода (внутри правой панели) -->
     <style>
