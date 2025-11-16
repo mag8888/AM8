@@ -182,15 +182,19 @@
             max-width: 520px;
         }
 
-        /* Центральное игровое поле */
+        /* Центральное игровое поле (унифицировано) */
         .game-board-container {
             flex: 1;
-            display: grid;
-            place-items: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
             min-width: 0;
-            min-height: 0;
+            min-height: auto;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
+            padding: 0.5rem;
         }
 
         /* Нижняя панель: Карточки сделок */
