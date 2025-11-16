@@ -113,12 +113,17 @@
         #bank-section {
             position: relative;
             z-index: 0;
+            order: initial;
         }
         /* Поле должно быть поверх фонов секций */
         .game-board-container { z-index: 100; isolation: isolate; }
         .top-panel-container, #bank-section { z-index: 0; }
         .top-panel-container { margin-bottom: 0.75rem; }
         #bank-section { margin-top: 0.75rem; }
+        /* Явный порядок секций: 1) игроки, 2) поле, 3) банк */
+        .top-panel-container { order: 1; }
+        .game-board-container { order: 2; }
+        #bank-section { order: 3; }
         .top-panel-container { margin-bottom: 0.5rem; }
         .game-board-container { margin: 0.25rem 0; }
         #bank-section { margin-top: 0.5rem; }
@@ -227,6 +232,7 @@
             margin: auto;
             max-width: 100%;
             max-height: 90vh;
+            min-height: 420px; /* гарантия видимости на десктопе */
         }
         
         .game-page .track-cell {
