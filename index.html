@@ -107,6 +107,16 @@
             gap: 1rem;
             align-items: stretch;
         }
+        /* Гарантируем последовательный поток без наложений */
+        .top-panel-container,
+        .game-board-container,
+        #bank-section {
+            position: relative;
+            z-index: 0;
+        }
+        .top-panel-container { margin-bottom: 0.5rem; }
+        .game-board-container { margin: 0.25rem 0; }
+        #bank-section { margin-top: 0.5rem; }
         
         /* Прячем секцию колод для этого режима */
         .card-decks-container {
@@ -119,6 +129,7 @@
             justify-content: center;
             align-items: center;
             padding: 0.5rem;
+            overflow: visible;
         }
 
         /* Стили для игровой страницы - вертикальная компоновка */
@@ -205,6 +216,8 @@
             height: min(100vw, 90vh);
             aspect-ratio: 1 / 1;
             margin: auto;
+            max-width: 100%;
+            max-height: 90vh;
         }
         
         .game-page .track-cell {
