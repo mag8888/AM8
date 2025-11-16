@@ -96,37 +96,29 @@
             }
         }
 
-        /* Стили для игровой страницы - CSS Grid система */
+        /* Единый высокий экран: 1) игроки, 2) поле, 3) банк */
         .game-page {
-            padding: 0.5rem; /* Минимальные отступы */
+            padding: 0.5rem;
             max-width: 1600px;
             margin: 0 auto;
-            min-height: 100vh; /* Полная высота экрана */
-            display: grid;
-            grid-template-columns: 280px 1fr 400px; /* Уменьшено для одной колонки карт */
-            grid-template-rows: 1fr;
-            grid-template-areas: "card-decks game-board players-panel";
-            gap: 1rem; /* Уменьшенный отступ */
-            align-items: start;
-        }
-
-        /* Колоды карточек */
-        .card-decks-container {
-            grid-area: card-decks;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            min-height: 100%;
+            align-items: stretch;
         }
-
-        /* Контейнер для игровой доски */
+        
+        /* Прячем секцию колод для этого режима */
+        .card-decks-container {
+            display: none !important;
+        }
+        
+        /* Контейнер для игровой доски по центру */
         .game-board-container {
-            grid-area: game-board;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* Полная высота экрана */
-            padding: 0.5rem; /* Минимальные отступы */
+            padding: 0.5rem;
         }
 
         /* Стили для игровой страницы - вертикальная компоновка */
@@ -144,9 +136,6 @@
         .top-panel-container {
             flex: 0 0 auto;
             width: 100%;
-            max-height: 20vh; /* было 25vh */
-            overflow-y: auto;
-            overflow-x: hidden;
             background: rgba(15, 23, 42, 0.95);
             border-bottom: 2px solid rgba(148, 163, 184, 0.3);
             padding: 1rem;
@@ -162,17 +151,24 @@
             flex-wrap: wrap; /* избегаем наложений при узком экране */
         }
 
-        /* Контейнер для банка внутри верхней панели */
-        #bank-preview-container {
-            flex: 0 0 auto;
-            min-width: 300px;
-            max-width: 400px;
-        }
-
-        /* Контейнер для игроков внутри верхней панели */
+        /* Контейнер для игроков (секция 1) */
         #players-list-container {
             flex: 1;
             min-width: 0;
+        }
+        
+        /* Секция банка (секция 3) */
+        #bank-section {
+            flex: 0 0 auto;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            border-top: 2px solid rgba(148, 163, 184, 0.3);
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        #bank-preview-container {
+            width: 100%;
+            max-width: 520px;
         }
 
         /* Центральное игровое поле */
@@ -203,11 +199,10 @@
             flex-wrap: wrap;
         }
 
-        /* Оптимизированное игровое поле - квадратное с сохранением пропорций */
+        /* Оптимизированное игровое поле - квадрат на всю ширину экрана (с учетом высоты) */
         .game-page .board-wrapper {
-            /* Жестко обеспечиваем квадрат: используем vmin */
-            width: min(90vmin, 90vw);
-            height: min(90vmin, 90vw);
+            width: min(100vw, 90vh);
+            height: min(100vw, 90vh);
             aspect-ratio: 1 / 1;
             margin: auto;
         }
@@ -245,14 +240,9 @@
                 max-width: 100%;
             }
 
-            .card-decks-container {
-                max-height: 25vh;
-                padding: 0.75rem;
-            }
-            
             .game-page .board-wrapper {
-                width: min(85vmin, 85vw, 700px) !important;
-                height: min(85vmin, 85vw, 700px) !important;
+                width: min(100vw, 85vh) !important;
+                height: min(100vw, 85vh) !important;
             }
         }
 
@@ -281,16 +271,10 @@
                 max-width: 100%;
             }
 
-            .card-decks-container {
-                max-height: 25vh;
-                padding: 0.5rem;
-                flex-direction: column;
-            }
-            
             /* Сохраняем квадратную форму и структуру поля на мобильных */
             .game-page .board-wrapper {
-                width: min(95vmin, 95vw) !important;
-                height: min(95vmin, 95vw) !important;
+                width: min(100vw, 80vh) !important;
+                height: min(100vw, 80vh) !important;
             }
         }
         
@@ -304,15 +288,10 @@
                 max-height: 35vh;
             }
 
-            .card-decks-container {
-                padding: 0.5rem;
-                max-height: 20vh;
-            }
-            
             /* На очень маленьких экранах сохраняем структуру */
             .game-page .board-wrapper {
-                width: min(98vmin, 98vw) !important;
-                height: min(98vmin, 98vw) !important;
+                width: min(100vw, 75vh) !important;
+                height: min(100vw, 75vh) !important;
             }
         }
     </style>
@@ -326,17 +305,15 @@
             <!-- Страница игры (BoardLayout) -->
             <div id="game-page" class="page active">
                 <div class="game-page">
-                    <!-- Верхняя панель: Банк, Игроки, Управление ходом -->
+                    <!-- Секция 1: Игроки -->
                     <div class="top-panel-container">
                         <div id="players-panel" class="top-panel-content">
-                            <!-- Банк будет отрисован здесь через BankPreview -->
-                            <div id="bank-preview-container"></div>
                             <!-- Игроки будут отрисованы здесь через PlayersPanel -->
                             <div id="players-list-container"></div>
                         </div>
                     </div>
                     
-                    <!-- Игровая доска (центр) -->
+                    <!-- Секция 2: Игровая доска (центр) -->
                     <div class="game-board-container">
                         <div class="board-wrapper">
                             <!-- Внешний трек (большой круг) -->
@@ -354,10 +331,10 @@
                         </div>
                     </div>
 
-                    <!-- Нижняя панель: Карточки сделок -->
-                    <aside class="card-decks-container" id="card-decks-panel">
-                        <!-- CardDeckPanel отрисует содержимое -->
-                    </aside>
+                    <!-- Секция 3: Банк -->
+                    <section id="bank-section">
+                        <div id="bank-preview-container"></div>
+                    </section>
                 </div>
                 
                 <!-- Кнопки навигации скрыты в режиме геймборда (перенесены в CSS через класс .game-board-only) -->
