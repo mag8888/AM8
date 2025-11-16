@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="assets/css/modals.css?v=10">
     <link rel="stylesheet" href="assets/css/fixes.css?v=10">
     <link rel="stylesheet" href="assets/css/navigation.css?v=10">
+    <link rel="stylesheet" href="assets/css/board-layout.css?v=1">
     <style>
         /* Стили для контейнера страниц */
         #page-container {
@@ -215,6 +216,7 @@
         /* Нижняя панель: Карточки сделок */
         .card-decks-container {
             flex: 0 0 auto;
+            display: flex !important; /* делаем панель видимой */
             width: 100%;
             max-height: 15vh; /* было 20vh, даем больше места полю */
             overflow-y: auto;
@@ -382,6 +384,11 @@
                     <section id="bank-section">
                         <div id="bank-preview-container"></div>
                     </section>
+
+                    <!-- Секция 4: Карточки (панель колод) -->
+                    <section id="card-decks-panel" class="card-decks-container">
+                        <!-- Колоды будут отрисованы модулем CardDeckPanel -->
+                    </section>
                 </div>
                 
                 <!-- Кнопки навигации скрыты в режиме геймборда (перенесены в CSS через класс .game-board-only) -->
@@ -460,6 +467,35 @@
     <!-- Главный скрипт приложения -->
     <script src="assets/js/app.js?v=11"></script>
     <script>
+        // Мягкие guards: создаём отсутствующие контейнеры панелей / поля
+        (function ensureContainers() {
+            const gamePage = document.querySelector('.game-page');
+            if (!gamePage) return;
+            
+            // Левая панель карточек
+            if (!document.getElementById('card-decks-panel')) {
+                const decks = document.createElement('section');
+                decks.id = 'card-decks-panel';
+                decks.className = 'card-decks-container';
+                gamePage.appendChild(decks);
+            }
+            // Правая панель игроков (fallback для старого селектора)
+            if (!document.querySelector('.players-panel-container')) {
+                const right = document.getElementById('players-panel');
+                if (right) {
+                    right.classList.add('players-panel-container');
+                }
+            }
+            // Обёртка игрового поля
+            const boardContainer = document.querySelector('.game-board-container');
+            if (boardContainer && !boardContainer.querySelector('.board-wrapper')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'board-wrapper';
+                wrapper.innerHTML = '<div id="outer-track" class="track outer-track"></div><div id="inner-track" class="track inner-track"></div><div class="center-area"><div class="logo-center" id="center-logo"><img src="assets/images/logo.svg?v=2" alt="Энергия денег" class="logo-img"></div></div>';
+                boardContainer.appendChild(wrapper);
+            }
+        })();
+
         (function ensureBoardInitialized() {
             try {
                 const hasTracks = document.getElementById('outer-track') && document.getElementById('inner-track');
