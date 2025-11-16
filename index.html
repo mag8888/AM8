@@ -115,8 +115,10 @@
             z-index: 0;
         }
         /* Поле должно быть поверх фонов секций */
-        .game-board-container { z-index: 1; }
+        .game-board-container { z-index: 100; isolation: isolate; }
         .top-panel-container, #bank-section { z-index: 0; }
+        .top-panel-container { margin-bottom: 0.75rem; }
+        #bank-section { margin-top: 0.75rem; }
         .top-panel-container { margin-bottom: 0.5rem; }
         .game-board-container { margin: 0.25rem 0; }
         #bank-section { margin-top: 0.5rem; }
