@@ -290,10 +290,12 @@
                 margin: 0;
             }
             .game-page .board-wrapper {
-                width: 100vw !important;
-                height: 100vw !important;
-                max-height: calc(100vh - 360px) !important; /* оставляем место для игроков и банка */
+                width: 100% !important;
+                max-width: 100vw !important;
+                height: auto !important;
+                aspect-ratio: 1 / 1 !important;
                 margin: 0 auto !important;
+                min-height: 320px; /* гарантия видимости на маленьких экранах */
             }
             
             /* Банк под полем */
