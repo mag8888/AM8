@@ -2,7 +2,8 @@
 @media (min-width: 1025px) {
   .game-page {
     display: grid !important;
-    grid-template-columns: 280px 1fr 350px !important;
+    /* Симметрия: одинаковые боковые колонки */
+    grid-template-columns: 320px 1fr 320px !important;
     grid-template-rows: 1fr !important;
     grid-template-areas: "card-decks game-board players-panel" !important;
     gap: 1rem;
@@ -29,7 +30,20 @@
     z-index: 1 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    /* Более компактная сетка карточек, чтобы все помещались */
+    gap: 0.5rem !important;
   }
+  /* Карточки сделок: делаем немного компактнее, чтобы все помещались в высоту */
+  #card-decks-panel.card-decks-container .card-deck-card,
+  #card-decks-panel .card-deck-card {
+    flex: 1 1 140px !important;       /* базовая ширина */
+    max-width: 180px !important;      /* ограничиваем чтобы помещались по рядам */
+    padding: 0.5rem !important;       /* компактные внутренние отступы */
+  }
+  /* Заголовки/метрики в карточках — компактнее */
+  #card-decks-panel .card-deck-title { font-size: 0.95rem !important; }
+  #card-decks-panel .card-deck-subtitle { font-size: 0.85rem !important; }
+  #card-decks-panel .deck-metric { transform: scale(0.95); transform-origin: left center; }
   .game-board-container {
     grid-area: game-board !important;
     display: flex !important;
@@ -80,6 +94,7 @@
     flex-direction: column !important;
     height: auto !important;
     min-height: 100vh;
+    overflow-y: auto !important; /* скролл всей страницы, включая поле */
     grid-template-columns: 1fr !important;
     grid-template-areas: none !important;
     padding: 0.25rem;
@@ -92,7 +107,8 @@
     height: auto !important;
     min-height: 50vh;
     order: 2;
-    padding: 0.5rem;
+    padding: 0.5rem 0;          /* компактные отступы сверху/снизу */
+    overflow: visible !important; /* не режем контент поля */
   }
   #card-decks-panel.card-decks-container,
   .players-panel-container,
@@ -120,7 +136,7 @@
     height: auto !important;
     aspect-ratio: 1 / 1 !important;
     margin: 0 auto !important;
-    min-height: 320px !important;
+    min-height: 320px !important; /* чёткий квадрат на маленьких экранах */
   }
 }
 
