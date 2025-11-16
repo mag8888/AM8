@@ -145,11 +145,17 @@
         .game-page {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: auto;           /* позволяем странице быть выше экрана */
+            min-height: 100vh;      /* но не меньше высоты экрана */
             width: 100%;
             gap: 0.5rem;
             padding: 0.5rem;
             box-sizing: border-box;
+        }
+        
+        /* Глобально разрешаем вертикальный скролл страницы */
+        html, body {
+            overflow-y: auto;
         }
 
         /* Верхняя панель: Банк, Игроки, Управление ходом */
