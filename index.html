@@ -144,7 +144,7 @@
         .top-panel-container {
             flex: 0 0 auto;
             width: 100%;
-            max-height: 25vh;
+            max-height: 20vh; /* было 25vh */
             overflow-y: auto;
             overflow-x: hidden;
             background: rgba(15, 23, 42, 0.95);
@@ -177,9 +177,8 @@
         /* Центральное игровое поле */
         .game-board-container {
             flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: grid;
+            place-items: center;
             min-width: 0;
             min-height: 0;
             position: relative;
@@ -190,7 +189,7 @@
         .card-decks-container {
             flex: 0 0 auto;
             width: 100%;
-            max-height: 20vh;
+            max-height: 15vh; /* было 20vh, даем больше места полю */
             overflow-y: auto;
             overflow-x: hidden;
             background: rgba(15, 23, 42, 0.95);
@@ -205,10 +204,9 @@
 
         /* Оптимизированное игровое поле - квадратное с сохранением пропорций */
         .game-page .board-wrapper {
-            /* Ограничиваем размерами контейнера и сохраняем квадрат */
-            width: min(100%, 90vmin);
+            width: auto;
+            height: 100%;
             max-width: 100%;
-            height: auto;
             max-height: 100%;
             aspect-ratio: 1 / 1;
             margin: auto;
