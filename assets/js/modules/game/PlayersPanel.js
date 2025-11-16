@@ -653,69 +653,8 @@ class PlayersPanel {
     }
 
     // Удалена deprecated функция forceLoadPlayers()
-        // Улучшенное извлечение roomId из разных источников
-        let roomId = null;
-        
-        // Способ 1: из hash
-        const hash = window.location.hash;
-        const hashMatch = hash.match(/roomId=([^&]+)/);
-        if (hashMatch) {
-            roomId = hashMatch[1];
-        }
-        
-        // Способ 2: из URL search params
-        if (!roomId) {
-            const urlParams = new URLSearchParams(window.location.search);
-            roomId = urlParams.get('roomId');
-        }
-        
-        // Способ 3: из sessionStorage
-        if (!roomId) {
-            try {
-                const roomData = sessionStorage.getItem('am_room_data');
-                if (roomData) {
-                    const parsed = JSON.parse(roomData);
-                    roomId = parsed.roomId || parsed.id;
-                }
-            } catch (e) {
-                console.warn('PlayersPanel: Ошибка чтения roomId из sessionStorage:', e);
-            }
-        }
-        
-        if (!roomId) {
-            console.warn('⚠️ PlayersPanel: roomId не найден, пропускаем загрузку игроков');
-            // Показываем ошибку, так как без roomId не можем загрузить данные
-            this.showErrorState('Комната не найдена');
-            return;
-        }
-        
-        console.log('🔧 PlayersPanel: Принудительная загрузка игроков для комнаты:', roomId);
-        
-        // Проверяем кэш для ускорения загрузки
-        const now = Date.now();
-        const cacheKey = `players_${roomId}`;
-        const cachedData = this._playersCache.get(cacheKey);
-        
-        if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
-            console.log('🚀 PlayersPanel: Используем кэшированные данные игроков');
-            this.updatePlayersList(cachedData, this.gameStateManager?.getState?.()?.activePlayer);
-            
-            // Обновляем GameStateManager с кэшированными данными
-            const gameStateManager = window.app?.services?.get('gameStateManager');
-            if (gameStateManager && typeof gameStateManager.updateFromServer === 'function') {
-                gameStateManager.updateFromServer({ players: cachedData });
-            }
-            
-            // НЕ вызываем фоновое обновление сразу - это создает конфликт запросов
-            // Предзагрузка будет выполнена через некоторое время
-            setTimeout(() => {
-                this._fetchPlayersInBackground(roomId);
-            }, 15000); // Через 15 секунд, чтобы не конфликтовать с основным запросом
-            return;
-        }
-        
-        this._fetchPlayersFromAPI(roomId);
-    }
+    /* Отключен ошибочный верхнеуровневый блок, вызывавший SyntaxError.
+       Логика загрузки игроков реализована методами класса. */
     
     /**
      * Фоновое обновление данных игроков для кэша
@@ -764,100 +703,10 @@ class PlayersPanel {
             });
     }
     
-    // Удалена deprecated функция _fetchPlayersFromAPI()
-        // Атомарная проверка и установка pending флага для предотвращения race condition
-        if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-            console.log('🚫 PlayersPanel: Пропускаем основной запрос из-за глобального rate limiting или concurrent request');
-            return;
-        }
-        
-        // Проверяем локальный rate limiting после успешной установки pending флага
-        const now = Date.now();
-        if (now - this._lastApiRequestTime < this._minRequestInterval) {
-            console.log('🚫 PlayersPanel: Пропускаем основной запрос из-за локального rate limiting');
-            // Очищаем флаг pending так как мы не будем делать запрос
-            window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
-            return;
-        }
-        
-        // Отменяем предыдущий запрос если он есть
-        if (this._currentAbortController) {
-            this._currentAbortController.abort();
-        }
-        
-        // Создаем новый AbortController
-        this._currentAbortController = new AbortController();
-        this._lastApiRequestTime = now;
-        
-        fetch(`/api/rooms/${roomId}/game-state`, {
-            signal: this._currentAbortController.signal
-        })
-            .then(response => {
-                if (!response.ok) {
-                    if (response.status === 429) {
-                        console.warn('⚠️ PlayersPanel: HTTP 429, пропускаем запрос');
-                        throw new Error('RATE_LIMITED'); // Специальная ошибка для rate limit
-                    }
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('🔧 PlayersPanel: Ответ API:', data);
-                
-                if (data && data.success && data.state) {
-                    const players = data.state.players || [];
-                    if (Array.isArray(players) && players.length > 0) {
-                        console.log('🔧 PlayersPanel: Получены игроки принудительно:', players);
-                        
-                        // Кэшируем данные для ускорения последующих загрузок
-                        const cacheKey = `players_${roomId}`;
-                        this._playersCache.set(cacheKey, players);
-                        this._lastFetchTime = Date.now();
-                        
-                        this.updatePlayersList(players, this.gameStateManager?.getState?.()?.activePlayer);
-                        
-                        // Также обновляем GameStateManager
-                        const gameStateManager = window.app?.services?.get('gameStateManager');
-                        if (gameStateManager && typeof gameStateManager.updateFromServer === 'function') {
-                            gameStateManager.updateFromServer(data.state);
-                        }
-                        
-                        // Предзагружаем дополнительные данные через некоторое время
-                        setTimeout(() => {
-                            this.preloadGameData();
-                        }, 10000); // Через 10 секунд после успешной загрузки основных данных
-                    } else {
-                        console.log('⚠️ PlayersPanel: Игроки не найдены в ответе API');
-                        this.showEmptyState();
-                    }
-                } else {
-                    console.warn('⚠️ PlayersPanel: Неуспешный ответ API:', data);
-                    this.showErrorState('Ошибка получения данных с сервера');
-                }
-            })
-            .catch(err => {
-                // Игнорируем ошибки отмены запроса
-                if (err.name === 'AbortError') {
-                    return;
-                }
-                // Игнорируем ошибки rate limit
-                if (err.message === 'RATE_LIMITED') {
-                    console.log('⚠️ PlayersPanel: Пропущен запрос из-за rate limit');
-                    return;
-                }
-                console.error('❌ PlayersPanel: Ошибка принудительной загрузки игроков:', err);
-                this.showErrorState(`Ошибка загрузки: ${err.message}`);
-            })
-            .finally(() => {
-                // Очищаем ссылку на AbortController
-                this._currentAbortController = null;
-                // Очищаем флаг pending в глобальном limiter
-                if (window.CommonUtils) {
-                    window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
-                }
-            });
-    }
+    /* Отключен ошибочный верхнеуровневый блок (бывший _fetchPlayersFromAPI),
+       из‑за которого скрипт падал. При необходимости используйте метод
+       loadPlayersViaGameStateManager() внутри класса. */
+    
     
     /**
      * Предзагрузка игровых данных для ускорения работы
