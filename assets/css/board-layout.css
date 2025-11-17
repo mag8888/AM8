@@ -9,18 +9,27 @@
     gap: 1rem;
     align-items: stretch;
     justify-items: stretch;
+    padding: 0.5rem !important;
+    max-width: 1600px !important;
+    margin: 0 auto !important;
+    min-height: 100vh !important;
+    height: 100vh !important;
+    overflow: hidden !important; /* Предотвращаем выход за границы */
   }
+  
+  /* Левая панель: карточки сделок */
   #card-decks-panel.card-decks-container {
     grid-area: card-decks !important;
     display: flex !important;
     flex-direction: column !important;
     visibility: visible !important;
     opacity: 1 !important;
-    min-width: 250px !important;
+    min-width: 0 !important; /* Позволяет сжиматься в grid */
+    max-width: 320px !important; /* Жесткое ограничение */
     width: 100% !important;
-    min-height: 100vh !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
+    min-height: 0 !important; /* Позволяет сжиматься в grid */
+    height: 100% !important;
+    max-height: 100% !important;
     position: relative !important;
     transform: none !important;
     background: rgba(15, 23, 42, 0.95) !important;
@@ -30,41 +39,77 @@
     z-index: 1 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    /* Более компактная сетка карточек, чтобы все помещались */
     gap: 0.5rem !important;
   }
-  /* Карточки сделок: делаем немного компактнее, чтобы все помещались в высоту */
+  
+  /* Карточки сделок: компактные, чтобы все помещались */
   #card-decks-panel.card-decks-container .card-deck-card,
   #card-decks-panel .card-deck-card {
-    flex: 1 1 140px !important;       /* базовая ширина */
-    max-width: 180px !important;      /* ограничиваем чтобы помещались по рядам */
-    padding: 0.5rem !important;       /* компактные внутренние отступы */
+    flex: 0 0 auto !important; /* Не растягиваются */
+    width: 100% !important;
+    max-width: 100% !important; /* Не выходят за границы панели */
+    min-width: 0 !important;
+    padding: 0.5rem !important;
+    box-sizing: border-box !important;
   }
+  
   /* Заголовки/метрики в карточках — компактнее */
-  #card-decks-panel .card-deck-title { font-size: 0.95rem !important; }
-  #card-decks-panel .card-deck-subtitle { font-size: 0.85rem !important; }
-  #card-decks-panel .deck-metric { transform: scale(0.95); transform-origin: left center; }
+  #card-decks-panel .card-deck-title { 
+    font-size: 0.95rem !important; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #card-decks-panel .card-deck-subtitle { 
+    font-size: 0.85rem !important; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #card-decks-panel .deck-metric { 
+    transform: scale(0.95); 
+    transform-origin: left center; 
+  }
+  
+  /* Центральная область: игровое поле */
   .game-board-container {
     grid-area: game-board !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    min-height: 100vh !important;
+    min-width: 0 !important; /* Позволяет сжиматься в grid */
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
     padding: 0.5rem !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
   }
-  .players-panel-container,
-  #players-panel.top-panel-content {
+  
+  /* Квадратная доска по центру */
+  .game-page .board-wrapper {
+    width: min(90vmin, 90vw, 100%) !important;
+    height: min(90vmin, 90vw, 100%) !important;
+    aspect-ratio: 1 / 1 !important;
+    margin: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    min-height: 420px !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Правая панель: игроки и банк */
+  .top-panel-container {
     grid-area: players-panel !important;
     display: flex !important;
     flex-direction: column !important;
     visibility: visible !important;
     opacity: 1 !important;
-    min-width: 250px !important;
-    max-width: 400px !important;
+    min-width: 0 !important; /* Позволяет сжиматься в grid */
+    max-width: 320px !important; /* Жесткое ограничение */
     width: 100% !important;
-    min-height: 100vh !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
     position: relative !important;
     transform: none !important;
     background: rgba(15, 23, 42, 0.95) !important;
@@ -75,15 +120,39 @@
     overflow-y: auto !important;
     overflow-x: hidden !important;
   }
-  /* Квадратная доска по центру */
-  .game-page .board-wrapper {
-    width: min(90vmin, 90vw) !important;
-    height: min(90vmin, 90vw) !important;
-    aspect-ratio: 1 / 1 !important;
-    margin: auto !important;
+  
+  .players-panel-container,
+  #players-panel.top-panel-content {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
     max-width: 100% !important;
-    max-height: 90vh !important;
-    min-height: 420px !important;
+    min-width: 0 !important;
+    height: auto !important;
+    flex: 1 1 auto !important;
+    overflow: visible !important;
+    gap: 1rem !important;
+  }
+  
+  /* Банк внутри правой панели */
+  #bank-section {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    margin-top: auto !important; /* Прижимаем к низу */
+    padding: 1rem 0 0 !important;
+    box-sizing: border-box !important;
+    border-top: 2px solid rgba(148, 163, 184, 0.3) !important;
+  }
+  
+  #bank-preview-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
   }
 }
 
@@ -100,19 +169,67 @@
     padding: 0.25rem;
     gap: 0.5rem;
   }
+  
+  /* Верхняя панель: игроки и банк в колонку */
+  .top-panel-container {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    order: 1 !important;
+    position: relative !important;
+    transform: none !important;
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-bottom: 2px solid rgba(148, 163, 184, 0.3) !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 1rem !important;
+    box-sizing: border-box !important;
+    z-index: 0 !important;
+    overflow: visible !important;
+  }
+  
+  #players-panel.top-panel-content {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    gap: 1rem !important;
+    flex-wrap: wrap !important;
+  }
+  
+  /* Банк внутри верхней панели на мобиле */
+  #bank-section {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    margin-top: 1rem !important;
+    padding: 1rem 0 0 !important;
+    box-sizing: border-box !important;
+    border-top: 2px solid rgba(148, 163, 184, 0.3) !important;
+  }
+  
   .game-board-container {
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
     min-height: 50vh;
-    order: 2;
+    order: 2 !important;
     padding: 0.5rem 0;          /* компактные отступы сверху/снизу */
     overflow: visible !important; /* не режем контент поля */
   }
-  #card-decks-panel.card-decks-container,
-  .players-panel-container,
-  #players-panel.top-panel-content {
+  
+  #card-decks-panel.card-decks-container {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -121,14 +238,20 @@
     max-width: 100% !important;
     height: auto !important;
     max-height: 40vh;
-    order: 3;
+    order: 3 !important;
     border-right: none !important;
     border-left: none !important;
     border-bottom: 1px solid rgba(148, 163, 184, 0.2);
     padding: 1rem;
     position: relative !important;
     transform: none !important;
+    flex-direction: row !important;
+    gap: 0.75rem !important;
+    flex-wrap: wrap !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
   }
+  
   /* Поле остаётся квадратом по ширине */
   .game-page .board-wrapper {
     width: 100% !important;
