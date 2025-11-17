@@ -402,7 +402,20 @@ class TurnService extends EventTarget {
      */
     canMove() {
         const state = this.getState();
-        return state && state.canMove === true;
+        if (state && state.canMove === true) {
+            return true;
+        }
+        
+        // Даем возможность двигаться в демо/одиночном режиме,
+        // даже если GameState не успел отметить canMove = true
+        const roomId = state?.roomId || this.state?.getRoomId?.();
+        const playersCount = Array.isArray(state?.players) ? state.players.length : 0;
+        if (!state || roomId === 'demo' || playersCount <= 1) {
+            console.warn('⚠️ TurnService.canMove: Используем fallback (демо/одиночный режим)');
+            return true;
+        }
+        
+        return false;
     }
     
     /**
