@@ -33,6 +33,8 @@ class BankModuleServer {
         this.isOpen = false;
         this.isLoading = false;
         this._isTransferring = false;
+        this._isTakingLoan = false;
+        this._isRepayingLoan = false;
         this._lastDataLoad = 0;
         this._dataCacheTimeout = 30000; // 30 секунд кэш
         
@@ -1501,6 +1503,11 @@ class BankModuleServer {
      * Взятие кредита через сервер
      */
     async takeCreditInline() {
+        if (this._isTakingLoan) {
+            this.showNotification('Операция кредита уже выполняется', 'warning');
+            return;
+        }
+        
         const amountInput = this.ui.querySelector('#loan-amount-server');
         const amount = Math.max(0, Math.floor((parseInt(amountInput.value) || 0) / 1000) * 1000);
         
@@ -1515,6 +1522,7 @@ class BankModuleServer {
             return;
         }
         
+        this._isTakingLoan = true;
         try {
             const response = await fetch('/api/bank/loan/take', {
                 method: 'POST',
@@ -1551,6 +1559,8 @@ class BankModuleServer {
         } catch (error) {
             console.error('❌ BankModuleServer: Ошибка взятия кредита:', error);
             this.showNotification('Ошибка взятия кредита', 'error');
+        } finally {
+            this._isTakingLoan = false;
         }
     }
     
@@ -1558,6 +1568,11 @@ class BankModuleServer {
      * Погашение кредита через сервер
      */
     async repayCreditInline() {
+        if (this._isRepayingLoan) {
+            this.showNotification('Погашение уже выполняется', 'warning');
+            return;
+        }
+        
         const amountInput = this.ui.querySelector('#loan-amount-server');
         const amount = Math.max(0, Math.floor((parseInt(amountInput.value) || 0) / 1000) * 1000);
         
@@ -1576,6 +1591,7 @@ class BankModuleServer {
             return;
         }
         
+        this._isRepayingLoan = true;
         try {
             const response = await fetch('/api/bank/loan/repay', {
                 method: 'POST',
@@ -1612,6 +1628,8 @@ class BankModuleServer {
         } catch (error) {
             console.error('❌ BankModuleServer: Ошибка погашения кредита:', error);
             this.showNotification('Ошибка погашения кредита', 'error');
+        } finally {
+            this._isRepayingLoan = false;
         }
     }
     

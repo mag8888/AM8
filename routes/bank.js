@@ -19,6 +19,30 @@ const gameStateByRoomId = roomsModule.gameStateByRoomId || new Map();
 // Глобальное хранилище банковских операций (временное решение)
 const bankTransactions = new Map(); // roomId -> transactions[]
 const playerBalances = new Map(); // roomId -> playerId -> balance
+const MAX_TRANSACTIONS_PER_ROOM = 200;
+
+function recordTransaction(roomId, transaction = {}) {
+    if (!roomId) return;
+    if (!bankTransactions.has(roomId)) {
+        bankTransactions.set(roomId, []);
+    }
+    const list = bankTransactions.get(roomId);
+    const entry = {
+        id: transaction.id || `txn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        type: transaction.type || 'custom',
+        amount: Number(transaction.amount) || 0,
+        playerId: transaction.playerId || null,
+        playerName: transaction.playerName || '',
+        description: transaction.description || '',
+        timestamp: transaction.timestamp || new Date().toISOString(),
+        balanceAfter: transaction.balanceAfter,
+        extra: transaction.extra || {}
+    };
+    list.push(entry);
+    if (list.length > MAX_TRANSACTIONS_PER_ROOM) {
+        list.splice(0, list.length - MAX_TRANSACTIONS_PER_ROOM);
+    }
+}
 
 /**
  * GET /api/bank/balance/:roomId/:playerId
@@ -494,6 +518,14 @@ router.post('/loan/take', async (req, res) => {
         player.money = Number(player.money || 0) + finalAmount;
         // Сохраняем
         updateRoomGameState(roomId, roomData);
+        recordTransaction(roomId, {
+            type: 'loan_take',
+            amount: finalAmount,
+            playerId,
+            playerName: player.username || player.name || '',
+            description: `Взят кредит на $${finalAmount}`,
+            balanceAfter: player.money
+        });
         // Push всем
         try { await new PushService().broadcastPush('bank_balanceUpdated', { roomId, players: roomData.players }); } catch (_) {}
         return res.json({ success: true, data: { player, amount: finalAmount } });
@@ -531,6 +563,14 @@ router.post('/loan/repay', async (req, res) => {
         player.currentLoan = currentLoan - finalAmount;
         player.money = balance - finalAmount;
         updateRoomGameState(roomId, roomData);
+        recordTransaction(roomId, {
+            type: 'loan_repay',
+            amount: -finalAmount,
+            playerId,
+            playerName: player.username || player.name || '',
+            description: `Погашен кредит на $${finalAmount}`,
+            balanceAfter: player.money
+        });
         try { await new PushService().broadcastPush('bank_balanceUpdated', { roomId, players: roomData.players }); } catch (_) {}
         return res.json({ success: true, data: { player, amount: finalAmount } });
     } catch (e) {
