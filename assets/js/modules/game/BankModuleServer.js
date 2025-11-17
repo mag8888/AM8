@@ -887,30 +887,29 @@ class BankModuleServer {
             
             .bank-content {
                 display: flex;
+                flex-direction: column;
                 flex: 1;
                 width: 100%;
                 height: calc(100vh - 84px);
-                overflow: hidden;
-            }
-            
-            .bank-left {
-                flex: 0 0 380px;
-                min-height: 0;
-                padding: 24px;
-                border-right: 1px solid rgba(255, 255, 255, 0.1);
                 overflow-y: auto;
-                display: flex;
-                flex-direction: column;
             }
             
+            .bank-left,
             .bank-right {
-                flex: 1;
-                min-height: 0;
-                padding: 24px;
-                overflow-y: auto;
+                width: 100%;
+                padding: 24px clamp(16px, 4vw, 32px);
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                overflow: visible;
                 display: flex;
                 flex-direction: column;
                 gap: 24px;
+            }
+            
+            .bank-right {
+                border-bottom: none;
+                flex: 1;
+                padding-top: 0;
             }
             
             .bank-status {
