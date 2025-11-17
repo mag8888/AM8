@@ -355,6 +355,69 @@ class BankModuleServer {
             maxCredit: this.bankState.maxCredit,
             credit: this.bankState.credit
         });
+        
+        this._syncPlayersWithGameState(gameState, currentPlayer);
+    }
+    
+    /**
+     * Синхронизируем игроков с GameStateManager и событийнной шиной,
+     * чтобы банк и панель игроков использовали единый источник истины
+     */
+    _syncPlayersWithGameState(gameState, currentPlayer) {
+        try {
+            if (this.gameStateManager && typeof this.gameStateManager.updateFromServer === 'function') {
+                const payload = {
+                    players: this.bankState.players,
+                    activePlayer: gameState?.activePlayer || currentPlayer,
+                    currentPlayerIndex: gameState?.currentPlayerIndex,
+                    roomId: this.bankState.roomId,
+                    gameStarted: gameState?.gameStarted,
+                    canRoll: gameState?.canRoll,
+                    canMove: gameState?.canMove,
+                    canEndTurn: gameState?.canEndTurn
+                };
+                this.gameStateManager.updateFromServer(payload);
+            }
+            
+            if (this.eventBus && typeof this.eventBus.emit === 'function') {
+                this.eventBus.emit('game:playersUpdated', {
+                    players: this.bankState.players,
+                    activePlayer: gameState?.activePlayer || currentPlayer
+                });
+            }
+        } catch (error) {
+            console.warn('⚠️ BankModuleServer: Не удалось синхронизировать игроков с GameStateManager', error);
+        }
+    }
+    
+    /**
+     * Применяет изменения игрока локально и сообщает остальным модулям
+     */
+    _applyPlayerPatch(playerPatch) {
+        if (!playerPatch) return;
+        
+        try {
+            if (typeof playerPatch.money === 'number') {
+                this.bankState.balance = playerPatch.money;
+            }
+            if (typeof playerPatch.currentLoan === 'number') {
+                this.bankState.credit = playerPatch.currentLoan;
+            }
+            
+            if (this.gameStateManager && typeof this.gameStateManager.updatePlayer === 'function') {
+                this.gameStateManager.updatePlayer(playerPatch);
+            }
+            
+            if (this.eventBus && typeof this.eventBus.emit === 'function') {
+                const updatedPlayers = this.gameStateManager?.getPlayers?.() || this.bankState.players;
+                this.eventBus.emit('game:playersUpdated', {
+                    players: updatedPlayers,
+                    activePlayer: this.gameStateManager?.getActivePlayer?.()
+                });
+            }
+        } catch (error) {
+            console.warn('⚠️ BankModuleServer: Не удалось применить обновление игрока', error);
+        }
     }
     
     /**
@@ -1541,6 +1604,10 @@ class BankModuleServer {
             if (result.success) {
                 this.showNotification(`Кредит $${CommonUtils.formatNumber(amount)} взят успешно`, 'success');
                 
+                if (result.data?.player) {
+                    this._applyPlayerPatch(result.data.player);
+                }
+                
                 // Добавляем операцию в историю
                 this.addTransaction({
                     type: 'credit',
@@ -1609,6 +1676,10 @@ class BankModuleServer {
             
             if (result.success) {
                 this.showNotification(`Кредит погашен на $${CommonUtils.formatNumber(amount)}`, 'success');
+                
+                if (result.data?.player) {
+                    this._applyPlayerPatch(result.data.player);
+                }
                 
                 // Добавляем операцию в историю
                 this.addTransaction({
