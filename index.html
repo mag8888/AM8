@@ -323,17 +323,12 @@
             <!-- Страница игры (BoardLayout) -->
             <div id="game-page" class="page active">
                 <div class="game-page">
-                    <!-- Секция 1: Игроки и Банк (правая панель на десктопе) -->
+                    <!-- Секция 1: Игроки (правая панель на десктопе) -->
                     <div class="top-panel-container">
                         <div id="players-panel" class="top-panel-content">
                             <!-- Игроки будут отрисованы здесь через PlayersPanel -->
                             <div id="players-list-container"></div>
                         </div>
-                        
-                        <!-- Секция 3: Банк (внутри правой панели на десктопе) -->
-                        <section id="bank-section">
-                            <div id="bank-preview-container"></div>
-                        </section>
                     </div>
                     
                     <!-- Секция 2: Игровая доска (центр) -->
@@ -353,6 +348,11 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Секция 3: Банк (после поля на мобиле, внутри правой панели на десктопе) -->
+                    <section id="bank-section">
+                        <div id="bank-preview-container"></div>
+                    </section>
 
                     <!-- Секция 4: Карточки (панель колод) -->
                     <section id="card-decks-panel" class="card-decks-container">

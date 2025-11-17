@@ -134,18 +134,21 @@
     gap: 1rem !important;
   }
   
-  /* Банк внутри правой панели */
+  /* Банк на десктопе: размещаем в правой колонке через grid-column */
   #bank-section {
+    grid-column: 3 !important; /* Правая колонка (players-panel) */
+    grid-row: 1 !important; /* Та же строка, что и панели */
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
-    max-width: 100% !important;
+    max-width: 320px !important; /* Ширина правой панели */
     min-width: 0 !important;
-    flex: 0 0 auto !important;
+    margin-left: auto !important; /* Выравниваем по правому краю */
     margin-top: auto !important; /* Прижимаем к низу */
     padding: 1rem 0 0 !important;
     box-sizing: border-box !important;
     border-top: 2px solid rgba(148, 163, 184, 0.3) !important;
+    align-self: flex-end !important;
   }
   
   #bank-preview-container {
@@ -170,7 +173,12 @@
     gap: 0.5rem;
   }
   
-  /* Верхняя панель: игроки и банк в колонку */
+  /* Внутренние клетки на 15% меньше на мобиле */
+  :root {
+    --inner-cell-size: clamp(56px, 5.6vmin, 70px) !important; /* Уменьшено на 15% (было 66px, 6.6vmin, 82px) */
+  }
+  
+  /* Верхняя панель: только игроки (банк будет после поля) */
   .top-panel-container {
     display: flex !important;
     flex-direction: column !important;
@@ -204,18 +212,15 @@
     flex-wrap: wrap !important;
   }
   
-  /* Банк внутри верхней панели на мобиле */
-  #bank-section {
-    display: flex !important;
-    flex-direction: column !important;
+  /* Карточки игроков на всю ширину на мобиле */
+  .players-panel-container .player-item,
+  .player-item,
+  .player-section,
+  .player-card {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-    flex: 0 0 auto !important;
-    margin-top: 1rem !important;
-    padding: 1rem 0 0 !important;
     box-sizing: border-box !important;
-    border-top: 2px solid rgba(148, 163, 184, 0.3) !important;
   }
   
   .game-board-container {
@@ -225,8 +230,34 @@
     height: auto !important;
     min-height: 50vh;
     order: 2 !important;
-    padding: 0.5rem 0;          /* компактные отступы сверху/снизу */
+    padding: 0 !important; /* Убираем отступы, соединяем с банком */
+    margin: 0 !important;
     overflow: visible !important; /* не режем контент поля */
+  }
+  
+  /* Банк на всю ширину, соединен с игровым полем, без дополнительного скролла */
+  #bank-section {
+    order: 3 !important; /* Банк после поля */
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    margin-top: 0 !important; /* Убираем отступ, соединяем с полем */
+    padding: 1rem !important;
+    box-sizing: border-box !important;
+    border-top: 2px solid rgba(148, 163, 184, 0.3) !important;
+    border-bottom: none !important;
+    overflow: visible !important; /* Убираем дополнительный скролл */
+    background: rgba(15, 23, 42, 0.95) !important;
+  }
+  
+  #bank-preview-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
   }
   
   #card-decks-panel.card-decks-container {
