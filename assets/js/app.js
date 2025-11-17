@@ -985,7 +985,7 @@ class App {
         ensureModule('bankPreview', () => {
             if (!window.BankPreview || !window.BankPreview.getInstance) return null;
             return window.BankPreview.getInstance({
-                containerSelector: '#card-decks-panel',
+                containerSelector: '#bank-preview-container',
                 eventBus,
                 gameStateManager
             });
@@ -1198,21 +1198,24 @@ class App {
      * Принудительная инициализация левой панели (BankPreview и CardDeckPanel)
      */
     _initializeLeftPanel() {
-        console.log('🎯 App: Принудительная инициализация левой панели...');
+        console.log('🎯 App: Принудительная инициализация панелей...');
         
-        // Проверяем наличие контейнера
-        const container = document.querySelector('#card-decks-panel');
-        if (!container) {
+        const decksContainer = document.querySelector('#card-decks-panel');
+        const bankContainer = document.querySelector('#bank-preview-container');
+        
+        if (!decksContainer) {
             console.warn('⚠️ App: Контейнер #card-decks-panel не найден');
-            return;
+        }
+        if (!bankContainer) {
+            console.warn('⚠️ App: Контейнер #bank-preview-container не найден');
         }
         
         // Инициализируем BankPreview если еще не инициализирован
-        if (!this.modules.get('bankPreview') && window.BankPreview) {
+        if (!this.modules.get('bankPreview') && window.BankPreview && bankContainer) {
             console.log('🏦 App: Инициализируем BankPreview...');
             try {
                 const bankPreview = new window.BankPreview({
-                    containerSelector: '#card-decks-panel',
+                    containerSelector: '#bank-preview-container',
                     eventBus: this.getEventBus(),
                     gameStateManager: this.getGameStateManager()
                 });
@@ -1224,7 +1227,7 @@ class App {
         }
         
         // Инициализируем CardDeckPanel если еще не инициализирован
-        if (!this.modules.get('cardDeckPanel') && window.CardDeckPanel) {
+        if (!this.modules.get('cardDeckPanel') && window.CardDeckPanel && decksContainer) {
             console.log('🃏 App: Инициализируем CardDeckPanel...');
             try {
                 const cardDeckPanel = new window.CardDeckPanel({
@@ -1238,7 +1241,6 @@ class App {
             }
         }
         
-        // Принудительно обновляем данные мгновенно (убрана задержка)
         const bankPreview = this.modules.get('bankPreview');
         if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
             bankPreview.updatePreviewData();
@@ -1251,15 +1253,16 @@ class App {
             console.log('🃏 App: CardDeckPanel данные обновлены');
         }
         
-        // Проверяем, что контейнер не пустой (убрана задержка для немедленной проверки)
         requestAnimationFrame(() => {
-            const containerContent = container.innerHTML.trim();
-            console.log('🎯 App: Проверка содержимого левой панели:', {
-                containerExists: !!container,
-                hasContent: containerContent.length > 0,
-                contentLength: containerContent.length,
-                previewExists: !!container.querySelector('.bank-preview-card'),
-                cardsExist: !!container.querySelector('.card-deck-card')
+            const decksContent = decksContainer?.innerHTML.trim() || '';
+            const bankContent = bankContainer?.innerHTML.trim() || '';
+            console.log('🎯 App: Проверка содержимого панелей:', {
+                decksExists: !!decksContainer,
+                decksHasContent: decksContent.length > 0,
+                bankExists: !!bankContainer,
+                bankHasContent: bankContent.length > 0,
+                cardsExist: !!decksContainer?.querySelector('.card-deck-card'),
+                previewExists: !!bankContainer?.querySelector('.bank-preview-card')
             });
         });
     }
