@@ -23,6 +23,35 @@
             id: 'market',
             name: 'Рынок'
         }
+        
+        getOfflineDecks() {
+            if (this.lastKnownDecks.length) {
+                return this.lastKnownDecks;
+            }
+            return DEFAULT_DECKS.map((deck, index) => ({
+                ...deck,
+                order: index + 1,
+                drawCount: deck.drawCount || 0,
+                discardCount: deck.discardCount || 0
+            }));
+        }
+        
+        _notifyRateLimit(waitMs = 0) {
+            const now = Date.now();
+            if (this._lastRateLimitToastAt && (now - this._lastRateLimitToastAt) < 10000) {
+                return;
+            }
+            this._lastRateLimitToastAt = now;
+            const seconds = Math.max(1, Math.round(waitMs / 1000));
+            const message = waitMs
+                ? `Карточные данные временно недоступны. Повтор через ${seconds} сек.`
+                : 'Карточные данные временно недоступны. Используем кэш.';
+            if (typeof window.showNotification === 'function') {
+                window.showNotification(message, 'warning');
+            } else {
+                console.warn('⚠️ CardDeckPanel:', message);
+            }
+        }
     ];
 
     class CardDeckPanel {
@@ -43,6 +72,8 @@
             this.rateLimitBackoff = 0;
             this._loadDecksTimer = null;
             this._refreshTimer = null;
+            this._lastRateLimitToastAt = 0;
+            this.forceOfflineMode = this._shouldForceOfflineMode();
 
             this.handleContainerClick = this.handleContainerClick.bind(this);
 
@@ -59,6 +90,10 @@
                 console.warn('⚠️ CardDeckPanel: Контейнер не найден:', this.containerSelector);
                 return;
             }
+            
+            if (this.forceOfflineMode) {
+                console.warn('⚠️ CardDeckPanel: offline/demo режим — используем локальные данные');
+            }
 
             // Сразу показываем 4 карточки по умолчанию
             this.renderDecks(DEFAULT_DECKS.map(deck => ({
@@ -66,6 +101,13 @@
                 drawCount: 0,
                 discardCount: 0
             })));
+            
+            if (this.forceOfflineMode) {
+                this.lastKnownDecks = this.getOfflineDecks();
+                this.renderDecks(this.lastKnownDecks);
+                this.setupEventListeners();
+                return;
+            }
             
             this.loadDecks().catch((error) => {
                 if (error?.isRateLimit && this.lastKnownDecks.length) {
@@ -161,6 +203,17 @@
                 clearTimeout(this._loadDecksTimer);
             }
             
+            if (this.forceOfflineMode) {
+                this.renderDecks(this.getOfflineDecks());
+                return;
+            }
+            
+            if (this.rateLimitUntil && Date.now() < this.rateLimitUntil) {
+                this._notifyRateLimit(this.rateLimitUntil - Date.now());
+                this.renderDecks(this.lastKnownDecks.length ? this.lastKnownDecks : this.getOfflineDecks());
+                return;
+            }
+            
             // Отменяем предыдущий запрос если он еще выполняется
             if (this.abortController) {
                 this.abortController.abort();
@@ -194,6 +247,8 @@
 
                 if (response.status === 429) {
                     const retryAfter = this._applyRateLimitFromResponse(response);
+                    this.rateLimitUntil = Date.now() + retryAfter;
+                    this._notifyRateLimit(retryAfter);
                     console.warn('⚠️ CardDeckPanel: HTTP 429, используем кэшированные данные');
                     // Не показываем ошибку пользователю, используем кэшированные данные
                     if (this.lastKnownDecks.length) {
@@ -267,6 +322,7 @@
                                        error.message?.includes('Слишком много запросов');
                 
                 if (isRateLimitError) {
+                    this._notifyRateLimit();
                     console.warn('⚠️ CardDeckPanel: Rate limit ошибка, используем кэшированные данные');
                     if (this.lastKnownDecks.length) {
                         this.renderDecks(this.lastKnownDecks);
@@ -528,6 +584,27 @@
                 this.container.removeEventListener('click', this.handleContainerClick);
             }
         }
+    }
+
+    _shouldForceOfflineMode() {
+        try {
+            const url = new URL(window.location.href);
+            const params = url.searchParams;
+            const hash = url.hash || '';
+            if (params.get('forceMockCards') === '1' || params.get('forceMock') === '1') {
+                sessionStorage.setItem('forceMockCards', '1');
+                return true;
+            }
+            if (sessionStorage.getItem('forceMockCards') === '1') {
+                return true;
+            }
+            if (hash.includes('roomId=demo') || params.get('roomId') === 'demo') {
+                return true;
+            }
+        } catch (error) {
+            console.warn('⚠️ CardDeckPanel: не удалось определить offline режим', error);
+        }
+        return false;
     }
 
     window.CardDeckPanel = CardDeckPanel;

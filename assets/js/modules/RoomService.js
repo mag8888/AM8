@@ -36,6 +36,13 @@ class RoomService {
             useDynamicRooms: false // Отключаем динамические комнаты, используем серверную БД
         };
         
+        const forcedMock = this._shouldForceMockData();
+        if (forcedMock) {
+            console.warn('⚠️ RoomService: Включаем мок-данные (demo/forceMock режим)');
+            this.config.useMockData = true;
+            this.config.baseUrl = 'mock://rooms';
+        }
+        
         console.log('🔧 RoomService: Конфигурация инициализирована:', {
             isLocal,
             useMockData: this.config.useMockData,
@@ -47,6 +54,44 @@ class RoomService {
         this.useMockData = this.config.useMockData;
 
         console.log(`🏠 RoomService v2.0.1: Инициализация ${isLocal ? 'локального' : 'продакшн'} режима`);
+    }
+
+    _shouldForceMockData() {
+        try {
+            const url = new URL(window.location.href);
+            const params = url.searchParams;
+            const hash = url.hash || '';
+            if (params.get('forceMock') === '1' || params.get('forceMockRooms') === '1') {
+                sessionStorage.setItem('forceMockRooms', '1');
+                return true;
+            }
+            if (sessionStorage.getItem('forceMockRooms') === '1') {
+                return true;
+            }
+            if (hash.includes('roomId=demo') || params.get('roomId') === 'demo') {
+                return true;
+            }
+        } catch (error) {
+            console.warn('⚠️ RoomService: Не удалось определить режим mock:', error);
+        }
+        return false;
+    }
+    
+    _notifyRateLimit(waitMs = 0) {
+        const now = Date.now();
+        if (this._lastRateLimitToastAt && (now - this._lastRateLimitToastAt) < 10000) {
+            return;
+        }
+        this._lastRateLimitToastAt = now;
+        const seconds = Math.max(1, Math.round(waitMs / 1000));
+        const message = waitMs
+            ? `Сервер перегружен. Повторим через ${seconds} сек.`
+            : 'Сервер перегружен. Используем кэшированные данные.';
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(message, 'warning');
+        } else {
+            console.warn('⚠️ RoomService:', message);
+        }
     }
 
     /**
@@ -328,6 +373,7 @@ class RoomService {
             
             if (isRateLimited) {
                 console.log('⏳ RoomService: Rate limited, используем кэш вместо fallback');
+                this._notifyRateLimit();
             }
             
             // Пробуем кэш
@@ -401,6 +447,7 @@ class RoomService {
                     const retryAfter = this._parseRetryAfter(response);
                     const backoff = this._increaseBackoff(retryAfter);
                     console.warn('⚠️ RoomService: HTTP 429, увеличиваем задержку до', backoff, 'мс');
+                    this._notifyRateLimit(backoff);
                     throw new Error(`Rate limited! Retry after ${backoff}ms`);
                 }
                 throw new Error(`HTTP error! status: ${response.status}`);
