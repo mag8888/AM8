@@ -3,9 +3,42 @@
  */
 
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
 const { Deck, Card } = require('../models/CardModel');
 const DatabaseConfig = require('../auth/server/config/database');
+
+const CARDS_CONFIG_PATH = process.env.CARDS_CONFIG_PATH
+    ? path.resolve(process.cwd(), process.env.CARDS_CONFIG_PATH)
+    : path.resolve(__dirname, '../config/cards.json');
+
+function loadFallbackCardsConfig() {
+    if (!fs.existsSync(CARDS_CONFIG_PATH)) {
+        console.warn('⚠️ Cards API: Файл config/cards.json не найден, возвращаем пустые колоды');
+        return {
+            version: 1,
+            updatedAt: new Date().toISOString(),
+            decks: []
+        };
+    }
+    try {
+        const raw = fs.readFileSync(CARDS_CONFIG_PATH, 'utf-8');
+        const parsed = JSON.parse(raw);
+        return {
+            version: parsed.version || 1,
+            updatedAt: parsed.updatedAt || new Date().toISOString(),
+            decks: Array.isArray(parsed.decks) ? parsed.decks : []
+        };
+    } catch (error) {
+        console.error('❌ Cards API: Ошибка чтения fallback-конфигурации', error);
+        return {
+            version: 1,
+            updatedAt: new Date().toISOString(),
+            decks: []
+        };
+    }
+}
 
 /**
  * Получает все колоды карточек из MongoDB
@@ -29,6 +62,11 @@ async function getCardsConfig() {
             decks: decks.map(d => ({ id: d.id, name: d.name, drawCount: d.drawPile.length, discardCount: d.discardPile.length }))
         });
         
+        if (!decks.length) {
+            console.warn('⚠️ Cards API: В MongoDB нет колод. Используем config/cards.json как fallback');
+            return loadFallbackCardsConfig();
+        }
+
         return {
             version: 1,
             updatedAt: new Date().toISOString(),
@@ -145,38 +183,9 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error('❌ Ошибка чтения конфигурации карт:', error);
         
-        // Возвращаем дефолтные колоды если MongoDB недоступна
-        const defaultConfig = {
-            version: 1,
-            updatedAt: new Date().toISOString(),
-            decks: [
-                {
-                    id: 'deal',
-                    name: 'Малая сделка',
-                    drawPile: [],
-                    discardPile: []
-                },
-                {
-                    id: 'big_deal',
-                    name: 'Большие сделки',
-                    drawPile: [],
-                    discardPile: []
-                },
-                {
-                    id: 'expenses',
-                    name: 'Расходы',
-                    drawPile: [],
-                    discardPile: []
-                },
-                {
-                    id: 'market',
-                    name: 'Рынок',
-                    drawPile: [],
-                    discardPile: []
-                }
-            ]
-        };
-        
+        // Возвращаем конфигурацию из файла если MongoDB недоступна
+        const defaultConfig = loadFallbackCardsConfig();
+
         res.json({
             success: true,
             data: {
