@@ -273,14 +273,6 @@ class PlayersPanel {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = `
             <div class="game-right-panel">
-                <!-- Заголовок панели -->
-                <div class="panel-header">
-                    <div class="panel-title">
-                        <span class="title-icon">🎮</span>
-                        <span class="title-text">Игровая панель</span>
-                    </div>
-                    <div class="panel-subtitle">Управление игрой</div>
-                </div>
 
                 <!-- Активный игрок -->
                 <div class="active-player-widget">
