@@ -25,18 +25,29 @@
 
 .game-board-only #game-page {
     margin: 0;
-    padding: 0;
+    padding: clamp(8px, 1.5vmin, 24px);
     display: flex !important;
-    flex-direction: row;
-    height: 100vh;
-    overflow: hidden;
+    flex-direction: column;
+    min-height: 100vh;
+    height: auto;
+    gap: clamp(12px, 1.5vmin, 24px);
+    overflow: visible;
+    overflow-y: auto;
+}
+
+.game-board-only #game-page > .game-page {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(12px, 1.5vmin, 24px);
 }
 
 .game-page {
     display: flex;
-    flex-direction: row;
-    height: 100vh;
+    flex-direction: column;
+    min-height: 100vh;
     width: 100%;
+    gap: clamp(12px, 2vmin, 24px);
 }
 
 /* Стили для карточек сделок (нижняя панель) */
@@ -54,8 +65,17 @@
     align-items: center;
     justify-content: center;
     min-width: 0;
-    height: 100vh;
+    height: auto;
+    min-height: 0;
     position: relative;
+}
+
+.game-board-only .game-board-container {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: clamp(320px, 60vh, 900px);
+    padding: clamp(16px, 2vmin, 32px);
+    overflow: visible;
 }
 
 /* Правая панель - занимает оставшееся пространство справа */

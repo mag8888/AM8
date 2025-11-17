@@ -18,7 +18,9 @@
             margin: 0;
             padding: 0;
             background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
         
         /* Скрываем навигацию и другие элементы */
@@ -31,15 +33,14 @@
         
         /* Игровая страница на весь экран */
         #game-page {
-            display: block !important;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100vw;
-            height: 100vh;
+            display: flex !important;
+            flex-direction: column;
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            height: auto;
             z-index: 1;
+            overflow: visible;
         }
     </style>
 </head>
@@ -90,6 +91,7 @@
         // Автоматическая инициализация игры с заданным roomId
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🎮 Game Test Page: Инициализация прямой игровой страницы');
+            document.body.classList.add('game-board-only');
             
             // Получаем roomId из URL или используем тестовый
             const urlParams = new URLSearchParams(window.location.search);
