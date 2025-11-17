@@ -338,13 +338,13 @@ class BankModule {
             .bank-container {
                 position: relative;
                 background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
-                border-radius: 20px;
+                border-radius: 0;
                 border: 2px solid rgba(255, 255, 255, 0.1);
                 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-                width: 96%;
-                max-width: 1400px;
-                height: 92%;
-                max-height: none;
+                width: 100vw;
+                max-width: 100vw;
+                height: 100vh;
+                max-height: 100vh;
                 overflow: hidden;
                 display: flex;
                 flex-direction: column;
@@ -855,8 +855,8 @@ class BankModule {
             /* Адаптивность */
             @media (max-width: 768px) {
                 .bank-container {
-                    width: 95%;
-                    height: 90%;
+                    width: 100vw;
+                    height: 100vh;
                 }
                 
                 .bank-content {
