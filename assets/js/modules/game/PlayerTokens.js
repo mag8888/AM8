@@ -26,6 +26,9 @@ class PlayerTokens {
         this._forceUpdateTimer = null; // Дебаунсинг для forceUpdate
         this._isForceUpdating = false; // Флаг выполняющегося обновления
         this._pendingPositionRefresh = null;
+        this._initialRenderTimer = null;
+        this._initialRenderAttempts = 0;
+        this._maxInitialRenderAttempts = config.maxInitialRenderAttempts || 12;
         this.outerTrackElement = null;
         this.innerTrackElement = null;
         this.cellCenters = {
@@ -49,6 +52,9 @@ class PlayerTokens {
         setTimeout(() => {
             this.forceUpdateFromGameState();
         }, 100); // Уменьшили задержку для быстрой загрузки фишек
+        
+        // Дополнительный наблюдатель для гарантированного первого рендера
+        this.startInitialRenderWatcher();
         
         this._info('PlayerTokens инициализирован');
     }
@@ -814,6 +820,8 @@ class PlayerTokens {
             return;
         }
         
+        this.stopInitialRenderWatcher();
+        
         const grouped = this.groupPlayersByPosition(normalized);
         const processed = new Set();
         
@@ -1158,7 +1166,7 @@ class PlayerTokens {
             clearTimeout(this._forceUpdateTimer);
             this._forceUpdateTimer = null;
         }
-        
+        this.stopInitialRenderWatcher();
         // Сбрасываем флаг обновления
         this._isForceUpdating = false;
         
@@ -1167,6 +1175,31 @@ class PlayerTokens {
         this.animatingTokens.clear();
         
         this._debug('Ресурсы очищены');
+    }
+    
+    startInitialRenderWatcher() {
+        this.stopInitialRenderWatcher();
+        this._initialRenderAttempts = 0;
+        
+        this._initialRenderTimer = setInterval(() => {
+            this._initialRenderAttempts += 1;
+            const players = this.getPlayers();
+            if (Array.isArray(players) && players.length) {
+                this.updateTokens(players);
+                this.stopInitialRenderWatcher();
+                return;
+            }
+            if (this._initialRenderAttempts >= this._maxInitialRenderAttempts) {
+                this.stopInitialRenderWatcher();
+            }
+        }, 500);
+    }
+    
+    stopInitialRenderWatcher() {
+        if (this._initialRenderTimer) {
+            clearInterval(this._initialRenderTimer);
+            this._initialRenderTimer = null;
+        }
     }
 }
 

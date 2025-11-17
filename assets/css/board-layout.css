@@ -13,8 +13,8 @@
     max-width: 1600px !important;
     margin: 0 auto !important;
     min-height: 100vh !important;
-    height: 100vh !important;
-    overflow: hidden !important; /* Предотвращаем выход за границы */
+    height: auto !important;
+    overflow: visible !important;
   }
   
   /* Левая панель: карточки сделок */
@@ -117,8 +117,7 @@
     padding: 1rem !important;
     box-sizing: border-box !important;
     z-index: 1 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow: visible !important;
   }
   
   .players-panel-container,

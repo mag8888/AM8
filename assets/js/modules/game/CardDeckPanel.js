@@ -23,35 +23,6 @@
             id: 'market',
             name: 'Рынок'
         }
-        
-        getOfflineDecks() {
-            if (this.lastKnownDecks.length) {
-                return this.lastKnownDecks;
-            }
-            return DEFAULT_DECKS.map((deck, index) => ({
-                ...deck,
-                order: index + 1,
-                drawCount: deck.drawCount || 0,
-                discardCount: deck.discardCount || 0
-            }));
-        }
-        
-        _notifyRateLimit(waitMs = 0) {
-            const now = Date.now();
-            if (this._lastRateLimitToastAt && (now - this._lastRateLimitToastAt) < 10000) {
-                return;
-            }
-            this._lastRateLimitToastAt = now;
-            const seconds = Math.max(1, Math.round(waitMs / 1000));
-            const message = waitMs
-                ? `Карточные данные временно недоступны. Повтор через ${seconds} сек.`
-                : 'Карточные данные временно недоступны. Используем кэш.';
-            if (typeof window.showNotification === 'function') {
-                window.showNotification(message, 'warning');
-            } else {
-                console.warn('⚠️ CardDeckPanel:', message);
-            }
-        }
     ];
 
     class CardDeckPanel {
@@ -572,6 +543,35 @@
         _resetRateLimit() {
             this.rateLimitBackoff = 0;
             this.rateLimitUntil = 0;
+        }
+        
+        getOfflineDecks() {
+            if (this.lastKnownDecks.length) {
+                return this.lastKnownDecks;
+            }
+            return DEFAULT_DECKS.map((deck, index) => ({
+                ...deck,
+                order: index + 1,
+                drawCount: deck.drawCount || 0,
+                discardCount: deck.discardCount || 0
+            }));
+        }
+        
+        _notifyRateLimit(waitMs = 0) {
+            const now = Date.now();
+            if (this._lastRateLimitToastAt && (now - this._lastRateLimitToastAt) < 10000) {
+                return;
+            }
+            this._lastRateLimitToastAt = now;
+            const seconds = Math.max(1, Math.round(waitMs / 1000));
+            const message = waitMs
+                ? `Карточные данные временно недоступны. Повтор через ${seconds} сек.`
+                : 'Карточные данные временно недоступны. Используем кэш.';
+            if (typeof window.showNotification === 'function') {
+                window.showNotification(message, 'warning');
+            } else {
+                console.warn('⚠️ CardDeckPanel:', message);
+            }
         }
 
         /**
