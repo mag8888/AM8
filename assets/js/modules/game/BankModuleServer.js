@@ -888,20 +888,29 @@ class BankModuleServer {
             .bank-content {
                 display: flex;
                 flex: 1;
+                width: 100%;
+                height: calc(100vh - 84px);
                 overflow: hidden;
             }
             
             .bank-left {
-                flex: 1;
-                padding: 30px;
+                flex: 0 0 380px;
+                min-height: 0;
+                padding: 24px;
                 border-right: 1px solid rgba(255, 255, 255, 0.1);
                 overflow-y: auto;
+                display: flex;
+                flex-direction: column;
             }
             
             .bank-right {
                 flex: 1;
-                padding: 30px;
+                min-height: 0;
+                padding: 24px;
                 overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
             }
             
             .bank-status {
@@ -909,6 +918,9 @@ class BankModuleServer {
                 border-radius: 15px;
                 padding: 25px;
                 border: 1px solid rgba(255, 255, 255, 0.1);
+                display: flex;
+                flex-direction: column;
+                flex: 1;
             }
             
             .bank-status-header {
@@ -1023,7 +1035,17 @@ class BankModuleServer {
                 border-radius: 15px;
                 padding: 25px;
                 border: 1px solid rgba(255, 255, 255, 0.1);
-                margin-bottom: 20px;
+            }
+            
+            .transfer-section {
+                flex: 0 0 auto;
+            }
+            
+            .transactions-section {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
             }
             
             .section-title {
@@ -1128,7 +1150,8 @@ class BankModuleServer {
             }
             
             .transactions-list {
-                max-height: 300px;
+                flex: 1;
+                min-height: 0;
                 overflow-y: auto;
             }
             
