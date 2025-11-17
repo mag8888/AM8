@@ -1,74 +1,116 @@
 /**
- * Скрипт для инициализации дефолтных карточных колод в MongoDB
+ * Скрипт для инициализации карточных колод в MongoDB из config/cards.json
  */
 
-const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 const { Deck, Card } = require('../models/CardModel');
 const DatabaseConfig = require('../auth/server/config/database');
 
-// Дефолтные колоды
-const DEFAULT_DECKS = [
-    {
-        id: 'deal',
-        name: 'Малая сделка',
-        drawPile: [],
-        discardPile: []
-    },
-    {
-        id: 'big_deal',
-        name: 'Большие сделки',
-        drawPile: [],
-        discardPile: []
-    },
-    {
-        id: 'expenses',
-        name: 'Расходы',
-        drawPile: [],
-        discardPile: []
-    },
-    {
-        id: 'market',
-        name: 'Рынок',
-        drawPile: [],
-        discardPile: []
+const DEFAULT_CONFIG_PATH = path.resolve(__dirname, '../config/cards.json');
+
+const TYPE_BY_DECK = {
+    deal: 'deal',
+    big_deal: 'big_deal',
+    expenses: 'expense',
+    market: 'market'
+};
+
+function resolveCardsConfigPath() {
+    const customPath = process.env.CARDS_CONFIG_PATH;
+    if (customPath) {
+        return path.isAbsolute(customPath)
+            ? customPath
+            : path.resolve(process.cwd(), customPath);
     }
-];
+    return DEFAULT_CONFIG_PATH;
+}
+
+function loadCardsConfig(filePath) {
+    if (!fs.existsSync(filePath)) {
+        throw new Error(`Файл конфигурации карточек не найден: ${filePath}`);
+    }
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const parsed = JSON.parse(raw);
+
+    if (!parsed || !Array.isArray(parsed.decks) || parsed.decks.length === 0) {
+        throw new Error('Файл конфигурации должен содержать массив decks с карточками.');
+    }
+
+    return parsed;
+}
+
+function normalizeCard(card, deckId, index) {
+    const fallbackId = `${deckId}_${index}_${Date.now()}`;
+    return {
+        id: card.id || fallbackId,
+        title: card.title || card.name || 'Без названия',
+        description: card.description || '',
+        type: card.type || TYPE_BY_DECK[deckId] || 'deal',
+        value: typeof card.value === 'number'
+            ? card.value
+            : typeof card.amount === 'number'
+                ? card.amount
+                : 0
+    };
+}
 
 async function initializeCards() {
     try {
-        console.log('🃏 Инициализация карточных колод в MongoDB...');
-        
-        // Подключаемся к MongoDB через существующую конфигурацию
+        const configPath = resolveCardsConfigPath();
+        console.log(`🃏 Загружаем карточки из ${configPath}`);
+        const config = loadCardsConfig(configPath);
+        const decksFromConfig = config.decks;
+
         const dbConfig = new DatabaseConfig();
         await dbConfig.connect();
         console.log('✅ Подключение к MongoDB установлено');
-        
-        // Проверяем, есть ли уже колоды
-        const existingDecks = await Deck.find({});
-        if (existingDecks.length > 0) {
-            console.log('⚠️ Карточные колоды уже существуют, пропускаем инициализацию');
-            return;
+
+        console.log('🧹 Удаляем существующие колоды и карточки...');
+        await Promise.all([Deck.deleteMany({}), Card.deleteMany({})]);
+
+        const createdDecks = [];
+        for (const deckData of decksFromConfig) {
+            const drawCards = [];
+            const discardCards = [];
+
+            (deckData.drawPile || []).forEach((card, index) => {
+                drawCards.push(normalizeCard(card, deckData.id, index));
+            });
+            (deckData.discardPile || []).forEach((card, index) => {
+                discardCards.push(normalizeCard(card, deckData.id, index + drawCards.length));
+            });
+
+            const savedDrawCards = await Card.insertMany(drawCards);
+            const savedDiscardCards = await Card.insertMany(discardCards);
+
+            const deck = new Deck({
+                id: deckData.id,
+                name: deckData.name || deckData.id,
+                drawPile: savedDrawCards.map((card) => card._id),
+                discardPile: savedDiscardCards.map((card) => card._id)
+            });
+
+            const savedDeck = await deck.save();
+            createdDecks.push({
+                name: savedDeck.name,
+                drawCount: savedDrawCards.length,
+                discardCount: savedDiscardCards.length
+            });
         }
-        
-        // Создаем дефолтные колоды
-        const createdDecks = await Promise.all(DEFAULT_DECKS.map(async (deckData) => {
-            const deck = new Deck(deckData);
-            return await deck.save();
-        }));
-        
-        console.log(`✅ Создано ${createdDecks.length} карточных колод:`, 
-            createdDecks.map(d => `${d.name} (${d.id})`).join(', '));
-        
+
+        console.log('✅ Колоды загружены в MongoDB:');
+        createdDecks.forEach((deck) => {
+            console.log(` • ${deck.name}: ${deck.drawCount} в колоде / ${deck.discardCount} в отбое`);
+        });
     } catch (error) {
         console.error('❌ Ошибка инициализации карточных колод:', error);
         throw error;
     } finally {
-        // Не отключаемся от MongoDB, так как сервер продолжает работать
         console.log('✅ Инициализация карточных колод завершена');
     }
 }
 
-// Запускаем инициализацию
 if (require.main === module) {
     initializeCards()
         .then(() => {
