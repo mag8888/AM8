@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="assets/css/modals.css?v=10">
     <link rel="stylesheet" href="assets/css/fixes.css?v=10">
     <link rel="stylesheet" href="assets/css/navigation.css?v=10">
-    <link rel="stylesheet" href="assets/css/board-layout.css?v=2">
+    <link rel="stylesheet" href="assets/css/board-layout.css?v=3">
     <style>
         /* Стили для контейнера страниц */
         #page-container {
@@ -329,11 +329,6 @@
                             <!-- Игроки будут отрисованы здесь через PlayersPanel -->
                             <div id="players-list-container"></div>
                         </div>
-                        
-                        <!-- Секция 3: Банк (внутри правой панели на десктопе) -->
-                        <section id="bank-section">
-                            <div id="bank-preview-container"></div>
-                        </section>
                     </div>
                     
                     <!-- Секция 2: Игровая доска (центр) -->
@@ -354,9 +349,14 @@
                         </div>
                     </div>
 
-                    <!-- Секция 4: Карточки (панель колод) -->
+                    <!-- Секция 4: Карточки и Банк (левая панель на десктопе) -->
                     <section id="card-decks-panel" class="card-decks-container">
                         <!-- Колоды будут отрисованы модулем CardDeckPanel -->
+                        
+                        <!-- Секция 3: Банк (внутри левой панели на десктопе) -->
+                        <section id="bank-section">
+                            <div id="bank-preview-container"></div>
+                        </section>
                     </section>
                 </div>
                 
