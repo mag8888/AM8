@@ -132,21 +132,37 @@
     gap: 1rem !important;
   }
   
-  /* Банк на десктопе: размещаем в правой колонке через grid-column */
+  /* Секция действий на всю ширину */
+  .actions-section,
+  #players-panel .actions-section,
+  .top-panel-content .actions-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Кнопки действий на всю ширину */
+  .actions-section .action-button,
+  .actions-section button,
+  .actions-section .btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Банк на десктопе: внутри правой панели */
   #bank-section {
-    grid-column: 3 !important; /* Правая колонка (players-panel) */
-    grid-row: 1 !important; /* Та же строка, что и панели */
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
-    max-width: 320px !important; /* Ширина правой панели */
+    max-width: 100% !important;
     min-width: 0 !important;
-    margin-left: auto !important; /* Выравниваем по правому краю */
     margin-top: auto !important; /* Прижимаем к низу */
     padding: 1rem 0 0 !important;
     box-sizing: border-box !important;
     border-top: 2px solid rgba(148, 163, 184, 0.3) !important;
-    align-self: flex-end !important;
+    flex: 0 0 auto !important;
   }
   
   #bank-preview-container {
