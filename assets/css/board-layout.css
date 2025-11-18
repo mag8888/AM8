@@ -2,19 +2,20 @@
 @media (min-width: 1025px) {
   .game-page {
     display: grid !important;
-    /* Левая панель (карточки + банк): 320px, Центр (поле): 1fr, Правая панель (игроки): шире */
-    grid-template-columns: 320px 1fr 450px !important;
+    /* Левая панель: auto (занимает необходимое место), Центр (поле): квадрат, Правая панель: auto */
+    grid-template-columns: auto 1fr auto !important;
     grid-template-rows: 1fr !important;
     grid-template-areas: "card-decks game-board players-panel" !important;
     gap: 1rem;
     align-items: stretch;
     justify-items: stretch;
     padding: 0.5rem !important;
-    max-width: 1600px !important;
+    max-width: 100% !important;
     margin: 0 auto !important;
     min-height: 100vh !important;
-    height: auto !important;
-    overflow: visible !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    background: rgba(15, 23, 42, 0.95) !important; /* Единственная подложка */
   }
   
   /* Левая панель: карточки сделок и банк */
@@ -24,15 +25,15 @@
     flex-direction: column !important;
     visibility: visible !important;
     opacity: 1 !important;
-    min-width: 0 !important; /* Позволяет сжиматься в grid */
-    max-width: 320px !important; /* Жесткое ограничение */
-    width: 100% !important;
+    min-width: 280px !important; /* Минимальная ширина */
+    max-width: 320px !important; /* Максимальная ширина */
+    width: auto !important; /* Занимает необходимое место */
     min-height: 0 !important; /* Позволяет сжиматься в grid */
-    height: 100vh !important; /* На всю высоту */
-    max-height: 100vh !important;
+    height: 100% !important; /* На всю высоту */
+    max-height: 100% !important;
     position: relative !important;
     transform: none !important;
-    background: rgba(15, 23, 42, 0.95) !important;
+    background: transparent !important; /* Убираем подложку */
     border-right: 2px solid rgba(148, 163, 184, 0.3) !important;
     padding: 1rem !important;
     box-sizing: border-box !important;
@@ -78,40 +79,40 @@
     align-items: center !important;
     min-width: 0 !important; /* Позволяет сжиматься в grid */
     min-height: 0 !important;
-    height: 100vh !important; /* На всю высоту */
-    max-height: 100vh !important;
+    height: 100% !important; /* На всю высоту контейнера */
+    max-height: 100% !important;
     padding: 0.5rem !important;
     box-sizing: border-box !important;
     overflow: visible !important;
   }
   
-  /* Квадратная доска на всю высоту */
+  /* Квадратная доска - занимает доступное пространство, всегда квадрат */
   .game-page .board-wrapper {
-    width: min(100vh, 100%) !important;
-    height: 100vh !important;
-    aspect-ratio: 1 / 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: 1 / 1 !important; /* Всегда квадрат - браузер автоматически ограничит по меньшей стороне */
     margin: auto !important;
     max-width: 100% !important;
-    max-height: 100vh !important;
+    max-height: 100% !important;
     box-sizing: border-box !important;
   }
   
-  /* Правая панель: игроки (шире) */
+  /* Правая панель: игроки */
   .top-panel-container {
     grid-area: players-panel !important;
     display: flex !important;
     flex-direction: column !important;
     visibility: visible !important;
     opacity: 1 !important;
-    min-width: 0 !important; /* Позволяет сжиматься в grid */
-    max-width: 450px !important; /* Увеличена ширина для карточек игроков */
-    width: 100% !important;
+    min-width: 320px !important; /* Минимальная ширина */
+    max-width: 450px !important; /* Максимальная ширина */
+    width: auto !important; /* Занимает необходимое место */
     min-height: 0 !important;
-    height: 100vh !important; /* На всю высоту */
-    max-height: 100vh !important;
+    height: 100% !important; /* На всю высоту */
+    max-height: 100% !important;
     position: relative !important;
     transform: none !important;
-    background: rgba(15, 23, 42, 0.95) !important;
+    background: transparent !important; /* Убираем подложку */
     border-left: 2px solid rgba(148, 163, 184, 0.3) !important;
     padding: 1rem !important;
     box-sizing: border-box !important;
@@ -212,6 +213,7 @@
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    background: rgba(15, 23, 42, 0.95) !important; /* Единственная подложка для мобильной версии */
   }
   
   /* Внутренние клетки на 15% меньше на мобиле */
@@ -231,7 +233,7 @@
     order: 1 !important;
     position: relative !important;
     transform: none !important;
-    background: rgba(15, 23, 42, 0.95) !important;
+    background: transparent !important; /* Убираем подложку */
     border-bottom: 2px solid rgba(148, 163, 184, 0.3) !important;
     border-left: none !important;
     border-right: none !important;
@@ -335,7 +337,7 @@
     border-top: 2px solid rgba(148, 163, 184, 0.3) !important;
     border-bottom: 2px solid rgba(148, 163, 184, 0.3) !important;
     overflow: visible !important;
-    background: rgba(15, 23, 42, 0.95) !important;
+    background: transparent !important; /* Убираем подложку */
   }
   
   /* Карточки после банка на мобиле */
@@ -371,7 +373,7 @@
     flex-wrap: nowrap !important;
     overflow-y: visible !important; /* Нет доп. скролла */
     overflow-x: hidden !important;
-    background: rgba(15, 23, 42, 0.95) !important;
+    background: transparent !important; /* Убираем подложку */
   }
   
   /* Карточки сделок на всю ширину */
