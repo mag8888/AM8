@@ -873,7 +873,7 @@ async function joinRoomIfNeeded() {
                 p.userId === currentUser.id || p.username === currentUser.username
             );
             
-            if (currentPlayer && !currentPlayer.isReady) {
+            if (currentPlayer && !isPlayerReady(currentPlayer)) {
                 // Сбрасываем только если игрок действительно не готов
                 console.log('🔄 Room: Игрок не готов, сбрасываем состояние');
                 const resetData = {
@@ -952,6 +952,15 @@ function updateRoomInfo() {
 /**
  * Обновление списка игроков
  */
+// Единая функция для проверки готовности игрока
+function isPlayerReady(player) {
+    if (!player) return false;
+    return player.isReady === true || 
+           player.isReady === 'true' || 
+           player.isReady === 1 || 
+           String(player.isReady).toLowerCase() === 'true';
+}
+
 function updatePlayersList() {
     const playersList = document.getElementById('players-list');
     if (!playersList || !currentRoom) return;
@@ -966,8 +975,10 @@ function updatePlayersList() {
         const playerName = player.name || player.username || 'Неизвестный игрок';
         const avatar = player.avatar || playerName.charAt(0).toUpperCase();
         // Определяем статус игрока более точно
+        const isReadyValue = isPlayerReady(player);
+        
         let status = 'Выбирает';
-        if (Boolean(player.isReady)) {
+        if (isReadyValue) {
             status = 'Готов';
         } else if (player.dream && player.token) {
             // Если мечта и фишка выбраны, но игрок еще не отметился как готов
@@ -982,6 +993,7 @@ function updatePlayersList() {
             playerName: playerName,
             isReady: player.isReady,
             isReadyType: typeof player.isReady,
+            isReadyValue: isReadyValue,
             dream: player.dream,
             token: player.token,
             status: status
@@ -1161,9 +1173,9 @@ function updateStartGameButton() {
     });
     const playersCount = currentRoom.players?.length || 0;
     // Правильно обрабатываем isReady - может быть boolean, string, или undefined
-    const readyCount = currentRoom.players?.filter(p => Boolean(p.isReady)).length || 0;
+    const readyCount = currentRoom.players?.filter(isPlayerReady).length || 0;
     const minPlayers = currentRoom.minPlayers || 2; // Минимум 2 игрока для старта
-    const allPlayersReady = currentRoom.players?.every(player => Boolean(player.isReady)) || false;
+    const allPlayersReady = currentRoom.players?.every(isPlayerReady) || false;
     // Игра может начаться только если есть минимум игроков и все игроки готовы
     const canStart = playersCount >= minPlayers && readyCount >= playersCount && readyCount > 0;
     
@@ -1619,7 +1631,7 @@ function updateReadyStatus() {
     }) : null;
     
     // Проверяем готовность игрока - только если он действительно готов
-    const isCurrentlyReady = currentPlayer ? Boolean(currentPlayer.isReady) : false;
+    const isCurrentlyReady = currentPlayer ? isPlayerReady(currentPlayer) : false;
     
     console.log('🔍 Room: Анализ готовности игрока:', {
         currentPlayer: currentPlayer ? {
@@ -1636,7 +1648,7 @@ function updateReadyStatus() {
     // Если игрок не найден в комнате, считаем что он не готов
     const playerExists = currentPlayer !== null;
     // actualReadyState - реальное состояние готовности игрока в комнате
-    const actualReadyState = playerExists ? Boolean(currentPlayer.isReady) : false;
+    const actualReadyState = playerExists ? isPlayerReady(currentPlayer) : false;
     
     // Отладочная информация
     console.log('🔍 Room: Обновление кнопки готовности:', {
@@ -1790,7 +1802,7 @@ async function toggleReadyStatus() {
         
         // Определяем текущее состояние игрока
         const currentPlayer = currentRoom.players.find(p => p.userId === currentUser.id || p.username === currentUser.username);
-        const isCurrentlyReady = currentPlayer ? Boolean(currentPlayer.isReady) : false;
+        const isCurrentlyReady = currentPlayer ? isPlayerReady(currentPlayer) : false;
         const newReadyState = !isCurrentlyReady;
         
         console.log('🔍 Room: Состояние игрока:', {
@@ -1856,7 +1868,7 @@ async function toggleReadyStatus() {
             await sendPushNotification('player_ready', {
                 playerName: currentUser.username,
                 roomId: currentRoom.id,
-                readyPlayersCount: currentRoom.players.filter(p => p.isReady).length + 1,
+                readyPlayersCount: currentRoom.players.filter(isPlayerReady).length + 1,
                 totalPlayersCount: currentRoom.players.length
             });
         } else {
@@ -1966,8 +1978,8 @@ async function refreshRoomData() {
         
         const room = await roomService.getRoomById(currentRoom.id);
         if (room) {
-            const previousReadyCount = currentRoom.players ? currentRoom.players.filter(p => p.isReady).length : 0;
-            const newReadyCount = room.players ? room.players.filter(p => p.isReady).length : 0;
+            const previousReadyCount = currentRoom.players ? currentRoom.players.filter(isPlayerReady).length : 0;
+            const newReadyCount = room.players ? room.players.filter(isPlayerReady).length : 0;
             const wasNotStarted = !currentRoom.isStarted;
             const isNowStarted = room.isStarted;
             
@@ -1991,7 +2003,7 @@ async function refreshRoomData() {
             
             // Показываем уведомление если количество готовых игроков изменилось
             if (newReadyCount > previousReadyCount) {
-                const readyPlayers = room.players.filter(p => p.isReady);
+                const readyPlayers = room.players.filter(isPlayerReady);
                 const lastReadyPlayer = readyPlayers[readyPlayers.length - 1];
                 if (lastReadyPlayer && lastReadyPlayer.userId !== currentUser?.id) {
                     showNotification(`${lastReadyPlayer.username} готов к игре!`, 'success');
@@ -2014,7 +2026,7 @@ function showStartGameModal() {
     
     if (modal && roomName && readyCount && totalPlayers) {
         roomName.textContent = currentRoom ? currentRoom.name : '';
-        readyCount.textContent = currentRoom ? currentRoom.players.filter(p => p.isReady).length : 0;
+        readyCount.textContent = currentRoom ? currentRoom.players.filter(isPlayerReady).length : 0;
         totalPlayers.textContent = currentRoom ? currentRoom.maxPlayers : 0;
         
         modal.classList.add('show');
