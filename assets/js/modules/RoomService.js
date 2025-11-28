@@ -23,37 +23,36 @@ class RoomService {
      * @private
      */
     _initializeConfiguration() {
-        const isLocal = this._isLocalEnvironment();
-        
+        // Всегда используем Railway сервер, без локального режима
         this.config = {
-            isLocal,
-            baseUrl: isLocal ? 'http://localhost:3002/api/rooms' : 'https://am8-production.up.railway.app/api/rooms',
-            // В локальном режиме включаем мок-данные, чтобы не падать без бэкенда
-            useMockData: isLocal ? true : false,
+            isLocal: false,
+            baseUrl: 'https://am8-production.up.railway.app/api/rooms',
+            useMockData: false, // Отключаем мок-данные, используем только сервер
             localStorageKey: 'aura_money_dynamic_rooms',
-            cacheTimeout: 300000, // Увеличиваем до 5 минут для устранения перегрузки
+            cacheTimeout: 300000, // 5 минут
             maxRetries: 3,
             useDynamicRooms: false // Отключаем динамические комнаты, используем серверную БД
         };
         
+        // Проверяем только для demo комнат (не для обычных)
         const forcedMock = this._shouldForceMockData();
         if (forcedMock) {
-            console.warn('⚠️ RoomService: Включаем мок-данные (demo/forceMock режим)');
+            console.warn('⚠️ RoomService: Включаем мок-данные только для demo комнаты');
             this.config.useMockData = true;
             this.config.baseUrl = 'mock://rooms';
         }
         
         console.log('🔧 RoomService: Конфигурация инициализирована:', {
-            isLocal,
+            isLocal: false,
             useMockData: this.config.useMockData,
             baseUrl: this.config.baseUrl,
-            version: 'v2.0.1 - FIXED MOCK DATA'
+            version: 'v2.0.2 - RAILWAY ONLY'
         });
         
         // Дублируем для совместимости
         this.useMockData = this.config.useMockData;
 
-        console.log(`🏠 RoomService v2.0.1: Инициализация ${isLocal ? 'локального' : 'продакшн'} режима`);
+        console.log('🏠 RoomService v2.0.2: Инициализация продакшн режима (Railway)');
     }
 
     _shouldForceMockData() {
@@ -154,9 +153,8 @@ class RoomService {
      * @private
      */
     _isLocalEnvironment() {
-        return window.location.hostname === 'localhost' || 
-               window.location.hostname === '127.0.0.1' ||
-               window.location.hostname === '0.0.0.0';
+        // Всегда возвращаем false - используем только Railway сервер
+        return false;
     }
 
     /**

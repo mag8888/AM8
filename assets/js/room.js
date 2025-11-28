@@ -37,9 +37,7 @@ const timers = {
  * Логгер для room.js (использует глобальный Logger если доступен)
  */
 const RoomLogger = {
-    isDevelopment: window.location.hostname === 'localhost' || 
-                   window.location.hostname === '127.0.0.1' ||
-                   (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production'),
+    isDevelopment: false, // Всегда production режим - используем только Railway
     
     log(message, ...args) {
         if (window.Logger && typeof window.Logger.log === 'function') {
@@ -1138,7 +1136,12 @@ function isPlayerReady(player) {
 
 function updatePlayersList() {
     const playersList = document.getElementById('players-list');
-    if (!playersList || !currentRoom) return;
+    if (!playersList || !currentRoom) {
+        console.warn('⚠️ Room: updatePlayersList - нет playersList или currentRoom');
+        return;
+    }
+    
+    console.log('🔄 Room: updatePlayersList - обновляем список игроков, количество:', currentRoom.players?.length || 0);
     
     playersList.innerHTML = '';
     
@@ -2081,7 +2084,25 @@ async function toggleReadyStatus() {
             showNotification('Вы больше не готовы к игре', 'info');
         }
         
-        // Обновляем информацию о комнате
+        // Сразу обновляем локальное состояние игрока для мгновенного отображения
+        if (currentRoom && currentRoom.players) {
+            const playerIndex = currentRoom.players.findIndex(p => 
+                p.userId === currentUser.id || p.username === currentUser.username
+            );
+            if (playerIndex !== -1) {
+                currentRoom.players[playerIndex].isReady = newReadyState;
+                console.log('✅ Room: Локальное состояние игрока обновлено:', {
+                    playerIndex,
+                    newReadyState,
+                    player: currentRoom.players[playerIndex]
+                });
+                // Сразу обновляем UI
+                updatePlayersList();
+                updateReadyStatus();
+            }
+        }
+        
+        // Обновляем информацию о комнате с сервера
         console.log('🔄 Room: Обновляем информацию о комнате...');
         await refreshRoomData();
         console.log('✅ Room: Информация о комнате обновлена');

@@ -28,7 +28,8 @@ class Config {
     _detectEnvironment() {
         const hostname = window.location.hostname;
         
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        // Всегда используем Railway, без локального режима
+        if (false) { // Отключено - используем только Railway
             return 'development';
         } else if (hostname.includes('staging') || hostname.includes('test')) {
             return 'staging';
@@ -123,23 +124,8 @@ class Config {
      * @private
      */
     _getApiBaseUrl() {
-        switch (this.environment) {
-            case 'development':
-                return 'http://localhost:3002/api';
-            case 'staging':
-                return 'https://am8-staging.up.railway.app/api';
-            case 'production':
-                // Production: используем Railway endpoints
-                // Если на том же домене - относительный путь, иначе полный URL
-                const hostname = window.location.hostname;
-                if (hostname.includes('railway.app')) {
-                    // Используем относительный путь для работы через Railway
-                    return 'https://am8-production.up.railway.app/api';
-                }
-                return '/api';
-            default:
-                return '/api';
-        }
+        // Всегда используем Railway production сервер
+        return 'https://am8-production.up.railway.app/api';
     }
 
     /**
@@ -149,13 +135,13 @@ class Config {
     _loadEnvironmentConfig() {
         const envConfig = {
             development: {
-                app: { debug: true },
+                app: { debug: false },
                 performance: { 
-                    enableLogging: true, 
-                    enableProfiling: true 
+                    enableLogging: false, 
+                    enableProfiling: false 
                 },
                 api: { 
-                    baseUrl: 'http://localhost:3002/api',
+                    baseUrl: 'https://am8-production.up.railway.app/api',
                     timeout: 10000
                 }
             },
