@@ -302,6 +302,22 @@ class App {
      * @private
      */
     _checkAuthentication() {
+        // Дебаунсинг для предотвращения спам-запросов
+        if (this._checkAuthDebounceTimer) {
+            return;
+        }
+        
+        this._checkAuthDebounceTimer = setTimeout(() => {
+            this._checkAuthDebounceTimer = null;
+            this._performAuthCheck();
+        }, 1000); // Дебаунс 1 секунда
+    }
+    
+    /**
+     * Выполняет фактическую проверку авторизации
+     * @private
+     */
+    _performAuthCheck() {
         this.logger?.info('Проверка авторизации', null, 'App');
         
         try {
@@ -311,9 +327,13 @@ class App {
                 this.currentUser = userData;
                 this._updateUserInterface();
                 
-                this.logger?.info('Пользователь авторизован', {
-                    username: userData.username
-                }, 'App');
+                // Логируем только если пользователь изменился
+                if (!this._lastAuthUsername || this._lastAuthUsername !== userData.username) {
+                    this.logger?.info('Пользователь авторизован', {
+                        username: userData.username
+                    }, 'App');
+                    this._lastAuthUsername = userData.username;
+                }
                 
                 // Перенаправляем авторизованного пользователя
                 if (this._shouldRedirectAuthenticated()) {
