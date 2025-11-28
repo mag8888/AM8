@@ -567,11 +567,21 @@ function loadCachedRoomData() {
         
         if (cached) {
             try {
-                const roomData = JSON.parse(cached);
+                // Проверяем тип данных - может быть объект или строка
+                let roomData;
+                if (typeof cached === 'string') {
+                    roomData = JSON.parse(cached);
+                } else if (typeof cached === 'object' && cached !== null) {
+                    // Если это уже объект (из CommonUtils.storage), используем напрямую
+                    roomData = cached;
+                } else {
+                    throw new Error('Неверный формат кэша');
+                }
+                
                 const cacheAge = Date.now() - (roomData.cachedAt || 0);
                 const maxAge = 5 * 60 * 1000; // 5 минут
                 
-                if (cacheAge < maxAge) {
+                if (cacheAge < maxAge && roomData.room) {
                     console.log('⚡ Room: Загружаем кэшированные данные комнаты');
                     currentRoom = roomData.room;
                     updateRoomInfo();
@@ -582,6 +592,17 @@ function loadCachedRoomData() {
                 }
             } catch (error) {
                 console.warn('⚠️ Room: Ошибка парсинга кэша:', error);
+                // Очищаем поврежденный кэш
+                try {
+                    const cacheKey = `am_room_cache_${roomId}`;
+                    if (typeof CommonUtils !== 'undefined' && CommonUtils.storage) {
+                        CommonUtils.storage.remove(cacheKey);
+                    } else {
+                        localStorage.removeItem(cacheKey);
+                    }
+                } catch (e) {
+                    // Игнорируем ошибки очистки
+                }
             }
         }
         
@@ -680,11 +701,22 @@ async function loadRoomDataOptimized(roomId) {
     }
 }
 
+// Флаг для предотвращения рекурсии при загрузке данных
+let isLoadingRoomData = false;
+
 /**
  * Загрузка данных комнаты с оптимизацией
  */
 async function loadRoomData() {
+    // Защита от рекурсии
+    if (isLoadingRoomData) {
+        console.warn('⚠️ Room: Загрузка данных уже выполняется, пропускаем повторный вызов');
+        return;
+    }
+    
     try {
+        isLoadingRoomData = true;
+        
         // Получаем ID комнаты из URL параметров
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('id');
@@ -702,8 +734,21 @@ async function loadRoomData() {
         const room = await loadRoomDataOptimized(roomId);
         
         if (!room) {
-            console.warn('⚠️ Room: Комната не найдена в API, пробуем мок-данные');
+            console.warn('⚠️ Room: Комната не найдена в API');
             
+            // Не используем мок-данные для реальных комнат - это может вызвать проблемы
+            // Вместо этого показываем ошибку и предлагаем вернуться к списку комнат
+            showNotification('Комната не найдена. Возможно, она была удалена.', 'error');
+            
+            // Редирект на страницу комнат через небольшую задержку
+            setTimeout(() => {
+                window.location.href = 'rooms.html';
+            }, 2000);
+            
+            return;
+            
+            // Старый код с мок-данными (закомментирован для предотвращения проблем)
+            /*
             // Fallback на мок-данные
             const mockRooms = [
                 {
@@ -753,6 +798,7 @@ async function loadRoomData() {
                 window.location.href = 'rooms.html';
                 return;
             }
+            */
         }
         
         currentRoom = room;
@@ -792,7 +838,16 @@ async function loadRoomData() {
         
     } catch (error) {
         console.error('❌ Room: Ошибка загрузки данных комнаты:', error);
-        showNotification('Ошибка загрузки данных комнаты', 'error');
+        // Проверяем, не является ли это ошибкой рекурсии
+        if (error.message && error.message.includes('Maximum call stack')) {
+            console.error('❌ Room: Обнаружена бесконечная рекурсия! Останавливаем загрузку.');
+            showNotification('Ошибка загрузки данных. Пожалуйста, обновите страницу.', 'error');
+        } else {
+            showNotification('Ошибка загрузки данных комнаты', 'error');
+        }
+    } finally {
+        // Сбрасываем флаг после завершения загрузки
+        isLoadingRoomData = false;
     }
 }
 
@@ -1602,9 +1657,16 @@ function updateReadyStatus() {
     if (!readyButton) return;
     
     const isDreamSelected = dreamData && dreamData.id && dreamData.title;
-    const isDreamComplete = isDreamSelected && dreamData.description && dreamData.cost > 0;
-    const isTokenSelected = selectedToken !== null && selectedToken !== 'null';
-    const canBeReady = isDreamComplete && isTokenSelected;
+    // Проверяем, что dreamData существует и содержит необходимые поля
+    const isDreamComplete = isDreamSelected && 
+                          dreamData && 
+                          typeof dreamData === 'object' &&
+                          dreamData.description && 
+                          dreamData.description.trim() !== '' &&
+                          typeof dreamData.cost === 'number' && 
+                          dreamData.cost > 0;
+    const isTokenSelected = selectedToken !== null && selectedToken !== 'null' && selectedToken !== '';
+    const canBeReady = Boolean(isDreamComplete && isTokenSelected);
     
     console.log('🔍 Room: Проверка готовности:', {
         dreamData: dreamData,
