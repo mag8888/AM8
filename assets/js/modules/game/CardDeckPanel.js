@@ -575,6 +575,31 @@
         }
 
         /**
+         * Проверка необходимости принудительного offline режима
+         * @private
+         */
+        _shouldForceOfflineMode() {
+            try {
+                const url = new URL(window.location.href);
+                const params = url.searchParams;
+                const hash = url.hash || '';
+                if (params.get('forceMockCards') === '1' || params.get('forceMock') === '1') {
+                    sessionStorage.setItem('forceMockCards', '1');
+                    return true;
+                }
+                if (sessionStorage.getItem('forceMockCards') === '1') {
+                    return true;
+                }
+                if (hash.includes('roomId=demo') || params.get('roomId') === 'demo') {
+                    return true;
+                }
+            } catch (error) {
+                console.warn('⚠️ CardDeckPanel: не удалось определить offline режим', error);
+            }
+            return false;
+        }
+
+        /**
          * Очистка ресурсов
          */
         destroy() {
@@ -584,27 +609,6 @@
                 this.container.removeEventListener('click', this.handleContainerClick);
             }
         }
-    }
-
-    _shouldForceOfflineMode() {
-        try {
-            const url = new URL(window.location.href);
-            const params = url.searchParams;
-            const hash = url.hash || '';
-            if (params.get('forceMockCards') === '1' || params.get('forceMock') === '1') {
-                sessionStorage.setItem('forceMockCards', '1');
-                return true;
-            }
-            if (sessionStorage.getItem('forceMockCards') === '1') {
-                return true;
-            }
-            if (hash.includes('roomId=demo') || params.get('roomId') === 'demo') {
-                return true;
-            }
-        } catch (error) {
-            console.warn('⚠️ CardDeckPanel: не удалось определить offline режим', error);
-        }
-        return false;
     }
 
     window.CardDeckPanel = CardDeckPanel;
