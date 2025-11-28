@@ -1805,7 +1805,13 @@ class BankModuleServer {
      * Показ уведомлений
      */
     showNotification(message, type = 'info') {
-        return notificationManager.show(message, type);
+        if (typeof window.showNotification === 'function') {
+            return window.showNotification(message, type);
+        }
+        if (window.notificationManager) {
+            return window.notificationManager.show(message, type);
+        }
+        console.warn('NotificationManager не доступен:', message);
     }
     
     /**
