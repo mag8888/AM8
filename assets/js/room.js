@@ -2095,14 +2095,27 @@ async function toggleReadyStatus() {
         }
         
         // Формируем пакет игрока (PlayerBundle)
+        // ВАЖНО: Используем userId из найденного игрока, чтобы обновить правильного игрока
         console.log('🔍 Room: Формируем пакет игрока...');
         console.log('🔍 Room: currentUser для пакета:', currentUser);
+        console.log('🔍 Room: currentPlayer для пакета:', currentPlayer);
         console.log('🔍 Room: dreamData для пакета:', dreamData);
         console.log('🔍 Room: selectedToken для пакета:', selectedToken);
         console.log('🔍 Room: newReadyState для пакета:', newReadyState);
         
+        // Используем userId из найденного игрока, если он есть
+        // Это гарантирует, что обновим правильного игрока
+        const userForBundle = currentPlayer ? {
+            ...currentUser,
+            id: currentPlayer.userId || currentUser.id || currentUser.userId,
+            userId: currentPlayer.userId || currentUser.userId || currentUser.id,
+            username: currentPlayer.username || currentUser.username
+        } : currentUser;
+        
+        console.log('🔍 Room: userForBundle (с userId из найденного игрока):', userForBundle);
+        
         const playerData = buildPlayerBundle({
-            user: currentUser,
+            user: userForBundle,
             dream: dreamData,
             token: selectedToken,
             isReady: newReadyState
