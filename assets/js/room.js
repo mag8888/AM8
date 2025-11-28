@@ -2003,20 +2003,69 @@ async function toggleReadyStatus() {
             }))
         });
         
-        const currentPlayer = currentRoom.players.find(p => {
-            const matchById = p.userId === currentUser.id;
-            const matchByUsername = p.username === currentUser.username;
-            if (matchById || matchByUsername) {
-                console.log('✅ Room: Найден игрок:', {
-                    player: p,
-                    matchById,
-                    matchByUsername,
-                    playerIsReady: p.isReady,
-                    playerIsReadyType: typeof p.isReady
-                });
-            }
-            return matchById || matchByUsername;
-        });
+        // Строгий поиск игрока: сначала по userId, затем по username
+        // Это предотвращает обновление чужого статуса
+        let currentPlayer = null;
+        
+        // Приоритет 1: поиск по userId (если есть)
+        if (currentUser.id || currentUser.userId) {
+            const userId = currentUser.id || currentUser.userId;
+            currentPlayer = currentRoom.players.find(p => {
+                const match = p.userId === userId;
+                if (match) {
+                    console.log('✅ Room: Найден игрок по userId:', {
+                        player: p,
+                        searchedUserId: userId,
+                        playerUserId: p.userId
+                    });
+                }
+                return match;
+            });
+        }
+        
+        // Приоритет 2: поиск по username (только если не найден по userId)
+        if (!currentPlayer && currentUser.username) {
+            currentPlayer = currentRoom.players.find(p => {
+                const match = p.username === currentUser.username;
+                if (match) {
+                    console.log('✅ Room: Найден игрок по username:', {
+                        player: p,
+                        searchedUsername: currentUser.username,
+                        playerUsername: p.username,
+                        warning: 'Используется поиск по username - менее надежно!'
+                    });
+                }
+                return match;
+            });
+        }
+        
+        // Проверка: убеждаемся, что найден правильный игрок
+        if (currentPlayer) {
+            console.log('✅ Room: Игрок найден для обновления:', {
+                foundPlayer: {
+                    userId: currentPlayer.userId,
+                    username: currentPlayer.username,
+                    isReady: currentPlayer.isReady
+                },
+                currentUser: {
+                    id: currentUser.id || currentUser.userId,
+                    username: currentUser.username
+                },
+                match: (currentPlayer.userId === (currentUser.id || currentUser.userId)) || 
+                       (currentPlayer.username === currentUser.username)
+            });
+        } else {
+            console.error('❌ Room: Игрок НЕ найден в комнате!', {
+                currentUser: {
+                    id: currentUser.id || currentUser.userId,
+                    username: currentUser.username
+                },
+                roomPlayers: currentRoom.players.map(p => ({
+                    userId: p.userId,
+                    username: p.username
+                }))
+            });
+        }
         
         const isCurrentlyReady = currentPlayer ? isPlayerReady(currentPlayer) : false;
         const newReadyState = !isCurrentlyReady;
@@ -2073,9 +2122,11 @@ async function toggleReadyStatus() {
         console.log('🔍 Room: Данные игрока для обновления:', playerData);
         
         // СНАЧАЛА обновляем локальное состояние для мгновенного отображения
-        if (currentRoom && currentRoom.players) {
+        // Используем того же игрока, что был найден выше
+        if (currentRoom && currentRoom.players && currentPlayer) {
             const playerIndex = currentRoom.players.findIndex(p => 
-                p.userId === currentUser.id || p.username === currentUser.username
+                (p.userId && currentPlayer.userId && p.userId === currentPlayer.userId) ||
+                (p.username && currentPlayer.username && p.username === currentPlayer.username && !p.userId)
             );
             if (playerIndex !== -1) {
                 // Сохраняем старое значение для отката при ошибке
@@ -2112,16 +2163,28 @@ async function toggleReadyStatus() {
             }
             
             // Откатываем локальное изменение при ошибке
-            if (currentRoom && currentRoom.players) {
-                const playerIndex = currentRoom.players.findIndex(p => 
-                    p.userId === currentUser.id || p.username === currentUser.username
-                );
+            // Используем того же игрока, что был найден выше (currentPlayer)
+            if (currentRoom && currentRoom.players && currentPlayer) {
+                const playerIndex = currentRoom.players.findIndex(p => {
+                    // Строгое сравнение: сначала по userId, затем по username
+                    if (p.userId && currentPlayer.userId) {
+                        return p.userId === currentPlayer.userId;
+                    }
+                    if (p.username && currentPlayer.username && !p.userId && !currentPlayer.userId) {
+                        return p.username === currentPlayer.username;
+                    }
+                    return false;
+                });
                 if (playerIndex !== -1) {
                     // Откатываем к предыдущему состоянию
                     currentRoom.players[playerIndex].isReady = !newReadyState;
                     updatePlayersList();
                     updateReadyStatus();
-                    console.log('🔄 Room: Откатили локальное изменение из-за ошибки');
+                    console.log('🔄 Room: Откатили локальное изменение из-за ошибки для игрока:', {
+                        playerIndex,
+                        player: currentRoom.players[playerIndex],
+                        searchedPlayer: currentPlayer
+                    });
                 }
             }
             
@@ -2197,16 +2260,24 @@ async function toggleReadyStatus() {
 function buildPlayerBundle({ user, dream, token, isReady }) {
     console.log('🔍 Room: buildPlayerBundle - входные данные:', { user, dream, token, isReady });
     
+    // Используем существующий userId из currentUser, если он есть
+    // НЕ генерируем новый userId, чтобы не создавать конфликты
     let userId = user?.id || user?.userId || null;
     const username = user?.username || user?.name || '';
     
-    // Если userId отсутствует, генерируем его на основе username
+    // Если userId отсутствует, используем username как идентификатор
+    // Но предупреждаем об этом
     if (!userId && username) {
-        userId = `user_${username}_${Date.now()}`;
-        console.log('🔧 Room: buildPlayerBundle - сгенерирован userId:', userId);
+        console.warn('⚠️ Room: buildPlayerBundle - userId отсутствует, используем username как идентификатор');
+        // НЕ генерируем новый userId - это может привести к обновлению чужого статуса
+        // Вместо этого используем username
     }
     
-    console.log('🔍 Room: buildPlayerBundle - извлеченные данные:', { userId, username });
+    console.log('🔍 Room: buildPlayerBundle - извлеченные данные:', { 
+        userId, 
+        username,
+        warning: !userId ? 'userId отсутствует - возможны проблемы с идентификацией' : 'OK'
+    });
     
     return {
         userId: userId,
@@ -2257,11 +2328,22 @@ async function refreshRoomData() {
         if (!currentRoom) return;
         
         // Сохраняем локальное состояние текущего игрока перед обновлением
+        // Используем строгий поиск: сначала по userId, затем по username
         let localPlayerState = null;
         if (currentUser && currentRoom.players) {
-            const localPlayer = currentRoom.players.find(p => 
-                p.userId === currentUser.id || p.username === currentUser.username
-            );
+            let localPlayer = null;
+            
+            // Приоритет 1: поиск по userId
+            if (currentUser.id || currentUser.userId) {
+                const userId = currentUser.id || currentUser.userId;
+                localPlayer = currentRoom.players.find(p => p.userId === userId);
+            }
+            
+            // Приоритет 2: поиск по username (только если не найден по userId)
+            if (!localPlayer && currentUser.username) {
+                localPlayer = currentRoom.players.find(p => p.username === currentUser.username);
+            }
+            
             if (localPlayer) {
                 localPlayerState = {
                     userId: localPlayer.userId,
@@ -2282,10 +2364,20 @@ async function refreshRoomData() {
             const isNowStarted = room.isStarted;
             
             // Восстанавливаем локальное состояние игрока, если оно было сохранено
+            // Используем строгий поиск: сначала по userId, затем по username
             if (localPlayerState && room.players) {
-                const serverPlayer = room.players.find(p => 
-                    p.userId === localPlayerState.userId || p.username === localPlayerState.username
-                );
+                let serverPlayer = null;
+                
+                // Приоритет 1: поиск по userId
+                if (localPlayerState.userId) {
+                    serverPlayer = room.players.find(p => p.userId === localPlayerState.userId);
+                }
+                
+                // Приоритет 2: поиск по username (только если не найден по userId)
+                if (!serverPlayer && localPlayerState.username) {
+                    serverPlayer = room.players.find(p => p.username === localPlayerState.username);
+                }
+                
                 if (serverPlayer) {
                     // Если локальное состояние новее (isReady изменился), используем его
                     // Это предотвращает потерю изменений при быстром переключении
