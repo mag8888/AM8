@@ -217,6 +217,78 @@ class CommonUtils {
         
         return cloned;
     }
+
+    /**
+     * Получение ID текущего пользователя
+     * @returns {string|null} - ID пользователя или null
+     */
+    static getCurrentUserId() {
+        try {
+            // Пытаемся получить из sessionStorage
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                if (bundle.userId) {
+                    return bundle.userId;
+                }
+            }
+            
+            // Пытаемся получить из localStorage
+            const userRaw = localStorage.getItem('currentUser');
+            if (userRaw) {
+                const user = JSON.parse(userRaw);
+                if (user.id || user.userId) {
+                    return user.id || user.userId;
+                }
+            }
+            
+            // Fallback на старый формат
+            const oldUserRaw = localStorage.getItem('aura_money_user');
+            if (oldUserRaw) {
+                const oldUser = JSON.parse(oldUserRaw);
+                if (oldUser.id || oldUser.userId) {
+                    return oldUser.id || oldUser.userId;
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ CommonUtils: Ошибка получения userId:', error);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Проверка возможности выполнения запроса game-state (rate limiting)
+     * @param {string} roomId - ID комнаты
+     * @returns {boolean} - true если запрос разрешен
+     */
+    static canMakeGameStateRequest(roomId) {
+        if (!roomId) return false;
+        
+        try {
+            // Проверяем глобальный rate limiter для game-state
+            const limiterKey = `game_state_limiter_${roomId}`;
+            const limiterData = this.storage.get(limiterKey, { lastRequest: 0, pending: false });
+            
+            const now = Date.now();
+            const minInterval = 2000; // Минимум 2 секунды между запросами
+            
+            // Если запрос уже в процессе, блокируем
+            if (limiterData.pending) {
+                return false;
+            }
+            
+            // Если прошло достаточно времени с последнего запроса, разрешаем
+            if (now - limiterData.lastRequest >= minInterval) {
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.warn('⚠️ CommonUtils: Ошибка проверки rate limit:', error);
+            return true; // В случае ошибки разрешаем запрос
+        }
+    }
 }
 
 // Экспортируем в глобальную область видимости
