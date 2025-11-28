@@ -1364,10 +1364,38 @@ function updateStartGameButton() {
         }
     });
     const playersCount = currentRoom.players?.length || 0;
-    // Правильно обрабатываем isReady - может быть boolean, string, или undefined
-    const readyCount = currentRoom.players?.filter(isPlayerReady).length || 0;
+    
+    // Используем ту же строгую проверку готовности, что и в updatePlayersList
+    // Игрок считается готовым ТОЛЬКО если: isReady = true И dream выбран (с cost > 0) И token выбран
+    const readyCount = currentRoom.players?.filter(player => {
+        const isReadyFlag = isPlayerReady(player);
+        const hasDream = player.dream && (
+            (typeof player.dream === 'object' && 
+             player.dream.id && 
+             player.dream.title && 
+             typeof player.dream.cost === 'number' && 
+             player.dream.cost > 0) ||
+            (typeof player.dream === 'string' && player.dream.trim() !== '')
+        );
+        const hasToken = player.token && player.token.trim() !== '' && player.token !== 'null';
+        return isReadyFlag && hasDream && hasToken;
+    }).length || 0;
+    
     const minPlayers = currentRoom.minPlayers || 2; // Минимум 2 игрока для старта
-    const allPlayersReady = currentRoom.players?.every(isPlayerReady) || false;
+    const allPlayersReady = currentRoom.players?.every(player => {
+        const isReadyFlag = isPlayerReady(player);
+        const hasDream = player.dream && (
+            (typeof player.dream === 'object' && 
+             player.dream.id && 
+             player.dream.title && 
+             typeof player.dream.cost === 'number' && 
+             player.dream.cost > 0) ||
+            (typeof player.dream === 'string' && player.dream.trim() !== '')
+        );
+        const hasToken = player.token && player.token.trim() !== '' && player.token !== 'null';
+        return isReadyFlag && hasDream && hasToken;
+    }) || false;
+    
     // Игра может начаться только если есть минимум игроков и все игроки готовы
     const canStart = playersCount >= minPlayers && readyCount >= playersCount && readyCount > 0;
     
