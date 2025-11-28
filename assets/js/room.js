@@ -2039,11 +2039,32 @@ async function toggleReadyStatus() {
         
         console.log('🔍 Room: Данные игрока для обновления:', playerData);
         
-        // Обновляем игрока в комнате
-        console.log('🔄 Room: Обновляем игрока в комнате...');
+        // СНАЧАЛА обновляем локальное состояние для мгновенного отображения
+        if (currentRoom && currentRoom.players) {
+            const playerIndex = currentRoom.players.findIndex(p => 
+                p.userId === currentUser.id || p.username === currentUser.username
+            );
+            if (playerIndex !== -1) {
+                // Сохраняем старое значение для отката при ошибке
+                const oldIsReady = currentRoom.players[playerIndex].isReady;
+                currentRoom.players[playerIndex].isReady = newReadyState;
+                console.log('✅ Room: Локальное состояние игрока обновлено ДО запроса к серверу:', {
+                    playerIndex,
+                    oldIsReady,
+                    newReadyState,
+                    player: currentRoom.players[playerIndex]
+                });
+                // Сразу обновляем UI
+                updatePlayersList();
+                updateReadyStatus();
+            }
+        }
+        
+        // Обновляем игрока в комнате на сервере
+        console.log('🔄 Room: Обновляем игрока в комнате на сервере...');
         try {
         await roomService.updatePlayerInRoom(currentRoom.id, playerData);
-            console.log('✅ Room: Игрок обновлен в комнате');
+            console.log('✅ Room: Игрок обновлен в комнате на сервере');
         } catch (error) {
             console.error('❌ Room: Ошибка обновления игрока в комнате:', error);
             
@@ -2055,6 +2076,20 @@ async function toggleReadyStatus() {
                 console.log(`⏳ Room: Rate limited, следующая попытка через ${retrySeconds}с`);
             } else {
                 showNotification('Ошибка обновления игрока', 'error');
+            }
+            
+            // Откатываем локальное изменение при ошибке
+            if (currentRoom && currentRoom.players) {
+                const playerIndex = currentRoom.players.findIndex(p => 
+                    p.userId === currentUser.id || p.username === currentUser.username
+                );
+                if (playerIndex !== -1) {
+                    // Откатываем к предыдущему состоянию
+                    currentRoom.players[playerIndex].isReady = !newReadyState;
+                    updatePlayersList();
+                    updateReadyStatus();
+                    console.log('🔄 Room: Откатили локальное изменение из-за ошибки');
+                }
             }
             
             window._toggleReadyStatusInProgress = false;
@@ -2072,7 +2107,7 @@ async function toggleReadyStatus() {
                 await sendPushNotification('player_ready', {
                     playerName: currentUser.username,
                     roomId: currentRoom.id,
-                    readyPlayersCount: currentRoom.players.filter(isPlayerReady).length + 1,
+                    readyPlayersCount: currentRoom.players.filter(isPlayerReady).length,
                     totalPlayersCount: currentRoom.players.length
                 });
             } catch (pushError) {
@@ -2082,24 +2117,6 @@ async function toggleReadyStatus() {
         } else {
             console.log('❌ Room: Игрок становится не готовым');
             showNotification('Вы больше не готовы к игре', 'info');
-        }
-        
-        // Сразу обновляем локальное состояние игрока для мгновенного отображения
-        if (currentRoom && currentRoom.players) {
-            const playerIndex = currentRoom.players.findIndex(p => 
-                p.userId === currentUser.id || p.username === currentUser.username
-            );
-            if (playerIndex !== -1) {
-                currentRoom.players[playerIndex].isReady = newReadyState;
-                console.log('✅ Room: Локальное состояние игрока обновлено:', {
-                    playerIndex,
-                    newReadyState,
-                    player: currentRoom.players[playerIndex]
-                });
-                // Сразу обновляем UI
-                updatePlayersList();
-                updateReadyStatus();
-            }
         }
         
         // Обновляем информацию о комнате с сервера
