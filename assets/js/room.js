@@ -1993,7 +1993,31 @@ async function toggleReadyStatus() {
         }
         
         // Определяем текущее состояние игрока
-        const currentPlayer = currentRoom.players.find(p => p.userId === currentUser.id || p.username === currentUser.username);
+        console.log('🔍 Room: Поиск текущего игрока в комнате:', {
+            currentUserId: currentUser.id,
+            currentUsername: currentUser.username,
+            roomPlayers: currentRoom.players.map(p => ({
+                userId: p.userId,
+                username: p.username,
+                isReady: p.isReady
+            }))
+        });
+        
+        const currentPlayer = currentRoom.players.find(p => {
+            const matchById = p.userId === currentUser.id;
+            const matchByUsername = p.username === currentUser.username;
+            if (matchById || matchByUsername) {
+                console.log('✅ Room: Найден игрок:', {
+                    player: p,
+                    matchById,
+                    matchByUsername,
+                    playerIsReady: p.isReady,
+                    playerIsReadyType: typeof p.isReady
+                });
+            }
+            return matchById || matchByUsername;
+        });
+        
         const isCurrentlyReady = currentPlayer ? isPlayerReady(currentPlayer) : false;
         const newReadyState = !isCurrentlyReady;
         
@@ -2001,16 +2025,25 @@ async function toggleReadyStatus() {
             currentPlayer: currentPlayer ? { 
                 id: currentPlayer.id, 
                 username: currentPlayer.username, 
+                userId: currentPlayer.userId,
                 isReady: currentPlayer.isReady,
                 isReadyType: typeof currentPlayer.isReady,
                 isReadyRaw: currentPlayer.isReady
             } : null,
             isCurrentlyReady,
             isCurrentlyReadyType: typeof isCurrentlyReady,
+            isPlayerReadyResult: currentPlayer ? isPlayerReady(currentPlayer) : 'no player',
             newReadyState,
             newReadyStateType: typeof newReadyState,
             action: newReadyState ? 'СТАНОВИМСЯ ГОТОВЫМИ' : 'СТАНОВИМСЯ НЕ ГОТОВЫМИ'
         });
+        
+        // Дополнительная проверка: если игрок не найден, считаем что он не готов
+        if (!currentPlayer) {
+            console.warn('⚠️ Room: Игрок не найден в комнате, считаем что не готов');
+            // Если игрок не найден, значит он еще не присоединился, поэтому должен стать готовым
+            // Но это не должно происходить, так как проверка была выше
+        }
         
         // Формируем пакет игрока (PlayerBundle)
         console.log('🔍 Room: Формируем пакет игрока...');
