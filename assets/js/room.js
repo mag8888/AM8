@@ -3,7 +3,17 @@
  * Управление страницей настройки комнаты
  */
 
-// Глобальные переменные
+// ==================== КОНСТАНТЫ ====================
+const CONFIG = {
+    CACHE_MAX_AGE: 5 * 60 * 1000, // 5 минут
+    POLLING_INTERVAL: 30000, // 30 секунд
+    MIN_UPDATE_INTERVAL: 60000, // 60 секунд
+    ERROR_RETRY_DELAY: 120000, // 120 секунд при ошибке
+    REDIRECT_DELAY: 2000, // 2 секунды
+    NOTIFICATION_TIMEOUT: 5000 // 5 секунд
+};
+
+// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 let roomService;
 let currentRoom = null;
 let currentUser = null;
@@ -13,6 +23,84 @@ let dreamData = {
     description: '',
     cost: 0
 };
+
+// Управление таймерами
+const timers = {
+    polling: null,
+    redirect: null,
+    notification: null
+};
+
+// ==================== УТИЛИТЫ ====================
+
+/**
+ * Логгер с уровнями (только для development)
+ */
+const Logger = {
+    isDevelopment: window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' ||
+                   process.env.NODE_ENV !== 'production',
+    
+    log(message, ...args) {
+        if (this.isDevelopment) {
+            console.log(message, ...args);
+        }
+    },
+    
+    warn(message, ...args) {
+        console.warn(message, ...args);
+    },
+    
+    error(message, ...args) {
+        console.error(message, ...args);
+    },
+    
+    debug(message, ...args) {
+        if (this.isDevelopment) {
+            console.log(`🔍 ${message}`, ...args);
+        }
+    }
+};
+
+/**
+ * Безопасный setTimeout с автоматической очисткой
+ */
+function safeSetTimeout(callback, delay, timerKey) {
+    // Очищаем предыдущий таймер, если он существует
+    if (timerKey && timers[timerKey]) {
+        clearTimeout(timers[timerKey]);
+    }
+    
+    const timeoutId = setTimeout(() => {
+        if (timerKey) {
+            timers[timerKey] = null;
+        }
+        callback();
+    }, delay);
+    
+    if (timerKey) {
+        timers[timerKey] = timeoutId;
+    }
+    
+    return timeoutId;
+}
+
+/**
+ * Очистка всех таймеров
+ */
+function clearAllTimers() {
+    Object.keys(timers).forEach(key => {
+        if (timers[key]) {
+            if (typeof timers[key] === 'number') {
+                clearTimeout(timers[key]);
+            } else {
+                clearInterval(timers[key]);
+            }
+            timers[key] = null;
+        }
+    });
+    Logger.debug('Room: Все таймеры очищены');
+}
 
 // Конфигурация мечт (реальные мечты из игры)
 const DREAMS_CONFIG = [
@@ -326,16 +414,23 @@ function navigateToGameBoard(roomId) {
 /**
  * Запуск периодического обновления данных комнаты с оптимизацией
  */
+/**
+ * Запуск периодического обновления данных комнаты
+ */
 function startRoomDataPolling() {
+    // Останавливаем предыдущий таймер, если он существует
+    if (timers.polling) {
+        clearInterval(timers.polling);
+    }
+    
     let lastUpdate = 0;
-    const minUpdateInterval = 60000; // Минимум 60 секунд между обновлениями
     
     // Обновляем данные комнаты с адаптивным интервалом
-    setInterval(async () => {
+    timers.polling = setInterval(async () => {
         const now = Date.now();
         
         // Проверяем, не слишком ли часто обновляемся
-        if (now - lastUpdate < minUpdateInterval) {
+        if (now - lastUpdate < CONFIG.MIN_UPDATE_INTERVAL) {
             console.log('⏳ Room: Пропускаем обновление, слишком рано');
             return;
         }
@@ -347,6 +442,7 @@ function startRoomDataPolling() {
                 // Проверяем, началась ли игра для автоматического перенаправления
                 if (currentRoom.isStarted && currentRoom.status === 'playing') {
                     console.log('🎮 Room: Игра началась! Автоматическое перенаправление...');
+                    stopRoomDataPolling(); // Останавливаем polling перед редиректом
                     navigateToGameBoard(currentRoom.id);
                     return;
                 }
@@ -355,12 +451,23 @@ function startRoomDataPolling() {
             } catch (error) {
                 console.warn('⚠️ Room: Ошибка периодического обновления:', error);
                 // При ошибке увеличиваем интервал еще больше
-                lastUpdate = now + 120000; // Ждем еще 120 секунд
+                lastUpdate = now + CONFIG.ERROR_RETRY_DELAY;
             }
         }
-    }, 30000); // Проверяем каждые 30 секунд, но обновляем не чаще чем раз в 60
+    }, CONFIG.POLLING_INTERVAL);
     
     console.log('🔄 Room: Запущено оптимизированное периодическое обновление данных комнаты');
+}
+
+/**
+ * Остановка периодического обновления данных комнаты
+ */
+function stopRoomDataPolling() {
+    if (timers.polling) {
+        clearInterval(timers.polling);
+        timers.polling = null;
+        console.log('🛑 Room: Периодическое обновление остановлено');
+    }
 }
 
 /**
@@ -579,7 +686,7 @@ function loadCachedRoomData() {
                 }
                 
                 const cacheAge = Date.now() - (roomData.cachedAt || 0);
-                const maxAge = 5 * 60 * 1000; // 5 минут
+                const maxAge = CONFIG.CACHE_MAX_AGE;
                 
                 if (cacheAge < maxAge && roomData.room) {
                     console.log('⚡ Room: Загружаем кэшированные данные комнаты');
@@ -741,9 +848,9 @@ async function loadRoomData() {
             showNotification('Комната не найдена. Возможно, она была удалена.', 'error');
             
             // Редирект на страницу комнат через небольшую задержку
-            setTimeout(() => {
+            safeSetTimeout(() => {
                 window.location.href = 'rooms.html';
-            }, 2000);
+            }, CONFIG.REDIRECT_DELAY, 'redirect');
             
             isLoadingRoomData = false; // Сбрасываем флаг перед выходом
             return;
@@ -2526,41 +2633,22 @@ window.displayUserInfo = displayUserInfo;
 window.selectToken = selectToken;
 window.toggleReadyStatus = toggleReadyStatus;
 
-// Экспорт переменных для отладки
-Object.defineProperty(window, 'currentUser', {
-    get: () => currentUser,
-    configurable: true
-});
-Object.defineProperty(window, 'currentRoom', {
-    get: () => currentRoom,
-    configurable: true
-});
-Object.defineProperty(window, 'selectedToken', {
-    get: () => selectedToken,
-    configurable: true
-});
-Object.defineProperty(window, 'dreamData', {
-    get: () => dreamData,
-    configurable: true
-});
-
-window.selectToken = selectToken;
-window.toggleReadyStatus = toggleReadyStatus;
-
-// Экспорт переменных для отладки
-Object.defineProperty(window, 'currentUser', {
-    get: () => currentUser,
-    configurable: true
-});
-Object.defineProperty(window, 'currentRoom', {
-    get: () => currentRoom,
-    configurable: true
-});
-Object.defineProperty(window, 'selectedToken', {
-    get: () => selectedToken,
-    configurable: true
-});
-Object.defineProperty(window, 'dreamData', {
-    get: () => dreamData,
-    configurable: true
-});
+// Экспорт переменных для отладки (только в development режиме)
+if (process.env.NODE_ENV !== 'production' || window.location.hostname === 'localhost') {
+    Object.defineProperty(window, 'currentUser', {
+        get: () => currentUser,
+        configurable: true
+    });
+    Object.defineProperty(window, 'currentRoom', {
+        get: () => currentRoom,
+        configurable: true
+    });
+    Object.defineProperty(window, 'selectedToken', {
+        get: () => selectedToken,
+        configurable: true
+    });
+    Object.defineProperty(window, 'dreamData', {
+        get: () => dreamData,
+        configurable: true
+    });
+}
