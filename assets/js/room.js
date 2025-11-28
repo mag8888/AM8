@@ -1994,10 +1994,19 @@ async function toggleReadyStatus() {
         const isCurrentlyReady = currentPlayer ? isPlayerReady(currentPlayer) : false;
         const newReadyState = !isCurrentlyReady;
         
-        console.log('🔍 Room: Состояние игрока:', {
-            currentPlayer: currentPlayer ? { id: currentPlayer.id, username: currentPlayer.username, isReady: currentPlayer.isReady } : null,
+        console.log('🔍 Room: Состояние игрока перед переключением:', {
+            currentPlayer: currentPlayer ? { 
+                id: currentPlayer.id, 
+                username: currentPlayer.username, 
+                isReady: currentPlayer.isReady,
+                isReadyType: typeof currentPlayer.isReady,
+                isReadyRaw: currentPlayer.isReady
+            } : null,
             isCurrentlyReady,
-            newReadyState
+            isCurrentlyReadyType: typeof isCurrentlyReady,
+            newReadyState,
+            newReadyStateType: typeof newReadyState,
+            action: newReadyState ? 'СТАНОВИМСЯ ГОТОВЫМИ' : 'СТАНОВИМСЯ НЕ ГОТОВЫМИ'
         });
         
         // Формируем пакет игрока (PlayerBundle)
@@ -2050,17 +2059,25 @@ async function toggleReadyStatus() {
         }
         
         // Показываем соответствующее уведомление
+        console.log('🔍 Room: Показываем уведомление, newReadyState:', newReadyState);
         if (newReadyState) {
+            console.log('✅ Room: Игрок становится готовым');
             showNotification('Вы готовы к игре!', 'success');
             
             // Отправляем push-уведомление хосту о готовности игрока
-            await sendPushNotification('player_ready', {
-                playerName: currentUser.username,
-                roomId: currentRoom.id,
-                readyPlayersCount: currentRoom.players.filter(isPlayerReady).length + 1,
-                totalPlayersCount: currentRoom.players.length
-            });
+            try {
+                await sendPushNotification('player_ready', {
+                    playerName: currentUser.username,
+                    roomId: currentRoom.id,
+                    readyPlayersCount: currentRoom.players.filter(isPlayerReady).length + 1,
+                    totalPlayersCount: currentRoom.players.length
+                });
+            } catch (pushError) {
+                console.warn('⚠️ Room: Ошибка отправки push-уведомления:', pushError);
+                // Не критично, продолжаем
+            }
         } else {
+            console.log('❌ Room: Игрок становится не готовым');
             showNotification('Вы больше не готовы к игре', 'info');
         }
         
@@ -2090,12 +2107,15 @@ async function toggleReadyStatus() {
     } finally {
         // Очищаем флаг выполнения
         window._toggleReadyStatusInProgress = false;
+        console.log('🔄 Room: Флаг _toggleReadyStatusInProgress сброшен');
         
-        // Восстанавливаем кнопку
+        // Восстанавливаем кнопку и обновляем статус
         const readyButton = document.getElementById('ready-button');
         if (readyButton) {
             readyButton.disabled = false;
-            // Текст кнопки будет обновлен в updateReadyStatus()
+            console.log('✅ Room: Кнопка готовности разблокирована');
+            // Принудительно обновляем статус кнопки
+            updateReadyStatus();
         }
     }
 }
