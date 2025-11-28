@@ -2688,8 +2688,8 @@ window.toggleReadyStatus = toggleReadyStatus;
 window.loadDreams = loadDreams;
 window.loadTokens = loadTokens;
 
-// Экспорт переменных для отладки (только в development режиме)
-if (process.env.NODE_ENV !== 'production' || window.location.hostname === 'localhost') {
+// Экспорт переменных для отладки (отключено - используем только Railway)
+if (false) { // Отключено - production режим
     Object.defineProperty(window, 'currentUser', {
         get: () => currentUser,
         configurable: true

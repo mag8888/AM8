@@ -26,18 +26,8 @@ class Config {
      * @private
      */
     _detectEnvironment() {
-        const hostname = window.location.hostname;
-        
-        // Всегда используем Railway, без локального режима
-        if (false) { // Отключено - используем только Railway
-            return 'development';
-        } else if (hostname.includes('staging') || hostname.includes('test')) {
-            return 'staging';
-        } else if (hostname.includes('railway.app')) {
-            return 'production';
-        } else {
-            return 'production';
-        }
+        // Всегда используем production (Railway), без локального режима
+        return 'production';
     }
 
     /**
