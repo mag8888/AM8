@@ -34,29 +34,41 @@ const timers = {
 // ==================== УТИЛИТЫ ====================
 
 /**
- * Логгер с уровнями (только для development)
+ * Логгер для room.js (использует глобальный Logger если доступен)
  */
-const Logger = {
+const RoomLogger = {
     isDevelopment: window.location.hostname === 'localhost' || 
                    window.location.hostname === '127.0.0.1' ||
-                   process.env.NODE_ENV !== 'production',
+                   (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production'),
     
     log(message, ...args) {
-        if (this.isDevelopment) {
+        if (window.Logger && typeof window.Logger.log === 'function') {
+            window.Logger.log(message, ...args);
+        } else if (this.isDevelopment) {
             console.log(message, ...args);
         }
     },
     
     warn(message, ...args) {
-        console.warn(message, ...args);
+        if (window.Logger && typeof window.Logger.warn === 'function') {
+            window.Logger.warn(message, ...args);
+        } else {
+            console.warn(message, ...args);
+        }
     },
     
     error(message, ...args) {
-        console.error(message, ...args);
+        if (window.Logger && typeof window.Logger.error === 'function') {
+            window.Logger.error(message, ...args);
+        } else {
+            console.error(message, ...args);
+        }
     },
     
     debug(message, ...args) {
-        if (this.isDevelopment) {
+        if (window.Logger && typeof window.Logger.debug === 'function') {
+            window.Logger.debug(message, ...args);
+        } else if (this.isDevelopment) {
             console.log(`🔍 ${message}`, ...args);
         }
     }
@@ -99,7 +111,7 @@ function clearAllTimers() {
             timers[key] = null;
         }
     });
-    Logger.debug('Room: Все таймеры очищены');
+    RoomLogger.debug('Room: Все таймеры очищены');
 }
 
 // Конфигурация мечт (реальные мечты из игры)
@@ -2632,6 +2644,8 @@ window.loadRoomData = loadRoomData;
 window.displayUserInfo = displayUserInfo;
 window.selectToken = selectToken;
 window.toggleReadyStatus = toggleReadyStatus;
+window.loadDreams = loadDreams;
+window.loadTokens = loadTokens;
 
 // Экспорт переменных для отладки (только в development режиме)
 if (process.env.NODE_ENV !== 'production' || window.location.hostname === 'localhost') {
