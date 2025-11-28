@@ -20,9 +20,9 @@ const { initializeDatabase } = require('./database/init');
 
 const app = express();
 // Логирование используемой базы данных
-const dbUri = process.env.RAILWAY_MONGODB_URI || process.env.MONGODB_URI || process.env.MONGO_URL;
+const dbUri = process.env.RAILWAY_MONGODB_URI || process.env.MONGO_URL || process.env.MONGO_PUBLIC_URL || process.env.MONGODB_URI;
 if (dbUri) {
-    if (dbUri.includes('railway')) {
+    if (dbUri.includes('railway') || dbUri.includes('rlwy.net') || dbUri.includes('railway.internal')) {
         console.log('🗄️ Database: Используется Railway MongoDB');
     } else if (dbUri.includes('mongodb.net')) {
         console.log('🗄️ Database: Используется MongoDB Atlas');
@@ -227,8 +227,8 @@ async function startServer() {
             const { initializeCards } = require('./scripts/initCards');
 
 // Railway MongoDB Configuration
-// Приоритет: RAILWAY_MONGODB_URI > MONGODB_URI > MONGO_URL
-if (process.env.RAILWAY_MONGODB_URI) {
+// Приоритет: RAILWAY_MONGODB_URI > MONGO_URL > MONGO_PUBLIC_URL > MONGODB_URI
+if (process.env.RAILWAY_MONGODB_URI || process.env.MONGO_URL || process.env.MONGO_PUBLIC_URL) {
     console.log('🗄️ DB: Используем Railway MongoDB');
 } else if (process.env.MONGODB_URI) {
     console.log('🗄️ DB: Используем MongoDB Atlas');

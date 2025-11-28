@@ -25,20 +25,38 @@ class DatabaseConfig {
         // Приоритет Railway MongoDB переменных
         console.log('📊 Database: RAILWAY_MONGODB_URI:', process.env.RAILWAY_MONGODB_URI ? 'SET' : 'NOT SET');
         console.log('📊 Database: MONGODB_URI:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
+        console.log('📊 Database: MONGO_URL:', process.env.MONGO_URL ? 'SET' : 'NOT SET');
+        console.log('📊 Database: MONGO_PUBLIC_URL:', process.env.MONGO_PUBLIC_URL ? 'SET' : 'NOT SET');
         
-        // 1. Сначала проверяем Railway MongoDB
+        // 1. Сначала проверяем Railway MongoDB (RAILWAY_MONGODB_URI)
         if (process.env.RAILWAY_MONGODB_URI) {
-            console.log('📊 Database: Используется Railway MongoDB');
+            console.log('📊 Database: Используется Railway MongoDB (RAILWAY_MONGODB_URI)');
             console.log('📊 Database: URI length:', process.env.RAILWAY_MONGODB_URI.length);
-            console.log('📊 Database: URI starts with:', process.env.RAILWAY_MONGODB_URI.substring(0, 20));
+            console.log('📊 Database: URI starts with:', process.env.RAILWAY_MONGODB_URI.substring(0, 30));
             return process.env.RAILWAY_MONGODB_URI;
         }
         
-        // 2. Затем проверяем обычный MONGODB_URI
+        // 2. Затем проверяем MONGO_URL (Railway MongoDB)
+        if (process.env.MONGO_URL) {
+            console.log('📊 Database: Используется MONGO_URL');
+            console.log('📊 Database: URI length:', process.env.MONGO_URL.length);
+            console.log('📊 Database: URI starts with:', process.env.MONGO_URL.substring(0, 30));
+            return process.env.MONGO_URL;
+        }
+        
+        // 3. Проверяем MONGO_PUBLIC_URL (Railway MongoDB)
+        if (process.env.MONGO_PUBLIC_URL) {
+            console.log('📊 Database: Используется MONGO_PUBLIC_URL');
+            console.log('📊 Database: URI length:', process.env.MONGO_PUBLIC_URL.length);
+            console.log('📊 Database: URI starts with:', process.env.MONGO_PUBLIC_URL.substring(0, 30));
+            return process.env.MONGO_PUBLIC_URL;
+        }
+        
+        // 4. Затем проверяем обычный MONGODB_URI
         if (process.env.MONGODB_URI) {
             console.log('📊 Database: Используется MONGODB_URI');
             console.log('📊 Database: URI length:', process.env.MONGODB_URI.length);
-            console.log('📊 Database: URI starts with:', process.env.MONGODB_URI.substring(0, 20));
+            console.log('📊 Database: URI starts with:', process.env.MONGODB_URI.substring(0, 30));
             
             // Убираем MONGODB_URI= если оно есть в начале
             let uri = process.env.MONGODB_URI;
@@ -104,7 +122,7 @@ class DatabaseConfig {
                 return;
             }
 
-            if (process.env.RAILWAY_MONGODB_URI) {
+            if (process.env.RAILWAY_MONGODB_URI || process.env.MONGO_URL || process.env.MONGO_PUBLIC_URL) {
                 console.log('📊 Database: Подключение к Railway MongoDB...');
             } else if (process.env.MONGODB_URI) {
                 console.log('📊 Database: Подключение к MongoDB Atlas...');
@@ -122,7 +140,7 @@ class DatabaseConfig {
             await mongoose.connect(this.connectionString, this.options);
 
             this.isConnected = true;
-            if (process.env.RAILWAY_MONGODB_URI) {
+            if (process.env.RAILWAY_MONGODB_URI || process.env.MONGO_URL || process.env.MONGO_PUBLIC_URL) {
                 console.log('✅ Database: Успешно подключено к Railway MongoDB');
             } else {
                 console.log('✅ Database: Успешно подключено к MongoDB Atlas');
