@@ -30,6 +30,10 @@ class App {
         // Флаг для предотвращения множественных вызовов forceUpdate у PlayerTokens
         this._playerTokensForceUpdateCalled = false;
         
+        // Дебаунсинг и кэширование для проверки авторизации
+        this._lastAuthUsername = null;
+        this._checkAuthDebounceTimer = null;
+        
         // ИСПРАВЛЕНО: Безопасная инициализация с таймаутом
         this._safeInitialize();
     }
