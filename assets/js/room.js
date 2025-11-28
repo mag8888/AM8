@@ -2256,12 +2256,52 @@ async function refreshRoomData() {
     try {
         if (!currentRoom) return;
         
+        // Сохраняем локальное состояние текущего игрока перед обновлением
+        let localPlayerState = null;
+        if (currentUser && currentRoom.players) {
+            const localPlayer = currentRoom.players.find(p => 
+                p.userId === currentUser.id || p.username === currentUser.username
+            );
+            if (localPlayer) {
+                localPlayerState = {
+                    userId: localPlayer.userId,
+                    username: localPlayer.username,
+                    isReady: localPlayer.isReady,
+                    token: localPlayer.token,
+                    dream: localPlayer.dream
+                };
+                console.log('💾 Room: Сохранили локальное состояние игрока перед обновлением:', localPlayerState);
+            }
+        }
+        
         const room = await roomService.getRoomById(currentRoom.id);
         if (room) {
             const previousReadyCount = currentRoom.players ? currentRoom.players.filter(isPlayerReady).length : 0;
             const newReadyCount = room.players ? room.players.filter(isPlayerReady).length : 0;
             const wasNotStarted = !currentRoom.isStarted;
             const isNowStarted = room.isStarted;
+            
+            // Восстанавливаем локальное состояние игрока, если оно было сохранено
+            if (localPlayerState && room.players) {
+                const serverPlayer = room.players.find(p => 
+                    p.userId === localPlayerState.userId || p.username === localPlayerState.username
+                );
+                if (serverPlayer) {
+                    // Если локальное состояние новее (isReady изменился), используем его
+                    // Это предотвращает потерю изменений при быстром переключении
+                    const serverIsReady = isPlayerReady(serverPlayer);
+                    const localIsReady = isPlayerReady(localPlayerState);
+                    
+                    if (localIsReady !== serverIsReady) {
+                        console.log('🔄 Room: Восстанавливаем локальное состояние готовности:', {
+                            serverIsReady,
+                            localIsReady,
+                            using: localIsReady ? 'локальное (готов)' : 'локальное (не готов)'
+                        });
+                        serverPlayer.isReady = localPlayerState.isReady;
+                    }
+                }
+            }
             
             currentRoom = room;
             updateRoomInfo();
