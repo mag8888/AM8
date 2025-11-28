@@ -128,7 +128,16 @@ function updateUsernameDisplay(username) {
 }
 
 // Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', checkAuth);
+document.addEventListener('DOMContentLoaded', () => {
+    // Выполняем проверку сразу при загрузке (без дебаунса)
+    _performAuthCheck();
+});
 
-// Проверка при изменении localStorage
-window.addEventListener('storage', checkAuth);
+// Обработка изменений в localStorage с дебаунсингом
+window.addEventListener('storage', (e) => {
+    // Очищаем кэш при изменении currentUser
+    if (e.key === 'currentUser') {
+        _authCache = { result: null, timestamp: 0, username: null };
+        checkAuth(); // Используем дебаунсинг
+    }
+});
