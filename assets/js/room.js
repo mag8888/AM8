@@ -1153,16 +1153,27 @@ function updatePlayersList() {
         const playerName = player.name || player.username || 'Неизвестный игрок';
         const avatar = player.avatar || playerName.charAt(0).toUpperCase();
         // Определяем статус игрока более точно
-        const isReadyValue = isPlayerReady(player);
+        // Игрок считается готовым ТОЛЬКО если:
+        // 1. isReady = true И
+        // 2. dream выбран (имеет id и title) И
+        // 3. token выбран
+        const isReadyFlag = isPlayerReady(player);
+        const hasDream = player.dream && (
+            (typeof player.dream === 'object' && player.dream.id && player.dream.title) ||
+            (typeof player.dream === 'string' && player.dream.trim() !== '')
+        );
+        const hasToken = player.token && player.token.trim() !== '' && player.token !== 'null';
+        const isActuallyReady = isReadyFlag && hasDream && hasToken;
         
         let status = 'Выбирает';
-        if (isReadyValue) {
+        if (isActuallyReady) {
+            // Игрок действительно готов: есть флаг готовности, мечта и фишка
             status = 'Готов';
-        } else if (player.dream && player.token) {
-            // Если мечта и фишка выбраны, но игрок еще не отметился как готов
+        } else if (hasDream && hasToken && !isReadyFlag) {
+            // Мечта и фишка выбраны, но игрок еще не отметился как готов
             status = 'Готовится';
         } else {
-            // Если что-то не выбрано
+            // Что-то не выбрано или не готов
             status = 'Выбирает';
         }
         
@@ -1171,7 +1182,10 @@ function updatePlayersList() {
             playerName: playerName,
             isReady: player.isReady,
             isReadyType: typeof player.isReady,
-            isReadyValue: isReadyValue,
+            isReadyFlag: isReadyFlag,
+            hasDream: hasDream,
+            hasToken: hasToken,
+            isActuallyReady: isActuallyReady,
             dream: player.dream,
             token: player.token,
             status: status
