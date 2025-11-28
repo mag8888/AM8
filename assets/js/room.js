@@ -745,6 +745,7 @@ async function loadRoomData() {
                 window.location.href = 'rooms.html';
             }, 2000);
             
+            isLoadingRoomData = false; // Сбрасываем флаг перед выходом
             return;
             
             // Старый код с мок-данными (закомментирован для предотвращения проблем)
@@ -1656,26 +1657,33 @@ function updateReadyStatus() {
     const readyButton = document.getElementById('ready-button');
     if (!readyButton) return;
     
-    const isDreamSelected = dreamData && dreamData.id && dreamData.title;
     // Проверяем, что dreamData существует и содержит необходимые поля
-    const isDreamComplete = isDreamSelected && 
-                          dreamData && 
+    const isDreamSelected = dreamData && 
                           typeof dreamData === 'object' &&
+                          dreamData.id && 
+                          dreamData.title && 
+                          dreamData.title.trim() !== '';
+    
+    const isDreamComplete = isDreamSelected && 
                           dreamData.description && 
+                          typeof dreamData.description === 'string' &&
                           dreamData.description.trim() !== '' &&
                           typeof dreamData.cost === 'number' && 
                           dreamData.cost > 0;
     const isTokenSelected = selectedToken !== null && selectedToken !== 'null' && selectedToken !== '';
     const canBeReady = Boolean(isDreamComplete && isTokenSelected);
     
-    console.log('🔍 Room: Проверка готовности:', {
-        dreamData: dreamData,
-        isDreamSelected: isDreamSelected,
-        isDreamComplete: isDreamComplete,
-        selectedToken: selectedToken,
-        isTokenSelected: isTokenSelected,
-        canBeReady: canBeReady
-    });
+    // Убеждаемся, что все значения определены для логирования
+    const logData = {
+        dreamData: dreamData || null,
+        isDreamSelected: Boolean(isDreamSelected),
+        isDreamComplete: Boolean(isDreamComplete),
+        selectedToken: selectedToken || null,
+        isTokenSelected: Boolean(isTokenSelected),
+        canBeReady: Boolean(canBeReady)
+    };
+    
+    console.log('🔍 Room: Проверка готовности:', logData);
     
     // Проверяем текущее состояние игрока
     const currentPlayer = currentRoom ? currentRoom.players.find(p => {
@@ -2501,11 +2509,13 @@ function updateTokensAvailability() {
 }
 
 function showNotification(message, type = 'info') {
-    if (typeof window.showNotification === 'function') {
-        return window.showNotification(message, type);
-    }
-    if (window.notificationManager) {
+    // Избегаем рекурсии - используем notificationManager напрямую
+    if (window.notificationManager && typeof window.notificationManager.show === 'function') {
         return window.notificationManager.show(message, type);
+    }
+    // Fallback на глобальную функцию, если notificationManager недоступен
+    if (typeof window.showNotification === 'function' && window.showNotification !== showNotification) {
+        return window.showNotification(message, type);
     }
     console.warn('NotificationManager не доступен:', message);
 }
