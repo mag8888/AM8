@@ -845,7 +845,7 @@ class PlayerTokens {
         const grouped = this.groupPlayersByPosition(normalized);
         this._info('Группировка игроков по позициям', { groups: grouped.size });
         
-        if (grouped.size === 0) {
+        if (groupedArray.length === 0) {
             this._warn('Нет групп игроков для отображения');
             return;
         }
@@ -854,7 +854,7 @@ class PlayerTokens {
         let tokensCreated = 0;
         let tokensSkipped = 0;
         
-        grouped.forEach(({ position, isInner, players: playersAtPosition }) => {
+        groupedArray.forEach(({ position, isInner, players: playersAtPosition }) => {
             const trackElement = this.getTrackElement(isInner);
             if (!trackElement) {
                 this._warn(`Трек не найден: ${isInner ? this.innerTrackSelector : this.outerTrackSelector}`, {
