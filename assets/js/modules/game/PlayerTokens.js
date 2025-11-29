@@ -1201,7 +1201,20 @@ class PlayerTokens {
         let token = this.tokens.get(player.id);
         if (!token) {
             token = this.createPlayerToken(player, index, totalPlayers);
+            if (!trackElement) {
+                this._warn('ensureToken: trackElement is null', { player: player.username, isInner: player.isInner });
+                return null;
+            }
             trackElement.appendChild(token);
+            this._info('Фишка добавлена в DOM', {
+                player: player.username,
+                position: player.position,
+                isInner: player.isInner,
+                trackElement: trackElement.tagName,
+                trackElementId: trackElement.id,
+                tokenInDOM: token.isConnected,
+                tokenParent: token.parentElement?.tagName
+            });
             this.tokens.set(player.id, token);
             this.animateTokenAppearance(token);
         } else {
