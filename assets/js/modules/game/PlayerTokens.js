@@ -981,11 +981,16 @@ class PlayerTokens {
             }
         ];
         
-        token.animate(keyframes, {
+        const animation = token.animate(keyframes, {
             duration: 600,
             easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
             fill: 'forwards'
         });
+        
+        // Убеждаемся, что после анимации opacity = 1
+        animation.onfinish = () => {
+            token.style.opacity = '1';
+        };
     }
     
     /**
