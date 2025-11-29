@@ -6,19 +6,23 @@
     grid-template-columns: auto 1fr auto !important;
     grid-template-rows: 1fr !important;
     grid-template-areas: "card-decks game-board players-panel" !important;
-    gap: 1rem;
-    align-items: stretch;
-    justify-items: stretch;
+    gap: 1rem !important;
+    align-items: stretch !important;
+    justify-items: stretch !important;
     padding: 0.5rem !important;
     max-width: 100% !important;
     margin: 0 auto !important;
     min-height: 100vh !important;
     height: 100vh !important;
+    max-height: 100vh !important; /* Фиксируем высоту */
     overflow: hidden !important;
     background: rgba(15, 23, 42, 0.95) !important; /* Единственная подложка */
+    /* Предотвращаем изменение размеров после загрузки */
+    box-sizing: border-box !important;
+    position: relative !important;
   }
   
-  /* Левая панель: карточки сделок и банк - GRID СЕТКА */
+  /* Левая панель: карточки сделок и банк - GRID СЕТКА с фиксированными размерами */
   #card-decks-panel.card-decks-container {
     grid-area: card-decks !important;
     display: grid !important;
@@ -44,6 +48,8 @@
     z-index: 1 !important;
     overflow: hidden !important; /* Убираем прокрутку у контейнера */
     gap: 1rem !important; /* Отступ между банком и карточками */
+    /* Предотвращаем изменение размеров после загрузки */
+    contain: layout size !important; /* Изоляция layout */
   }
   
   /* Карточки сделок: компактные, чтобы все помещались */
@@ -74,7 +80,7 @@
     transform-origin: left center; 
   }
   
-  /* Центральная область: игровое поле */
+  /* Центральная область: игровое поле - фиксированные размеры для предотвращения сдвига */
   .game-board-container {
     grid-area: game-board !important;
     display: flex !important;
@@ -84,12 +90,17 @@
     min-height: 0 !important;
     height: 100% !important; /* На всю высоту контейнера */
     max-height: 100% !important;
+    width: 100% !important; /* Фиксируем ширину */
+    max-width: 100% !important;
     padding: 0.5rem !important;
     box-sizing: border-box !important;
-    overflow: visible !important;
+    overflow: hidden !important; /* Скрываем переполнение */
+    position: relative !important;
+    /* Предотвращаем изменение размеров после загрузки */
+    flex: 1 1 auto !important;
   }
   
-  /* Квадратная доска - занимает доступное пространство, всегда квадрат, приоритет высоте */
+  /* Квадратная доска - фиксированные размеры для предотвращения сдвига */
   .game-page .board-wrapper {
     width: 100% !important;
     height: 100% !important;
@@ -97,19 +108,16 @@
     margin: auto !important;
     max-width: 100% !important;
     max-height: 100% !important;
+    min-width: 0 !important;
     min-height: 0 !important;
     box-sizing: border-box !important;
-    /* Приоритет высоте - поле занимает всю доступную высоту */
-    flex: 1 1 auto !important;
+    position: relative !important;
+    /* Предотвращаем изменение размеров после загрузки */
+    flex: 0 0 auto !important; /* Не растягивается, использует aspect-ratio */
+    overflow: hidden !important; /* Скрываем переполнение */
   }
   
-  /* Контейнер поля - занимает все доступное пространство */
-  .game-board-container {
-    flex: 1 1 auto !important; /* Растягивается на все доступное пространство */
-    min-height: 0 !important; /* Позволяет сжиматься */
-  }
-  
-  /* Правая панель: игроки - GRID СЕТКА */
+  /* Правая панель: игроки - GRID СЕТКА с фиксированными размерами */
   .top-panel-container {
     grid-area: players-panel !important;
     display: grid !important;
@@ -135,6 +143,8 @@
     z-index: 1 !important;
     overflow: hidden !important; /* Убираем прокрутку у контейнера */
     gap: 1rem !important; /* Отступ между действиями и игроками */
+    /* Предотвращаем изменение размеров после загрузки */
+    contain: layout size !important; /* Изоляция layout */
   }
   
   /* Секция действий - GRID область */
