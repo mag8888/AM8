@@ -450,23 +450,10 @@ class PlayerTokens {
             });
         }
         
-        this._info('✅ Координаты вычислены из DOM', {
+        this._debug('✅ Координаты вычислены из DOM', {
             position,
             isInner,
-            coords,
-            trackRect: { 
-                left: trackRect.left, 
-                top: trackRect.top, 
-                width: trackRect.width, 
-                height: trackRect.height 
-            },
-            cellRect: { 
-                left: cellRect.left, 
-                top: cellRect.top, 
-                width: cellRect.width, 
-                height: cellRect.height 
-            },
-            isWithinTrack
+            coords
         });
         return coords;
     }
@@ -1435,14 +1422,12 @@ class PlayerTokens {
                 return null;
             }
             trackElement.appendChild(token);
-            this._info('Фишка добавлена в DOM', {
+            this._debug('Фишка добавлена в DOM', {
                 player: player.username,
                 position: player.position,
                 isInner: player.isInner,
                 trackElement: trackElement.tagName,
-                trackElementId: trackElement.id,
-                tokenInDOM: token.isConnected,
-                tokenParent: token.parentElement?.tagName
+                trackElementId: trackElement.id
             });
             this.tokens.set(player.id, token);
             this.animateTokenAppearance(token);
@@ -1592,30 +1577,23 @@ class PlayerTokens {
             });
         }
         
-        // Подробное логирование для отладки
-        this._info('🎯 Фишка позиционирована', {
-            playerId: token.dataset.playerId,
-            playerName: token.dataset.playerName,
-            position: token.dataset.position,
-            coords: { x: baseCoords.x, y: baseCoords.y },
-            offset: { x: offset.x, y: offset.y },
-            finalPosition: { left, top },
-            tokenSize: { width: tokenRect.width, height: tokenRect.height },
-            parentSize: parentRect ? { width: parentRect.width, height: parentRect.height } : null,
-            parentId: token.parentElement?.id,
-            parentPosition: token.parentElement ? window.getComputedStyle(token.parentElement).position : null,
-            computedStyles: {
-                position: window.getComputedStyle(token).position,
-                display: window.getComputedStyle(token).display,
-                visibility: window.getComputedStyle(token).visibility,
-                opacity: window.getComputedStyle(token).opacity,
-                zIndex: window.getComputedStyle(token).zIndex,
-                width: window.getComputedStyle(token).width,
-                height: window.getComputedStyle(token).height
-            },
-            tokenInDOM: token.isConnected,
-            tokenParent: token.parentElement?.tagName
-        });
+        // Подробное логирование для отладки (только при проблемах)
+        if (tokenRect.width === 0 || tokenRect.height === 0 || window.getComputedStyle(token).opacity === '0') {
+            this._info('🎯 Фишка позиционирована (с проблемами)', {
+                playerId: token.dataset.playerId,
+                playerName: token.dataset.playerName,
+                position: token.dataset.position,
+                finalPosition: { left, top },
+                tokenSize: { width: tokenRect.width, height: tokenRect.height },
+                computedOpacity: window.getComputedStyle(token).opacity
+            });
+        } else {
+            this._debug('🎯 Фишка позиционирована', {
+                playerName: token.dataset.playerName,
+                position: token.dataset.position,
+                finalPosition: { left, top }
+            });
+        }
         
         // Проверяем, что фишка находится в пределах видимой области родителя
         const isWithinParent = parentRect ? 
