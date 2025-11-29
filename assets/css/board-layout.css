@@ -41,6 +41,9 @@
     overflow-y: auto !important; /* Прокрутка если контент не помещается */
     overflow-x: hidden !important;
     gap: 0.5rem !important;
+    /* Убеждаемся что flex работает правильно */
+    align-items: stretch !important;
+    justify-content: flex-start !important;
   }
   
   /* Карточки сделок: компактные, чтобы все помещались */
@@ -86,15 +89,24 @@
     overflow: visible !important;
   }
   
-  /* Квадратная доска - занимает доступное пространство, всегда квадрат */
+  /* Квадратная доска - занимает доступное пространство, всегда квадрат, приоритет высоте */
   .game-page .board-wrapper {
     width: 100% !important;
     height: 100% !important;
-    aspect-ratio: 1 / 1 !important; /* Всегда квадрат - браузер автоматически ограничит по меньшей стороне */
+    aspect-ratio: 1 / 1 !important; /* Всегда квадрат */
     margin: auto !important;
     max-width: 100% !important;
     max-height: 100% !important;
+    min-height: 0 !important;
     box-sizing: border-box !important;
+    /* Приоритет высоте - поле занимает всю доступную высоту */
+    flex: 1 1 auto !important;
+  }
+  
+  /* Контейнер поля - занимает все доступное пространство */
+  .game-board-container {
+    flex: 1 1 auto !important; /* Растягивается на все доступное пространство */
+    min-height: 0 !important; /* Позволяет сжиматься */
   }
   
   /* Правая панель: игроки */
@@ -175,9 +187,18 @@
     order: 1 !important; /* Банк первым */
   }
   
-  /* Карточки после банка */
+  /* Карточки после банка - все вместе внизу */
   #card-decks-panel .card-deck-card {
     order: 2 !important;
+    flex: 0 0 auto !important; /* Не растягиваются */
+    width: 100% !important;
+    margin-bottom: 0.5rem !important; /* Отступ между карточками */
+  }
+  
+  /* Контейнер для карточек - flex column чтобы все были вместе */
+  #card-decks-panel.card-decks-container {
+    display: flex !important;
+    flex-direction: column !important;
   }
   
   #bank-preview-container {
