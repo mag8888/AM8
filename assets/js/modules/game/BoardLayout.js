@@ -734,18 +734,44 @@ class BoardLayout {
         if (!containerRect) {
             return [];
         }
-        return cells.map((cell) => {
+        // Создаем объект для хранения координат по позициям
+        const centersByPosition = {};
+        
+        cells.forEach((cell) => {
             if (!cell || typeof cell.getBoundingClientRect !== 'function') {
-                return null;
+                return;
             }
+            
+            // Получаем позицию из data-position
+            const position = parseInt(cell.dataset.position);
+            if (isNaN(position)) {
+                this._warn('Клетка без data-position', { cell });
+                return;
+            }
+            
             const rect = cell.getBoundingClientRect();
-            return {
+            centersByPosition[position] = {
                 x: rect.left - containerRect.left + rect.width / 2,
                 y: rect.top - containerRect.top + rect.height / 2,
                 width: rect.width,
                 height: rect.height
             };
         });
+        
+        // Преобразуем объект в массив, где индекс соответствует позиции
+        // Находим максимальную позицию
+        const maxPosition = Math.max(...Object.keys(centersByPosition).map(Number), -1);
+        if (maxPosition < 0) {
+            return [];
+        }
+        
+        // Создаем массив с правильной индексацией
+        const centersArray = [];
+        for (let i = 0; i <= maxPosition; i++) {
+            centersArray[i] = centersByPosition[i] || null;
+        }
+        
+        return centersArray;
     }
 
     _snapshotRect(rect) {
