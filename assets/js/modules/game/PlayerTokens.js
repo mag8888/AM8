@@ -1500,6 +1500,32 @@ class PlayerTokens {
         const tokenRect = token.getBoundingClientRect();
         const parentRect = token.parentElement?.getBoundingClientRect();
         
+        // Проверяем, что фишка имеет правильный размер
+        if (tokenRect.width === 0 || tokenRect.height === 0) {
+            this._warn('⚠️ Фишка имеет нулевой размер!', {
+                playerId: token.dataset.playerId,
+                playerName: token.dataset.playerName,
+                tokenRect: { width: tokenRect.width, height: tokenRect.height },
+                computedStyles: {
+                    width: window.getComputedStyle(token).width,
+                    height: window.getComputedStyle(token).height,
+                    display: window.getComputedStyle(token).display,
+                    visibility: window.getComputedStyle(token).visibility
+                }
+            });
+        }
+        
+        // Проверяем, что координаты в разумных пределах
+        if (left < -1000 || left > 10000 || top < -1000 || top > 10000) {
+            this._warn('⚠️ Фишка имеет подозрительные координаты!', {
+                playerId: token.dataset.playerId,
+                playerName: token.dataset.playerName,
+                finalPosition: { left, top },
+                coords: { x: baseCoords.x, y: baseCoords.y },
+                offset: { x: offset.x, y: offset.y }
+            });
+        }
+        
         // Подробное логирование для отладки
         this._info('🎯 Фишка позиционирована', {
             playerId: token.dataset.playerId,
@@ -1511,6 +1537,7 @@ class PlayerTokens {
             tokenSize: { width: tokenRect.width, height: tokenRect.height },
             parentSize: parentRect ? { width: parentRect.width, height: parentRect.height } : null,
             parentId: token.parentElement?.id,
+            parentPosition: token.parentElement ? window.getComputedStyle(token.parentElement).position : null,
             computedStyles: {
                 position: window.getComputedStyle(token).position,
                 display: window.getComputedStyle(token).display,
