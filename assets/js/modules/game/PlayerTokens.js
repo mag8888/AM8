@@ -279,13 +279,19 @@ class PlayerTokens {
     getCellCenter(position, isInner) {
         this._info('🔍 getCellCenter вызван', { position, isInner });
         
+        // Сначала пытаемся получить координаты из boardLayout (кэш)
         const boardLayout = this.boardLayout || this._resolveBoardLayout();
         if (boardLayout && typeof boardLayout.getCellCenter === 'function') {
             const center = boardLayout.getCellCenter(position, isInner);
             this._info('📊 boardLayout.getCellCenter вернул', { position, isInner, center, centerType: typeof center });
             if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
-                this._info('✅ Координаты получены из boardLayout', center);
-                return center;
+                // Проверяем, что координаты в пределах разумных значений
+                if (center.x >= 0 && center.y >= 0) {
+                    this._info('✅ Координаты получены из boardLayout', center);
+                    return center;
+                } else {
+                    this._warn('⚠️ Координаты из boardLayout отрицательные, вычисляем из DOM', { center, position, isInner });
+                }
             } else {
                 this._warn('❌ boardLayout.getCellCenter вернул невалидные координаты', { center, position, isInner });
             }
@@ -296,20 +302,7 @@ class PlayerTokens {
             });
         }
 
-        const cache = isInner ? this.cellCenters.inner : this.cellCenters.outer;
-        const cached = cache?.[position];
-        if (cached && Number.isFinite(cached.x) && Number.isFinite(cached.y)) {
-            this._debug('Координаты получены из кэша', cached);
-            return cached;
-        } else {
-            this._warn('Координаты не найдены в кэше', { 
-                position, 
-                isInner, 
-                cacheExists: !!cache,
-                cacheKeys: cache ? Object.keys(cache) : []
-            });
-        }
-
+        // Если координаты из boardLayout недоступны, вычисляем напрямую из DOM
         const trackElement = this.getTrackElement(isInner);
         if (!trackElement) {
             this._warn('Трек не найден для вычисления координат', { position, isInner });
@@ -330,10 +323,8 @@ class PlayerTokens {
         const trackRect = trackElement.getBoundingClientRect();
         const cellRect = cell.getBoundingClientRect();
         
-        // Вычисляем координаты относительно trackElement (который имеет position: absolute)
-        // Координаты должны быть относительно trackElement, а не viewport
-        // cellRect.left - trackRect.left дает позицию клетки относительно левого края трека
-        // cellRect.width / 2 добавляет половину ширины клетки для получения центра
+        // Вычисляем координаты центра клетки относительно trackElement
+        // trackElement имеет position: absolute, поэтому координаты должны быть относительно него
         const coords = {
             x: (cellRect.left - trackRect.left) + (cellRect.width / 2),
             y: (cellRect.top - trackRect.top) + (cellRect.height / 2),
@@ -346,20 +337,47 @@ class PlayerTokens {
                               coords.y >= 0 && coords.y <= trackRect.height;
         
         if (!isWithinTrack) {
-            this._warn('Координаты клетки выходят за пределы трека', {
+            this._warn('⚠️ Координаты клетки выходят за пределы трека', {
                 coords,
-                trackRect: { width: trackRect.width, height: trackRect.height },
-                cellRect: { left: cellRect.left, top: cellRect.top, width: cellRect.width, height: cellRect.height },
-                trackElementId: trackElement.id
+                trackRect: { 
+                    left: trackRect.left, 
+                    top: trackRect.top, 
+                    width: trackRect.width, 
+                    height: trackRect.height 
+                },
+                cellRect: { 
+                    left: cellRect.left, 
+                    top: cellRect.top, 
+                    width: cellRect.width, 
+                    height: cellRect.height 
+                },
+                trackElementId: trackElement.id,
+                computedTrackStyles: {
+                    position: window.getComputedStyle(trackElement).position,
+                    left: window.getComputedStyle(trackElement).left,
+                    top: window.getComputedStyle(trackElement).top,
+                    width: window.getComputedStyle(trackElement).width,
+                    height: window.getComputedStyle(trackElement).height
+                }
             });
         }
         
-        this._debug('Координаты вычислены из DOM', {
+        this._info('✅ Координаты вычислены из DOM', {
+            position,
+            isInner,
             coords,
-            trackRect: { left: trackRect.left, top: trackRect.top, width: trackRect.width, height: trackRect.height },
-            cellRect: { left: cellRect.left, top: cellRect.top, width: cellRect.width, height: cellRect.height },
-            trackElementPosition: window.getComputedStyle(trackElement).position,
-            trackElementId: trackElement.id,
+            trackRect: { 
+                left: trackRect.left, 
+                top: trackRect.top, 
+                width: trackRect.width, 
+                height: trackRect.height 
+            },
+            cellRect: { 
+                left: cellRect.left, 
+                top: cellRect.top, 
+                width: cellRect.width, 
+                height: cellRect.height 
+            },
             isWithinTrack
         });
         return coords;
