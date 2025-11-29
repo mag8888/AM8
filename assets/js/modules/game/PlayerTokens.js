@@ -1395,7 +1395,7 @@ class PlayerTokens {
         }
         
         if (!isVisibleInViewport) {
-            this._warn('❌ Фишка не видна в viewport', {
+            this._debug('ℹ️ Фишка не в видимой области viewport (трек может быть прокручен)', {
                 tokenRect: {
                     left: tokenRect.left,
                     top: tokenRect.top,
