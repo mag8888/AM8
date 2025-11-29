@@ -205,21 +205,25 @@ class PlayerTokens {
             return;
         }
 
-        this.eventBus.on('game:playersUpdated', (data = {}) => {
+        // Отписываемся от старых обработчиков, если они есть
+        this._unsubscribeEventBus();
+
+        // Создаем обработчики и сохраняем их для отписки
+        const gamePlayersUpdatedHandler = (data = {}) => {
             this._debug('Получено событие game:playersUpdated', data);
             this.updateTokens(data.players);
-        });
+        };
 
-        this.eventBus.on('player:positionUpdated', (data = {}) => {
+        const playerPositionUpdatedHandler = (data = {}) => {
             this._debug('Получено событие player:positionUpdated', data);
             if (this.animatingTokens.has(data.playerId)) {
                 this._debug(`Фишка ${data.playerId} анимируется, пропускаем player:positionUpdated`);
                 return;
             }
             this.updateTokenPosition(data.playerId, data.position, data.player?.isInner);
-        });
+        };
 
-        this.eventBus.on('players:positionsUpdated', (data = {}) => {
+        const playersPositionsUpdatedHandler = (data = {}) => {
             this._debug('Получено событие players:positionsUpdated', data);
             if (Array.isArray(data.changes)) {
                 data.changes.forEach((change) => {
@@ -240,21 +244,21 @@ class PlayerTokens {
                     this.updateAllTokenPositions();
                 }, 100);
             }
-        });
+        };
 
-        this.eventBus.on('game:started', () => {
+        const gameStartedHandler = () => {
             this._debug('Получено событие game:started');
             if (this.gameState && Array.isArray(this.gameState.players)) {
                 this.renderTokens(this.gameState.players);
             }
-        });
+        };
 
-        this.eventBus.on('players:updated', (data = {}) => {
+        const playersUpdatedHandler = (data = {}) => {
             this._debug('Получено событие players:updated', data);
             this.updateTokens(data.players);
-        });
+        };
 
-        this.eventBus.on('board:cellsPositioned', (payload = {}) => {
+        const boardCellsPositionedHandler = (payload = {}) => {
             this._debug('Получено событие board:cellsPositioned');
             if (payload.outer) {
                 this.cellCenters.outer = payload.outer;
@@ -263,6 +267,46 @@ class PlayerTokens {
                 this.cellCenters.inner = payload.inner;
             }
             this.scheduleTokenPositionRefresh();
+        };
+
+        // Сохраняем обработчики для отписки
+        this._eventHandlers.set('eventBus:game:playersUpdated', gamePlayersUpdatedHandler);
+        this._eventHandlers.set('eventBus:player:positionUpdated', playerPositionUpdatedHandler);
+        this._eventHandlers.set('eventBus:players:positionsUpdated', playersPositionsUpdatedHandler);
+        this._eventHandlers.set('eventBus:game:started', gameStartedHandler);
+        this._eventHandlers.set('eventBus:players:updated', playersUpdatedHandler);
+        this._eventHandlers.set('eventBus:board:cellsPositioned', boardCellsPositionedHandler);
+
+        // Подписываемся на события
+        this.eventBus.on('game:playersUpdated', gamePlayersUpdatedHandler);
+        this.eventBus.on('player:positionUpdated', playerPositionUpdatedHandler);
+        this.eventBus.on('players:positionsUpdated', playersPositionsUpdatedHandler);
+        this.eventBus.on('game:started', gameStartedHandler);
+        this.eventBus.on('players:updated', playersUpdatedHandler);
+        this.eventBus.on('board:cellsPositioned', boardCellsPositionedHandler);
+    }
+    
+    _unsubscribeEventBus() {
+        if (!this.eventBus || typeof this.eventBus.off !== 'function') {
+            return;
+        }
+
+        // Отписываемся от всех сохраненных обработчиков EventBus
+        const eventNames = [
+            'game:playersUpdated',
+            'player:positionUpdated',
+            'players:positionsUpdated',
+            'game:started',
+            'players:updated',
+            'board:cellsPositioned'
+        ];
+
+        eventNames.forEach(eventName => {
+            const handler = this._eventHandlers.get(`eventBus:${eventName}`);
+            if (handler) {
+                this.eventBus.off(eventName, handler);
+                this._eventHandlers.delete(`eventBus:${eventName}`);
+            }
         });
     }
     
