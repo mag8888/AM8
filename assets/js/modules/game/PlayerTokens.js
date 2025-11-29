@@ -47,6 +47,7 @@ class PlayerTokens {
         this.ensureTrackElements();
         this.setupEventListeners();
         this.addStyles();
+        this.setupGameStateManagerListeners();
         
         // Принудительно обновляем фишки через небольшую задержку
         setTimeout(() => {
@@ -57,6 +58,47 @@ class PlayerTokens {
         this.startInitialRenderWatcher();
         
         this._info('PlayerTokens инициализирован');
+    }
+    
+    /**
+     * Подписка на обновления GameStateManager
+     */
+    setupGameStateManagerListeners() {
+        if (window.app && window.app.getModule) {
+            const gameStateManager = window.app.getModule('gameStateManager');
+            if (gameStateManager && typeof gameStateManager.on === 'function') {
+                this._debug('Подписываемся на обновления GameStateManager');
+                
+                // Подписка на обновление состояния
+                gameStateManager.on('state:updated', (state) => {
+                    this._debug('Получено событие state:updated от GameStateManager', state);
+                    if (state && state.players && state.players.length > 0) {
+                        this.updateTokens(state.players);
+                    }
+                });
+                
+                // Подписка на обновление игроков
+                gameStateManager.on('players:updated', (players) => {
+                    this._debug('Получено событие players:updated от GameStateManager', players);
+                    if (Array.isArray(players) && players.length > 0) {
+                        this.updateTokens(players);
+                    }
+                });
+                
+                // Подписка на событие game:playersUpdated
+                gameStateManager.on('game:playersUpdated', (data) => {
+                    this._debug('Получено событие game:playersUpdated от GameStateManager', data);
+                    const players = data?.players || data;
+                    if (Array.isArray(players) && players.length > 0) {
+                        this.updateTokens(players);
+                    }
+                });
+            } else {
+                this._warn('GameStateManager не найден или не имеет метода on');
+            }
+        } else {
+            this._warn('window.app не найден, не можем подписаться на GameStateManager');
+        }
     }
     
     /**
