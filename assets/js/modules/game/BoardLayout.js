@@ -111,11 +111,34 @@ class BoardLayout {
         const innerFragment = document.createDocumentFragment();
 
         // Оптимизация: очищаем через removeChild вместо innerHTML для ускорения
+        // НО: не удаляем фишки игроков (элементы с классом player-token)
         while (this.outerTrackElement.firstChild) {
-            this.outerTrackElement.removeChild(this.outerTrackElement.firstChild);
+            const child = this.outerTrackElement.firstChild;
+            // Пропускаем фишки игроков
+            if (child.classList && child.classList.contains('player-token')) {
+                // Перемещаем фишку в конец, чтобы она не мешала
+                this.outerTrackElement.appendChild(child);
+                // Если фишка уже в конце, прекращаем цикл
+                if (this.outerTrackElement.firstChild === child) {
+                    break;
+                }
+                continue;
+            }
+            this.outerTrackElement.removeChild(child);
         }
         while (this.innerTrackElement.firstChild) {
-            this.innerTrackElement.removeChild(this.innerTrackElement.firstChild);
+            const child = this.innerTrackElement.firstChild;
+            // Пропускаем фишки игроков
+            if (child.classList && child.classList.contains('player-token')) {
+                // Перемещаем фишку в конец, чтобы она не мешала
+                this.innerTrackElement.appendChild(child);
+                // Если фишка уже в конце, прекращаем цикл
+                if (this.innerTrackElement.firstChild === child) {
+                    break;
+                }
+                continue;
+            }
+            this.innerTrackElement.removeChild(child);
         }
 
         for (let i = 0; i < this.outerCellsConfig.length; i += 1) {
