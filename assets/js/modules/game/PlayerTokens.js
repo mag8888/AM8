@@ -1222,10 +1222,35 @@ class PlayerTokens {
      * Позиционирование фишки с учётом смещения
      */
     positionTokenElement(token, baseCoords, offset, totalPlayers = 1) {
-        if (!token) return;
+        if (!token) {
+            this._warn('positionTokenElement: token is null');
+            return;
+        }
+        if (!baseCoords || !Number.isFinite(baseCoords.x) || !Number.isFinite(baseCoords.y)) {
+            this._warn('positionTokenElement: invalid baseCoords', { baseCoords, offset });
+            return;
+        }
+        
         const halfSize = 16; // половина ширины/высоты токена
-        token.style.left = `${baseCoords.x + offset.x - halfSize}px`;
-        token.style.top = `${baseCoords.y + offset.y - halfSize}px`;
+        const left = baseCoords.x + offset.x - halfSize;
+        const top = baseCoords.y + offset.y - halfSize;
+        
+        token.style.position = 'absolute';
+        token.style.left = `${left}px`;
+        token.style.top = `${top}px`;
+        token.style.zIndex = '2000';
+        token.style.display = 'flex';
+        token.style.visibility = 'visible';
+        token.style.opacity = '1';
+        
+        this._debug('Фишка позиционирована', {
+            left,
+            top,
+            offset,
+            baseCoords,
+            tokenParent: token.parentElement?.tagName,
+            tokenInDOM: token.isConnected
+        });
         
         // Добавляем визуальную индикацию для множественных фишек
         if (totalPlayers > 1) {
