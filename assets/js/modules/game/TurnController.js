@@ -20,6 +20,10 @@ class TurnController {
         this._setupAttempts = 0; // Счетчик попыток настройки обработчиков
         this._turnManagerListeners = [];
         
+        // Дебаунсинг для обновления кубика
+        this._diceUpdateTimer = null;
+        this._lastDiceValue = null;
+        
         // Создаем PlayerList для отображения игроков
         this.playerList = null;
         
@@ -1019,25 +1023,41 @@ class TurnController {
     }
     
     /**
-     * Обновление отображения кубика в нижней панели
+     * Обновление отображения кубика в нижней панели с дебаунсингом
      */
     updateDiceInBottomPanel(value) {
-        // Обновляем через PlayersPanel
-        const playersPanel = window.app?.getModule?.('playersPanel');
-        if (playersPanel && typeof playersPanel.updateDiceResult === 'function') {
-            playersPanel.updateDiceResult(value);
-            console.log(`🎲 TurnController: Обновлен кубик через PlayersPanel: ${value}`);
-        } else {
-            // Fallback: прямое обновление элемента
-            const bottomDiceElement = document.getElementById('dice-result');
-            if (bottomDiceElement) {
-                const valueEmoji = this.getDiceEmoji(Math.max(1, Math.min(6, Number(value) || 1)));
-                bottomDiceElement.textContent = `${valueEmoji} ${value}`;
-                console.log(`🎲 TurnController: Обновлен кубик напрямую: ${valueEmoji} ${value}`);
-            } else {
-                console.warn('⚠️ TurnController: Элемент dice-result в нижней панели не найден');
-            }
+        // Дебаунсинг для предотвращения множественных обновлений
+        if (this._diceUpdateTimer) {
+            clearTimeout(this._diceUpdateTimer);
         }
+        
+        this._diceUpdateTimer = setTimeout(() => {
+            this._diceUpdateTimer = null;
+            
+            // Обновляем через PlayersPanel
+            const playersPanel = window.app?.getModule?.('playersPanel');
+            if (playersPanel && typeof playersPanel.updateDiceResult === 'function') {
+                playersPanel.updateDiceResult(value);
+                // Убираем избыточное логирование - оставляем только при изменении значения
+                if (this._lastDiceValue !== value) {
+                    console.log(`🎲 TurnController: Обновлен кубик через PlayersPanel: ${value}`);
+                    this._lastDiceValue = value;
+                }
+            } else {
+                // Fallback: прямое обновление элемента
+                const bottomDiceElement = document.getElementById('dice-result');
+                if (bottomDiceElement) {
+                    const valueEmoji = this.getDiceEmoji(Math.max(1, Math.min(6, Number(value) || 1)));
+                    bottomDiceElement.textContent = `${valueEmoji} ${value}`;
+                    if (this._lastDiceValue !== value) {
+                        console.log(`🎲 TurnController: Обновлен кубик напрямую: ${valueEmoji} ${value}`);
+                        this._lastDiceValue = value;
+                    }
+                } else {
+                    console.warn('⚠️ TurnController: Элемент dice-result в нижней панели не найден');
+                }
+            }
+        }, 100); // Дебаунс 100мс
     }
     
     onRollError(error) {

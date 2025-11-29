@@ -42,6 +42,9 @@ class PlayersPanel {
         this._uiUpdateTimeout = null;
         this._uiUpdateDelay = 200; // 200ms дебаунсинг для UI обновлений
         
+        // Защита от повторных вызовов броска кубика
+        this._isRolling = false;
+        
         console.log('👥 PlayersPanel v2.0: Инициализация');
         this.init();
     }
@@ -1707,9 +1710,15 @@ class PlayersPanel {
      * Обработчик кнопки "Бросок"
      */
     async handleDiceRoll() {
+        // Защита от повторных вызовов
+        if (this._isRolling) {
+            console.warn('⚠️ PlayersPanel: Бросок кубика уже выполняется, пропускаем');
+            return;
+        }
+        
         try {
+            this._isRolling = true;
             console.log('🎲 PlayersPanel: Обработка броска кубиков');
-            
             
             const app = window.app;
             const turnService = app && app.getModule ? app.getModule('turnService') : null;
@@ -1747,6 +1756,11 @@ class PlayersPanel {
                 
             console.log('🎲 PlayersPanel: canRoll проверка:', canRoll);
             
+            if (!canRoll) {
+                console.warn('⚠️ PlayersPanel: Бросок кубика недоступен');
+                return;
+            }
+            
             // Выполняем бросок кубиков
             if (typeof turnService.roll === 'function') {
                 console.log('🎲 PlayersPanel: Вызываем turnService.roll()');
@@ -1759,10 +1773,17 @@ class PlayersPanel {
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка броска кубиков:', error);
             
-            // Показываем уведомление пользователю
-            if (window.NotificationService) {
-                window.NotificationService.show('Ошибка броска кубика: ' + error.message, 'error');
+            // Показываем уведомление пользователю только если это не "уже выполняется"
+            if (error.message && !error.message.includes('already in progress')) {
+                if (window.NotificationService) {
+                    window.NotificationService.show('Ошибка броска кубика: ' + error.message, 'error');
+                }
             }
+        } finally {
+            // Сбрасываем флаг через небольшую задержку для предотвращения повторных вызовов
+            setTimeout(() => {
+                this._isRolling = false;
+            }, 1000);
         }
     }
     

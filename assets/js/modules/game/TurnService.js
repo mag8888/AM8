@@ -5,7 +5,7 @@
  */
 
 class TurnService extends EventTarget {
-    constructor({ state, roomApi, diceService, movementService, gameStateManager }) {
+    constructor({ state, roomApi, diceService, movementService, gameStateManager, eventBus }) {
         super();
         
         // Проверка обязательных зависимостей
@@ -21,6 +21,7 @@ class TurnService extends EventTarget {
         this.diceService = diceService;
         this.movementService = movementService;
         this.gameStateManager = gameStateManager || null;
+        this.eventBus = eventBus || null; // Добавляем eventBus для эмита событий
         this.listeners = new Map();
         this.lastRollValue = null;
         this._isRolling = false;
@@ -221,6 +222,28 @@ class TurnService extends EventTarget {
                 track: trackId
             });
             this._applyServerState(response?.state);
+            
+            // Эмит событий для обновления фишек через eventBus
+            if (this.eventBus && response?.state?.players) {
+                // Эмитим обновление позиций игроков
+                const playerUpdates = response.state.players.map(player => ({
+                    playerId: player.id || player.userId,
+                    position: player.position,
+                    player: player
+                }));
+                
+                if (playerUpdates.length > 0) {
+                    this.eventBus.emit('players:positionsUpdated', {
+                        changes: playerUpdates,
+                        players: response.state.players
+                    });
+                }
+                
+                // Также эмитим общее обновление игроков
+                this.eventBus.emit('game:playersUpdated', {
+                    players: response.state.players
+                });
+            }
             
             // Эмит успешного результата
             this.emit('move:success', response);
