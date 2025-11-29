@@ -896,14 +896,26 @@ class PlayerTokens {
             if (gameStateManager && typeof gameStateManager.getState === 'function') {
                 const state = gameStateManager.getState();
                 if (state && state.players && state.players.length > 0) {
-                    this._debug('Получены данные из GameStateManager, обновляем фишки', state.players.length);
+                    this._info('Получены данные из GameStateManager, обновляем фишки', state.players.length);
                     this.updateTokens(state.players);
                     return;
+                } else {
+                    this._warn('GameStateManager не содержит игроков', { hasState: !!state, playersCount: state?.players?.length || 0 });
                 }
+            } else {
+                this._warn('GameStateManager не найден или не имеет метода getState');
             }
         }
         
-        // Если GameStateManager не дал данных, используем обычный forceUpdate
+        // Пробуем получить из gameState напрямую
+        if (this.gameState && this.gameState.players && this.gameState.players.length > 0) {
+            this._info('Получены данные из gameState, обновляем фишки', this.gameState.players.length);
+            this.updateTokens(this.gameState.players);
+            return;
+        }
+        
+        // Если ничего не помогло, используем обычный forceUpdate
+        this._warn('Не удалось получить данные игроков, используем forceUpdate');
         this.forceUpdate();
     }
 
