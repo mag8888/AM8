@@ -1060,21 +1060,52 @@ class PlayerTokens {
             playersAtPosition.forEach((player, index) => {
                 const token = this.ensureToken(player, index, playersAtPosition.length, trackElement);
                 if (token) {
-                    const offset = this.calculateOffset(index, playersAtPosition.length);
-                    this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
-                    processed.add(player.id);
-                    tokensCreated++;
-                    this._info(`Фишка создана для игрока ${player.username}`, { 
-                        position, 
-                        isInner, 
-                        offset,
-                        coords: baseCoords,
-                        tokenStyle: {
-                            left: token.style.left,
-                            top: token.style.top,
-                            zIndex: token.style.zIndex
+                    // Проверяем, что фишка все еще в DOM перед позиционированием
+                    if (!token.isConnected || !token.parentElement) {
+                        this._warn('Фишка потеряла связь с DOM после ensureToken, пересоздаем', {
+                            player: player.username,
+                            position,
+                            isInner
+                        });
+                        // Удаляем фишку из кэша и пересоздаем
+                        this.tokens.delete(player.id);
+                        if (token.parentNode) {
+                            token.parentNode.removeChild(token);
                         }
-                    });
+                        // Пробуем создать заново
+                        const newToken = this.ensureToken(player, index, playersAtPosition.length, trackElement);
+                        if (newToken && newToken.isConnected && newToken.parentElement) {
+                            const offset = this.calculateOffset(index, playersAtPosition.length);
+                            this.positionTokenElement(newToken, baseCoords, offset, playersAtPosition.length);
+                            processed.add(player.id);
+                            tokensCreated++;
+                            this._info(`Фишка пересоздана для игрока ${player.username}`, { 
+                                position, 
+                                isInner, 
+                                offset,
+                                coords: baseCoords
+                            });
+                        } else {
+                            this._warn('Не удалось пересоздать фишку', { player: player.username, position });
+                            tokensSkipped++;
+                        }
+                    } else {
+                        const offset = this.calculateOffset(index, playersAtPosition.length);
+                        this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
+                        processed.add(player.id);
+                        tokensCreated++;
+                        this._info(`Фишка создана для игрока ${player.username}`, { 
+                            position, 
+                            isInner, 
+                            offset,
+                            coords: baseCoords,
+                            tokenStyle: {
+                                left: token.style.left,
+                                top: token.style.top,
+                                zIndex: token.style.zIndex
+                            }
+                        });
+                    }
                 } else {
                     this._warn('Не удалось создать фишку', { player: player.username, position });
                     tokensSkipped++;
