@@ -355,7 +355,14 @@
     top: 25% !important;
     left: 25% !important;
     z-index: 3 !important; /* Внутренний круг поверх, но клетки не должны накладываться */
-    pointer-events: none !important;
+    pointer-events: none !important; /* Клетки обрабатывают события, но фишки должны быть видны */
+}
+
+/* Фишки должны быть видны даже если родитель имеет pointer-events: none */
+.inner-track .player-token,
+.outer-track .player-token {
+    pointer-events: auto !important;
+    z-index: 10000 !important; /* Фишки поверх всех элементов */
 }
 
 .track-cell {
