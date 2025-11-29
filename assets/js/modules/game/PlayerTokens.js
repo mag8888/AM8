@@ -1348,11 +1348,43 @@ class PlayerTokens {
         const isWithinParent = parentRect ? 
             (left >= 0 && left <= parentRect.width && top >= 0 && top <= parentRect.height) : false;
         
+        // Проверяем видимость фишки в viewport
+        const isVisibleInViewport = tokenRect.width > 0 && tokenRect.height > 0 && 
+            tokenRect.left >= 0 && tokenRect.top >= 0 &&
+            tokenRect.left < window.innerWidth && tokenRect.top < window.innerHeight;
+        
         if (!isWithinParent && parentRect) {
             this._warn('Фишка находится за пределами видимой области родителя', {
                 left,
                 top,
-                parentRect: { width: parentRect.width, height: parentRect.height },
+                parentRect: { 
+                    width: parentRect.width, 
+                    height: parentRect.height,
+                    left: parentRect.left,
+                    top: parentRect.top
+                },
+                tokenParentId: token.parentElement?.id,
+                computedParentStyles: {
+                    width: window.getComputedStyle(token.parentElement).width,
+                    height: window.getComputedStyle(token.parentElement).height,
+                    position: window.getComputedStyle(token.parentElement).position,
+                    overflow: window.getComputedStyle(token.parentElement).overflow
+                }
+            });
+        }
+        
+        if (!isVisibleInViewport) {
+            this._warn('Фишка не видна в viewport', {
+                tokenRect: {
+                    left: tokenRect.left,
+                    top: tokenRect.top,
+                    width: tokenRect.width,
+                    height: tokenRect.height
+                },
+                viewport: {
+                    width: window.innerWidth,
+                    height: window.innerHeight
+                },
                 tokenParentId: token.parentElement?.id
             });
         }
@@ -1366,6 +1398,7 @@ class PlayerTokens {
             tokenParentId: token.parentElement?.id,
             tokenInDOM: token.isConnected,
             isWithinParent,
+            isVisibleInViewport,
             tokenRect: { 
                 left: tokenRect.left, 
                 top: tokenRect.top, 
@@ -1385,7 +1418,15 @@ class PlayerTokens {
                 visibility: window.getComputedStyle(token).visibility,
                 opacity: window.getComputedStyle(token).opacity,
                 zIndex: window.getComputedStyle(token).zIndex
-            }
+            },
+            parentComputedStyles: token.parentElement ? {
+                width: window.getComputedStyle(token.parentElement).width,
+                height: window.getComputedStyle(token.parentElement).height,
+                position: window.getComputedStyle(token.parentElement).position,
+                overflow: window.getComputedStyle(token.parentElement).overflow,
+                overflowX: window.getComputedStyle(token.parentElement).overflowX,
+                overflowY: window.getComputedStyle(token.parentElement).overflowY
+            } : null
         });
         
         // Добавляем визуальную индикацию для множественных фишек
