@@ -31,6 +31,8 @@ class PlayerTokens {
         this._maxInitialRenderAttempts = config.maxInitialRenderAttempts || 12;
         this._updateTokensTimer = null; // Таймер для debounce updateTokens
         this._hasUpdatedTokens = false; // Флаг первого обновления
+        this._eventHandlers = new Map(); // Хранение обработчиков событий для отписки
+        this._lastPlayersHash = null; // Хеш последних данных игроков для предотвращения дублирования
         this.outerTrackElement = null;
         this.innerTrackElement = null;
         this.cellCenters = {
@@ -107,44 +109,91 @@ class PlayerTokens {
     }
     
     _setupListenersForGameStateManager(gameStateManager) {
+        // Отписываемся от старых обработчиков, если они есть
+        this._unsubscribeGameStateManager();
+        
         this._info('✅ Подписываемся на обновления GameStateManager');
         
-        // Подписка на обновление состояния
-        gameStateManager.on('state:updated', (state) => {
-            this._info('📢 Получено событие state:updated от GameStateManager', {
-                hasState: !!state,
-                playersCount: state?.players?.length || 0
-            });
-            if (state && state.players && state.players.length > 0) {
-                this.updateTokens(state.players);
+        // Объединенный обработчик для всех событий обновления игроков
+        const handlePlayersUpdate = (players) => {
+            if (!Array.isArray(players) || players.length === 0) {
+                return;
             }
-        });
+            
+            // Проверяем, изменились ли данные (простая проверка по хешу)
+            const playersHash = JSON.stringify(players.map(p => ({ id: p.id, position: p.position })));
+            if (this._lastPlayersHash === playersHash) {
+                this._debug('Данные игроков не изменились, пропускаем обновление');
+                return;
+            }
+            this._lastPlayersHash = playersHash;
+            
+            this._debug('📢 Обновление игроков от GameStateManager', { playersCount: players.length });
+            this.updateTokens(players);
+        };
+        
+        // Подписка на обновление состояния (объединенный обработчик)
+        const stateUpdatedHandler = (state) => {
+            if (state && state.players && state.players.length > 0) {
+                handlePlayersUpdate(state.players);
+            }
+        };
         
         // Подписка на обновление игроков
-        gameStateManager.on('players:updated', (players) => {
-            this._info('📢 Получено событие players:updated от GameStateManager', {
-                isArray: Array.isArray(players),
-                playersCount: Array.isArray(players) ? players.length : 0
-            });
+        const playersUpdatedHandler = (players) => {
             if (Array.isArray(players) && players.length > 0) {
-                this.updateTokens(players);
+                handlePlayersUpdate(players);
             }
-        });
+        };
         
         // Подписка на событие game:playersUpdated
-        gameStateManager.on('game:playersUpdated', (data) => {
-            this._info('📢 Получено событие game:playersUpdated от GameStateManager', {
-                hasData: !!data,
-                isArray: Array.isArray(data),
-                playersCount: Array.isArray(data) ? data.length : (data?.players?.length || 0)
-            });
+        const gamePlayersUpdatedHandler = (data) => {
             const players = data?.players || data;
             if (Array.isArray(players) && players.length > 0) {
-                this.updateTokens(players);
+                handlePlayersUpdate(players);
             }
-        });
+        };
+        
+        // Сохраняем обработчики для отписки
+        this._eventHandlers.set('gameStateManager:state:updated', stateUpdatedHandler);
+        this._eventHandlers.set('gameStateManager:players:updated', playersUpdatedHandler);
+        this._eventHandlers.set('gameStateManager:game:playersUpdated', gamePlayersUpdatedHandler);
+        
+        // Подписываемся
+        gameStateManager.on('state:updated', stateUpdatedHandler);
+        gameStateManager.on('players:updated', playersUpdatedHandler);
+        gameStateManager.on('game:playersUpdated', gamePlayersUpdatedHandler);
         
         this._info('✅ Подписка на GameStateManager завершена');
+    }
+    
+    _unsubscribeGameStateManager() {
+        if (!window.app || !window.app.getModule) {
+            return;
+        }
+        
+        const gameStateManager = window.app.getModule('gameStateManager') || window.app.gameStateManager;
+        if (!gameStateManager || typeof gameStateManager.off !== 'function') {
+            return;
+        }
+        
+        // Отписываемся от всех сохраненных обработчиков
+        const stateHandler = this._eventHandlers.get('gameStateManager:state:updated');
+        const playersHandler = this._eventHandlers.get('gameStateManager:players:updated');
+        const gameHandler = this._eventHandlers.get('gameStateManager:game:playersUpdated');
+        
+        if (stateHandler) {
+            gameStateManager.off('state:updated', stateHandler);
+            this._eventHandlers.delete('gameStateManager:state:updated');
+        }
+        if (playersHandler) {
+            gameStateManager.off('players:updated', playersHandler);
+            this._eventHandlers.delete('gameStateManager:players:updated');
+        }
+        if (gameHandler) {
+            gameStateManager.off('game:playersUpdated', gameHandler);
+            this._eventHandlers.delete('gameStateManager:game:playersUpdated');
+        }
     }
     
     /**
@@ -986,6 +1035,17 @@ class PlayerTokens {
      * Обновление всех фишек
      */
     updateTokens(players) {
+        // Проверяем, изменились ли данные (простая проверка по хешу)
+        if (!Array.isArray(players) || players.length === 0) {
+            return;
+        }
+        
+        const playersHash = JSON.stringify(players.map(p => ({ id: p.id, position: p.position })));
+        if (this._lastPlayersHash === playersHash && this._hasUpdatedTokens) {
+            this._debug('Данные игроков не изменились, пропускаем updateTokens');
+            return;
+        }
+        
         // Для первого обновления выполняем немедленно, для последующих - debounce
         const isFirstUpdate = !this._hasUpdatedTokens;
         
@@ -997,10 +1057,10 @@ class PlayerTokens {
             // Первое обновление выполняем немедленно
             this._updateTokensInternal(players);
         } else {
-            // Последующие обновления - с debounce
+            // Последующие обновления - с увеличенным debounce для снижения нагрузки
             this._updateTokensTimer = setTimeout(() => {
                 this._updateTokensInternal(players);
-            }, 50);
+            }, 200); // Увеличено с 50ms до 200ms для снижения нагрузки
         }
     }
     
@@ -1818,18 +1878,28 @@ class PlayerTokens {
         this.stopInitialRenderWatcher();
         this._initialRenderAttempts = 0;
         
+        // Увеличиваем интервал до 1000ms для снижения нагрузки
         this._initialRenderTimer = setInterval(() => {
             this._initialRenderAttempts += 1;
+            
+            // Дополнительная проверка, что таймер не был остановлен
+            if (!this._initialRenderTimer) {
+                return;
+            }
+            
             const players = this.getPlayers();
             if (Array.isArray(players) && players.length) {
                 this.updateTokens(players);
                 this.stopInitialRenderWatcher();
                 return;
             }
+            
+            // Останавливаем после максимального количества попыток
             if (this._initialRenderAttempts >= this._maxInitialRenderAttempts) {
+                this._debug('Достигнуто максимальное количество попыток начального рендера');
                 this.stopInitialRenderWatcher();
             }
-        }, 500);
+        }, 1000); // Увеличено с 500ms до 1000ms для снижения нагрузки
     }
     
     stopInitialRenderWatcher() {
@@ -1837,6 +1907,56 @@ class PlayerTokens {
             clearInterval(this._initialRenderTimer);
             this._initialRenderTimer = null;
         }
+    }
+    
+    /**
+     * Очистка ресурсов и отписка от событий
+     */
+    destroy() {
+        this._info('Уничтожение PlayerTokens, очистка ресурсов...');
+        
+        // Останавливаем все таймеры
+        this.stopInitialRenderWatcher();
+        if (this._updateTokensTimer) {
+            clearTimeout(this._updateTokensTimer);
+            this._updateTokensTimer = null;
+        }
+        if (this._forceUpdateTimer) {
+            clearTimeout(this._forceUpdateTimer);
+            this._forceUpdateTimer = null;
+        }
+        
+        // Отписываемся от событий
+        this._unsubscribeGameStateManager();
+        
+        if (this.eventBus) {
+            // Отписываемся от EventBus (если есть метод off)
+            if (typeof this.eventBus.off === 'function') {
+                const eventBusHandlers = [
+                    'game:playersUpdated',
+                    'player:positionUpdated',
+                    'players:positionsUpdated',
+                    'game:started',
+                    'players:updated',
+                    'board:cellsPositioned'
+                ];
+                
+                eventBusHandlers.forEach(eventName => {
+                    const handler = this._eventHandlers.get(`eventBus:${eventName}`);
+                    if (handler) {
+                        this.eventBus.off(eventName, handler);
+                        this._eventHandlers.delete(`eventBus:${eventName}`);
+                    }
+                });
+            }
+        }
+        
+        // Очищаем кэш
+        this._eventHandlers.clear();
+        this._lastPlayersHash = null;
+        this._hasUpdatedTokens = false;
+        
+        this._info('PlayerTokens уничтожен, ресурсы очищены');
     }
 }
 
