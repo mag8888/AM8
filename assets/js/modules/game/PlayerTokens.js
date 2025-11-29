@@ -978,12 +978,44 @@ class PlayerTokens {
         this._info('Фишки обработаны', { created: tokensCreated, skipped: tokensSkipped, total: processed.size });
         
         // Удаляем фишки игроков, которых больше нет
+        // Но делаем это только если фишка действительно не обработана и не в DOM
         this.tokens.forEach((token, playerId) => {
             if (!processed.has(playerId)) {
-                if (token.parentNode) {
+                // Проверяем, что фишка действительно в DOM перед удалением
+                if (token && token.parentNode) {
+                    this._debug('Удаляем фишку игрока, которого больше нет', { playerId });
                     token.parentNode.removeChild(token);
                 }
                 this.tokens.delete(playerId);
+            } else {
+                // Проверяем, что обработанная фишка все еще в DOM
+                if (token && !token.isConnected) {
+                    this._warn('Обработанная фишка потеряла связь с DOM, пересоздаем', { playerId });
+                    // Находим игрока и пересоздаем фишку
+                    const player = normalized.find(p => p.id === playerId);
+                    if (player) {
+                        const isInner = player.isInner;
+                        const trackElement = this.getTrackElement(isInner);
+                        if (trackElement) {
+                            const position = player.position;
+                            const playersAtPosition = normalized.filter(p => 
+                                p.position === position && p.isInner === isInner
+                            );
+                            const index = playersAtPosition.findIndex(p => p.id === playerId);
+                            if (index >= 0) {
+                                this.tokens.delete(playerId);
+                                const newToken = this.ensureToken(player, index, playersAtPosition.length, trackElement);
+                                if (newToken) {
+                                    const baseCoords = this.getCellBaseCoordinates(position, isInner);
+                                    if (baseCoords) {
+                                        const offset = this.calculateOffset(index, playersAtPosition.length);
+                                        this.positionTokenElement(newToken, baseCoords, offset, playersAtPosition.length);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         });
     }
@@ -1225,6 +1257,20 @@ class PlayerTokens {
      */
     ensureToken(player, index, totalPlayers, trackElement) {
         let token = this.tokens.get(player.id);
+        
+        // Проверяем, что существующая фишка все еще в DOM
+        if (token && (!token.isConnected || !token.parentElement)) {
+            this._warn('Фишка найдена в кэше, но не в DOM, пересоздаем', {
+                player: player.username,
+                playerId: player.id,
+                tokenInDOM: token.isConnected,
+                hasParent: !!token.parentElement
+            });
+            // Удаляем старую фишку из кэша
+            this.tokens.delete(player.id);
+            token = null;
+        }
+        
         if (!token) {
             token = this.createPlayerToken(player, index, totalPlayers);
             if (!trackElement) {
@@ -1244,9 +1290,10 @@ class PlayerTokens {
             this.tokens.set(player.id, token);
             this.animateTokenAppearance(token);
         } else {
+            // Фишка уже существует и в DOM, обновляем её данные
             token.dataset.position = player.position;
             token.dataset.playerName = player.username;
-             token.dataset.isInner = String(Boolean(player.isInner));
+            token.dataset.isInner = String(Boolean(player.isInner));
             token.classList.toggle('inner', !!player.isInner);
             token.classList.toggle('outer', !player.isInner);
             token.classList.toggle('inner-track', !!player.isInner);
