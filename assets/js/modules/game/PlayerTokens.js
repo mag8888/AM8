@@ -257,7 +257,17 @@ class PlayerTokens {
 
     getTrackElement(isInner) {
         this.ensureTrackElements();
-        return isInner ? this.innerTrackElement : this.outerTrackElement;
+        const element = isInner ? this.innerTrackElement : this.outerTrackElement;
+        if (!element) {
+            this._warn(`Трек не найден при getTrackElement`, {
+                isInner,
+                innerSelector: this.innerTrackSelector,
+                outerSelector: this.outerTrackSelector,
+                innerExists: !!this.innerTrackElement,
+                outerExists: !!this.outerTrackElement
+            });
+        }
+        return element;
     }
 
     /**
