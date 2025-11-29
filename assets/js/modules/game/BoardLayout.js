@@ -797,30 +797,27 @@ class BoardLayout {
             // Проверяем, находятся ли координаты в пределах размеров трека
             // containerRect из getBoundingClientRect() содержит размеры трека, которые должны совпадать
             // с размерами, вычисленными через offsetWidth/offsetHeight
-            // Используем более мягкую проверку с небольшим допуском для округления
-            const tolerance = 5; // Допуск в пикселях для округления
-            const isWithinTrack = x >= -tolerance && x <= containerRect.width + tolerance && 
-                                 y >= -tolerance && y <= containerRect.height + tolerance;
+            // Используем более мягкую проверку с большим допуском, так как клетки могут быть
+            // расположены на краю трека или иметь padding/margin
+            const tolerance = 50; // Увеличенный допуск в пикселях для учета padding/margin и краевых клеток
+            const trackElement = cell.parentElement;
+            const trackWidth = trackElement ? trackElement.offsetWidth : containerRect.width;
+            const trackHeight = trackElement ? trackElement.offsetHeight : containerRect.height;
             
-            if (!isWithinTrack) {
-                // Получаем реальные размеры трека через offsetWidth/offsetHeight для более точной проверки
-                const trackElement = cell.parentElement;
-                const trackWidth = trackElement ? trackElement.offsetWidth : containerRect.width;
-                const trackHeight = trackElement ? trackElement.offsetHeight : containerRect.height;
-                
-                const isWithinTrackActual = x >= -tolerance && x <= trackWidth + tolerance && 
-                                           y >= -tolerance && y <= trackHeight + tolerance;
-                
-                if (!isWithinTrackActual) {
-                    this._warn('⚠️ Координаты клетки выходят за пределы трека', {
-                        position,
-                        coords: { x, y },
-                        trackSize: { width: trackWidth, height: trackHeight },
-                        containerRectSize: { width: containerRect.width, height: containerRect.height },
-                        cellOffset: { left: offsetLeft, top: offsetTop },
-                        cellSize: { width: cellWidth, height: cellHeight }
-                    });
-                }
+            const isWithinTrack = x >= -tolerance && x <= trackWidth + tolerance && 
+                                 y >= -tolerance && y <= trackHeight + tolerance;
+            
+            // Логируем только если координаты сильно выходят за пределы (более чем на 100px)
+            // Это может указывать на реальную проблему, а не на нормальное расположение краевых клеток
+            if (!isWithinTrack && (x < -100 || x > trackWidth + 100 || y < -100 || y > trackHeight + 100)) {
+                this._debug('ℹ️ Координаты клетки выходят за пределы трека (возможно, краевая клетка или padding)', {
+                    position,
+                    coords: { x, y },
+                    trackSize: { width: trackWidth, height: trackHeight },
+                    containerRectSize: { width: containerRect.width, height: containerRect.height },
+                    cellOffset: { left: offsetLeft, top: offsetTop },
+                    cellSize: { width: cellWidth, height: cellHeight }
+                });
             }
             
             centersByPosition[position] = {
