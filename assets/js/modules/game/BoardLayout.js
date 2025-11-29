@@ -711,13 +711,14 @@ class BoardLayout {
     getCellCenter(position, isInner) {
         const cache = isInner ? this.cellCentersCache.inner : this.cellCentersCache.outer;
         const result = cache?.[position] || null;
-        this._debug('getCellCenter', {
+        this._info('🔍 BoardLayout.getCellCenter', {
             position,
             isInner,
             cacheExists: !!cache,
             cacheLength: Array.isArray(cache) ? cache.length : 'not array',
             cacheKeys: cache ? Object.keys(cache).slice(0, 10) : [],
-            result
+            result,
+            allPositions: cache ? Object.keys(cache).map(Number).sort((a, b) => a - b).slice(0, 10) : []
         });
         return result;
     }
@@ -792,11 +793,17 @@ class BoardLayout {
             centersArray[i] = centersByPosition[i] || null;
         }
         
-        this._debug('_computeCellCenters завершен', {
+        this._info('✅ _computeCellCenters завершен', {
             cellsCount: cells.length,
             centersByPositionCount: Object.keys(centersByPosition).length,
             maxPosition,
             centersArrayLength: centersArray.length,
+            containerRect: {
+                left: containerRect.left,
+                top: containerRect.top,
+                width: containerRect.width,
+                height: containerRect.height
+            },
             samplePositions: Object.keys(centersByPosition).slice(0, 5).map(p => ({
                 position: p,
                 coords: centersByPosition[p]
