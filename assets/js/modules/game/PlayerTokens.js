@@ -406,14 +406,16 @@ class PlayerTokens {
             return null;
         }
 
-        const trackRect = trackElement.getBoundingClientRect();
-        const cellRect = cell.getBoundingClientRect();
+        // Используем offsetLeft/offsetTop для координат относительно родителя (как в BoardLayout)
+        const cellRect = cell.getBoundingClientRect(); // Используем только для размеров
+        const offsetLeft = cell.offsetLeft || 0;
+        const offsetTop = cell.offsetTop || 0;
         
         // Вычисляем координаты центра клетки относительно trackElement
-        // trackElement имеет position: absolute, поэтому координаты должны быть относительно него
+        // Используем offsetLeft/offsetTop для координат, getBoundingClientRect только для размеров
         const coords = {
-            x: (cellRect.left - trackRect.left) + (cellRect.width / 2),
-            y: (cellRect.top - trackRect.top) + (cellRect.height / 2),
+            x: offsetLeft + (cellRect.width / 2),
+            y: offsetTop + (cellRect.height / 2),
             width: cellRect.width,
             height: cellRect.height
         };
@@ -1497,6 +1499,28 @@ class PlayerTokens {
         // Проверяем, что фишка видна
         const tokenRect = token.getBoundingClientRect();
         const parentRect = token.parentElement?.getBoundingClientRect();
+        
+        // Подробное логирование для отладки
+        this._info('🎯 Фишка позиционирована', {
+            playerId: token.dataset.playerId,
+            playerName: token.dataset.playerName,
+            position: token.dataset.position,
+            coords: { x: baseCoords.x, y: baseCoords.y },
+            offset: { x: offset.x, y: offset.y },
+            finalPosition: { left, top },
+            tokenSize: { width: tokenRect.width, height: tokenRect.height },
+            parentSize: parentRect ? { width: parentRect.width, height: parentRect.height } : null,
+            parentId: token.parentElement?.id,
+            computedStyles: {
+                position: window.getComputedStyle(token).position,
+                display: window.getComputedStyle(token).display,
+                visibility: window.getComputedStyle(token).visibility,
+                opacity: window.getComputedStyle(token).opacity,
+                zIndex: window.getComputedStyle(token).zIndex,
+                width: window.getComputedStyle(token).width,
+                height: window.getComputedStyle(token).height
+            }
+        });
         
         // Проверяем, что фишка находится в пределах видимой области родителя
         const isWithinParent = parentRect ? 
