@@ -29,6 +29,8 @@ class PlayerTokens {
         this._initialRenderTimer = null;
         this._initialRenderAttempts = 0;
         this._maxInitialRenderAttempts = config.maxInitialRenderAttempts || 12;
+        this._updateTokensTimer = null; // Таймер для debounce updateTokens
+        this._hasUpdatedTokens = false; // Флаг первого обновления
         this.outerTrackElement = null;
         this.innerTrackElement = null;
         this.cellCenters = {
@@ -984,18 +986,27 @@ class PlayerTokens {
      * Обновление всех фишек
      */
     updateTokens(players) {
-        // Debounce для предотвращения множественных вызовов
+        // Для первого обновления выполняем немедленно, для последующих - debounce
+        const isFirstUpdate = !this._hasUpdatedTokens;
+        
         if (this._updateTokensTimer) {
             clearTimeout(this._updateTokensTimer);
         }
         
-        this._updateTokensTimer = setTimeout(() => {
+        if (isFirstUpdate) {
+            // Первое обновление выполняем немедленно
             this._updateTokensInternal(players);
-        }, 50); // Небольшая задержка для батчинга обновлений
+        } else {
+            // Последующие обновления - с debounce
+            this._updateTokensTimer = setTimeout(() => {
+                this._updateTokensInternal(players);
+            }, 50);
+        }
     }
     
     _updateTokensInternal(players) {
         this._updateTokensTimer = null;
+        this._hasUpdatedTokens = true;
         this._debug('updateTokens вызван', { playersCount: players?.length || 0 });
         
         const normalized = this.normalizePlayers(players);
