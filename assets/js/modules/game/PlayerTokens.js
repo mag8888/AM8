@@ -1972,28 +1972,7 @@ class PlayerTokens {
         
         // Отписываемся от событий
         this._unsubscribeGameStateManager();
-        
-        if (this.eventBus) {
-            // Отписываемся от EventBus (если есть метод off)
-            if (typeof this.eventBus.off === 'function') {
-                const eventBusHandlers = [
-                    'game:playersUpdated',
-                    'player:positionUpdated',
-                    'players:positionsUpdated',
-                    'game:started',
-                    'players:updated',
-                    'board:cellsPositioned'
-                ];
-                
-                eventBusHandlers.forEach(eventName => {
-                    const handler = this._eventHandlers.get(`eventBus:${eventName}`);
-                    if (handler) {
-                        this.eventBus.off(eventName, handler);
-                        this._eventHandlers.delete(`eventBus:${eventName}`);
-                    }
-                });
-            }
-        }
+        this._unsubscribeEventBus();
         
         // Очищаем кэш
         this._eventHandlers.clear();
