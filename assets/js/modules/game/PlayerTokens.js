@@ -64,41 +64,85 @@ class PlayerTokens {
      * Подписка на обновления GameStateManager
      */
     setupGameStateManagerListeners() {
-        if (window.app && window.app.getModule) {
-            const gameStateManager = window.app.getModule('gameStateManager');
-            if (gameStateManager && typeof gameStateManager.on === 'function') {
-                this._debug('Подписываемся на обновления GameStateManager');
-                
-                // Подписка на обновление состояния
-                gameStateManager.on('state:updated', (state) => {
-                    this._debug('Получено событие state:updated от GameStateManager', state);
-                    if (state && state.players && state.players.length > 0) {
-                        this.updateTokens(state.players);
-                    }
-                });
-                
-                // Подписка на обновление игроков
-                gameStateManager.on('players:updated', (players) => {
-                    this._debug('Получено событие players:updated от GameStateManager', players);
-                    if (Array.isArray(players) && players.length > 0) {
-                        this.updateTokens(players);
-                    }
-                });
-                
-                // Подписка на событие game:playersUpdated
-                gameStateManager.on('game:playersUpdated', (data) => {
-                    this._debug('Получено событие game:playersUpdated от GameStateManager', data);
-                    const players = data?.players || data;
-                    if (Array.isArray(players) && players.length > 0) {
-                        this.updateTokens(players);
-                    }
-                });
-            } else {
-                this._warn('GameStateManager не найден или не имеет метода on');
-            }
-        } else {
-            this._warn('window.app не найден, не можем подписаться на GameStateManager');
+        this._info('🔍 Настройка подписки на GameStateManager...');
+        
+        if (!window.app) {
+            this._warn('❌ window.app не найден, не можем подписаться на GameStateManager');
+            return;
         }
+        
+        if (!window.app.getModule) {
+            this._warn('❌ window.app.getModule не найден');
+            return;
+        }
+        
+        const gameStateManager = window.app.getModule('gameStateManager');
+        this._info('🔍 GameStateManager получен:', {
+            found: !!gameStateManager,
+            hasOn: gameStateManager && typeof gameStateManager.on === 'function',
+            hasGetState: gameStateManager && typeof gameStateManager.getState === 'function'
+        });
+        
+        if (!gameStateManager) {
+            this._warn('❌ GameStateManager не найден через window.app.getModule');
+            // Попробуем получить напрямую
+            if (window.app.gameStateManager) {
+                this._info('✅ GameStateManager найден напрямую через window.app.gameStateManager');
+                this._setupListenersForGameStateManager(window.app.gameStateManager);
+            }
+            return;
+        }
+        
+        if (typeof gameStateManager.on !== 'function') {
+            this._warn('❌ GameStateManager не имеет метода on', {
+                type: typeof gameStateManager.on,
+                methods: Object.keys(gameStateManager).filter(k => typeof gameStateManager[k] === 'function')
+            });
+            return;
+        }
+        
+        this._setupListenersForGameStateManager(gameStateManager);
+    }
+    
+    _setupListenersForGameStateManager(gameStateManager) {
+        this._info('✅ Подписываемся на обновления GameStateManager');
+        
+        // Подписка на обновление состояния
+        gameStateManager.on('state:updated', (state) => {
+            this._info('📢 Получено событие state:updated от GameStateManager', {
+                hasState: !!state,
+                playersCount: state?.players?.length || 0
+            });
+            if (state && state.players && state.players.length > 0) {
+                this.updateTokens(state.players);
+            }
+        });
+        
+        // Подписка на обновление игроков
+        gameStateManager.on('players:updated', (players) => {
+            this._info('📢 Получено событие players:updated от GameStateManager', {
+                isArray: Array.isArray(players),
+                playersCount: Array.isArray(players) ? players.length : 0
+            });
+            if (Array.isArray(players) && players.length > 0) {
+                this.updateTokens(players);
+            }
+        });
+        
+        // Подписка на событие game:playersUpdated
+        gameStateManager.on('game:playersUpdated', (data) => {
+            this._info('📢 Получено событие game:playersUpdated от GameStateManager', {
+                hasData: !!data,
+                isArray: Array.isArray(data),
+                playersCount: Array.isArray(data) ? data.length : (data?.players?.length || 0)
+            });
+            const players = data?.players || data;
+            if (Array.isArray(players) && players.length > 0) {
+                this.updateTokens(players);
+            }
+        });
+        
+        this._info('✅ Подписка на GameStateManager завершена');
     }
     
     /**
