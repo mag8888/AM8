@@ -1048,6 +1048,14 @@ class PlayerTokens {
      * Анимация появления фишки
      */
     animateTokenAppearance(token) {
+        // Убеждаемся, что размер установлен перед анимацией
+        if (!token.style.width || token.style.width === '0px') {
+            token.style.width = '32px';
+            token.style.height = '32px';
+            token.style.minWidth = '32px';
+            token.style.minHeight = '32px';
+        }
+        
         const keyframes = [
             { 
                 opacity: '0',
@@ -1069,9 +1077,29 @@ class PlayerTokens {
             fill: 'forwards'
         });
         
-        // Убеждаемся, что после анимации opacity = 1
+        // Убеждаемся, что после анимации opacity = 1 и размер сохранен
         animation.onfinish = () => {
             token.style.opacity = '1';
+            token.style.width = '32px';
+            token.style.height = '32px';
+            token.style.minWidth = '32px';
+            token.style.minHeight = '32px';
+            
+            // Дополнительная проверка после анимации
+            requestAnimationFrame(() => {
+                const rect = token.getBoundingClientRect();
+                if (rect.width === 0 || rect.height === 0) {
+                    this._warn('⚠️ Фишка имеет нулевой размер после анимации!', {
+                        playerId: token.dataset.playerId,
+                        rect: { width: rect.width, height: rect.height }
+                    });
+                    // Принудительно устанавливаем размер еще раз
+                    token.style.width = '32px';
+                    token.style.height = '32px';
+                    token.style.minWidth = '32px';
+                    token.style.minHeight = '32px';
+                }
+            });
         };
     }
     
@@ -1548,12 +1576,15 @@ class PlayerTokens {
             });
             this.tokens.set(player.id, token);
             
-            // Принудительно устанавливаем стили для видимости
+            // Принудительно устанавливаем стили для видимости ДО анимации
             token.style.display = 'flex';
             token.style.visibility = 'visible';
-            token.style.opacity = '1';
             token.style.width = '32px';
             token.style.height = '32px';
+            token.style.minWidth = '32px';
+            token.style.minHeight = '32px';
+            token.style.opacity = '1'; // Устанавливаем opacity: 1 ДО анимации
+            token.style.position = 'absolute'; // Устанавливаем position сразу
             
             // Проверяем, что фишка действительно в DOM
             if (!token.isConnected) {
@@ -1563,7 +1594,25 @@ class PlayerTokens {
                 });
             }
             
-            this.animateTokenAppearance(token);
+            // Используем requestAnimationFrame для гарантии, что стили применены перед анимацией
+            requestAnimationFrame(() => {
+                // Проверяем размер после рендера
+                const rect = token.getBoundingClientRect();
+                if (rect.width === 0 || rect.height === 0) {
+                    // Принудительно устанавливаем размер еще раз
+                    token.style.width = '32px';
+                    token.style.height = '32px';
+                    token.style.minWidth = '32px';
+                    token.style.minHeight = '32px';
+                    this._warn('⚠️ Фишка имела нулевой размер после рендера, исправлено', {
+                        player: player.username,
+                        rect: { width: rect.width, height: rect.height }
+                    });
+                }
+                
+                // Запускаем анимацию только после того, как размер установлен
+                this.animateTokenAppearance(token);
+            });
         } else {
             // Фишка уже существует и в DOM, обновляем её данные
             token.dataset.position = player.position;
