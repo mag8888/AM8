@@ -870,7 +870,8 @@ class PlayerTokens {
         this.stopInitialRenderWatcher();
         
         const grouped = this.groupPlayersByPosition(normalized);
-        this._info('Группировка игроков по позициям', { groups: grouped.size });
+        const groupedArray = Array.isArray(grouped) ? grouped : Array.from(grouped.values());
+        this._info('Группировка игроков по позициям', { groups: groupedArray.length });
         
         if (groupedArray.length === 0) {
             this._warn('Нет групп игроков для отображения');
