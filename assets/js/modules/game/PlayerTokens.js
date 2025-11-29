@@ -1540,6 +1540,24 @@ class PlayerTokens {
             });
         }
         
+        // Принудительно убеждаемся, что фишка видна
+        // Проверяем computed styles и при необходимости исправляем
+        const computedDisplay = window.getComputedStyle(token).display;
+        const computedVisibility = window.getComputedStyle(token).visibility;
+        const computedOpacity = window.getComputedStyle(token).opacity;
+        
+        if (computedDisplay === 'none' || computedVisibility === 'hidden' || computedOpacity === '0') {
+            this._warn('⚠️ Фишка скрыта через CSS, исправляем', {
+                playerId: token.dataset.playerId,
+                computedDisplay,
+                computedVisibility,
+                computedOpacity
+            });
+            token.style.display = 'flex';
+            token.style.visibility = 'visible';
+            token.style.opacity = '1';
+        }
+        
         // Подробное логирование для отладки
         this._info('🎯 Фишка позиционирована', {
             playerId: token.dataset.playerId,
@@ -1560,7 +1578,9 @@ class PlayerTokens {
                 zIndex: window.getComputedStyle(token).zIndex,
                 width: window.getComputedStyle(token).width,
                 height: window.getComputedStyle(token).height
-            }
+            },
+            tokenInDOM: token.isConnected,
+            tokenParent: token.parentElement?.tagName
         });
         
         // Проверяем, что фишка находится в пределах видимой области родителя
