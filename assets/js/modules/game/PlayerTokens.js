@@ -1378,6 +1378,8 @@ class PlayerTokens {
                 tokenRect: {
                     left: tokenRect.left,
                     top: tokenRect.top,
+                    right: tokenRect.right,
+                    bottom: tokenRect.bottom,
                     width: tokenRect.width,
                     height: tokenRect.height
                 },
@@ -1385,7 +1387,28 @@ class PlayerTokens {
                     width: window.innerWidth,
                     height: window.innerHeight
                 },
-                tokenParentId: token.parentElement?.id
+                tokenParentId: token.parentElement?.id,
+                tokenStyles: {
+                    left: token.style.left,
+                    top: token.style.top,
+                    position: token.style.position
+                },
+                parentRect: parentRect ? {
+                    left: parentRect.left,
+                    top: parentRect.top,
+                    right: parentRect.right,
+                    bottom: parentRect.bottom,
+                    width: parentRect.width,
+                    height: parentRect.height
+                } : null,
+                parentComputedStyles: token.parentElement ? {
+                    position: window.getComputedStyle(token.parentElement).position,
+                    left: window.getComputedStyle(token.parentElement).left,
+                    top: window.getComputedStyle(token.parentElement).top,
+                    width: window.getComputedStyle(token.parentElement).width,
+                    height: window.getComputedStyle(token.parentElement).height,
+                    overflow: window.getComputedStyle(token.parentElement).overflow
+                } : null
             });
         }
         
