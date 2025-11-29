@@ -109,7 +109,7 @@
     min-height: 0 !important; /* Позволяет сжиматься */
   }
   
-  /* Правая панель: игроки */
+  /* Правая панель: игроки - убираем все лишние фоны */
   .top-panel-container {
     grid-area: players-panel !important;
     display: flex !important;
@@ -125,12 +125,36 @@
     position: relative !important;
     transform: none !important;
     background: transparent !important; /* Убираем подложку */
+    background-color: transparent !important; /* Убираем цвет фона */
+    background-image: none !important; /* Убираем фоновое изображение */
     border-left: 2px solid rgba(148, 163, 184, 0.3) !important;
     padding: 1rem !important;
     box-sizing: border-box !important;
     z-index: 1 !important;
     overflow-y: auto !important; /* Прокрутка если контент не помещается */
     overflow-x: hidden !important;
+  }
+  
+  /* Убираем все лишние фоны у дочерних элементов правой панели */
+  .top-panel-container *,
+  .top-panel-container > *,
+  #players-panel,
+  #players-panel *,
+  .players-panel-container,
+  .players-panel-container * {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+  
+  /* Исключение: только для карточек игроков и кнопок оставляем их собственные фоны */
+  .top-panel-container .player-item,
+  .top-panel-container .player-card,
+  .top-panel-container button,
+  .top-panel-container .btn,
+  .top-panel-container .action-button {
+    background: inherit !important;
+    background-color: inherit !important;
   }
   
   .players-panel-container,
@@ -187,7 +211,7 @@
     order: 1 !important; /* Банк первым */
   }
   
-  /* Карточки после банка - все вместе внизу */
+  /* Карточки после банка - все вместе внизу, растягиваются на оставшуюся высоту */
   #card-decks-panel .card-deck-card {
     order: 2 !important;
     flex: 0 0 auto !important; /* Не растягиваются */
@@ -195,10 +219,21 @@
     margin-bottom: 0.5rem !important; /* Отступ между карточками */
   }
   
-  /* Контейнер для карточек - flex column чтобы все были вместе */
+  /* Контейнер для карточек - flex column чтобы все были вместе, растягивается на всю высоту */
   #card-decks-panel.card-decks-container {
     display: flex !important;
     flex-direction: column !important;
+    justify-content: flex-start !important; /* Контент сверху */
+    align-items: stretch !important; /* Растягиваем по ширине */
+  }
+  
+  /* Контейнер для всех карточек - растягивается на оставшуюся высоту */
+  #card-decks-panel .card-decks-wrapper {
+    flex: 1 1 auto !important; /* Растягивается на оставшуюся высоту */
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    overflow-y: auto !important; /* Прокрутка если карточки не помещаются */
   }
   
   #bank-preview-container {
