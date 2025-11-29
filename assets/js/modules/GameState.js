@@ -176,11 +176,13 @@ class GameState {
                 return;
             }
             
-            // Устанавливаем флаг pending в глобальном limiter
-            if (window.CommonUtils && !window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                console.log('🚫 GameState: Не удалось установить pending (race condition)');
-                this.addTestPlayers();
-                return;
+            // Устанавливаем флаг pending в глобальном limiter (если доступен)
+            if (window.CommonUtils && window.CommonUtils.gameStateLimiter && typeof window.CommonUtils.gameStateLimiter.setRequestPending === 'function') {
+                if (!window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
+                    console.log('🚫 GameState: Не удалось установить pending (race condition)');
+                    this.addTestPlayers();
+                    return;
+                }
             }
             
             // Загружаем данные комнаты
@@ -203,8 +205,8 @@ class GameState {
                 console.error('❌ GameState: Ошибка загрузки игроков из комнаты:', error);
                 this.addTestPlayers();
             } finally {
-                // Очищаем флаг pending в глобальном limiter
-                if (window.CommonUtils) {
+                // Очищаем флаг pending в глобальном limiter (если доступен)
+                if (window.CommonUtils && window.CommonUtils.gameStateLimiter && typeof window.CommonUtils.gameStateLimiter.clearRequestPending === 'function') {
                     window.CommonUtils.gameStateLimiter.clearRequestPending(roomId);
                 }
             }
