@@ -1487,6 +1487,20 @@ class PlayerTokens {
             }
         }
         
+        // Убеждаемся, что родительский элемент имеет правильный position для абсолютного позиционирования
+        const parentElement = token.parentElement;
+        if (parentElement) {
+            const parentPosition = window.getComputedStyle(parentElement).position;
+            if (parentPosition === 'static') {
+                // Устанавливаем position: relative для родителя, если он static
+                parentElement.style.position = 'relative';
+                this._debug('Установлен position: relative для родительского элемента трека', {
+                    parentId: parentElement.id,
+                    parentTag: parentElement.tagName
+                });
+            }
+        }
+        
         token.style.position = 'absolute';
         token.style.left = `${left}px`;
         token.style.top = `${top}px`;
