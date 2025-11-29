@@ -21,7 +21,7 @@ class AuthService {
                 // Определяем auth service URL на основе текущего домена
                 // Если frontend на am8-production, auth может быть на web-production или отдельном домене
                 // Используем относительный путь для работы через прокси или отдельный домен
-                this.apiBase = 'https://web-production-fc48b.up.railway.app/api/auth';
+            this.apiBase = 'https://web-production-fc48b.up.railway.app/api/auth';
             } else {
                 // Для других production доменов используем относительный путь
                 this.apiBase = '/api/auth';

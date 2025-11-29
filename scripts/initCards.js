@@ -61,11 +61,11 @@ async function initializeCards() {
         console.log(`🃏 Загружаем карточки из ${configPath}`);
         const config = loadCardsConfig(configPath);
         const decksFromConfig = config.decks;
-
+        
         const dbConfig = new DatabaseConfig();
         await dbConfig.connect();
         console.log('✅ Подключение к MongoDB установлено');
-
+        
         console.log('🧹 Удаляем существующие колоды и карточки...');
         await Promise.all([Deck.deleteMany({}), Card.deleteMany({})]);
 

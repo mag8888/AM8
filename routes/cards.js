@@ -66,7 +66,7 @@ async function getCardsConfig() {
             console.warn('⚠️ Cards API: В MongoDB нет колод. Используем config/cards.json как fallback');
             return loadFallbackCardsConfig();
         }
-
+        
         return {
             version: 1,
             updatedAt: new Date().toISOString(),
@@ -185,7 +185,7 @@ router.get('/', async (req, res) => {
         
         // Возвращаем конфигурацию из файла если MongoDB недоступна
         const defaultConfig = loadFallbackCardsConfig();
-
+        
         res.json({
             success: true,
             data: {

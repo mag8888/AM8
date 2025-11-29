@@ -291,28 +291,28 @@ function initializeRoomPage() {
     
     // Сначала показываем кэшированные данные для мгновенного отображения
     try {
-        loadCachedRoomData();
+    loadCachedRoomData();
     } catch (e) {
         console.warn('⚠️ Room: Ошибка loadCachedRoomData:', e);
     }
     
     // Критически важные функции выполняем сразу
     try {
-        displayUserInfo();
+    displayUserInfo();
     } catch (e) {
         console.warn('⚠️ Room: Ошибка displayUserInfo:', e);
     }
     
     try {
         console.log('🔍 Room: Вызываем loadDreams из initializeRoomPage');
-        loadDreams();
+    loadDreams();
     } catch (e) {
         console.error('❌ Room: Ошибка loadDreams:', e);
     }
     
     try {
         console.log('🔍 Room: Вызываем loadTokens из initializeRoomPage');
-        loadTokens();
+    loadTokens();
     } catch (e) {
         console.error('❌ Room: Ошибка loadTokens:', e);
     }
@@ -403,7 +403,7 @@ function navigateToGameBoard(roomId) {
         
         console.log('🎮 Room: Сохраняем bundle в sessionStorage:', bundle);
         if (typeof CommonUtils !== 'undefined' && CommonUtils.sessionStorage) {
-            CommonUtils.sessionStorage.set('am_player_bundle', bundle);
+        CommonUtils.sessionStorage.set('am_player_bundle', bundle);
         } else {
             // Fallback на прямой sessionStorage
             try {
@@ -741,7 +741,7 @@ function saveRoomToCache(room) {
             cachedAt: Date.now()
         };
         if (typeof CommonUtils !== 'undefined' && CommonUtils.storage) {
-            CommonUtils.storage.set(cacheKey, cacheData);
+        CommonUtils.storage.set(cacheKey, cacheData);
         } else {
             // Fallback на прямой localStorage
             try {
@@ -961,7 +961,7 @@ async function loadRoomData() {
             console.error('❌ Room: Обнаружена бесконечная рекурсия! Останавливаем загрузку.');
             showNotification('Ошибка загрузки данных. Пожалуйста, обновите страницу.', 'error');
         } else {
-            showNotification('Ошибка загрузки данных комнаты', 'error');
+        showNotification('Ошибка загрузки данных комнаты', 'error');
         }
     } finally {
         // Сбрасываем флаг после завершения загрузки
@@ -1634,7 +1634,7 @@ function handleDreamSelection() {
  */
 function formatCurrency(amount) {
     if (typeof CommonUtils !== 'undefined' && CommonUtils.formatCurrency) {
-        return CommonUtils.formatCurrency(amount);
+    return CommonUtils.formatCurrency(amount);
     }
     // Fallback если CommonUtils еще не загружен
     if (typeof amount !== 'number' || isNaN(amount)) {
@@ -1730,7 +1730,7 @@ async function selectToken(tokenId) {
             
             // Сохраняем выбор в localStorage
             if (typeof CommonUtils !== 'undefined' && CommonUtils.storage) {
-                CommonUtils.storage.set('selected_token', tokenId);
+            CommonUtils.storage.set('selected_token', tokenId);
             } else {
                 // Fallback на прямой localStorage
                 try {
@@ -2255,12 +2255,12 @@ async function toggleReadyStatus() {
             
             // Отправляем push-уведомление хосту о готовности игрока
             try {
-                await sendPushNotification('player_ready', {
-                    playerName: currentUser.username,
-                    roomId: currentRoom.id,
+            await sendPushNotification('player_ready', {
+                playerName: currentUser.username,
+                roomId: currentRoom.id,
                     readyPlayersCount: currentRoom.players.filter(isPlayerReady).length,
-                    totalPlayersCount: currentRoom.players.length
-                });
+                totalPlayersCount: currentRoom.players.length
+            });
             } catch (pushError) {
                 console.warn('⚠️ Room: Ошибка отправки push-уведомления:', pushError);
                 // Не критично, продолжаем
@@ -2927,20 +2927,20 @@ window.loadTokens = loadTokens;
 
 // Экспорт переменных для отладки (отключено - используем только Railway)
 if (false) { // Отключено - production режим
-    Object.defineProperty(window, 'currentUser', {
-        get: () => currentUser,
-        configurable: true
-    });
-    Object.defineProperty(window, 'currentRoom', {
-        get: () => currentRoom,
-        configurable: true
-    });
-    Object.defineProperty(window, 'selectedToken', {
-        get: () => selectedToken,
-        configurable: true
-    });
-    Object.defineProperty(window, 'dreamData', {
-        get: () => dreamData,
-        configurable: true
-    });
+Object.defineProperty(window, 'currentUser', {
+    get: () => currentUser,
+    configurable: true
+});
+Object.defineProperty(window, 'currentRoom', {
+    get: () => currentRoom,
+    configurable: true
+});
+Object.defineProperty(window, 'selectedToken', {
+    get: () => selectedToken,
+    configurable: true
+});
+Object.defineProperty(window, 'dreamData', {
+    get: () => dreamData,
+    configurable: true
+});
 }

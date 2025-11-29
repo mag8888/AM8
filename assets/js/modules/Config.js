@@ -27,7 +27,7 @@ class Config {
      */
     _detectEnvironment() {
         // Всегда используем production (Railway), без локального режима
-        return 'production';
+            return 'production';
     }
 
     /**
