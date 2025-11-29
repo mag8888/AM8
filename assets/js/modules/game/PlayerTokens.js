@@ -1377,14 +1377,15 @@ class PlayerTokens {
         }
         
         if (!isVisibleInViewport) {
-            this._warn('Фишка не видна в viewport', {
+            this._warn('❌ Фишка не видна в viewport', {
                 tokenRect: {
                     left: tokenRect.left,
                     top: tokenRect.top,
                     right: tokenRect.right,
                     bottom: tokenRect.bottom,
                     width: tokenRect.width,
-                    height: tokenRect.height
+                    height: tokenRect.height,
+                    visible: tokenRect.width > 0 && tokenRect.height > 0
                 },
                 viewport: {
                     width: window.innerWidth,
@@ -1394,7 +1395,8 @@ class PlayerTokens {
                 tokenStyles: {
                     left: token.style.left,
                     top: token.style.top,
-                    position: token.style.position
+                    position: token.style.position,
+                    zIndex: token.style.zIndex
                 },
                 parentRect: parentRect ? {
                     left: parentRect.left,
@@ -1404,6 +1406,18 @@ class PlayerTokens {
                     width: parentRect.width,
                     height: parentRect.height
                 } : null,
+                computedParentStyles: {
+                    position: window.getComputedStyle(token.parentElement).position,
+                    width: window.getComputedStyle(token.parentElement).width,
+                    height: window.getComputedStyle(token.parentElement).height,
+                    overflow: window.getComputedStyle(token.parentElement).overflow,
+                    left: window.getComputedStyle(token.parentElement).left,
+                    top: window.getComputedStyle(token.parentElement).top
+                },
+                baseCoords,
+                offset,
+                calculatedLeft: left,
+                calculatedTop: top,
                 parentComputedStyles: token.parentElement ? {
                     position: window.getComputedStyle(token.parentElement).position,
                     left: window.getComputedStyle(token.parentElement).left,
