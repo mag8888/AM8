@@ -346,16 +346,24 @@ class BoardLayout {
                     : (outerCells.length > 0 ? outerCells[0].getBoundingClientRect() : null);
 
                 // Уменьшаем радиус внутреннего круга чтобы не накладывался на внешние клетки
+                // Внешние клетки находятся на периметре квадрата, внутренние должны быть внутри
+                // Рассчитываем безопасный радиус: внешний радиус минус размер клетки и отступ
+                const cellSize = referenceCell ? referenceCell.width : 50;
+                const safeInnerRadius = this._lastOuterRadius
+                    ? Math.max(this._lastOuterRadius - cellSize - 20, 0) // Отступ от внешних клеток
+                    : Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 20;
+                
                 const fallbackInnerRadius = Math.max(
-                    this._lastOuterRadius
-                        ? this._lastOuterRadius * 0.55 // Уменьшено с 0.88 до 0.55
-                        : Math.min(innerRect.width, innerRect.height) / 2 -
-                          (referenceCell ? referenceCell.width / 2 : 24),
+                    safeInnerRadius,
+                    Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 20,
                     0
                 );
                 const computedInnerRadius =
                     referenceCell
-                        ? Math.min(innerRect.width, innerRect.height) / 2 - referenceCell.width / 2 - 6
+                        ? Math.min(
+                            Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 20,
+                            safeInnerRadius
+                          )
                         : fallbackInnerRadius;
                 const innerRadius = Math.max(
                     Number.isFinite(computedInnerRadius) ? computedInnerRadius : fallbackInnerRadius,
