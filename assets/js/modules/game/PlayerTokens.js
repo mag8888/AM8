@@ -328,13 +328,23 @@ class PlayerTokens {
 
         const trackRect = trackElement.getBoundingClientRect();
         const cellRect = cell.getBoundingClientRect();
+        
+        // Вычисляем координаты относительно trackElement (который имеет position: absolute)
+        // Координаты должны быть относительно trackElement, а не viewport
         const coords = {
             x: cellRect.left - trackRect.left + cellRect.width / 2,
             y: cellRect.top - trackRect.top + cellRect.height / 2,
             width: cellRect.width,
             height: cellRect.height
         };
-        this._debug('Координаты вычислены из DOM', coords);
+        
+        this._debug('Координаты вычислены из DOM', {
+            coords,
+            trackRect: { left: trackRect.left, top: trackRect.top, width: trackRect.width, height: trackRect.height },
+            cellRect: { left: cellRect.left, top: cellRect.top, width: cellRect.width, height: cellRect.height },
+            trackElementPosition: window.getComputedStyle(trackElement).position,
+            trackElementId: trackElement.id
+        });
         return coords;
     }
 
@@ -1251,18 +1261,44 @@ class PlayerTokens {
         token.style.position = 'absolute';
         token.style.left = `${left}px`;
         token.style.top = `${top}px`;
-        token.style.zIndex = '2000';
+        token.style.zIndex = '10000'; // Увеличено чтобы фишки были поверх всех элементов
         token.style.display = 'flex';
         token.style.visibility = 'visible';
         token.style.opacity = '1';
+        token.style.pointerEvents = 'auto'; // Разрешаем события для фишек
         
-        this._debug('Фишка позиционирована', {
+        // Проверяем, что фишка видна
+        const tokenRect = token.getBoundingClientRect();
+        const parentRect = token.parentElement?.getBoundingClientRect();
+        
+        this._info('Фишка позиционирована', {
             left,
             top,
             offset,
             baseCoords,
             tokenParent: token.parentElement?.tagName,
-            tokenInDOM: token.isConnected
+            tokenParentId: token.parentElement?.id,
+            tokenInDOM: token.isConnected,
+            tokenRect: { 
+                left: tokenRect.left, 
+                top: tokenRect.top, 
+                width: tokenRect.width, 
+                height: tokenRect.height,
+                visible: tokenRect.width > 0 && tokenRect.height > 0
+            },
+            parentRect: parentRect ? {
+                left: parentRect.left,
+                top: parentRect.top,
+                width: parentRect.width,
+                height: parentRect.height
+            } : null,
+            computedStyles: {
+                position: window.getComputedStyle(token).position,
+                display: window.getComputedStyle(token).display,
+                visibility: window.getComputedStyle(token).visibility,
+                opacity: window.getComputedStyle(token).opacity,
+                zIndex: window.getComputedStyle(token).zIndex
+            }
         });
         
         // Добавляем визуальную индикацию для множественных фишек
