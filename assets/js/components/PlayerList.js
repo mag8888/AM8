@@ -23,6 +23,9 @@ class PlayerList {
             return;
         }
         
+        // Кэш для currentUserId
+        this._lastCurrentUserId = null;
+        
         console.log('👥 PlayerList: Инициализирован с опциями:', this.options);
     }
     
@@ -39,6 +42,24 @@ class PlayerList {
         if (!Array.isArray(players)) {
             console.warn('PlayerList: players не является массивом:', typeof players, players);
             return;
+        }
+        
+        // Получаем currentUserId если не передан
+        if (!currentUserId && window.CommonUtils && typeof window.CommonUtils.getCurrentUserId === 'function') {
+            currentUserId = window.CommonUtils.getCurrentUserId();
+        }
+        
+        // Fallback: пытаемся получить из sessionStorage или localStorage
+        if (!currentUserId) {
+            try {
+                const bundleRaw = sessionStorage.getItem('am_player_bundle');
+                if (bundleRaw) {
+                    const bundle = JSON.parse(bundleRaw);
+                    currentUserId = bundle?.userId || bundle?.currentUser?.id || bundle?.currentUser?.userId;
+                }
+            } catch (e) {
+                // Игнорируем ошибки парсинга
+            }
         }
         
         // Фильтруем игроков если нужно
@@ -64,17 +85,19 @@ class PlayerList {
             const isCurrentUser = currentUserId && (
                 player.id === currentUserId || 
                 player.userId === currentUserId ||
-                player.username === currentUserId ||
-                player.id === currentUserId ||
-                player.id === currentUserId
+                player.username === currentUserId
             );
             
-            console.log('🔍 PlayerList: Проверка текущего пользователя:', {
-                playerId: player.id,
-                playerUsername: player.username,
-                currentUserId,
-                isCurrentUser
-            });
+            // Убираем избыточное логирование - только при изменении
+            if (this._lastCurrentUserId !== currentUserId) {
+                console.log('🔍 PlayerList: Проверка текущего пользователя:', {
+                    playerId: player.id,
+                    playerUsername: player.username,
+                    currentUserId,
+                    isCurrentUser
+                });
+                this._lastCurrentUserId = currentUserId;
+            }
             
             const playerElement = this.renderPlayerItem(player, activePlayer, isCurrentUser, index);
             this.container.appendChild(playerElement);
