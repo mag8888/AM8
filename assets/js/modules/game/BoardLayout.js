@@ -760,7 +760,7 @@ class BoardLayout {
         const centersByPosition = {};
         
         cells.forEach((cell) => {
-            if (!cell || typeof cell.getBoundingClientRect !== 'function') {
+            if (!cell) {
                 return;
             }
             
@@ -771,9 +771,28 @@ class BoardLayout {
                 return;
             }
             
-            const rect = cell.getBoundingClientRect();
-            const x = rect.left - containerRect.left + rect.width / 2;
-            const y = rect.top - containerRect.top + rect.height / 2;
+            // Используем offsetLeft/offsetTop для получения координат относительно родителя
+            // Это более надежно, чем getBoundingClientRect(), так как не зависит от viewport
+            const offsetLeft = cell.offsetLeft || 0;
+            const offsetTop = cell.offsetTop || 0;
+            
+            // Получаем размеры клетки через getBoundingClientRect или computed styles
+            let cellWidth = 0;
+            let cellHeight = 0;
+            
+            if (typeof cell.getBoundingClientRect === 'function') {
+                const rect = cell.getBoundingClientRect();
+                cellWidth = rect.width || 0;
+                cellHeight = rect.height || 0;
+            } else {
+                const styles = window.getComputedStyle(cell);
+                cellWidth = parseFloat(styles.width) || 0;
+                cellHeight = parseFloat(styles.height) || 0;
+            }
+            
+            // Координаты центра клетки относительно родителя (трека)
+            const x = offsetLeft + cellWidth / 2;
+            const y = offsetTop + cellHeight / 2;
             
             // Проверяем, находятся ли координаты в пределах размеров трека
             const isWithinTrack = x >= 0 && x <= containerRect.width && 
@@ -784,7 +803,8 @@ class BoardLayout {
                     position,
                     coords: { x, y },
                     trackSize: { width: containerRect.width, height: containerRect.height },
-                    cellRect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+                    cellOffset: { left: offsetLeft, top: offsetTop },
+                    cellSize: { width: cellWidth, height: cellHeight },
                     containerRect: { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height }
                 });
             }
@@ -792,8 +812,8 @@ class BoardLayout {
             centersByPosition[position] = {
                 x,
                 y,
-                width: rect.width,
-                height: rect.height
+                width: cellWidth,
+                height: cellHeight
             };
         });
         
