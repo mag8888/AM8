@@ -324,11 +324,13 @@ class PlayerTokens {
         styles.id = 'player-tokens-styles';
         styles.textContent = `
             .player-token {
-                position: absolute;
-                width: 32px;
-                height: 32px;
+                position: absolute !important;
+                width: 32px !important;
+                height: 32px !important;
+                min-width: 32px !important;
+                min-height: 32px !important;
                 border-radius: 50%;
-                display: flex;
+                display: flex !important;
                 align-items: center;
                 justify-content: center;
                 font-size: 1.4rem;
@@ -336,8 +338,10 @@ class PlayerTokens {
                 border: 3px solid rgba(255, 255, 255, 0.9);
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.2);
                 transition: all 0.3s ease;
-                z-index: 2000;
-                pointer-events: none;
+                z-index: 2000 !important;
+                pointer-events: auto !important;
+                visibility: visible !important;
+                opacity: 1 !important;
                 backdrop-filter: blur(5px);
                 transform: translate3d(0, 0, 0);
                 will-change: transform, left, top;
