@@ -363,7 +363,7 @@ class PlayerTokens {
      * @returns {{x:number,y:number,width:number,height:number}|null}
      */
     getCellCenter(position, isInner) {
-        this._info('🔍 getCellCenter вызван', { position, isInner });
+        this._debug('🔍 getCellCenter вызван', { position, isInner });
         
         // Сначала пытаемся получить координаты из boardLayout (кэш)
         const boardLayout = this.boardLayout || this._resolveBoardLayout();
@@ -472,7 +472,7 @@ class PlayerTokens {
     }
 
     getCellBaseCoordinates(position, isInner) {
-        this._info('🔍 getCellBaseCoordinates вызван', { position, isInner });
+        this._debug('🔍 getCellBaseCoordinates вызван', { position, isInner });
         const center = this.getCellCenter(position, isInner);
         if (!center) {
             this._warn('getCellBaseCoordinates: не удалось получить центр клетки', {
@@ -483,7 +483,7 @@ class PlayerTokens {
             });
             return null;
         }
-        this._info('✅ getCellBaseCoordinates: координаты получены', { position, isInner, center });
+        this._debug('✅ getCellBaseCoordinates: координаты получены', { position, isInner, center });
         return {
             x: center.x,
             y: center.y
@@ -997,7 +997,19 @@ class PlayerTokens {
      * Обновление всех фишек
      */
     updateTokens(players) {
-        this._info('updateTokens вызван', { playersCount: players?.length || 0 });
+        // Debounce для предотвращения множественных вызовов
+        if (this._updateTokensTimer) {
+            clearTimeout(this._updateTokensTimer);
+        }
+        
+        this._updateTokensTimer = setTimeout(() => {
+            this._updateTokensInternal(players);
+        }, 50); // Небольшая задержка для батчинга обновлений
+    }
+    
+    _updateTokensInternal(players) {
+        this._updateTokensTimer = null;
+        this._debug('updateTokens вызван', { playersCount: players?.length || 0 });
         
         const normalized = this.normalizePlayers(players);
         if (!normalized.length) {
@@ -1006,12 +1018,12 @@ class PlayerTokens {
             return;
         }
         
-        this._info('Нормализовано игроков', normalized.length);
+        this._debug('Нормализовано игроков', normalized.length);
         this.stopInitialRenderWatcher();
         
         const grouped = this.groupPlayersByPosition(normalized);
         const groupedArray = Array.isArray(grouped) ? grouped : Array.from(grouped.values());
-        this._info('Группировка игроков по позициям', { groups: groupedArray.length });
+        this._debug('Группировка игроков по позициям', { groups: groupedArray.length });
         
         if (groupedArray.length === 0) {
             this._warn('Нет групп игроков для отображения');
@@ -1120,7 +1132,7 @@ class PlayerTokens {
             });
         });
         
-        this._info('Фишки обработаны', { created: tokensCreated, skipped: tokensSkipped, total: processed.size });
+        this._debug('Фишки обработаны', { created: tokensCreated, skipped: tokensSkipped, total: processed.size });
         
         // Удаляем фишки игроков, которых больше нет
         // Но делаем это только если фишка действительно не обработана и не в DOM
