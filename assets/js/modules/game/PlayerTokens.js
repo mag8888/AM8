@@ -277,19 +277,20 @@ class PlayerTokens {
      * @returns {{x:number,y:number,width:number,height:number}|null}
      */
     getCellCenter(position, isInner) {
-        this._debug('getCellCenter вызван', { position, isInner });
+        this._info('🔍 getCellCenter вызван', { position, isInner });
         
         const boardLayout = this.boardLayout || this._resolveBoardLayout();
         if (boardLayout && typeof boardLayout.getCellCenter === 'function') {
             const center = boardLayout.getCellCenter(position, isInner);
+            this._info('📊 boardLayout.getCellCenter вернул', { position, isInner, center, centerType: typeof center });
             if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
-                this._debug('Координаты получены из boardLayout', center);
+                this._info('✅ Координаты получены из boardLayout', center);
                 return center;
             } else {
-                this._warn('boardLayout.getCellCenter вернул невалидные координаты', { center, position, isInner });
+                this._warn('❌ boardLayout.getCellCenter вернул невалидные координаты', { center, position, isInner });
             }
         } else {
-            this._warn('boardLayout не найден или не имеет метода getCellCenter', { 
+            this._warn('❌ boardLayout не найден или не имеет метода getCellCenter', { 
                 hasBoardLayout: !!boardLayout,
                 boardLayoutType: typeof boardLayout
             });
@@ -365,7 +366,7 @@ class PlayerTokens {
     }
 
     getCellBaseCoordinates(position, isInner) {
-        this._debug('getCellBaseCoordinates вызван', { position, isInner });
+        this._info('🔍 getCellBaseCoordinates вызван', { position, isInner });
         const center = this.getCellCenter(position, isInner);
         if (!center) {
             this._warn('getCellBaseCoordinates: не удалось получить центр клетки', {
@@ -376,7 +377,7 @@ class PlayerTokens {
             });
             return null;
         }
-        this._debug('getCellBaseCoordinates: координаты получены', { position, isInner, center });
+        this._info('✅ getCellBaseCoordinates: координаты получены', { position, isInner, center });
         return {
             x: center.x,
             y: center.y

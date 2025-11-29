@@ -324,10 +324,16 @@ class BoardLayout {
                     });
 
                     this.trackRectCache.outer = this._snapshotRect(outerRect);
-                    this.cellCentersCache.outer = this._computeCellCenters(
+                    const outerCenters = this._computeCellCenters(
                         outerCells,
                         outerRect
                     );
+                    this._info('📊 Outer cells centers computed', {
+                        cellsCount: outerCells.length,
+                        centersCount: outerCenters.length,
+                        sampleCenters: outerCenters.slice(0, 3)
+                    });
+                    this.cellCentersCache.outer = outerCenters;
 
                     // Используем радиус внешнего круга как базу для внутреннего
                     this._lastOuterRadius = outerRadius;
@@ -381,10 +387,16 @@ class BoardLayout {
                 });
 
                 this.trackRectCache.inner = this._snapshotRect(innerRect);
-                this.cellCentersCache.inner = this._computeCellCenters(
+                const innerCenters = this._computeCellCenters(
                     innerCells,
                     innerRect
                 );
+                this._info('📊 Inner cells centers computed', {
+                    cellsCount: innerCells.length,
+                    centersCount: innerCenters.length,
+                    sampleCenters: innerCenters.slice(0, 3)
+                });
+                this.cellCentersCache.inner = innerCenters;
             } else {
                 this.cellCentersCache.inner = [];
                 this.trackRectCache.inner = null;
