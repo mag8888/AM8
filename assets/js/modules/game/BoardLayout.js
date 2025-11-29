@@ -772,9 +772,26 @@ class BoardLayout {
             }
             
             const rect = cell.getBoundingClientRect();
+            const x = rect.left - containerRect.left + rect.width / 2;
+            const y = rect.top - containerRect.top + rect.height / 2;
+            
+            // Проверяем, находятся ли координаты в пределах размеров трека
+            const isWithinTrack = x >= 0 && x <= containerRect.width && 
+                                 y >= 0 && y <= containerRect.height;
+            
+            if (!isWithinTrack) {
+                this._warn('⚠️ Координаты клетки выходят за пределы трека', {
+                    position,
+                    coords: { x, y },
+                    trackSize: { width: containerRect.width, height: containerRect.height },
+                    cellRect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+                    containerRect: { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height }
+                });
+            }
+            
             centersByPosition[position] = {
-                x: rect.left - containerRect.left + rect.width / 2,
-                y: rect.top - containerRect.top + rect.height / 2,
+                x,
+                y,
                 width: rect.width,
                 height: rect.height
             };
