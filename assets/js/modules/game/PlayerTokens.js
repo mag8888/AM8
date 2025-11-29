@@ -1504,6 +1504,10 @@ class PlayerTokens {
         token.style.position = 'absolute';
         token.style.left = `${left}px`;
         token.style.top = `${top}px`;
+        token.style.width = '32px'; // Явно устанавливаем размер
+        token.style.height = '32px'; // Явно устанавливаем размер
+        token.style.minWidth = '32px'; // Минимальный размер
+        token.style.minHeight = '32px'; // Минимальный размер
         token.style.zIndex = '10000'; // Увеличено чтобы фишки были поверх всех элементов
         token.style.display = 'flex';
         token.style.visibility = 'visible';
@@ -1556,6 +1560,19 @@ class PlayerTokens {
             token.style.display = 'flex';
             token.style.visibility = 'visible';
             token.style.opacity = '1';
+        }
+        
+        // Принудительно устанавливаем размер, если он нулевой
+        if (tokenRect.width === 0 || tokenRect.height === 0) {
+            token.style.width = '32px';
+            token.style.height = '32px';
+            token.style.minWidth = '32px';
+            token.style.minHeight = '32px';
+            this._debug('Установлен размер фишки через inline стили', {
+                playerId: token.dataset.playerId,
+                width: token.style.width,
+                height: token.style.height
+            });
         }
         
         // Подробное логирование для отладки
