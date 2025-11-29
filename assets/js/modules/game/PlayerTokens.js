@@ -1433,14 +1433,32 @@ class PlayerTokens {
                 return null;
             }
             trackElement.appendChild(token);
-            this._debug('Фишка добавлена в DOM', {
+            this._info('Фишка добавлена в DOM', {
                 player: player.username,
                 position: player.position,
                 isInner: player.isInner,
                 trackElement: trackElement.tagName,
-                trackElementId: trackElement.id
+                trackElementId: trackElement.id,
+                tokenInDOM: token.isConnected,
+                tokenParent: token.parentElement?.tagName
             });
             this.tokens.set(player.id, token);
+            
+            // Принудительно устанавливаем стили для видимости
+            token.style.display = 'flex';
+            token.style.visibility = 'visible';
+            token.style.opacity = '1';
+            token.style.width = '32px';
+            token.style.height = '32px';
+            
+            // Проверяем, что фишка действительно в DOM
+            if (!token.isConnected) {
+                this._warn('⚠️ Фишка не подключена к DOM после appendChild!', {
+                    player: player.username,
+                    hasParent: !!token.parentElement
+                });
+            }
+            
             this.animateTokenAppearance(token);
         } else {
             // Фишка уже существует и в DOM, обновляем её данные
