@@ -277,38 +277,65 @@ class PlayerTokens {
      * @returns {{x:number,y:number,width:number,height:number}|null}
      */
     getCellCenter(position, isInner) {
+        this._debug('getCellCenter вызван', { position, isInner });
+        
         const boardLayout = this.boardLayout || this._resolveBoardLayout();
         if (boardLayout && typeof boardLayout.getCellCenter === 'function') {
             const center = boardLayout.getCellCenter(position, isInner);
             if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
+                this._debug('Координаты получены из boardLayout', center);
                 return center;
+            } else {
+                this._warn('boardLayout.getCellCenter вернул невалидные координаты', { center, position, isInner });
             }
+        } else {
+            this._warn('boardLayout не найден или не имеет метода getCellCenter', { 
+                hasBoardLayout: !!boardLayout,
+                boardLayoutType: typeof boardLayout
+            });
         }
 
         const cache = isInner ? this.cellCenters.inner : this.cellCenters.outer;
         const cached = cache?.[position];
         if (cached && Number.isFinite(cached.x) && Number.isFinite(cached.y)) {
+            this._debug('Координаты получены из кэша', cached);
             return cached;
+        } else {
+            this._warn('Координаты не найдены в кэше', { 
+                position, 
+                isInner, 
+                cacheExists: !!cache,
+                cacheKeys: cache ? Object.keys(cache) : []
+            });
         }
 
         const trackElement = this.getTrackElement(isInner);
         if (!trackElement) {
+            this._warn('Трек не найден для вычисления координат', { position, isInner });
             return null;
         }
 
         const cell = trackElement.querySelector(`[data-position="${position}"]`);
         if (!cell || typeof cell.getBoundingClientRect !== 'function') {
+            this._warn('Клетка не найдена в DOM', { 
+                position, 
+                isInner,
+                trackElementExists: !!trackElement,
+                cellsCount: trackElement.querySelectorAll('.track-cell').length
+            });
             return null;
         }
 
         const trackRect = trackElement.getBoundingClientRect();
         const cellRect = cell.getBoundingClientRect();
-        return {
+        const coords = {
             x: cellRect.left - trackRect.left + cellRect.width / 2,
             y: cellRect.top - trackRect.top + cellRect.height / 2,
             width: cellRect.width,
             height: cellRect.height
         };
+        this._debug('Координаты вычислены из DOM', coords);
+        return coords;
     }
 
     getCellBaseCoordinates(position, isInner) {
