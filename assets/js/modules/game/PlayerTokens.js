@@ -843,7 +843,12 @@ class PlayerTokens {
         this.stopInitialRenderWatcher();
         
         const grouped = this.groupPlayersByPosition(normalized);
-        this._info('Группировка игроков по позициям', { groups: grouped.length });
+        this._info('Группировка игроков по позициям', { groups: grouped.size });
+        
+        if (grouped.size === 0) {
+            this._warn('Нет групп игроков для отображения');
+            return;
+        }
         
         const processed = new Set();
         let tokensCreated = 0;
@@ -863,7 +868,30 @@ class PlayerTokens {
 
             const baseCoords = this.getCellBaseCoordinates(position, isInner);
             if (!baseCoords) {
-                this._warn('Не удалось вычислить координаты клетки', { position, isInner });
+                this._warn('Не удалось вычислить координаты клетки', { 
+                    position, 
+                    isInner,
+                    hasTrackElement: !!trackElement,
+                    trackSelector: isInner ? this.innerTrackSelector : this.outerTrackSelector
+                });
+                // Пробуем обновить координаты через небольшую задержку
+                setTimeout(() => {
+                    const retryCoords = this.getCellBaseCoordinates(position, isInner);
+                    if (retryCoords) {
+                        this._info('Координаты получены при повторной попытке', { position, isInner });
+                        playersAtPosition.forEach((player, index) => {
+                            const token = this.ensureToken(player, index, playersAtPosition.length, trackElement);
+                            if (token) {
+                                const offset = this.calculateOffset(index, playersAtPosition.length);
+                                this.positionTokenElement(token, retryCoords, offset, playersAtPosition.length);
+                                processed.add(player.id);
+                                tokensCreated++;
+                            }
+                        });
+                    } else {
+                        this._warn('Координаты все еще недоступны после повторной попытки', { position, isInner });
+                    }
+                }, 500);
                 tokensSkipped += playersAtPosition.length;
                 return;
             }
@@ -875,7 +903,17 @@ class PlayerTokens {
                     this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
                     processed.add(player.id);
                     tokensCreated++;
-                    this._info(`Фишка создана для игрока ${player.username}`, { position, isInner, offset });
+                    this._info(`Фишка создана для игрока ${player.username}`, { 
+                        position, 
+                        isInner, 
+                        offset,
+                        coords: baseCoords,
+                        tokenStyle: {
+                            left: token.style.left,
+                            top: token.style.top,
+                            zIndex: token.style.zIndex
+                        }
+                    });
                 } else {
                     this._warn('Не удалось создать фишку', { player: player.username, position });
                     tokensSkipped++;
