@@ -814,38 +814,62 @@ class PlayerTokens {
      * Обновление всех фишек
      */
     updateTokens(players) {
+        this._info('updateTokens вызван', { playersCount: players?.length || 0 });
+        
         const normalized = this.normalizePlayers(players);
         if (!normalized.length) {
+            this._warn('Нет нормализованных игроков для отображения фишек');
             this.clearTokens();
             return;
         }
         
+        this._info('Нормализовано игроков', normalized.length);
         this.stopInitialRenderWatcher();
         
         const grouped = this.groupPlayersByPosition(normalized);
+        this._info('Группировка игроков по позициям', { groups: grouped.length });
+        
         const processed = new Set();
+        let tokensCreated = 0;
+        let tokensSkipped = 0;
         
         grouped.forEach(({ position, isInner, players: playersAtPosition }) => {
             const trackElement = this.getTrackElement(isInner);
             if (!trackElement) {
-                this._warn(`Трек не найден: ${isInner ? this.innerTrackSelector : this.outerTrackSelector}`);
+                this._warn(`Трек не найден: ${isInner ? this.innerTrackSelector : this.outerTrackSelector}`, {
+                    innerSelector: this.innerTrackSelector,
+                    outerSelector: this.outerTrackSelector,
+                    isInner
+                });
+                tokensSkipped += playersAtPosition.length;
                 return;
             }
 
             const baseCoords = this.getCellBaseCoordinates(position, isInner);
             if (!baseCoords) {
-                this._debug('Не удалось вычислить координаты клетки', { position, isInner });
+                this._warn('Не удалось вычислить координаты клетки', { position, isInner });
+                tokensSkipped += playersAtPosition.length;
                 return;
             }
             
             playersAtPosition.forEach((player, index) => {
                 const token = this.ensureToken(player, index, playersAtPosition.length, trackElement);
-                const offset = this.calculateOffset(index, playersAtPosition.length);
-                this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
-                processed.add(player.id);
+                if (token) {
+                    const offset = this.calculateOffset(index, playersAtPosition.length);
+                    this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
+                    processed.add(player.id);
+                    tokensCreated++;
+                    this._info(`Фишка создана для игрока ${player.username}`, { position, isInner, offset });
+                } else {
+                    this._warn('Не удалось создать фишку', { player: player.username, position });
+                    tokensSkipped++;
+                }
             });
         });
         
+        this._info('Фишки обработаны', { created: tokensCreated, skipped: tokensSkipped, total: processed.size });
+        
+        // Удаляем фишки игроков, которых больше нет
         this.tokens.forEach((token, playerId) => {
             if (!processed.has(playerId)) {
                 if (token.parentNode) {
