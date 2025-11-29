@@ -365,6 +365,7 @@ class PlayerTokens {
     }
 
     getCellBaseCoordinates(position, isInner) {
+        this._debug('getCellBaseCoordinates вызван', { position, isInner });
         const center = this.getCellCenter(position, isInner);
         if (!center) {
             this._warn('getCellBaseCoordinates: не удалось получить центр клетки', {
@@ -375,6 +376,7 @@ class PlayerTokens {
             });
             return null;
         }
+        this._debug('getCellBaseCoordinates: координаты получены', { position, isInner, center });
         return {
             x: center.x,
             y: center.y
