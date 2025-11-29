@@ -798,7 +798,6 @@ class App {
                     const diceService = this.modules.get('diceService');
                     const gameStateManagerInstance = this.getGameStateManager();
                     const turnService = new window.TurnService({
-                        eventBus: this.getEventBus(),
                         // Некоторые реализации ожидают свойство state, добавляем алиас
                         state: gameState,
                         gameState: gameState,
@@ -1108,11 +1107,10 @@ class App {
                 return null;
             }
             return new window.TurnService({
-                eventBus: this.getEventBus(),
                 state: gameState,
                 gameState,
                 roomApi,
-                eventBus,
+                eventBus: eventBus || this.getEventBus(),
                 diceService,
                 movementService,
                 gameStateManager
