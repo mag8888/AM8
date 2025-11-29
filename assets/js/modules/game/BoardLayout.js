@@ -830,8 +830,28 @@ class BoardLayout {
         
         // Преобразуем объект в массив, где индекс соответствует позиции
         // Находим максимальную позицию
-        const maxPosition = Math.max(...Object.keys(centersByPosition).map(Number), -1);
+        const positionKeys = Object.keys(centersByPosition);
+        if (positionKeys.length === 0) {
+            this._warn('⚠️ _computeCellCenters: centersByPosition пустой!', {
+                cellsCount: cells.length,
+                cellsWithPosition: cells.filter(c => c && c.dataset && c.dataset.position).length,
+                sampleCells: cells.slice(0, 3).map(c => ({
+                    hasCell: !!c,
+                    hasDataset: !!(c && c.dataset),
+                    position: c && c.dataset ? c.dataset.position : 'нет',
+                    offsetLeft: c ? c.offsetLeft : 'нет',
+                    offsetTop: c ? c.offsetTop : 'нет'
+                }))
+            });
+            return [];
+        }
+        
+        const maxPosition = Math.max(...positionKeys.map(Number), -1);
         if (maxPosition < 0) {
+            this._warn('⚠️ _computeCellCenters: maxPosition < 0', {
+                positionKeys,
+                centersByPositionKeys: Object.keys(centersByPosition)
+            });
             return [];
         }
         
