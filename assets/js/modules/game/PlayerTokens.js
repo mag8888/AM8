@@ -331,19 +331,35 @@ class PlayerTokens {
         
         // Вычисляем координаты относительно trackElement (который имеет position: absolute)
         // Координаты должны быть относительно trackElement, а не viewport
+        // cellRect.left - trackRect.left дает позицию клетки относительно левого края трека
+        // cellRect.width / 2 добавляет половину ширины клетки для получения центра
         const coords = {
-            x: cellRect.left - trackRect.left + cellRect.width / 2,
-            y: cellRect.top - trackRect.top + cellRect.height / 2,
+            x: (cellRect.left - trackRect.left) + (cellRect.width / 2),
+            y: (cellRect.top - trackRect.top) + (cellRect.height / 2),
             width: cellRect.width,
             height: cellRect.height
         };
+        
+        // Проверяем, что координаты находятся в пределах видимой области трека
+        const isWithinTrack = coords.x >= 0 && coords.x <= trackRect.width && 
+                              coords.y >= 0 && coords.y <= trackRect.height;
+        
+        if (!isWithinTrack) {
+            this._warn('Координаты клетки выходят за пределы трека', {
+                coords,
+                trackRect: { width: trackRect.width, height: trackRect.height },
+                cellRect: { left: cellRect.left, top: cellRect.top, width: cellRect.width, height: cellRect.height },
+                trackElementId: trackElement.id
+            });
+        }
         
         this._debug('Координаты вычислены из DOM', {
             coords,
             trackRect: { left: trackRect.left, top: trackRect.top, width: trackRect.width, height: trackRect.height },
             cellRect: { left: cellRect.left, top: cellRect.top, width: cellRect.width, height: cellRect.height },
             trackElementPosition: window.getComputedStyle(trackElement).position,
-            trackElementId: trackElement.id
+            trackElementId: trackElement.id,
+            isWithinTrack
         });
         return coords;
     }
@@ -1258,6 +1274,16 @@ class PlayerTokens {
         const left = baseCoords.x + offset.x - halfSize;
         const top = baseCoords.y + offset.y - halfSize;
         
+        // Убеждаемся, что фишка имеет родителя перед позиционированием
+        if (!token.parentElement) {
+            this._warn('Фишка потеряла родителя перед позиционированием', {
+                playerId: token.dataset.playerId,
+                position: token.dataset.position,
+                isInner: token.dataset.isInner
+            });
+            return;
+        }
+        
         token.style.position = 'absolute';
         token.style.left = `${left}px`;
         token.style.top = `${top}px`;
@@ -1271,6 +1297,19 @@ class PlayerTokens {
         const tokenRect = token.getBoundingClientRect();
         const parentRect = token.parentElement?.getBoundingClientRect();
         
+        // Проверяем, что фишка находится в пределах видимой области родителя
+        const isWithinParent = parentRect ? 
+            (left >= 0 && left <= parentRect.width && top >= 0 && top <= parentRect.height) : false;
+        
+        if (!isWithinParent && parentRect) {
+            this._warn('Фишка находится за пределами видимой области родителя', {
+                left,
+                top,
+                parentRect: { width: parentRect.width, height: parentRect.height },
+                tokenParentId: token.parentElement?.id
+            });
+        }
+        
         this._info('Фишка позиционирована', {
             left,
             top,
@@ -1279,6 +1318,7 @@ class PlayerTokens {
             tokenParent: token.parentElement?.tagName,
             tokenParentId: token.parentElement?.id,
             tokenInDOM: token.isConnected,
+            isWithinParent,
             tokenRect: { 
                 left: tokenRect.left, 
                 top: tokenRect.top, 
