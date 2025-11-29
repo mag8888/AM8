@@ -474,11 +474,19 @@
             const existingDecks = this.container.querySelectorAll('.card-deck-card');
             existingDecks.forEach(deck => deck.remove());
             
-            // Добавляем новые колоды
+            // Создаем или находим контейнер для карточек (для grid layout)
+            let cardsContainer = this.container.querySelector('.card-decks-inner');
+            if (!cardsContainer) {
+                cardsContainer = document.createElement('div');
+                cardsContainer.className = 'card-decks-inner';
+                this.container.appendChild(cardsContainer);
+            }
+            
+            // Добавляем новые колоды в контейнер
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = decksHTML;
             while (tempDiv.firstChild) {
-                this.container.appendChild(tempDiv.firstChild);
+                cardsContainer.appendChild(tempDiv.firstChild);
             }
 
             // Уведомляем другие компоненты об обновлении

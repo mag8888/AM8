@@ -18,11 +18,15 @@
     background: rgba(15, 23, 42, 0.95) !important; /* Единственная подложка */
   }
   
-  /* Левая панель: карточки сделок и банк */
+  /* Левая панель: карточки сделок и банк - GRID СЕТКА */
   #card-decks-panel.card-decks-container {
     grid-area: card-decks !important;
-    display: flex !important;
-    flex-direction: column !important;
+    display: grid !important;
+    grid-template-rows: auto 1fr !important; /* Банк фиксирован, карточки растягиваются */
+    grid-template-columns: 1fr !important;
+    grid-template-areas: 
+      "bank"
+      "cards" !important;
     visibility: visible !important;
     opacity: 1 !important;
     min-width: 280px !important; /* Минимальная ширина */
@@ -38,12 +42,8 @@
     padding: 1rem !important;
     box-sizing: border-box !important;
     z-index: 1 !important;
-    overflow-y: auto !important; /* Прокрутка если контент не помещается */
-    overflow-x: hidden !important;
-    gap: 0.5rem !important;
-    /* Убеждаемся что flex работает правильно */
-    align-items: stretch !important;
-    justify-content: flex-start !important;
+    overflow: hidden !important; /* Убираем прокрутку у контейнера */
+    gap: 1rem !important; /* Отступ между банком и карточками */
   }
   
   /* Карточки сделок: компактные, чтобы все помещались */
@@ -109,11 +109,15 @@
     min-height: 0 !important; /* Позволяет сжиматься */
   }
   
-  /* Правая панель: игроки */
+  /* Правая панель: игроки - GRID СЕТКА */
   .top-panel-container {
     grid-area: players-panel !important;
-    display: flex !important;
-    flex-direction: column !important;
+    display: grid !important;
+    grid-template-rows: auto 1fr !important; /* Действия фиксированы, игроки растягиваются */
+    grid-template-columns: 1fr !important;
+    grid-template-areas: 
+      "actions"
+      "players" !important;
     visibility: visible !important;
     opacity: 1 !important;
     min-width: 320px !important; /* Минимальная ширина */
@@ -129,20 +133,36 @@
     padding: 1rem !important;
     box-sizing: border-box !important;
     z-index: 1 !important;
-    overflow-y: auto !important; /* Прокрутка если контент не помещается */
-    overflow-x: hidden !important;
+    overflow: hidden !important; /* Убираем прокрутку у контейнера */
+    gap: 1rem !important; /* Отступ между действиями и игроками */
   }
   
-  .players-panel-container,
-  #players-panel.top-panel-content {
+  /* Секция действий - GRID область */
+  .top-panel-container .actions-section,
+  #players-panel .actions-section {
+    grid-area: actions !important;
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-    height: auto !important;
-    flex: 1 1 auto !important;
+    box-sizing: border-box !important;
     overflow: visible !important;
+  }
+  
+  /* Секция игроков - GRID область */
+  .players-panel-container,
+  #players-panel.top-panel-content {
+    grid-area: players !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important; /* Прокрутка списка игроков */
+    overflow-x: hidden !important;
     gap: 1rem !important;
   }
   
@@ -171,50 +191,55 @@
     box-sizing: border-box !important;
   }
   
-  /* Банк на десктопе: внутри левой панели (сверху) */
+  /* Банк на десктопе: внутри левой панели (сверху) - GRID */
   #card-decks-panel #bank-section {
+    grid-area: bank !important;
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 1rem !important; /* Отступ от карточек */
-    padding: 0 0 1rem 0 !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
     border-bottom: 2px solid rgba(148, 163, 184, 0.3) !important;
-    flex: 0 0 auto !important;
-    order: 1 !important; /* Банк первым */
+    overflow: visible !important;
   }
   
-  /* Карточки после банка - все вместе внизу, растягиваются на оставшуюся высоту */
+  /* Обертка для карточек - GRID область */
+  #card-decks-panel::after {
+    content: '';
+    grid-area: cards !important;
+    display: grid !important;
+    grid-template-rows: repeat(auto-fit, minmax(auto, 1fr)) !important;
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+    overflow-y: auto !important; /* Прокрутка карточек */
+    overflow-x: hidden !important;
+    min-height: 0 !important;
+  }
+  
+  /* Карточки после банка - все вместе внизу в GRID */
   #card-decks-panel .card-deck-card {
-    order: 2 !important;
-    flex: 0 0 auto !important; /* Не растягиваются сами карточки */
+    grid-column: 1 !important;
     width: 100% !important;
-    margin-bottom: 0.5rem !important; /* Отступ между карточками */
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
   }
   
-  /* Контейнер для карточек - flex column, карточки занимают оставшуюся высоту */
+  /* Альтернативный подход: создаем обертку для карточек через JavaScript или используем flex внутри grid */
   #card-decks-panel.card-decks-container {
+    /* Grid уже настроен выше */
+  }
+  
+  /* Внутренний контейнер для карточек - flex для вертикального расположения */
+  #card-decks-panel .card-decks-inner {
+    grid-area: cards !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: flex-start !important; /* Банк сверху */
-  }
-  
-  /* Банк фиксирован сверху, карточки занимают оставшееся пространство */
-  #card-decks-panel #bank-section {
-    flex: 0 0 auto !important; /* Банк не растягивается */
-  }
-  
-  /* Все карточки вместе - занимают оставшуюся высоту через flex-grow */
-  #card-decks-panel .card-deck-card:first-of-type {
-    margin-top: auto !important; /* Толкает карточки вниз */
-  }
-  
-  /* Альтернативный подход: используем flex-grow на последней карточке для заполнения пространства */
-  #card-decks-panel .card-deck-card:last-of-type {
-    flex: 1 1 auto !important; /* Последняя карточка растягивается */
+    gap: 0.5rem !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
     min-height: 0 !important;
   }
   
