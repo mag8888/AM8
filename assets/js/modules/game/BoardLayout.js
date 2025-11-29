@@ -345,9 +345,10 @@ class BoardLayout {
                     ? firstInnerCell.getBoundingClientRect()
                     : (outerCells.length > 0 ? outerCells[0].getBoundingClientRect() : null);
 
+                // Уменьшаем радиус внутреннего круга чтобы не накладывался на внешние клетки
                 const fallbackInnerRadius = Math.max(
                     this._lastOuterRadius
-                        ? this._lastOuterRadius * 0.88
+                        ? this._lastOuterRadius * 0.55 // Уменьшено с 0.88 до 0.55
                         : Math.min(innerRect.width, innerRect.height) / 2 -
                           (referenceCell ? referenceCell.width / 2 : 24),
                     0

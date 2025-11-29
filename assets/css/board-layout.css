@@ -157,11 +157,11 @@
     transform: none !important;
     background: transparent !important; /* Убираем подложку */
     border-left: 2px solid rgba(148, 163, 184, 0.3) !important;
-    padding: 1rem !important;
+    padding: 0.5rem !important; /* Уменьшаем отступы */
     box-sizing: border-box !important;
     z-index: 1 !important;
     overflow: hidden !important; /* Убираем прокрутку у контейнера */
-    gap: 1rem !important; /* Отступ между действиями и игроками */
+    gap: 0.5rem !important; /* Уменьшаем отступ между действиями и игроками */
     /* Предотвращаем изменение размеров после загрузки */
     contain: layout size !important; /* Изоляция layout */
   }
@@ -177,6 +177,8 @@
     min-width: 0 !important;
     box-sizing: border-box !important;
     overflow: visible !important;
+    background: transparent !important; /* Убираем подложку */
+    padding: 0 !important; /* Убираем внутренние отступы */
   }
   
   /* Секция игроков - GRID область */
@@ -193,6 +195,8 @@
     overflow-y: auto !important; /* Прокрутка списка игроков */
     overflow-x: hidden !important;
     gap: 1rem !important;
+    background: transparent !important; /* Убираем подложку */
+    padding: 0 !important; /* Убираем внутренние отступы */
   }
   
   /* Скрываем секцию "Активный игрок" на десктопе */

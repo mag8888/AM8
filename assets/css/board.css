@@ -350,11 +350,12 @@
 
 .inner-track {
     grid-area: board;
-    width: 85%; /* Увеличено для больших клеток */
-    height: 85%;
-    top: 7.5%;
-    left: 7.5%;
-    z-index: 3;
+    width: 60% !important; /* Уменьшено чтобы не накладывался на внешние клетки */
+    height: 60% !important;
+    top: 20% !important;
+    left: 20% !important;
+    z-index: 1 !important; /* Внутренний круг под внешними клетками */
+    pointer-events: none !important;
 }
 
 .track-cell {
