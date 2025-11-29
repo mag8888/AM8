@@ -1461,12 +1461,28 @@ class PlayerTokens {
         
         // Убеждаемся, что фишка имеет родителя перед позиционированием
         if (!token.parentElement) {
-            this._warn('Фишка потеряла родителя перед позиционированием', {
+            this._debug('Фишка потеряла родителя перед позиционированием, пытаемся восстановить', {
                 playerId: token.dataset.playerId,
                 position: token.dataset.position,
                 isInner: token.dataset.isInner
             });
-            return;
+            
+            // Пытаемся найти правильный трек и добавить фишку туда
+            const isInner = token.dataset.isInner === 'true';
+            const trackElement = this.getTrackElement(isInner);
+            if (trackElement) {
+                trackElement.appendChild(token);
+                this._debug('Фишка восстановлена в DOM', {
+                    playerId: token.dataset.playerId,
+                    trackElementId: trackElement.id
+                });
+            } else {
+                this._warn('Не удалось найти трек для восстановления фишки', {
+                    playerId: token.dataset.playerId,
+                    isInner
+                });
+                return;
+            }
         }
         
         token.style.position = 'absolute';
