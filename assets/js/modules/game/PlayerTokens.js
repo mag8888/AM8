@@ -314,6 +314,12 @@ class PlayerTokens {
     getCellBaseCoordinates(position, isInner) {
         const center = this.getCellCenter(position, isInner);
         if (!center) {
+            this._warn('getCellBaseCoordinates: не удалось получить центр клетки', {
+                position,
+                isInner,
+                hasBoardLayout: !!this.boardLayout,
+                hasCellCenters: !!(isInner ? this.cellCenters.inner : this.cellCenters.outer)
+            });
             return null;
         }
         return {
