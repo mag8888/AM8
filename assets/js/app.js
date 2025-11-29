@@ -1266,9 +1266,18 @@ class App {
         }
         
         const bankPreview = this.modules.get('bankPreview');
-        if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
-            bankPreview.updatePreviewData();
-            console.log('🏦 App: BankPreview данные обновлены');
+        if (bankPreview) {
+            // Пытаемся обновить данные из GameStateManager если он доступен
+            const gameStateManager = this.getGameStateManager();
+            if (gameStateManager && gameStateManager._state) {
+                if (typeof bankPreview.updatePreviewDataFromState === 'function') {
+                    bankPreview.updatePreviewDataFromState(gameStateManager._state);
+                    console.log('🏦 App: BankPreview данные обновлены из GameStateManager');
+                }
+            } else if (typeof bankPreview.updatePreviewData === 'function') {
+                bankPreview.updatePreviewData();
+                console.log('🏦 App: BankPreview данные обновлены');
+            }
         }
         
         const cardDeckPanel = this.modules.get('cardDeckPanel');
