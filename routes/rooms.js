@@ -253,8 +253,20 @@ router.post('/:id/roll', (req, res, next) => {
     const { id } = req.params;
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
-        if (state.canRoll === false) {
-            return res.status(400).json({ success:false, message:'Бросок кубика сейчас недоступен', state });
+        
+        // Проверяем, можно ли бросать кубик
+        // Если canRoll явно false и есть результат кубика, значит уже бросили
+        if (state.canRoll === false && state.lastDiceResult) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Бросок кубика уже выполнен. Используйте перемещение.', 
+                state 
+            });
+        }
+        
+        // Если canRoll не определен, устанавливаем в true (начало хода)
+        if (typeof state.canRoll !== 'boolean') {
+            state.canRoll = true;
         }
         const value = Math.floor(Math.random()*6)+1;
         state.lastDiceResult = { value, at: Date.now() };

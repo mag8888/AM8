@@ -136,14 +136,16 @@ class RoomApi {
             return cached.data;
         }
         
-        // Проверяем глобальный rate limiter для game-state
-        if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
-            console.log(`📊 RoomApi: Пропускаем запрос к game-state из-за глобального rate limiting для ${roomId}`);
-            // Возвращаем кэшированные данные если они есть
-            if (cached) {
-                return cached.data;
+        // Проверяем глобальный rate limiter для game-state (если метод существует)
+        if (window.CommonUtils && typeof window.CommonUtils.canMakeGameStateRequest === 'function') {
+            if (!window.CommonUtils.canMakeGameStateRequest(roomId)) {
+                console.log(`📊 RoomApi: Пропускаем запрос к game-state из-за глобального rate limiting для ${roomId}`);
+                // Возвращаем кэшированные данные если они есть
+                if (cached) {
+                    return cached.data;
+                }
+                throw new Error('Rate limited');
             }
-            throw new Error('Rate limited');
         }
         
         // Защита от множественных одновременных запросов

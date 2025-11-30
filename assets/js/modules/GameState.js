@@ -169,11 +169,13 @@ class GameState {
             
             console.log('🏠 GameState: Загружаем игроков напрямую из комнаты (fallback):', roomId);
             
-            // Проверяем глобальный rate limiter для game-state
-            if (window.CommonUtils && !window.CommonUtils.canMakeGameStateRequest(roomId)) {
-                console.log('🚫 GameState: Пропускаем запрос из-за глобального rate limiting');
-                this.addTestPlayers();
-                return;
+            // Проверяем глобальный rate limiter для game-state (если метод существует)
+            if (window.CommonUtils && typeof window.CommonUtils.canMakeGameStateRequest === 'function') {
+                if (!window.CommonUtils.canMakeGameStateRequest(roomId)) {
+                    console.log('🚫 GameState: Пропускаем запрос из-за глобального rate limiting');
+                    this.addTestPlayers();
+                    return;
+                }
             }
             
             // Устанавливаем флаг pending в глобальном limiter (если доступен)
