@@ -24,7 +24,7 @@ class GameStateManager {
 
         // УЛУЧШЕННАЯ защита от race conditions и рекурсии
         this._lastFetchTime = 0;
-        this._fetchInterval = 60000; // Увеличено до 60 секунд для снижения нагрузки
+        this._fetchInterval = 90000; // Увеличено до 90 секунд для снижения нагрузки
         this._isUpdating = false;
         this._isNotifying = false;
         this._updateTimer = null;
@@ -291,7 +291,7 @@ class GameStateManager {
      * @param {string} roomId - ID комнаты
      * @param {number} interval - Интервал в миллисекундах
      */
-    startPeriodicUpdates(roomId, interval = 60000) { // Увеличено до 60 секунд
+    startPeriodicUpdates(roomId, interval = 90000) { // Увеличено до 90 секунд для снижения нагрузки
         if (this._updateTimer) {
             clearInterval(this._updateTimer);
         }

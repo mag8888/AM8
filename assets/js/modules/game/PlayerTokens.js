@@ -30,6 +30,7 @@ class PlayerTokens {
         this._initialRenderAttempts = 0;
         this._maxInitialRenderAttempts = config.maxInitialRenderAttempts || 12;
         this._updateTokensTimer = null; // Таймер для debounce updateTokens
+        this._updateTokensDebounceDelay = 500; // Увеличено до 500ms для снижения нагрузки
         this._hasUpdatedTokens = false; // Флаг первого обновления
         this._eventHandlers = new Map(); // Хранение обработчиков событий для отписки
         this._lastPlayersHash = null; // Хеш последних данных игроков для предотвращения дублирования
@@ -1156,7 +1157,7 @@ class PlayerTokens {
             // Последующие обновления - с увеличенным debounce для снижения нагрузки
             this._updateTokensTimer = setTimeout(() => {
                 this._updateTokensInternal(players);
-            }, 300); // Увеличено до 300ms для снижения нагрузки
+            }, this._updateTokensDebounceDelay || 500); // Увеличено до 500ms для снижения нагрузки
         }
     }
     

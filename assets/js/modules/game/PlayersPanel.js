@@ -45,7 +45,7 @@ class PlayersPanel {
         
         // Дебаунсинг для загрузки игроков
         this._loadPlayersTimeout = null;
-        this._loadPlayersDebounceDelay = 500; // Увеличено до 500ms для снижения нагрузки
+        this._loadPlayersDebounceDelay = 1000; // Увеличено до 1000ms для снижения нагрузки
         
         // Защита от повторных вызовов броска кубика
         this._isRolling = false;
@@ -572,7 +572,7 @@ class PlayersPanel {
     startPeriodicUpdatesViaGameStateManager(roomId) {
         if (this.gameStateManager && typeof this.gameStateManager.startPeriodicUpdates === 'function') {
             console.log('🔄 PlayersPanel: Запуск периодических обновлений через GameStateManager');
-            this.gameStateManager.startPeriodicUpdates(roomId, 45000); // 45 секунд интервал
+            this.gameStateManager.startPeriodicUpdates(roomId, 90000); // 90 секунд интервал для снижения нагрузки
         }
     }
 
