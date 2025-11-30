@@ -182,13 +182,14 @@ class App {
                 config: this.config?.getEnvironmentInfo()
             });
             
-            // После регистрации маршрутов пытаемся обработать текущий маршрут
-            setTimeout(() => {
-                const router = this.getRouter();
-                if (router && typeof router.handleCurrentRoute === 'function') {
+            // После регистрации маршрутов обрабатываем текущий маршрут
+            const router = this.getRouter();
+            if (router && typeof router.handleCurrentRoute === 'function') {
+                // Используем requestAnimationFrame для обработки после рендеринга
+                requestAnimationFrame(() => {
                     router.handleCurrentRoute();
-                }
-            }, 100);
+                });
+            }
 
         } catch (error) {
             this._initializationDepth = 0; // НОВОЕ: Сбрасываем глубину при ошибке
