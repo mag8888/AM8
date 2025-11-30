@@ -178,28 +178,27 @@ class GameStateManager {
         if (!force && this._state && this._state.players && this._state.players.length > 0) {
             const timeSinceLastFetch = Date.now() - this._lastFetchTime;
             if (timeSinceLastFetch < 2000) {
-                console.log('🚀 GameStateManager: Возвращаем свежие кэшированные данные');
+                // Убрали лог для производительности - это частый вызов
                 return this._state;
             }
         }
 
         // Предотвращаем множественные одновременные запросы
         if (this._isUpdating && !force) {
-            console.log('🚫 GameStateManager: Запрос уже выполняется');
+            // Убрали лог для производительности - это частый вызов
             return null;
         }
 
         // Проверяем rate limit
         if (!force && this._rateLimitUntil > Date.now()) {
-            const waitMs = this._rateLimitUntil - Date.now();
-            console.log(`⏳ GameStateManager: Rate limit активен (${waitMs}ms осталось)`);
+            // Убрали лог для производительности - это частый вызов
             return null;
         }
 
         // Проверяем глобальный rate limiter
         if (!force && window.CommonUtils && window.CommonUtils.gameStateLimiter && typeof window.CommonUtils.gameStateLimiter.setRequestPending === 'function') {
             if (!window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                console.log('🚫 GameStateManager: Глобальный rate limiting активен');
+                // Убрали лог для производительности - это частый вызов
                 return null;
             }
         }
@@ -228,7 +227,7 @@ class GameStateManager {
                     this._fetchBackoffMs = 0;
                     this._rateLimitUntil = 0;
                     this._resetErrorCount(); // Сбрасываем счетчик ошибок при успехе
-                    console.log('✅ GameStateManager: Успешно обновлено состояние');
+                    // Убрали лог для производительности - это частый вызов
                     return gameStateData.state;
                 }
             } else {

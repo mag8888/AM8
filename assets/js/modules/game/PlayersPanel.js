@@ -36,11 +36,16 @@ class PlayersPanel {
         this._isUpdatingPlayers = false;
         this._isUpdatingButtons = false;
         this._isUpdatingActivePlayer = false;
+        this._isLoadingPlayers = false; // Флаг для предотвращения множественных загрузок
         this._minRequestInterval = 1000; // Минимум 1 секунда между запросами (было 3)
         
         // Дебаунсинг для UI обновлений
         this._uiUpdateTimeout = null;
         this._uiUpdateDelay = 200; // 200ms дебаунсинг для UI обновлений
+        
+        // Дебаунсинг для загрузки игроков
+        this._loadPlayersTimeout = null;
+        this._loadPlayersDebounceDelay = 300; // 300ms дебаунсинг для загрузки игроков
         
         // Защита от повторных вызовов броска кубика
         this._isRolling = false;
@@ -234,22 +239,33 @@ class PlayersPanel {
      * @param {Array} players - Список игроков
      */
     onPlayersUpdated(players) {
-        console.log('👥 PlayersPanel: Игроки обновлены', players);
-        if (this.playerList) {
-            // Проверяем, что players является массивом
-            if (Array.isArray(players)) {
-                this.playerList.updatePlayers(players);
-            } else {
-                console.warn('PlayersPanel: players не является массивом:', typeof players, players);
-                // Fallback: получаем игроков из GameStateManager
-                if (this.gameStateManager) {
-                    const state = this.gameStateManager.getState();
-                    const playersArray = state?.players || [];
-                    if (Array.isArray(playersArray)) {
-                        this.playerList.updatePlayers(playersArray);
+        // Защита от множественных обновлений
+        if (this._isUpdatingPlayers) {
+            return;
+        }
+        
+        this._isUpdatingPlayers = true;
+        
+        try {
+            if (this.playerList) {
+                // Проверяем, что players является массивом
+                if (Array.isArray(players)) {
+                    this.playerList.updatePlayers(players);
+                } else {
+                    // Fallback: получаем игроков из GameStateManager
+                    if (this.gameStateManager) {
+                        const state = this.gameStateManager.getState();
+                        const playersArray = state?.players || [];
+                        if (Array.isArray(playersArray)) {
+                            this.playerList.updatePlayers(playersArray);
+                        }
                     }
                 }
             }
+        } finally {
+            setTimeout(() => {
+                this._isUpdatingPlayers = false;
+            }, 100);
         }
     }
 
@@ -377,7 +393,6 @@ class PlayersPanel {
     updateFromGameState(state) {
         // Защита от race conditions
         if (this._isUpdating || this._isDestroyed) {
-            console.log('⚠️ PlayersPanel: updateFromGameState пропущен - уже обновляется или уничтожен');
             return;
         }
         
@@ -390,10 +405,12 @@ class PlayersPanel {
             activePlayer: state.activePlayer?.id,
             canRoll: state.canRoll,
             canMove: state.canMove,
-            playersCount: state.players?.length || 0
+            playersCount: state.players?.length || 0,
+            playersHash: state.players?.map(p => p.id).join(',') || ''
         });
         
         if (this._lastStateKey === stateKey) {
+            this._isUpdating = false;
             return; // Состояние не изменилось, пропускаем обновление
         }
         this._lastStateKey = stateKey;
@@ -401,40 +418,32 @@ class PlayersPanel {
         // Обновляем информацию об активном игроке
         this.updateActivePlayerInfo(state.activePlayer);
         
-        // Если activePlayer отсутствует, принудительно обновляем состояние (убираем setTimeout для производительности)
+        // Если activePlayer отсутствует, принудительно обновляем состояние
         if (!state.activePlayer) {
-            console.log('⚠️ PlayersPanel: activePlayer отсутствует, запускаем принудительное обновление');
             this.forceUpdateGameState();
         }
         
         // Обновляем кнопки управления
         this.updateControlButtons(state);
 
-        // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI после обновления состояния (короткий setTimeout для правильной инициализации)
-        setTimeout(() => {
+        // Дебаунсинг для UI обновлений
+        if (this._uiUpdateTimeout) {
+            clearTimeout(this._uiUpdateTimeout);
+        }
+        this._uiUpdateTimeout = setTimeout(() => {
             this.forceUpdateAllButtons();
-        }, 50);
+        }, this._uiUpdateDelay);
 
-        // Результат кубика больше не отображается в этом компоненте
-        
         // Обновляем список игроков
-        console.log('🔧 PlayersPanel: updateFromGameState - обработка игроков:', state.players);
-        console.log('🔧 PlayersPanel: updateFromGameState - тип players:', typeof state.players, Array.isArray(state.players));
-        
         if (state.players && Array.isArray(state.players)) {
             if (state.players.length > 0) {
-                console.log('👥 PlayersPanel: Обновляем список из состояния, игроков:', state.players.length);
-                console.log('👥 PlayersPanel: Первый игрок:', state.players[0]);
                 this.updatePlayersList(state.players, state.activePlayer);
             } else {
-                console.log('⚠️ PlayersPanel: Пустой массив игроков в состоянии');
                 this.showLoadingState();
-                // Немедленная загрузка игроков через GameStateManager
+                // Загружаем игроков через GameStateManager с дебаунсингом
                 this.loadPlayersViaGameStateManager();
             }
         } else {
-            console.log('⚠️ PlayersPanel: Нет данных об игроках в состоянии, загружаем через GameStateManager');
-            console.log('⚠️ PlayersPanel: state.players:', state.players);
             // Если игроки не переданы или невалидные, используем GameStateManager
             this.loadPlayersViaGameStateManager();
         }
@@ -442,71 +451,106 @@ class PlayersPanel {
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка в updateFromGameState:', error);
             // В случае ошибки устанавливаем флаг, чтобы предотвратить рекурсию
-            this._isUpdating = true;
             setTimeout(() => {
                 this._isUpdating = false;
             }, 1000);
         } finally {
-            this._isUpdating = false;
+            // Сбрасываем флаг только если не было ошибки
+            if (!this._isUpdating || this._isUpdating === true) {
+                setTimeout(() => {
+                    this._isUpdating = false;
+                }, 100);
+            }
         }
     }
     
     /**
      * Загрузка игроков через GameStateManager (новый рефакторенный метод)
+     * @param {boolean} immediate - Если true, загрузка выполняется немедленно без дебаунсинга
      */
-    async loadPlayersViaGameStateManager() {
-        const roomId = this.getCurrentRoomId();
-        
-        if (!roomId) {
-            console.warn('⚠️ PlayersPanel: roomId не найден, пропускаем загрузку');
-            this.showErrorState('Комната не найдена');
+    async loadPlayersViaGameStateManager(immediate = false) {
+        // Защита от множественных одновременных вызовов
+        if (this._isLoadingPlayers && !immediate) {
             return;
         }
-
-        // Проверяем кэш для ускорения
-        const now = Date.now();
-        const cacheKey = `players_${roomId}`;
-        const cachedData = this._playersCache.get(cacheKey);
         
-        if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
-            console.log('🚀 PlayersPanel: Используем кэшированные данные через GameStateManager');
-            this.updatePlayersList(cachedData, this.gameStateManager?.getState?.()?.activePlayer);
-            
-            // НЕ обновляем GameStateManager с кэшированными данными, чтобы избежать рекурсии
-            // if (this.gameStateManager) {
-            //     this.gameStateManager.updateFromServer({ players: cachedData });
-            // }
-            
-            // Запускаем периодические обновления через GameStateManager
-            this.startPeriodicUpdatesViaGameStateManager(roomId);
-            return;
+        // Дебаунсинг для предотвращения каскадных обновлений
+        if (!immediate && this._loadPlayersTimeout) {
+            clearTimeout(this._loadPlayersTimeout);
         }
-
-        // Используем GameStateManager для безопасного запроса
-        if (this.gameStateManager && typeof this.gameStateManager.fetchGameState === 'function') {
-            console.log('🔄 PlayersPanel: Загружаем данные через GameStateManager');
-            try {
-                const state = await this.gameStateManager.fetchGameState(roomId);
-                const players = state?.players || this.gameStateManager.getState()?.players || [];
-                
-                if (Array.isArray(players) && players.length > 0) {
-                    this._playersCache.set(cacheKey, players);
-                    this._lastFetchTime = Date.now();
-                    this.updatePlayersList(players, this.gameStateManager?.getState?.()?.activePlayer);
-                    this.startPeriodicUpdatesViaGameStateManager(roomId);
-                } else {
-                    console.warn('⚠️ PlayersPanel: GameStateManager вернул пустой список игроков');
-                    this.showEmptyState();
-                }
-            } catch (error) {
-                console.error('❌ PlayersPanel: Ошибка загрузки через GameStateManager:', error);
-                this.showErrorState(`Ошибка загрузки: ${error.message}`);
+        
+        const loadPlayers = async () => {
+            if (this._isLoadingPlayers) {
+                return;
             }
-            return;
-        }
+            
+            this._isLoadingPlayers = true;
+            
+            try {
+                const roomId = this.getCurrentRoomId();
+                
+                if (!roomId) {
+                    console.warn('⚠️ PlayersPanel: roomId не найден, пропускаем загрузку');
+                    this.showErrorState('Комната не найдена');
+                    return;
+                }
 
-        console.warn('⚠️ PlayersPanel: GameStateManager недоступен, показываем fallback');
-        this.showErrorState('Состояние игры недоступно');
+                // Проверяем кэш для ускорения
+                const now = Date.now();
+                const cacheKey = `players_${roomId}`;
+                const cachedData = this._playersCache.get(cacheKey);
+                
+                if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
+                    // Используем кэш без логирования для производительности
+                    this.updatePlayersList(cachedData, this.gameStateManager?.getState?.()?.activePlayer);
+                    this.startPeriodicUpdatesViaGameStateManager(roomId);
+                    return;
+                }
+
+                // Проверяем rate limiting
+                const timeSinceLastRequest = now - this._lastApiRequestTime;
+                if (timeSinceLastRequest < this._minRequestInterval) {
+                    // Слишком рано после последнего запроса, используем кэш если есть
+                    if (cachedData) {
+                        this.updatePlayersList(cachedData, this.gameStateManager?.getState?.()?.activePlayer);
+                    }
+                    return;
+                }
+
+                // Используем GameStateManager для безопасного запроса
+                if (this.gameStateManager && typeof this.gameStateManager.fetchGameState === 'function') {
+                    this._lastApiRequestTime = Date.now();
+                    
+                    try {
+                        const state = await this.gameStateManager.fetchGameState(roomId);
+                        const players = state?.players || this.gameStateManager.getState()?.players || [];
+                        
+                        if (Array.isArray(players) && players.length > 0) {
+                            this._playersCache.set(cacheKey, players);
+                            this._lastFetchTime = Date.now();
+                            this.updatePlayersList(players, this.gameStateManager?.getState?.()?.activePlayer);
+                            this.startPeriodicUpdatesViaGameStateManager(roomId);
+                        } else {
+                            this.showEmptyState();
+                        }
+                    } catch (error) {
+                        console.error('❌ PlayersPanel: Ошибка загрузки через GameStateManager:', error);
+                        this.showErrorState(`Ошибка загрузки: ${error.message}`);
+                    }
+                    return;
+                }
+
+                this.showErrorState('Состояние игры недоступно');
+            } finally {
+                this._isLoadingPlayers = false;
+            }
+        };
+        
+        if (immediate) {
+            await loadPlayers();
+        } else {
+            this._loadPlayersTimeout = setTimeout(loadPlayers, this._loadPlayersDebounceDelay);
+        }
     }
 
     /**
@@ -597,16 +641,13 @@ class PlayersPanel {
      * Принудительное обновление состояния игры для синхронизации данных
      */
     forceUpdateGameState() {
-        console.log('🔄 PlayersPanel: Принудительное обновление состояния игры');
-        
         // Принудительно загружаем данные через GameStateManager
         if (this.gameStateManager && typeof this.gameStateManager.forceUpdate === 'function') {
-            console.log('🔄 PlayersPanel: Запускаем forceUpdate GameStateManager для синхронизации');
             this.gameStateManager.forceUpdate();
         }
 
-        // Загружаем игроков через GameStateManager
-        this.loadPlayersViaGameStateManager();
+        // Загружаем игроков через GameStateManager немедленно (без дебаунсинга)
+        this.loadPlayersViaGameStateManager(true);
 
         // Принудительно запускаем первый ход если нет активного игрока
         setTimeout(() => {
