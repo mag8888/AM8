@@ -118,12 +118,18 @@ class App {
 
         // Обработка необработанных промисов
         window.addEventListener('unhandledrejection', (event) => {
+            // Предотвращаем перезагрузку страницы
+            event.preventDefault();
+            
             this.errorHandler?.handleError({
                 type: 'PROMISE_ERROR',
                 message: 'Unhandled promise rejection',
                 error: event.reason,
                 context: 'App'
             });
+            
+            // Логируем ошибку, но не перезагружаем страницу
+            console.error('❌ Unhandled Promise Rejection:', event.reason);
         });
     }
 

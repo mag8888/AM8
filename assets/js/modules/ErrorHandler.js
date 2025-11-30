@@ -48,6 +48,9 @@ class ErrorHandler {
 
         // Обработка необработанных промисов
         window.addEventListener('unhandledrejection', (event) => {
+            // Предотвращаем перезагрузку страницы
+            event.preventDefault();
+            
             this.handleError({
                 type: this.errorTypes.UNKNOWN,
                 message: event.reason?.message || 'Unhandled Promise Rejection',
@@ -55,8 +58,8 @@ class ErrorHandler {
                 stack: event.reason?.stack
             });
             
-            // Предотвращаем вывод в консоль браузера
-            event.preventDefault();
+            // Логируем ошибку, но не перезагружаем страницу
+            console.error('❌ Unhandled Promise Rejection:', event.reason);
         });
 
         // Обработка ошибок загрузки ресурсов

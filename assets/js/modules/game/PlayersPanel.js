@@ -1291,53 +1291,53 @@ class PlayersPanel {
     /**
      * Открытие банк модуля
      */
-    openBankModule() {
+    async openBankModule() {
         console.log('🏦 PlayersPanel: Попытка открыть банк...');
         
-        // Используем requestAnimationFrame для неблокирующего выполнения
-        requestAnimationFrame(async () => {
-            try {
-                // Используем уже созданный BankModule или создаем новый
-                if (!this.bankModule) {
-                    console.log('🏦 PlayersPanel: BankModule не создан, создаем...');
-                    this.createBankModule();
-                    
-                    // Используем более эффективное ожидание
-                    await new Promise(resolve => {
-                        const checkModule = () => {
-                if (this.bankModule) {
-                                resolve();
-                            } else {
-                                requestAnimationFrame(checkModule);
-                            }
-                        };
-                        requestAnimationFrame(checkModule);
-                    });
-                }
+        try {
+            // Используем уже созданный BankModule или создаем новый
+            if (!this.bankModule) {
+                console.log('🏦 PlayersPanel: BankModule не создан, создаем...');
+                this.createBankModule();
                 
-                if (this.bankModule) {
-                    console.log('🏦 PlayersPanel: Открываем BankModule...');
+                // Ждем создания модуля с таймаутом
+                let attempts = 0;
+                while (!this.bankModule && attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+            }
+            
+            if (this.bankModule && typeof this.bankModule.open === 'function') {
+                console.log('🏦 PlayersPanel: Открываем BankModule...');
+                await this.bankModule.open();
+                console.log('✅ PlayersPanel: Банк модуль успешно открыт');
+            } else {
+                console.error('❌ PlayersPanel: BankModule не найден или не имеет метода open');
+                
+                // Попытка создать заново
+                this.bankModule = null;
+                this.createBankModule();
+                
+                if (this.bankModule && typeof this.bankModule.open === 'function') {
                     await this.bankModule.open();
-                    console.log('✅ PlayersPanel: Банк модуль успешно открыт');
+                    console.log('✅ PlayersPanel: Банк модуль открыт после повторной попытки');
                 } else {
-                    console.error('❌ PlayersPanel: Не удалось создать BankModule');
-                    
-                    // Быстрая попытка создания
-                    this.bankModule = null;
-                        this.createBankModule();
-                    
-                    if (this.bankModule) {
-                        await this.bankModule.open();
-                        console.log('✅ PlayersPanel: Банк модуль открыт после повторной попытки');
-                    } else {
-                        console.error('❌ PlayersPanel: Критическая ошибка - BankModule не может быть создан');
+                    console.error('❌ PlayersPanel: Критическая ошибка - BankModule не может быть создан');
+                    if (window.showNotification) {
+                        window.showNotification('Не удалось открыть банк. Попробуйте обновить страницу.', 'error');
                     }
                 }
-            } catch (error) {
-                console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
-                console.error('❌ PlayersPanel: Детали ошибки:', error.stack);
             }
-        });
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
+            console.error('❌ PlayersPanel: Детали ошибки:', error.stack);
+            
+            // Предотвращаем перезагрузку страницы
+            if (window.showNotification) {
+                window.showNotification('Ошибка открытия банка. Попробуйте позже.', 'error');
+            }
+        }
     }
     
     /**
@@ -3308,25 +3308,42 @@ class PlayersPanel {
         // УДАЛЯЕМ СТАРЫЕ ОБРАБОТЧИКИ перед добавлением новых
         this.removeEventListeners();
         
-        // Обработчик кнопки банка
+        // Обработчик кнопки банка - удаляем старые обработчики перед добавлением нового
         const openBankBtn = this.container.querySelector('#open-bank');
         if (openBankBtn) {
-            openBankBtn.addEventListener('click', () => {
+            // Удаляем все старые обработчики
+            const newBankBtn = openBankBtn.cloneNode(true);
+            openBankBtn.parentNode.replaceChild(newBankBtn, openBankBtn);
+            
+            // Добавляем новый обработчик
+            newBankBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 console.log('🏦 PlayersPanel: Клик по кнопке банка (из setupControls)');
-                this.openBankModule();
+                try {
+                    this.openBankModule();
+                } catch (error) {
+                    console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
+                }
             });
+            
+            // Убеждаемся, что кнопка кликабельна
+            newBankBtn.style.pointerEvents = 'auto';
+            newBankBtn.style.cursor = 'pointer';
+            newBankBtn.removeAttribute('disabled');
+            
             console.log('✅ PlayersPanel: Обработчик кнопки банка привязан в setupControls');
         } else {
             console.warn('⚠️ PlayersPanel: Кнопка банка не найдена в setupControls');
         }
         
-        // Обработчик кнопки "Бросить"
-        const rollDiceBtn = this.container.querySelector('#roll-dice-btn');
-        if (rollDiceBtn) {
-            rollDiceBtn.addEventListener('click', () => {
-                this.handleRollDice();
-            });
-        }
+        // Обработчик кнопки "Бросить" - НЕ добавляем, используется TurnController
+        // const rollDiceBtn = this.container.querySelector('#roll-dice-btn');
+        // if (rollDiceBtn) {
+        //     rollDiceBtn.addEventListener('click', () => {
+        //         this.handleRollDice();
+        //     });
+        // }
         
         // Обработчик кнопки "Передать ход"
         const passTurnBtn = this.container.querySelector('#pass-turn');
