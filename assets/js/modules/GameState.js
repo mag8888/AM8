@@ -179,9 +179,9 @@ class GameState {
             // Устанавливаем флаг pending в глобальном limiter (если доступен)
             if (window.CommonUtils && window.CommonUtils.gameStateLimiter && typeof window.CommonUtils.gameStateLimiter.setRequestPending === 'function') {
                 if (!window.CommonUtils.gameStateLimiter.setRequestPending(roomId)) {
-                    console.log('🚫 GameState: Не удалось установить pending (race condition)');
-                    this.addTestPlayers();
-                    return;
+                console.log('🚫 GameState: Не удалось установить pending (race condition)');
+                this.addTestPlayers();
+                return;
                 }
             }
             

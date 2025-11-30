@@ -90,12 +90,12 @@ class PlayerList {
             
             // Убираем избыточное логирование - только при изменении
             if (this._lastCurrentUserId !== currentUserId) {
-                console.log('🔍 PlayerList: Проверка текущего пользователя:', {
-                    playerId: player.id,
-                    playerUsername: player.username,
-                    currentUserId,
-                    isCurrentUser
-                });
+            console.log('🔍 PlayerList: Проверка текущего пользователя:', {
+                playerId: player.id,
+                playerUsername: player.username,
+                currentUserId,
+                isCurrentUser
+            });
                 this._lastCurrentUserId = currentUserId;
             }
             

@@ -333,9 +333,9 @@ class App {
                 
                 // Логируем только если пользователь изменился
                 if (!this._lastAuthUsername || this._lastAuthUsername !== userData.username) {
-                    this.logger?.info('Пользователь авторизован', {
-                        username: userData.username
-                    }, 'App');
+                this.logger?.info('Пользователь авторизован', {
+                    username: userData.username
+                }, 'App');
                     this._lastAuthUsername = userData.username;
                 }
                 
@@ -1275,8 +1275,8 @@ class App {
                     console.log('🏦 App: BankPreview данные обновлены из GameStateManager');
                 }
             } else if (typeof bankPreview.updatePreviewData === 'function') {
-                bankPreview.updatePreviewData();
-                console.log('🏦 App: BankPreview данные обновлены');
+            bankPreview.updatePreviewData();
+            console.log('🏦 App: BankPreview данные обновлены');
             }
         }
         

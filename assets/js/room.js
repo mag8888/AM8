@@ -1408,19 +1408,14 @@ function updateStartGameButton() {
         currentRoomStarted: currentRoom.isStarted
     });
     
-    // СЕКЦИЯ: Скрытие кнопки для не-хостов (тестовый режим: разрешаем всем)
-    const isTestMode = true; // В тестовом режиме разрешаем всем игрокам запускать игру
-    if (!isHost && !isTestMode) {
+    // СЕКЦИЯ: Скрытие кнопки для не-хостов (только хост может начать игру)
+    if (!isHost) {
         console.log('🚫 Room: Пользователь НЕ является хостом - скрываем кнопку "Начать игру"');
         startGameButton.style.display = 'none';
         startGameButton.style.visibility = 'hidden';
         // Дополнительная проверка через CSS класс
         startGameButton.classList.add('hidden');
         return;
-    }
-    
-    if (!isHost && isTestMode) {
-        console.log('🧪 Room: Тестовый режим - разрешаем запуск игры любому игроку');
     }
     
     console.log('✅ Room: Пользователь является хостом - показываем кнопку "Начать игру"');
@@ -2517,12 +2512,22 @@ async function confirmStartGame() {
     try {
         if (!currentRoom || !currentUser) return;
         
+        // Проверка, что пользователь является хостом
+        const isHost = isCurrentUserHost();
+        if (!isHost) {
+            console.error('❌ Room: Только хост может начать игру');
+            showNotification('Только создатель комнаты может начать игру', 'error');
+            hideStartGameModal();
+            return;
+        }
+        
         console.log('🏠 Room: Начало игры');
         console.log('🔍 Room: Отладка данных для запуска игры:', {
             currentUser: currentUser,
             currentRoom: currentRoom,
             userId: currentUser.id,
-            creatorId: currentRoom.creatorId
+            creatorId: currentRoom.creatorId,
+            isHost: isHost
         });
         
         // Принудительно обновляем данные комнаты перед запуском игры

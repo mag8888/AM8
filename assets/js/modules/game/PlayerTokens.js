@@ -473,7 +473,7 @@ class PlayerTokens {
                 // Проверяем, что координаты в пределах разумных значений
                 if (center.x >= 0 && center.y >= 0) {
                     this._info('✅ Координаты получены из boardLayout', center);
-                    return center;
+                return center;
                 } else {
                     this._warn('⚠️ Координаты из boardLayout отрицательные, вычисляем из DOM', { center, position, isInner });
                 }
@@ -1262,9 +1262,9 @@ class PlayerTokens {
                             tokensSkipped++;
                         }
                     } else {
-                        const offset = this.calculateOffset(index, playersAtPosition.length);
-                        this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
-                        processed.add(player.id);
+                const offset = this.calculateOffset(index, playersAtPosition.length);
+                this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
+                processed.add(player.id);
                         tokensCreated++;
                         this._info(`Фишка создана для игрока ${player.username}`, { 
                             position, 
@@ -1646,13 +1646,13 @@ class PlayerTokens {
                 }
                 
                 // Запускаем анимацию только после того, как размер установлен
-                this.animateTokenAppearance(token);
+            this.animateTokenAppearance(token);
             });
         } else {
             // Фишка уже существует и в DOM, обновляем её данные
             token.dataset.position = player.position;
             token.dataset.playerName = player.username;
-            token.dataset.isInner = String(Boolean(player.isInner));
+             token.dataset.isInner = String(Boolean(player.isInner));
             token.classList.toggle('inner', !!player.isInner);
             token.classList.toggle('outer', !player.isInner);
             token.classList.toggle('inner-track', !!player.isInner);

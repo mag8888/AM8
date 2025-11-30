@@ -19,7 +19,10 @@ class MongoAuthService {
         this.jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
         this.bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
         this.isInitialized = false;
-        
+
+        // Инициализируем модель пользователя
+        this.userModel = new MongooseUserModel();
+
         this.init();
     }
 
@@ -29,13 +32,16 @@ class MongoAuthService {
     async init() {
         try {
             console.log('🔐 MongoAuthService: Инициализация...');
-            
+
             // Проверяем подключение к MongoDB
             if (!databaseConfig.isConnected) {
                 console.log('💾 MongoAuthService: Подключение к MongoDB...');
                 await databaseConfig.connectMongoDB();
             }
-            
+
+            // Инициализируем модель
+            await this.userModel.init();
+
             // Проверяем наличие JWT секрета
             if (this.jwtSecret === 'default-secret-key') {
                 console.warn('⚠️ MongoAuthService: Используется дефолтный JWT секрет!');
@@ -86,9 +92,9 @@ class MongoAuthService {
     async register(userData) {
         try {
             console.log('🔐 MongoAuthService: Регистрация пользователя:', userData.email);
-            
+
             // Проверяем, существует ли пользователь
-            const existingUser = await MongooseUserModel.findByEmail(userData.email);
+            const existingUser = await this.userModel.findByEmail(userData.email);
             if (existingUser) {
                 throw new Error('Пользователь с таким email уже существует');
             }
@@ -97,16 +103,14 @@ class MongoAuthService {
             const passwordHash = await this.hashPassword(userData.password);
 
             // Создаем нового пользователя
-            const newUser = new MongooseUserModel({
+            const newUser = await this.userModel.createUser({
                 email: userData.email.toLowerCase(),
                 username: userData.username,
                 passwordHash: passwordHash
             });
 
-            await newUser.save();
-
             console.log('✅ MongoAuthService: Пользователь зарегистрирован:', userData.email);
-            
+
             // Возвращаем данные без пароля
             const userResponse = newUser.toJSON();
             return {
@@ -129,27 +133,31 @@ class MongoAuthService {
     async login(credentials) {
         try {
             console.log('🔐 MongoAuthService: Авторизация пользователя:', credentials.email);
-            
+
             // Ищем пользователя по email
-            const user = await MongooseUserModel.findByEmail(credentials.email);
+            const user = await this.userModel.findByEmail(credentials.email);
             if (!user) {
                 throw new Error('Неверный email или пароль');
             }
 
             // Проверяем пароль
-            const isPasswordValid = await user.checkPassword(credentials.password);
+            // В MongooseUserModel нет метода checkPassword на документе, так как мы получаем документ Mongoose
+            // Но мы можем использовать bcrypt напрямую или добавить метод в схему
+            // В MongooseUserModel.js схема не экспортируется, поэтому используем bcrypt здесь
+            const isPasswordValid = await this.verifyPassword(credentials.password, user.passwordHash);
+
             if (!isPasswordValid) {
                 throw new Error('Неверный email или пароль');
             }
 
             // Обновляем время последнего входа
-            await user.updateLastLogin();
+            await this.userModel.updateLastLogin(user.id);
 
             // Генерируем JWT токен
             const token = this.generateToken(user);
 
             console.log('✅ MongoAuthService: Пользователь авторизован:', credentials.email);
-            
+
             // Возвращаем данные без пароля
             const userResponse = user.toJSON();
             return {
@@ -178,8 +186,8 @@ class MongoAuthService {
                 username: user.username
             };
 
-            return jwt.sign(payload, this.jwtSecret, { 
-                expiresIn: this.jwtExpiresIn 
+            return jwt.sign(payload, this.jwtSecret, {
+                expiresIn: this.jwtExpiresIn
             });
         } catch (error) {
             console.error('❌ MongoAuthService: Ошибка генерации токена:', error);
@@ -195,9 +203,9 @@ class MongoAuthService {
     async verifyToken(token) {
         try {
             const decoded = jwt.verify(token, this.jwtSecret);
-            
+
             // Проверяем, существует ли пользователь
-            const user = await MongooseUserModel.findById(decoded.id);
+            const user = await this.userModel.findById(decoded.id);
             if (!user || !user.isActive) {
                 throw new Error('Пользователь не найден или неактивен');
             }
@@ -222,8 +230,8 @@ class MongoAuthService {
     async getUserByToken(token) {
         try {
             const decoded = await this.verifyToken(token);
-            const user = await MongooseUserModel.findById(decoded.id);
-            
+            const user = await this.userModel.findById(decoded.id);
+
             if (!user) {
                 throw new Error('Пользователь не найден');
             }
@@ -271,8 +279,8 @@ class MongoAuthService {
     async forgotPassword(email) {
         try {
             console.log('🔐 MongoAuthService: Восстановление пароля для:', email);
-            
-            const user = await MongooseUserModel.findByEmail(email);
+
+            const user = await this.userModel.findByEmail(email);
             if (!user) {
                 // Не раскрываем информацию о существовании пользователя
                 return {
@@ -283,12 +291,12 @@ class MongoAuthService {
 
             // Генерируем токен для восстановления
             const resetToken = this.generateResetToken(user.id);
-            
+
             // TODO: Отправить email с токеном восстановления
             // В реальном приложении здесь должна быть отправка email
-            
+
             console.log('✅ MongoAuthService: Токен восстановления сгенерирован для:', email);
-            
+
             return {
                 success: true,
                 message: 'Ссылка для восстановления отправлена на ваш email'

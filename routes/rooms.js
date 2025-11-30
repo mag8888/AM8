@@ -1349,6 +1349,32 @@ router.post('/:id/start', async (req, res, next) => {
 
                 console.log('✅ Mongo start: Комната найдена:', { id: room.id, name: room.name, players: room.players?.length || 0 });
 
+                // Проверка, что пользователь является создателем комнаты (хостом)
+                if (!userId) {
+                    return res.status(400).json({ success: false, message: 'Не указан ID пользователя' });
+                }
+
+                // Проверяем, что userId является создателем комнаты
+                const isCreator = room.creatorId === userId || room.creator_id === userId;
+                if (!isCreator) {
+                    // Дополнительная проверка: может быть userId в players с isHost
+                    const hostPlayer = room.players?.find(p => 
+                        (p.userId === userId || p.id === userId) && 
+                        (p.isHost === true || p.isCreator === true)
+                    );
+                    if (!hostPlayer) {
+                        console.log('❌ Mongo start: Пользователь не является хостом:', {
+                            userId,
+                            creatorId: room.creatorId || room.creator_id,
+                            players: room.players?.map(p => ({ id: p.id, userId: p.userId, isHost: p.isHost }))
+                        });
+                        return res.status(403).json({
+                            success: false,
+                            message: 'Только создатель комнаты может начать игру'
+                        });
+                    }
+                }
+
                 const updateResult = await repo.updateStatus(id, { isStarted: true, status: 'playing' });
                 if (!updateResult) {
                     console.error('❌ Mongo start: Не удалось обновить статус комнаты');
@@ -1416,8 +1442,15 @@ router.post('/:id/start', async (req, res, next) => {
                 });
             }
 
-            // В тестовом режиме: разрешаем старт не только создателю,
-            // но любому игроку, который находится в комнате
+            // Проверка, что пользователь является создателем комнаты (хостом)
+            if (!userId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Не указан ID пользователя'
+                });
+            }
+
+            // Функция для запуска игры после проверки хоста
             const ensureMemberThenStart = () => {
             // Проверяем количество готовых игроков
             const playersQuery = `
@@ -1463,6 +1496,37 @@ router.post('/:id/start', async (req, res, next) => {
                     }
 
                     console.log('🎮 Игра запущена в комнате:', id);
+            };
+
+            // Проверяем, что userId является создателем комнаты
+            if (room.creator_id !== userId) {
+                // Дополнительная проверка: может быть userId в players с isHost
+                const playerCheckQuery = `
+                    SELECT is_host, user_id 
+                    FROM room_players 
+                    WHERE room_id = ? AND user_id = ?
+                `;
+                
+                db.get(playerCheckQuery, [id, userId], (err, player) => {
+                    if (err || !player || !player.is_host) {
+                        console.log('❌ POST /:id/start - Пользователь не является хостом:', {
+                            userId,
+                            creatorId: room.creator_id,
+                            player: player
+                        });
+                        return res.status(403).json({
+                            success: false,
+                            message: 'Только создатель комнаты может начать игру'
+                        });
+                    }
+                    // Если игрок является хостом, продолжаем
+                    ensureMemberThenStart();
+                });
+                return;
+            }
+
+            // Пользователь является создателем - продолжаем запуск
+            ensureMemberThenStart();
 
                         // Формируем игроков из текущего server-state (если есть)
                         let startPlayers = [];

@@ -381,7 +381,7 @@ class BoardLayout {
                 const safeInnerRadius = this._lastOuterRadius
                     ? Math.max(this._lastOuterRadius - cellSize - 20, 0) // Отступ от внешних клеток
                     : Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 20;
-                
+
                 const fallbackInnerRadius = Math.max(
                     safeInnerRadius,
                     Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 20,
@@ -804,7 +804,7 @@ class BoardLayout {
             let cellHeight = 0;
             
             if (typeof cell.getBoundingClientRect === 'function') {
-                const rect = cell.getBoundingClientRect();
+            const rect = cell.getBoundingClientRect();
                 cellWidth = rect.width || 0;
                 cellHeight = rect.height || 0;
             } else {

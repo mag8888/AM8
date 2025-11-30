@@ -247,20 +247,20 @@ class PlayersPanel {
         this._isUpdatingPlayers = true;
         
         try {
-            if (this.playerList) {
-                // Проверяем, что players является массивом
-                if (Array.isArray(players)) {
-                    this.playerList.updatePlayers(players);
-                } else {
-                    // Fallback: получаем игроков из GameStateManager
-                    if (this.gameStateManager) {
-                        const state = this.gameStateManager.getState();
-                        const playersArray = state?.players || [];
-                        if (Array.isArray(playersArray)) {
-                            this.playerList.updatePlayers(playersArray);
-                        }
+        if (this.playerList) {
+            // Проверяем, что players является массивом
+            if (Array.isArray(players)) {
+                this.playerList.updatePlayers(players);
+            } else {
+                // Fallback: получаем игроков из GameStateManager
+                if (this.gameStateManager) {
+                    const state = this.gameStateManager.getState();
+                    const playersArray = state?.players || [];
+                    if (Array.isArray(playersArray)) {
+                        this.playerList.updatePlayers(playersArray);
                     }
                 }
+            }
             }
         } finally {
             setTimeout(() => {
@@ -433,7 +433,7 @@ class PlayersPanel {
         this._uiUpdateTimeout = setTimeout(() => {
             this.forceUpdateAllButtons();
         }, this._uiUpdateDelay);
-
+        
         // Обновляем список игроков
         if (state.players && Array.isArray(state.players)) {
             if (state.players.length > 0) {
@@ -458,7 +458,7 @@ class PlayersPanel {
             // Сбрасываем флаг только если не было ошибки
             if (!this._isUpdating || this._isUpdating === true) {
                 setTimeout(() => {
-                    this._isUpdating = false;
+            this._isUpdating = false;
                 }, 100);
             }
         }
@@ -487,25 +487,25 @@ class PlayersPanel {
             this._isLoadingPlayers = true;
             
             try {
-                const roomId = this.getCurrentRoomId();
-                
-                if (!roomId) {
-                    console.warn('⚠️ PlayersPanel: roomId не найден, пропускаем загрузку');
-                    this.showErrorState('Комната не найдена');
-                    return;
-                }
+        const roomId = this.getCurrentRoomId();
+        
+        if (!roomId) {
+            console.warn('⚠️ PlayersPanel: roomId не найден, пропускаем загрузку');
+            this.showErrorState('Комната не найдена');
+            return;
+        }
 
-                // Проверяем кэш для ускорения
-                const now = Date.now();
-                const cacheKey = `players_${roomId}`;
-                const cachedData = this._playersCache.get(cacheKey);
-                
-                if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
+        // Проверяем кэш для ускорения
+        const now = Date.now();
+        const cacheKey = `players_${roomId}`;
+        const cachedData = this._playersCache.get(cacheKey);
+        
+        if (cachedData && (now - this._lastFetchTime) < this._cacheTimeout) {
                     // Используем кэш без логирования для производительности
-                    this.updatePlayersList(cachedData, this.gameStateManager?.getState?.()?.activePlayer);
-                    this.startPeriodicUpdatesViaGameStateManager(roomId);
-                    return;
-                }
+            this.updatePlayersList(cachedData, this.gameStateManager?.getState?.()?.activePlayer);
+            this.startPeriodicUpdatesViaGameStateManager(roomId);
+            return;
+        }
 
                 // Проверяем rate limiting
                 const timeSinceLastRequest = now - this._lastApiRequestTime;
@@ -517,30 +517,30 @@ class PlayersPanel {
                     return;
                 }
 
-                // Используем GameStateManager для безопасного запроса
-                if (this.gameStateManager && typeof this.gameStateManager.fetchGameState === 'function') {
+        // Используем GameStateManager для безопасного запроса
+        if (this.gameStateManager && typeof this.gameStateManager.fetchGameState === 'function') {
                     this._lastApiRequestTime = Date.now();
                     
-                    try {
-                        const state = await this.gameStateManager.fetchGameState(roomId);
-                        const players = state?.players || this.gameStateManager.getState()?.players || [];
-                        
-                        if (Array.isArray(players) && players.length > 0) {
-                            this._playersCache.set(cacheKey, players);
-                            this._lastFetchTime = Date.now();
-                            this.updatePlayersList(players, this.gameStateManager?.getState?.()?.activePlayer);
-                            this.startPeriodicUpdatesViaGameStateManager(roomId);
-                        } else {
-                            this.showEmptyState();
-                        }
-                    } catch (error) {
-                        console.error('❌ PlayersPanel: Ошибка загрузки через GameStateManager:', error);
-                        this.showErrorState(`Ошибка загрузки: ${error.message}`);
-                    }
-                    return;
+            try {
+                const state = await this.gameStateManager.fetchGameState(roomId);
+                const players = state?.players || this.gameStateManager.getState()?.players || [];
+                
+                if (Array.isArray(players) && players.length > 0) {
+                    this._playersCache.set(cacheKey, players);
+                    this._lastFetchTime = Date.now();
+                    this.updatePlayersList(players, this.gameStateManager?.getState?.()?.activePlayer);
+                    this.startPeriodicUpdatesViaGameStateManager(roomId);
+                } else {
+                    this.showEmptyState();
                 }
+            } catch (error) {
+                console.error('❌ PlayersPanel: Ошибка загрузки через GameStateManager:', error);
+                this.showErrorState(`Ошибка загрузки: ${error.message}`);
+            }
+            return;
+        }
 
-                this.showErrorState('Состояние игры недоступно');
+        this.showErrorState('Состояние игры недоступно');
             } finally {
                 this._isLoadingPlayers = false;
             }
@@ -1822,9 +1822,9 @@ class PlayersPanel {
             
             // Показываем уведомление пользователю только если это не "уже выполняется"
             if (error.message && !error.message.includes('already in progress')) {
-                if (window.NotificationService) {
-                    window.NotificationService.show('Ошибка броска кубика: ' + error.message, 'error');
-                }
+            if (window.NotificationService) {
+                window.NotificationService.show('Ошибка броска кубика: ' + error.message, 'error');
+            }
             }
         } finally {
             // Сбрасываем флаг через небольшую задержку для предотвращения повторных вызовов
