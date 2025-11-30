@@ -53,10 +53,7 @@ class Router {
         const currentPath = this.getCurrentPath();
         if (currentPath === path) {
             console.log(`🗺️ Router: Автоматическая обработка зарегистрированного маршрута ${path}`);
-            // Используем requestAnimationFrame для обработки после рендеринга
-            requestAnimationFrame(() => {
-                this.executeRoute(path);
-            });
+            this.executeRoute(path);
         }
     }
 
