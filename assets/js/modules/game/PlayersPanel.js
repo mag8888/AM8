@@ -1505,6 +1505,7 @@ class PlayersPanel {
             // АГРЕССИВНАЯ АКТИВАЦИЯ: если это мой ход, кнопка всегда активна
             if (isMyTurn) {
                 rollBtn.disabled = false;
+                rollBtn.removeAttribute('disabled'); // Принудительно убираем атрибут disabled
                 rollBtn.classList.add('active');
                 
                 // Принудительно обновляем стили
@@ -1515,7 +1516,14 @@ class PlayersPanel {
                 rollBtn.style.color = 'white';
                 rollBtn.style.transform = 'scale(1.05)';
                 
-                console.log('✅ PlayersPanel: Кнопка "Бросок" АКТИВИРОВАНА для хода игрока');
+                // Убеждаемся, что кнопка кликабельна
+                rollBtn.setAttribute('tabindex', '0');
+                
+                console.log('✅ PlayersPanel: Кнопка "Бросок" АКТИВИРОВАНА для хода игрока', {
+                    disabled: rollBtn.disabled,
+                    hasDisabledAttr: rollBtn.hasAttribute('disabled'),
+                    pointerEvents: rollBtn.style.pointerEvents
+                });
             } else {
                 rollBtn.disabled = true;
                 rollBtn.classList.remove('active');
@@ -1925,7 +1933,12 @@ class PlayersPanel {
             });
             
             // Принудительно обновляем атрибуты
-            button.setAttribute('disabled', button.disabled ? 'true' : 'false');
+            // Правильно управляем атрибутом disabled
+            if (button.disabled) {
+                button.setAttribute('disabled', 'true');
+            } else {
+                button.removeAttribute('disabled');
+            }
             
             // Принудительно обновляем стили
             if (button.disabled) {
