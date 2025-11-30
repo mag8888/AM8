@@ -1496,7 +1496,49 @@ router.post('/:id/start', async (req, res, next) => {
                     }
 
                     console.log('🎮 Игра запущена в комнате:', id);
-            };
+
+                    // Формируем игроков из текущего server-state (если есть)
+                    let startPlayers = [];
+                    const state = gameStateByRoomId.get(id);
+                    if (state && Array.isArray(state.players) && state.players.length) {
+                        startPlayers = state.players;
+                    } else {
+                        startPlayers = [{ id: userId, username: room.creator_name || 'player1' }];
+                    }
+
+                    // Отправляем push-уведомление о начале игры
+                    pushService.broadcastPush('game_started', { 
+                        roomId: id, 
+                        players: startPlayers,
+                        activePlayer: startPlayers[0] // Первый игрок начинает
+                    }).catch(err => console.error('❌ Ошибка отправки push о начале игры:', err));
+                    
+                    // Отправляем реальное push-уведомление
+                    pushService.sendRealPushNotification(
+                        '🎮 Игра началась!',
+                        `Игра в комнате "${room.name}" началась. Ваш ход!`,
+                        {
+                            data: { roomId: id, action: 'game_started' },
+                            actions: [
+                                { action: 'open_game', title: 'Открыть игру' }
+                            ],
+                            tag: 'game_started',
+                            requireInteraction: true
+                        }
+                    ).catch(err => console.error('❌ Ошибка отправки реального push о начале игры:', err));
+
+                    res.json({
+                        success: true,
+                        message: 'Игра успешно запущена',
+                        data: {
+                            roomId: id,
+                            isStarted: true,
+                            status: 'playing'
+                        }
+                    });
+                }); // Закрываем db.run
+            }); // Закрываем db.get
+            }; // Закрываем ensureMemberThenStart
 
             // Проверяем, что userId является создателем комнаты
             if (room.creator_id !== userId) {
@@ -1526,59 +1568,6 @@ router.post('/:id/start', async (req, res, next) => {
             }
 
             // Пользователь является создателем - продолжаем запуск
-            ensureMemberThenStart();
-
-                        // Формируем игроков из текущего server-state (если есть)
-                        let startPlayers = [];
-                        const state = gameStateByRoomId.get(id);
-                        if (state && Array.isArray(state.players) && state.players.length) {
-                            startPlayers = state.players;
-                        } else {
-                            startPlayers = [{ id: userId, username: room.creator_name || 'player1' }];
-                        }
-
-                        // Отправляем push-уведомление о начале игры
-                        pushService.broadcastPush('game_started', { 
-                            roomId: id, 
-                            players: startPlayers,
-                            activePlayer: startPlayers[0] // Первый игрок начинает
-                        }).catch(err => console.error('❌ Ошибка отправки push о начале игры:', err));
-                        
-                        // Отправляем реальное push-уведомление
-                        pushService.sendRealPushNotification(
-                            '🎮 Игра началась!',
-                            `Игра в комнате "${room.name}" началась. Ваш ход!`,
-                            {
-                                data: { roomId: id, action: 'game_started' },
-                                actions: [
-                                    { action: 'open_game', title: 'Открыть игру' }
-                                ],
-                                tag: 'game_started',
-                                requireInteraction: true
-                            }
-                        ).catch(err => console.error('❌ Ошибка отправки реального push о начале игры:', err));
-
-                    res.json({
-                        success: true,
-                        message: 'Игра успешно запущена',
-                        data: {
-                            roomId: id,
-                            isStarted: true,
-                            status: 'playing'
-                        }
-                    });
-                });
-            });
-            };
-
-            if (room.creator_id !== userId) {
-                // Тестовый режим: разрешаем старт без проверки членства,
-                // так как часто userId может отличаться между сессиями
-                ensureMemberThenStart();
-                return;
-            }
-
-            // Создатель — запускаем напрямую
             ensureMemberThenStart();
         });
 
