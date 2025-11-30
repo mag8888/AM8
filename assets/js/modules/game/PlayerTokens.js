@@ -1060,9 +1060,14 @@ class PlayerTokens {
             token.style.minHeight = '32px';
         }
         
+        // Убеждаемся, что фишка видна ДО анимации
+        token.style.opacity = '1';
+        token.style.visibility = 'visible';
+        token.style.display = 'flex';
+        
         const keyframes = [
             { 
-                opacity: '0',
+                opacity: '1',
                 transform: 'scale(0) rotate(0deg)'
             },
             { 
@@ -1076,12 +1081,26 @@ class PlayerTokens {
         ];
         
         const animation = token.animate(keyframes, {
-            duration: 600,
+            duration: 400,
             easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
             fill: 'forwards'
         });
         
         // Убеждаемся, что после анимации opacity = 1 и размер сохранен
+        animation.onfinish = () => {
+            token.style.opacity = '1';
+            token.style.visibility = 'visible';
+            token.style.display = 'flex';
+            token.style.width = '32px';
+            token.style.height = '32px';
+            token.style.minWidth = '32px';
+            token.style.minHeight = '32px';
+            this._debug('Анимация фишки завершена, стили установлены', {
+                playerId: token.dataset.playerId,
+                opacity: token.style.opacity,
+                visibility: token.style.visibility
+            });
+        };
         animation.onfinish = () => {
             token.style.opacity = '1';
             token.style.width = '32px';
@@ -1580,15 +1599,27 @@ class PlayerTokens {
             });
             this.tokens.set(player.id, token);
             
-            // Принудительно устанавливаем стили для видимости ДО анимации
+            // Принудительно устанавливаем стили для видимости ДО анимации с !important
+            token.style.setProperty('display', 'flex', 'important');
+            token.style.setProperty('visibility', 'visible', 'important');
+            token.style.setProperty('width', '32px', 'important');
+            token.style.setProperty('height', '32px', 'important');
+            token.style.setProperty('min-width', '32px', 'important');
+            token.style.setProperty('min-height', '32px', 'important');
+            token.style.setProperty('opacity', '1', 'important'); // Устанавливаем opacity: 1 ДО анимации
+            token.style.setProperty('position', 'absolute', 'important');
+            token.style.setProperty('z-index', '10000', 'important');
+            
+            // Дополнительно через обычные свойства
             token.style.display = 'flex';
             token.style.visibility = 'visible';
             token.style.width = '32px';
             token.style.height = '32px';
             token.style.minWidth = '32px';
             token.style.minHeight = '32px';
-            token.style.opacity = '1'; // Устанавливаем opacity: 1 ДО анимации
-            token.style.position = 'absolute'; // Устанавливаем position сразу
+            token.style.opacity = '1';
+            token.style.position = 'absolute';
+            token.style.zIndex = '10000';
             
             // Проверяем, что фишка действительно в DOM
             if (!token.isConnected) {
@@ -1689,18 +1720,33 @@ class PlayerTokens {
             }
         }
         
+        // Принудительно устанавливаем все стили с !important через setProperty
+        token.style.setProperty('position', 'absolute', 'important');
+        token.style.setProperty('left', `${left}px`, 'important');
+        token.style.setProperty('top', `${top}px`, 'important');
+        token.style.setProperty('width', '32px', 'important');
+        token.style.setProperty('height', '32px', 'important');
+        token.style.setProperty('min-width', '32px', 'important');
+        token.style.setProperty('min-height', '32px', 'important');
+        token.style.setProperty('z-index', '10000', 'important');
+        token.style.setProperty('display', 'flex', 'important');
+        token.style.setProperty('visibility', 'visible', 'important');
+        token.style.setProperty('opacity', '1', 'important');
+        token.style.setProperty('pointer-events', 'auto', 'important');
+        
+        // Дополнительно устанавливаем через обычные свойства для совместимости
         token.style.position = 'absolute';
         token.style.left = `${left}px`;
         token.style.top = `${top}px`;
-        token.style.width = '32px'; // Явно устанавливаем размер
-        token.style.height = '32px'; // Явно устанавливаем размер
-        token.style.minWidth = '32px'; // Минимальный размер
-        token.style.minHeight = '32px'; // Минимальный размер
-        token.style.zIndex = '10000'; // Увеличено чтобы фишки были поверх всех элементов
+        token.style.width = '32px';
+        token.style.height = '32px';
+        token.style.minWidth = '32px';
+        token.style.minHeight = '32px';
+        token.style.zIndex = '10000';
         token.style.display = 'flex';
         token.style.visibility = 'visible';
         token.style.opacity = '1';
-        token.style.pointerEvents = 'auto'; // Разрешаем события для фишек
+        token.style.pointerEvents = 'auto';
         
         // Проверяем, что фишка видна
         const tokenRect = token.getBoundingClientRect();
