@@ -202,6 +202,11 @@ class GameDataManager {
             
             console.log(`📦 GameDataManager: Загружен кэш (${this.cache.size} элементов)`);
         } catch (error) {
+            // Игнорируем ошибку если CommonUtils еще не загружен
+            if (error.name === 'ReferenceError' && error.message.includes('CommonUtils')) {
+                // CommonUtils загрузится позже, это нормально
+                return;
+            }
             console.warn('⚠️ GameDataManager: Ошибка загрузки кэша:', error);
         }
     }
