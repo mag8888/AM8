@@ -222,19 +222,15 @@ class App {
     _initializeServices() {
         this.logger?.info('Инициализация сервисов', null, 'App');
         
-        // Инициализация роутера
+        // Маршруты уже зарегистрированы в _initializeCore(), проверяем только наличие роутера
         const router = this.getRouter();
-        router.route('/', () => this._handleHomeRoute(), 'Главная');
-        // Алиас для прямого захода на index.html, чтобы не было предупреждений Router
-        router.route('/index.html', () => this._handleHomeRoute(), 'Главная');
-        router.route('/auth', () => this._handleAuthRoute(), 'Авторизация');
-        router.route('/rooms', () => this._handleRoomsRoute(), 'Комнаты');
-        router.route('/game', (state) => this._handleGameRoute(state), 'Игра');
-        router.defaultRoute = '/';
-        
-        this.logger?.debug('Роутер настроен', {
-            routes: router.getRoutes?.() || 'routes info not available'
-        }, 'App');
+        if (router) {
+            this.logger?.debug('Роутер настроен', {
+                routes: router.getRoutes?.() || 'routes info not available'
+            }, 'App');
+        } else {
+            console.warn('⚠️ App: Роутер не найден при инициализации сервисов');
+        }
     }
 
     /**
