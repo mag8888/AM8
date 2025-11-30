@@ -264,8 +264,10 @@ class TurnController {
             this._rollDiceHandler = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('🎲 TurnController: Клик по кнопке броска кубика');
-                this.handleRollDice();
+                // Убрали лог для производительности
+                this.handleRollDice().catch(err => {
+                    console.error('❌ TurnController: Ошибка в handleRollDice:', err);
+                });
             };
             
             rollBtn.addEventListener('click', this._rollDiceHandler);
