@@ -149,8 +149,17 @@ function ensureGameState(db, roomId, cb) {
         const refreshed = buildState(cachedState.players || []);
         refreshed.currentPlayerIndex = cachedState.currentPlayerIndex || 0;
         refreshed.lastDiceResult = cachedState.lastDiceResult || null;
-        refreshed.canRoll = typeof cachedState.canRoll === 'boolean' ? cachedState.canRoll : refreshed.canRoll;
-        refreshed.canMove = typeof cachedState.canMove === 'boolean' ? cachedState.canMove : refreshed.canMove;
+        
+        // Логика для canRoll: если нет результата кубика, можно бросать
+        if (refreshed.lastDiceResult === null) {
+            refreshed.canRoll = true;
+            refreshed.canMove = false;
+        } else {
+            // Если есть результат кубика, используем сохраненное значение или false
+            refreshed.canRoll = typeof cachedState.canRoll === 'boolean' ? cachedState.canRoll : false;
+            refreshed.canMove = typeof cachedState.canMove === 'boolean' ? cachedState.canMove : true;
+        }
+        
         refreshed.canEndTurn = typeof cachedState.canEndTurn === 'boolean' ? cachedState.canEndTurn : refreshed.canEndTurn;
 
         if (cachedState.activePlayer) {
