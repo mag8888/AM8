@@ -255,9 +255,30 @@ class TurnController {
         
         if (rollBtn) {
             // Удаляем старый обработчик, если есть
-            rollBtn.removeEventListener('click', this.handleRollDice);
-            rollBtn.addEventListener('click', () => this.handleRollDice());
-            console.log('🎮 TurnController: Обработчик броска кубика привязан');
+            const oldHandler = this._rollDiceHandler;
+            if (oldHandler) {
+                rollBtn.removeEventListener('click', oldHandler);
+            }
+            
+            // Создаем новый обработчик и сохраняем ссылку
+            this._rollDiceHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎲 TurnController: Клик по кнопке броска кубика');
+                this.handleRollDice();
+            };
+            
+            rollBtn.addEventListener('click', this._rollDiceHandler);
+            
+            // Убеждаемся, что кнопка не заблокирована через pointer-events
+            rollBtn.style.pointerEvents = 'auto';
+            rollBtn.style.cursor = 'pointer';
+            
+            console.log('🎮 TurnController: Обработчик броска кубика привязан', {
+                buttonId: rollBtn.id,
+                disabled: rollBtn.disabled,
+                hasHandler: !!this._rollDiceHandler
+            });
         } else {
             console.warn(`⚠️ TurnController: Кнопка броска кубика не найдена (попытка ${this._setupAttempts}/10)`);
             // Добавляем диагностику - проверяем, что есть в playersPanel
@@ -806,21 +827,27 @@ class TurnController {
             }
         }
         
-        // Проверяем права на бросок кубика
-        const permissionCheck = this.turnService.canPerformAction({
-            requireMyTurn: true
-        });
+        // Проверяем права на бросок кубика (упрощенная проверка)
+        let canRoll = false;
         
-        if (!permissionCheck.canPerform) {
-            console.warn('⚠️ TurnController: Бросок кубика заблокирован:', permissionCheck.reason);
-            this.showNotification(`❌ ${permissionCheck.reason === 'Not your turn' ? 'Не ваш ход!' : 'Действие заблокировано!'}`, 'error');
-            return;
+        if (this.turnService && typeof this.turnService.canRoll === 'function') {
+            canRoll = this.turnService.canRoll();
+        } else if (this.turnService && typeof this.turnService.isMyTurn === 'function') {
+            canRoll = this.turnService.isMyTurn();
+        } else {
+            // Fallback: проверяем через GameStateManager
+            const gameStateManager = window.app?.getModule?.('gameStateManager');
+            if (gameStateManager) {
+                const state = gameStateManager.getState();
+                canRoll = state?.canRoll !== false;
+            } else {
+                canRoll = true; // Разрешаем по умолчанию, если нет проверки
+            }
         }
         
-        // Проверяем, что это действительно ход текущего пользователя
-        if (!this.turnService.isMyTurn()) {
-            console.warn('⚠️ TurnController: Не ваш ход - бросок кубика заблокирован');
-            this.showNotification('❌ Не ваш ход!', 'error');
+        if (!canRoll) {
+            console.warn('⚠️ TurnController: Бросок кубика заблокирован - не ваш ход или уже брошено');
+            this.showNotification('❌ Не ваш ход или кубик уже брошен!', 'error');
             return;
         }
         

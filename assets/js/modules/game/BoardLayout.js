@@ -442,29 +442,35 @@ class BoardLayout {
             return;
         }
 
-        // Calculate positions for 44 cells on square perimeter
-        const sideLength = Math.floor(total / 4); // 11 cells per side
+        // Calculate positions for cells on square perimeter with equal distribution
+        const sideLength = total / 4; // Равномерное распределение (44/4 = 11)
         const cellSize = 50; // Approximate cell size
         const margin = cellSize / 2;
+        const availableSize = boardSize - cellSize; // Доступное пространство для размещения
         
         let x, y;
         
+        // Исправлено: правильное распределение с учетом равномерного интервала
         if (index < sideLength) {
-            // Top side (0-10)
-            x = margin + (index / sideLength) * (boardSize - cellSize);
+            // Top side (0-10.99) - слева направо
+            const positionOnSide = index / sideLength; // 0.0 до 1.0
+            x = margin + positionOnSide * availableSize;
             y = margin;
         } else if (index < sideLength * 2) {
-            // Right side (11-21)
+            // Right side (11-21.99) - сверху вниз
+            const positionOnSide = (index - sideLength) / sideLength;
             x = boardSize - margin;
-            y = margin + ((index - sideLength) / sideLength) * (boardSize - cellSize);
+            y = margin + positionOnSide * availableSize;
         } else if (index < sideLength * 3) {
-            // Bottom side (22-32, right to left)
-            x = boardSize - margin - ((index - sideLength * 2) / sideLength) * (boardSize - cellSize);
+            // Bottom side (22-32.99) - справа налево
+            const positionOnSide = (index - sideLength * 2) / sideLength;
+            x = boardSize - margin - positionOnSide * availableSize;
             y = boardSize - margin;
         } else {
-            // Left side (33-43, bottom to top)
+            // Left side (33-43) - снизу вверх
+            const positionOnSide = (index - sideLength * 3) / sideLength;
             x = margin;
-            y = boardSize - margin - ((index - sideLength * 3) / sideLength) * (boardSize - cellSize);
+            y = boardSize - margin - positionOnSide * availableSize;
         }
         
         cell.style.left = `${x}px`;
