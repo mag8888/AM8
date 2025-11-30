@@ -117,18 +117,19 @@ class PlayerTokens {
         // Объединенный обработчик для всех событий обновления игроков
         const handlePlayersUpdate = (players) => {
             if (!Array.isArray(players) || players.length === 0) {
+                this._debug('handlePlayersUpdate: пустой массив игроков');
                 return;
             }
             
             // Проверяем, изменились ли данные (простая проверка по хешу)
             const playersHash = JSON.stringify(players.map(p => ({ id: p.id, position: p.position })));
-            if (this._lastPlayersHash === playersHash) {
+            if (this._lastPlayersHash === playersHash && this._hasUpdatedTokens) {
                 this._debug('Данные игроков не изменились, пропускаем обновление');
                 return;
             }
             this._lastPlayersHash = playersHash;
             
-            this._debug('📢 Обновление игроков от GameStateManager', { playersCount: players.length });
+            this._info('📢 Обновление игроков от GameStateManager', { playersCount: players.length });
             this.updateTokens(players);
         };
         

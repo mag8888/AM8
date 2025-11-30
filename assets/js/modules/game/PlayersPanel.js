@@ -106,7 +106,8 @@ class PlayersPanel {
         this._isInitialized = true;
         
         // Используем GameStateManager для загрузки данных вместо прямых API вызовов
-        this.loadPlayersViaGameStateManager();
+        // Вызываем немедленно без debounce для быстрой загрузки
+        this.loadPlayersViaGameStateManager(true);
         
         console.log('✅ PlayersPanel v2.0: Инициализирован');
     }
@@ -531,6 +532,17 @@ class PlayersPanel {
                     this._lastFetchTime = Date.now();
                     this.updatePlayersList(players, this.gameStateManager?.getState?.()?.activePlayer);
                     this.startPeriodicUpdatesViaGameStateManager(roomId);
+                    
+                    // Принудительно обновляем фишки после загрузки игроков
+                    if (window.PlayerTokens) {
+                        setTimeout(() => {
+                            const playerTokens = window.app?.getModule?.('playerTokens') || window.playerTokens;
+                            if (playerTokens && typeof playerTokens.updateTokens === 'function') {
+                                console.log('🔄 PlayersPanel: Принудительно обновляем фишки после загрузки игроков');
+                                playerTokens.updateTokens(players);
+                            }
+                        }, 100);
+                    }
                 } else {
                     this.showEmptyState();
                 }
