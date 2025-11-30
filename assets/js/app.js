@@ -526,7 +526,9 @@ class App {
             // Показываем только игровую страницу
             const gamePage = document.getElementById('game-page');
             if (gamePage) {
-                gamePage.style.display = 'block';
+                gamePage.style.display = 'grid';
+                gamePage.style.visibility = 'visible';
+                gamePage.style.opacity = '1';
                 gamePage.classList.add('active');
                 console.log('✅ App: Игровая страница активирована');
             } else {
