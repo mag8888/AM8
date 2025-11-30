@@ -852,6 +852,19 @@ class TurnController {
         }
         
         console.log('🎲 TurnController: Начинаем бросок кубика для текущего пользователя');
+        
+        // Устанавливаем флаг перед началом операции
+        this.isRolling = true;
+        
+        // Обновляем UI кнопки
+        if (this.ui) {
+            const rollBtn = this.ui.querySelector('#roll-dice-btn');
+            if (rollBtn) {
+                rollBtn.disabled = true;
+                rollBtn.classList.add('rolling');
+            }
+        }
+        
         try {
             if (this.turnManager) {
                 await this.turnManager.rollDice({ diceChoice: 'single' });
@@ -860,7 +873,19 @@ class TurnController {
             }
         } catch (error) {
             console.error('❌ TurnController: Ошибка броска кубика:', error);
-            this.showNotification('❌ Ошибка броска кубика', 'error');
+            this.showNotification(`❌ Ошибка: ${error.message || 'Не удалось бросить кубик'}`, 'error');
+        } finally {
+            // Всегда сбрасываем флаг
+            this.isRolling = false;
+            
+            // Обновляем UI кнопки
+            if (this.ui) {
+                const rollBtn = this.ui.querySelector('#roll-dice-btn');
+                if (rollBtn) {
+                    rollBtn.classList.remove('rolling');
+                    // Кнопка будет активирована через updateControlButtons
+                }
+            }
         }
     }
     

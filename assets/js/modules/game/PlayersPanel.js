@@ -1875,7 +1875,7 @@ class PlayersPanel {
      */
     _performButtonUpdate() {
         try {
-            console.log('🔧 PlayersPanel: Принудительное обновление всех кнопок');
+            // Убрали частый лог для производительности
             
             const rollBtn = document.getElementById('roll-dice-btn');
             const passBtn = document.getElementById('pass-turn');
@@ -1926,11 +1926,7 @@ class PlayersPanel {
         if (!button) return;
         
         try {
-            console.log('🔧 PlayersPanel: Принудительное обновление UI кнопки:', {
-                id: button.id,
-                disabled: button.disabled,
-                classList: Array.from(button.classList)
-            });
+            // Убрали частый лог для производительности
             
             // Принудительно обновляем атрибуты
             // Правильно управляем атрибутом disabled
@@ -1967,7 +1963,7 @@ class PlayersPanel {
             button.offsetHeight; // Принудительный reflow
             button.style.display = '';
             
-            console.log('✅ PlayersPanel: UI кнопки обновлен принудительно');
+            // Убрали частый лог для производительности
             
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка принудительного обновления UI:', error);

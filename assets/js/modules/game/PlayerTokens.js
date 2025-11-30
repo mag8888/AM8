@@ -1854,7 +1854,7 @@ class PlayerTokens {
         this.stopInitialRenderWatcher();
         this._initialRenderAttempts = 0;
         
-        // Увеличиваем интервал до 1000ms для снижения нагрузки
+        // Увеличиваем интервал до 2000ms для снижения нагрузки
         this._initialRenderTimer = setInterval(() => {
             this._initialRenderAttempts += 1;
             
@@ -1875,7 +1875,7 @@ class PlayerTokens {
                 this._debug('Достигнуто максимальное количество попыток начального рендера');
                 this.stopInitialRenderWatcher();
             }
-        }, 1000); // Увеличено с 500ms до 1000ms для снижения нагрузки
+        }, 2000); // Увеличено до 2000ms для снижения нагрузки
     }
     
     stopInitialRenderWatcher() {
