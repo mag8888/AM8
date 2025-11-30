@@ -3330,7 +3330,14 @@ class PlayersPanel {
             // Убеждаемся, что кнопка кликабельна
             newBankBtn.style.pointerEvents = 'auto';
             newBankBtn.style.cursor = 'pointer';
+            newBankBtn.style.zIndex = '1000';
             newBankBtn.removeAttribute('disabled');
+            
+            // Проверяем, что кнопка действительно кликабельна
+            const testClick = () => {
+                console.log('✅ Кнопка банка кликабельна');
+            };
+            newBankBtn.addEventListener('click', testClick, { once: true });
             
             console.log('✅ PlayersPanel: Обработчик кнопки банка привязан в setupControls');
         } else {
