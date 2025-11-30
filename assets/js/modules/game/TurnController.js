@@ -275,6 +275,8 @@ class TurnController {
             // Убеждаемся, что кнопка не заблокирована через pointer-events
             rollBtn.style.pointerEvents = 'auto';
             rollBtn.style.cursor = 'pointer';
+            rollBtn.style.zIndex = '1000';
+            rollBtn.style.position = 'relative';
             
             console.log('🎮 TurnController: Обработчик броска кубика привязан', {
                 buttonId: rollBtn.id,
