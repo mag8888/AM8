@@ -64,13 +64,15 @@
 
         /* Оптимизированная игровая страница */
         #game-page {
-            display: grid;
+            display: grid !important;
             grid-template-columns: minmax(280px, auto) 1fr minmax(320px, auto);
             grid-template-rows: 1fr;
             gap: 1rem;
             padding: 0.75rem;
             height: 100vh;
-            overflow: hidden;
+            width: 100%;
+            position: relative;
+            z-index: 1;
         }
 
         /* Левая панель - Банк и карточки */
@@ -89,12 +91,14 @@
 
         /* Центральная панель - Игровое поле */
         .game-board-container {
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             position: relative;
             min-width: 0;
-            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
         }
 
         .board-wrapper {
@@ -107,11 +111,13 @@
 
         /* Правая панель - Игроки */
         .top-panel-container {
-            display: flex;
+            display: flex !important;
             flex-direction: column;
             min-width: 320px;
             overflow-y: auto;
             overflow-x: hidden;
+            position: relative;
+            z-index: 1;
         }
 
         #players-panel {
