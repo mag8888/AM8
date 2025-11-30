@@ -94,6 +94,18 @@ class App {
             console.log('✅ App: GameStateManager создан в _initializeCore');
         }
         
+        // Регистрируем базовые маршруты сразу, чтобы роутер мог их обработать
+        const router = this.getRouter();
+        if (router) {
+            router.route('/', () => this._handleHomeRoute(), 'Главная');
+            router.route('/index.html', () => this._handleHomeRoute(), 'Главная');
+            router.route('/auth', () => this._handleAuthRoute(), 'Авторизация');
+            router.route('/rooms', () => this._handleRoomsRoute(), 'Комнаты');
+            router.route('/game', (state) => this._handleGameRoute(state), 'Игра');
+            router.defaultRoute = '/';
+            console.log('✅ App: Базовые маршруты зарегистрированы в _initializeCore');
+        }
+        
         this.logger?.info('Основные сервисы созданы', {
             services: Array.from(this.services.keys())
         }, 'App');
