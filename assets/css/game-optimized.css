@@ -52,8 +52,18 @@ html, body {
 }
 
 .page.active {
-    display: block;
-    z-index: 1;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 10 !important;
+}
+
+/* Убеждаемся, что игровая страница видна */
+#game-page.active {
+    display: grid !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 10 !important;
 }
 
 /* Игровая страница - оптимизированная сетка */
@@ -66,7 +76,9 @@ html, body {
     height: 100vh;
     width: 100%;
     position: relative;
-    z-index: 1;
+    z-index: 10 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* Левая панель */
