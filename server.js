@@ -16,7 +16,7 @@ const cardsRoutes = require('./routes/cards');
 
 // Импортируем middleware
 const errorHandler = require('./middleware/errorHandler');
-const { initializeDatabase } = require('./database/init');
+// SQLite отключен - используем только MongoDB
 
 const app = express();
 // Логирование используемой базы данных
