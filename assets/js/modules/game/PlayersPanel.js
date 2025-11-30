@@ -41,11 +41,11 @@ class PlayersPanel {
         
         // Дебаунсинг для UI обновлений
         this._uiUpdateTimeout = null;
-        this._uiUpdateDelay = 200; // 200ms дебаунсинг для UI обновлений
+        this._uiUpdateDelay = 300; // Увеличено до 300ms для снижения нагрузки
         
         // Дебаунсинг для загрузки игроков
         this._loadPlayersTimeout = null;
-        this._loadPlayersDebounceDelay = 300; // 300ms дебаунсинг для загрузки игроков
+        this._loadPlayersDebounceDelay = 500; // Увеличено до 500ms для снижения нагрузки
         
         // Защита от повторных вызовов броска кубика
         this._isRolling = false;
