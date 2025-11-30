@@ -1155,7 +1155,7 @@ class PlayerTokens {
             // Последующие обновления - с увеличенным debounce для снижения нагрузки
             this._updateTokensTimer = setTimeout(() => {
                 this._updateTokensInternal(players);
-            }, 200); // Увеличено с 50ms до 200ms для снижения нагрузки
+            }, 300); // Увеличено до 300ms для снижения нагрузки
         }
     }
     
@@ -1748,206 +1748,37 @@ class PlayerTokens {
         token.style.opacity = '1';
         token.style.pointerEvents = 'auto';
         
-        // Проверяем, что фишка видна
-        const tokenRect = token.getBoundingClientRect();
-        const parentRect = token.parentElement?.getBoundingClientRect();
+        // ОПТИМИЗАЦИЯ: Минимизируем дорогие операции getBoundingClientRect() и getComputedStyle()
+        // Эти операции вызывают reflow/repaint и очень дорогие
+        // Выполняем валидацию только периодически, а не при каждом позиционировании
+        if (this._validationCounter === undefined) {
+            this._validationCounter = 0;
+        }
+        this._validationCounter++;
         
-        // Проверяем, что фишка имеет правильный размер
-        if (tokenRect.width === 0 || tokenRect.height === 0) {
-            this._warn('⚠️ Фишка имеет нулевой размер!', {
-                playerId: token.dataset.playerId,
-                playerName: token.dataset.playerName,
-                tokenRect: { width: tokenRect.width, height: tokenRect.height },
-                computedStyles: {
-                    width: window.getComputedStyle(token).width,
-                    height: window.getComputedStyle(token).height,
-                    display: window.getComputedStyle(token).display,
-                    visibility: window.getComputedStyle(token).visibility
-                }
-            });
+        // Валидация только каждые 20 позиционирований (снижает нагрузку в 20 раз)
+        if (this._validationCounter % 20 === 0) {
+            const tokenRect = token.getBoundingClientRect();
+            
+            // Проверяем только критичные проблемы
+            if (tokenRect.width === 0 || tokenRect.height === 0) {
+                token.style.width = '32px';
+                token.style.height = '32px';
+                token.style.minWidth = '32px';
+                token.style.minHeight = '32px';
+            }
+            
+            // Проверяем координаты только если они явно выходят за пределы
+            if (left < -1000 || left > 10000 || top < -1000 || top > 10000) {
+                this._warn('⚠️ Фишка имеет подозрительные координаты!', {
+                    playerId: token.dataset.playerId,
+                    finalPosition: { left, top }
+                });
+            }
         }
         
-        // Проверяем, что координаты в разумных пределах
-        if (left < -1000 || left > 10000 || top < -1000 || top > 10000) {
-            this._warn('⚠️ Фишка имеет подозрительные координаты!', {
-                playerId: token.dataset.playerId,
-                playerName: token.dataset.playerName,
-                finalPosition: { left, top },
-                coords: { x: baseCoords.x, y: baseCoords.y },
-                offset: { x: offset.x, y: offset.y }
-            });
-        }
-        
-        // Принудительно убеждаемся, что фишка видна
-        // Проверяем computed styles и при необходимости исправляем
-        const computedDisplay = window.getComputedStyle(token).display;
-        const computedVisibility = window.getComputedStyle(token).visibility;
-        const computedOpacity = window.getComputedStyle(token).opacity;
-        
-        if (computedDisplay === 'none' || computedVisibility === 'hidden' || computedOpacity === '0') {
-            this._warn('⚠️ Фишка скрыта через CSS, исправляем', {
-                playerId: token.dataset.playerId,
-                computedDisplay,
-                computedVisibility,
-                computedOpacity
-            });
-            token.style.display = 'flex';
-            token.style.visibility = 'visible';
-            token.style.opacity = '1';
-        }
-        
-        // Принудительно устанавливаем размер, если он нулевой
-        if (tokenRect.width === 0 || tokenRect.height === 0) {
-            token.style.width = '32px';
-            token.style.height = '32px';
-            token.style.minWidth = '32px';
-            token.style.minHeight = '32px';
-            this._debug('Установлен размер фишки через inline стили', {
-                playerId: token.dataset.playerId,
-                width: token.style.width,
-                height: token.style.height
-            });
-        }
-        
-        // Подробное логирование для отладки (только при проблемах)
-        if (tokenRect.width === 0 || tokenRect.height === 0 || window.getComputedStyle(token).opacity === '0') {
-            this._info('🎯 Фишка позиционирована (с проблемами)', {
-                playerId: token.dataset.playerId,
-                playerName: token.dataset.playerName,
-                position: token.dataset.position,
-                finalPosition: { left, top },
-                tokenSize: { width: tokenRect.width, height: tokenRect.height },
-                computedOpacity: window.getComputedStyle(token).opacity
-            });
-        } else {
-            this._debug('🎯 Фишка позиционирована', {
-                playerName: token.dataset.playerName,
-                position: token.dataset.position,
-                finalPosition: { left, top }
-            });
-        }
-        
-        // Проверяем, что фишка находится в пределах видимой области родителя
-        const isWithinParent = parentRect ? 
-            (left >= 0 && left <= parentRect.width && top >= 0 && top <= parentRect.height) : false;
-        
-        // Проверяем видимость фишки в viewport
-        const isVisibleInViewport = tokenRect.width > 0 && tokenRect.height > 0 && 
-            tokenRect.left >= 0 && tokenRect.top >= 0 &&
-            tokenRect.left < window.innerWidth && tokenRect.top < window.innerHeight;
-        
-        if (!isWithinParent && parentRect) {
-            this._warn('Фишка находится за пределами видимой области родителя', {
-                left,
-                top,
-                parentRect: { 
-                    width: parentRect.width, 
-                    height: parentRect.height,
-                    left: parentRect.left,
-                    top: parentRect.top
-                },
-                tokenParentId: token.parentElement?.id,
-                computedParentStyles: {
-                    width: window.getComputedStyle(token.parentElement).width,
-                    height: window.getComputedStyle(token.parentElement).height,
-                    position: window.getComputedStyle(token.parentElement).position,
-                    overflow: window.getComputedStyle(token.parentElement).overflow
-                }
-            });
-        }
-        
-        if (!isVisibleInViewport) {
-            this._debug('ℹ️ Фишка не в видимой области viewport (трек может быть прокручен)', {
-                tokenRect: {
-                    left: tokenRect.left,
-                    top: tokenRect.top,
-                    right: tokenRect.right,
-                    bottom: tokenRect.bottom,
-                    width: tokenRect.width,
-                    height: tokenRect.height,
-                    visible: tokenRect.width > 0 && tokenRect.height > 0
-                },
-                viewport: {
-                    width: window.innerWidth,
-                    height: window.innerHeight
-                },
-                tokenParentId: token.parentElement?.id,
-                tokenStyles: {
-                    left: token.style.left,
-                    top: token.style.top,
-                    position: token.style.position,
-                    zIndex: token.style.zIndex
-                },
-                parentRect: parentRect ? {
-                    left: parentRect.left,
-                    top: parentRect.top,
-                    right: parentRect.right,
-                    bottom: parentRect.bottom,
-                    width: parentRect.width,
-                    height: parentRect.height
-                } : null,
-                computedParentStyles: {
-                    position: window.getComputedStyle(token.parentElement).position,
-                    width: window.getComputedStyle(token.parentElement).width,
-                    height: window.getComputedStyle(token.parentElement).height,
-                    overflow: window.getComputedStyle(token.parentElement).overflow,
-                    left: window.getComputedStyle(token.parentElement).left,
-                    top: window.getComputedStyle(token.parentElement).top
-                },
-                baseCoords,
-                offset,
-                calculatedLeft: left,
-                calculatedTop: top,
-                parentComputedStyles: token.parentElement ? {
-                    position: window.getComputedStyle(token.parentElement).position,
-                    left: window.getComputedStyle(token.parentElement).left,
-                    top: window.getComputedStyle(token.parentElement).top,
-                    width: window.getComputedStyle(token.parentElement).width,
-                    height: window.getComputedStyle(token.parentElement).height,
-                    overflow: window.getComputedStyle(token.parentElement).overflow
-                } : null
-            });
-        }
-        
-        this._info('Фишка позиционирована', {
-            left,
-            top,
-            offset,
-            baseCoords,
-            tokenParent: token.parentElement?.tagName,
-            tokenParentId: token.parentElement?.id,
-            tokenInDOM: token.isConnected,
-            isWithinParent,
-            isVisibleInViewport,
-            tokenRect: { 
-                left: tokenRect.left, 
-                top: tokenRect.top, 
-                width: tokenRect.width, 
-                height: tokenRect.height,
-                visible: tokenRect.width > 0 && tokenRect.height > 0
-            },
-            parentRect: parentRect ? {
-                left: parentRect.left,
-                top: parentRect.top,
-                width: parentRect.width,
-                height: parentRect.height
-            } : null,
-            computedStyles: {
-                position: window.getComputedStyle(token).position,
-                display: window.getComputedStyle(token).display,
-                visibility: window.getComputedStyle(token).visibility,
-                opacity: window.getComputedStyle(token).opacity,
-                zIndex: window.getComputedStyle(token).zIndex
-            },
-            parentComputedStyles: token.parentElement ? {
-                width: window.getComputedStyle(token.parentElement).width,
-                height: window.getComputedStyle(token.parentElement).height,
-                position: window.getComputedStyle(token.parentElement).position,
-                overflow: window.getComputedStyle(token.parentElement).overflow,
-                overflowX: window.getComputedStyle(token.parentElement).overflowX,
-                overflowY: window.getComputedStyle(token.parentElement).overflowY
-            } : null
-        });
+        // ОПТИМИЗАЦИЯ: Убрано избыточное логирование и дорогие проверки
+        // Логирование только при реальных проблемах (уже проверено выше)
         
         // Добавляем визуальную индикацию для множественных фишек
         if (totalPlayers > 1) {

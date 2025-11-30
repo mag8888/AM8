@@ -430,9 +430,10 @@ class PlayersPanel {
         if (this._uiUpdateTimeout) {
             clearTimeout(this._uiUpdateTimeout);
         }
+        // Увеличена задержка для снижения нагрузки
         this._uiUpdateTimeout = setTimeout(() => {
             this.forceUpdateAllButtons();
-        }, this._uiUpdateDelay);
+        }, Math.max(this._uiUpdateDelay, 300)); // Минимум 300ms
         
         // Обновляем список игроков
         if (state.players && Array.isArray(state.players)) {
