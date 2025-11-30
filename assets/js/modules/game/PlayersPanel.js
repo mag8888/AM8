@@ -713,7 +713,9 @@ class PlayersPanel {
         
         this._lastApiRequestTime = now;
         
-        fetch(`/api/rooms/${roomId}/game-state`)
+        const apiUrl = window.ApiUrlHelper?.getRoomsUrl(roomId, 'game-state') || 
+                      `/api/rooms/${roomId}/game-state`;
+        fetch(apiUrl)
             .then(response => {
                 if (response.ok) {
                     return response.json();
@@ -794,7 +796,9 @@ class PlayersPanel {
                 window.CommonUtils?.gameStateLimiter.clearRequestPending(roomId);
             }, 3000); // 3 секунды вместо 5
             
-            fetch(`/api/rooms/${roomId}/game-state`, {
+            const apiUrl = window.ApiUrlHelper?.getRoomsUrl(roomId, 'game-state') || 
+                          `/api/rooms/${roomId}/game-state`;
+            fetch(apiUrl, {
                 signal: this._currentAbortController.signal,
                 headers: {
                     'Cache-Control': 'no-cache',
@@ -1771,7 +1775,9 @@ class PlayersPanel {
                 const roomId = this.getRoomId();
                 if (roomId) {
                     console.log('🔧 PlayersPanel: Прямой вызов API для броска кубика');
-                    const response = await fetch(`/api/rooms/${roomId}/roll`, {
+                    const apiUrl = window.ApiUrlHelper?.getRoomsUrl(roomId, 'roll') || 
+                                  `/api/rooms/${roomId}/roll`;
+                    const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

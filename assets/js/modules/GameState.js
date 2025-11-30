@@ -187,7 +187,9 @@ class GameState {
             
             // Загружаем данные комнаты
             try {
-                const response = await fetch(`/api/rooms/${roomId}/game-state`, {
+                const apiUrl = window.ApiUrlHelper?.getRoomsUrl(roomId, 'game-state') || 
+                              `/api/rooms/${roomId}/game-state`;
+                const response = await fetch(apiUrl, {
                     headers: {
                         'Cache-Control': 'no-cache',
                         'Pragma': 'no-cache'

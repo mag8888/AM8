@@ -5,7 +5,11 @@
 
 class RoomApi {
     constructor() {
-        this.baseUrl = '/api/rooms';
+        // Используем ApiUrlHelper для определения правильного API URL
+        const apiBaseUrl = window.ApiUrlHelper?.getApiBaseUrl() || 
+                          (window.config?.get('api.baseUrl') || 'https://am8-production.up.railway.app/api');
+        this.baseUrl = `${apiBaseUrl}/rooms`;
+        
         this.headers = {
             'Content-Type': 'application/json'
         };

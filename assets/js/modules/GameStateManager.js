@@ -209,7 +209,11 @@ class GameStateManager {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000);
             
-            const response = await fetch(`/api/rooms/${roomId}/game-state`, {
+            // Используем ApiUrlHelper для определения правильного API URL
+            const apiUrl = window.ApiUrlHelper?.getRoomsUrl(roomId, 'game-state') || 
+                          `${(window.config?.get('api.baseUrl') || 'https://am8-production.up.railway.app/api')}/rooms/${roomId}/game-state`;
+            
+            const response = await fetch(apiUrl, {
                 headers: {
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache'
