@@ -181,6 +181,14 @@ class App {
                 modules: Array.from(this.modules.keys()),
                 config: this.config?.getEnvironmentInfo()
             });
+            
+            // После регистрации маршрутов пытаемся обработать текущий маршрут
+            setTimeout(() => {
+                const router = this.getRouter();
+                if (router && typeof router.handleCurrentRoute === 'function') {
+                    router.handleCurrentRoute();
+                }
+            }, 100);
 
         } catch (error) {
             this._initializationDepth = 0; // НОВОЕ: Сбрасываем глубину при ошибке
