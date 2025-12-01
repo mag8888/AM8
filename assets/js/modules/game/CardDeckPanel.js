@@ -600,6 +600,12 @@
         }
         
         _notifyRateLimit(waitMs = 0) {
+            // На мобильной версии карточки скрыты, уведомление не нужно
+            const isMobile = window.innerWidth <= 1024;
+            if (isMobile) {
+                return; // Не показываем уведомление на мобильной версии
+            }
+            
             const now = Date.now();
             if (this._lastRateLimitToastAt && (now - this._lastRateLimitToastAt) < 10000) {
                 return;
@@ -609,11 +615,12 @@
             const message = waitMs
                 ? `Карточные данные временно недоступны. Повтор через ${seconds} сек.`
                 : 'Карточные данные временно недоступны. Используем кэш.';
-            if (typeof window.showNotification === 'function') {
-                window.showNotification(message, 'warning');
-            } else {
-                console.warn('⚠️ CardDeckPanel:', message);
-            }
+            // Показываем только в консоли, не показываем пользователю
+            console.warn('⚠️ CardDeckPanel:', message);
+            // Убрали показ уведомления пользователю, так как карточки скрыты на мобильной версии
+            // if (typeof window.showNotification === 'function') {
+            //     window.showNotification(message, 'warning');
+            // }
         }
 
         /**
