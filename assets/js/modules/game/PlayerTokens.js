@@ -1288,8 +1288,8 @@ class PlayerTokens {
                     } else {
                         const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
                         const offset = this.calculateOffset(index, playersAtPosition.length, cellSize);
-                        this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
-                        processed.add(player.id);
+                this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
+                processed.add(player.id);
                         tokensCreated++;
                         this._info(`Фишка создана для игрока ${player.username}`, { 
                             position, 

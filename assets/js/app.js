@@ -1323,8 +1323,8 @@ class App {
             } else if (typeof bankPreview.updatePreviewData === 'function') {
                 // Принудительно загружаем данные
                 setTimeout(() => {
-                    bankPreview.updatePreviewData();
-                    console.log('🏦 App: BankPreview данные обновлены');
+            bankPreview.updatePreviewData();
+            console.log('🏦 App: BankPreview данные обновлены');
                 }, 300);
             }
             
