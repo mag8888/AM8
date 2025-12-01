@@ -132,13 +132,38 @@ router.post('/transfer', async (req, res) => {
         }
 
         console.log('🏦 Bank API: Состояние комнаты:', roomData);
+        console.log('🏦 Bank API: Поиск игроков:', {
+            fromPlayerId,
+            toPlayerId,
+            availablePlayers: roomData.players?.map(p => ({ id: p.id, userId: p.userId, username: p.username })) || []
+        });
         
-        const fromPlayer = roomData.players?.find(p => p.id === fromPlayerId);
-        const toPlayer = roomData.players?.find(p => p.id === toPlayerId);
+        // Ищем игроков по разным вариантам ID (id, userId)
+        const fromPlayer = roomData.players?.find(p => 
+            p.id === fromPlayerId || 
+            p.userId === fromPlayerId ||
+            String(p.id) === String(fromPlayerId) ||
+            String(p.userId) === String(fromPlayerId)
+        );
+        const toPlayer = roomData.players?.find(p => 
+            p.id === toPlayerId || 
+            p.userId === toPlayerId ||
+            String(p.id) === String(toPlayerId) ||
+            String(p.userId) === String(toPlayerId)
+        );
         
         if (!fromPlayer || !toPlayer) {
-            console.log('❌ Bank API: Игрок не найден:', { fromPlayer: !!fromPlayer, toPlayer: !!toPlayer });
-            return res.status(404).json({ success: false, message: 'Игрок не найден' });
+            console.log('❌ Bank API: Игрок не найден:', { 
+                fromPlayer: !!fromPlayer, 
+                toPlayer: !!toPlayer,
+                fromPlayerId,
+                toPlayerId,
+                availablePlayers: roomData.players?.map(p => ({ id: p.id, userId: p.userId, username: p.username })) || []
+            });
+            return res.status(404).json({ 
+                success: false, 
+                message: `Игрок не найден. Отправитель: ${fromPlayer ? 'найден' : 'не найден'}, Получатель: ${toPlayer ? 'найден' : 'не найден'}` 
+            });
         }
         
         console.log('🏦 Bank API: Игроки найдены:', { 

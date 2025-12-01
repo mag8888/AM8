@@ -1696,11 +1696,23 @@ class BankModuleServer {
                 throw new Error('Recipient ID не найден');
             }
             
+            // Проверяем, что ID игроков правильные перед отправкой
+            const recipientPlayer = this.bankState.players?.find(p => p.id === recipientId);
+            if (!recipientPlayer) {
+                console.error('❌ BankModuleServer: Получатель не найден в списке игроков перед отправкой:', {
+                    recipientId,
+                    availablePlayers: this.bankState.players?.map(p => ({ id: p.id, username: p.username, userId: p.userId })) || []
+                });
+                throw new Error('Получатель не найден в списке игроков');
+            }
+            
             console.log('🏦 BankModuleServer: Отправка перевода:', {
                 roomId: this.bankState.roomId,
                 fromPlayerId: this.bankState.playerId,
                 toPlayerId: recipientId,
-                amount: amount
+                recipientUsername: recipientPlayer.username,
+                amount: amount,
+                availablePlayers: this.bankState.players?.map(p => ({ id: p.id, username: p.username, userId: p.userId })) || []
             });
             
             // Используем ApiUrlHelper если доступен, иначе fallback на прямой путь
