@@ -43,6 +43,8 @@
             this.rateLimitBackoff = 0;
             this._loadDecksTimer = null;
             this._refreshTimer = null;
+            this._loadDecksDebounceTimer = null;
+            this._debouncedLoadDecks = null;
             this._lastRateLimitToastAt = 0;
             this.forceOfflineMode = this._shouldForceOfflineMode();
 
