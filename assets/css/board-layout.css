@@ -1,5 +1,16 @@
 /* Desktop: трехколоночная раскладка, поле по центру квадратом */
 @media (min-width: 1025px) {
+  /* Скрываем нижнее мобильное меню на десктоп версии */
+  .mobile-bottom-menu,
+  .mobile-bottom-nav,
+  .mobile-turn-controls,
+  .mobile-bottom-menu-item,
+  .mobile-bottom-nav-btn {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+  
   #game-page,
   .game-page {
     display: grid !important;
