@@ -305,7 +305,7 @@
   
   /* Кнопка для скрытия/показа меню (только на мобильных) */
   .toggle-menu-btn {
-    display: block !important;
+    display: flex !important;
     position: fixed !important;
     top: 1rem !important;
     left: 1rem !important;
@@ -318,20 +318,27 @@
     color: #fff !important;
     font-size: 1.5rem !important;
     cursor: pointer !important;
-    display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     transition: all 0.3s ease !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   
-  .toggle-menu-btn:hover {
+  .toggle-menu-btn:hover,
+  .toggle-menu-btn:active {
     background: rgba(30, 41, 59, 0.95) !important;
     transform: scale(1.05) !important;
   }
   
   .toggle-menu-btn.active {
     background: rgba(59, 130, 246, 0.9) !important;
+  }
+  
+  .toggle-menu-icon {
+    display: block !important;
+    line-height: 1 !important;
   }
   
   /* Скрытое меню */
