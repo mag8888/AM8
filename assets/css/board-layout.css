@@ -406,9 +406,9 @@
     flex-shrink: 0 !important; /* Не сжимается */
   }
   
-  /* Банк на всю ширину, соединен с игровым полем, без дополнительного скролла */
+  /* Банк на всю ширину, третий после поля и хода игроков */
   #card-decks-panel #bank-section {
-    order: 1 !important; /* Банк первым внутри панели карточек на мобиле */
+    order: 3 !important; /* Банк - третий (после поля и хода игроков) */
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
@@ -445,20 +445,28 @@
     max-width: 100% !important;
     height: auto !important;
     max-height: none !important; /* Убираем внутренний скролл */
-    order: 4 !important; /* Карточки сделок - в самом низу */
+    order: 3 !important; /* Панель карточек (с банком внутри) - третий */
     border-right: none !important;
     border-left: none !important;
     border-bottom: none !important;
-    padding: 1rem !important;
+    padding: 0 !important; /* Убираем padding, добавляем только для банка и карточек */
     position: relative !important;
     transform: none !important;
     flex-direction: column !important; /* Карточки в колонку */
-    gap: 0.75rem !important;
+    gap: 0 !important; /* Убираем gap, используем padding в секциях */
     flex-wrap: nowrap !important;
     overflow-y: visible !important; /* Нет доп. скролла */
     overflow-x: hidden !important;
     background: transparent !important; /* Убираем подложку */
     flex-shrink: 0 !important; /* Не сжимается */
+  }
+  
+  /* Внутренний контейнер для карточек - отдельно от банка */
+  #card-decks-panel .card-decks-inner,
+  #card-decks-panel > .card-deck-card {
+    order: 4 !important; /* Карточки - четвертые (внизу) */
+    padding: 1rem !important;
+    padding-top: 0 !important; /* Убираем верхний отступ, т.к. банк уже имеет нижний border */
   }
   
   /* Карточки сделок на всю ширину */
