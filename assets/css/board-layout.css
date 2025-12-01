@@ -315,21 +315,6 @@
     opacity: 0 !important;
   }
   
-  /* Мобильные элементы управления - показываем только на мобильной версии */
-  .mobile-control-btn,
-  .mobile-turn-controls {
-    display: none !important;
-  }
-  
-  @media (max-width: 1024px) {
-    .mobile-control-btn,
-    .mobile-turn-controls {
-      display: flex !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-    }
-  }
-  
   /* Игровое поле по центру экрана на мобильной версии */
   #game-page,
   .game-page {
@@ -423,7 +408,7 @@
     opacity: 0 !important;
   }
   
-  /* Мобильные элементы управления */
+  /* Мобильные элементы управления - показываем только на мобильной версии */
   .mobile-control-btn {
     position: fixed !important;
     z-index: 1000 !important;
@@ -431,7 +416,7 @@
     border: 2px solid rgba(99, 102, 241, 0.5) !important;
     border-radius: 12px !important;
     padding: 0.75rem !important;
-    display: none !important;
+    display: none !important; /* По умолчанию скрыты */
     align-items: center !important;
     gap: 0.5rem !important;
     color: #f8fafc !important;
@@ -441,6 +426,16 @@
     transition: all 0.2s ease !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
     backdrop-filter: blur(10px) !important;
+  }
+  
+  /* Показываем мобильные элементы на мобильной версии */
+  @media (max-width: 1024px) {
+    .mobile-control-btn,
+    .mobile-turn-controls {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
   }
   
   .mobile-control-btn:active {
@@ -494,7 +489,7 @@
     bottom: 1rem !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    display: none !important;
+    display: none !important; /* По умолчанию скрыты */
     gap: 1rem !important;
     z-index: 1000 !important;
   }
