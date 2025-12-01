@@ -288,17 +288,91 @@ router.post('/transfer', async (req, res) => {
             return exactMatch || partialMatch;
         });
         
+        // Если не нашли по ID, пробуем найти по username (fallback)
+        if (!fromPlayer && fromPlayerId) {
+            console.log('⚠️ Bank API: Отправитель не найден по ID, пробуем найти по username или другим полям');
+            // Пробуем найти по username, если fromPlayerId похож на username
+            fromPlayer = roomData.players?.find((p, idx) => {
+                const pUsername = String(p.username || '').toLowerCase();
+                const pName = String(p.name || '').toLowerCase();
+                const searchId = String(fromPlayerId || '').toLowerCase();
+                
+                return pUsername === searchId || 
+                       pName === searchId ||
+                       pUsername.includes(searchId) ||
+                       pName.includes(searchId);
+            });
+            
+            if (fromPlayer) {
+                console.log('✅ Bank API: Отправитель найден по username/name:', fromPlayer.username);
+            }
+        }
+        
+        if (!toPlayer && toPlayerId) {
+            console.log('⚠️ Bank API: Получатель не найден по ID, пробуем найти по username или другим полям');
+            // Пробуем найти по username, если toPlayerId похож на username
+            toPlayer = roomData.players?.find((p, idx) => {
+                const pUsername = String(p.username || '').toLowerCase();
+                const pName = String(p.name || '').toLowerCase();
+                const searchId = String(toPlayerId || '').toLowerCase();
+                
+                return pUsername === searchId || 
+                       pName === searchId ||
+                       pUsername.includes(searchId) ||
+                       pName.includes(searchId);
+            });
+            
+            if (toPlayer) {
+                console.log('✅ Bank API: Получатель найден по username/name:', toPlayer.username);
+            }
+        }
+        
+        // Если все еще не нашли, пробуем найти по индексу в массиве (последний fallback)
+        if (!fromPlayer && fromPlayerId) {
+            const indexMatch = String(fromPlayerId).match(/player[_-]?(\d+)/i);
+            if (indexMatch) {
+                const requestedIndex = parseInt(indexMatch[1]) - 1;
+                if (requestedIndex >= 0 && requestedIndex < roomData.players?.length) {
+                    fromPlayer = roomData.players[requestedIndex];
+                    console.log(`✅ Bank API: Отправитель найден по индексу массива (${requestedIndex}):`, fromPlayer?.username);
+                }
+            }
+        }
+        
+        if (!toPlayer && toPlayerId) {
+            const indexMatch = String(toPlayerId).match(/player[_-]?(\d+)/i);
+            if (indexMatch) {
+                const requestedIndex = parseInt(indexMatch[1]) - 1;
+                if (requestedIndex >= 0 && requestedIndex < roomData.players?.length) {
+                    toPlayer = roomData.players[requestedIndex];
+                    console.log(`✅ Bank API: Получатель найден по индексу массива (${requestedIndex}):`, toPlayer?.username);
+                }
+            }
+        }
+        
         if (!fromPlayer || !toPlayer) {
-            console.log('❌ Bank API: Игрок не найден:', { 
+            console.log('❌ Bank API: Игрок не найден после всех попыток поиска:', { 
                 fromPlayer: !!fromPlayer, 
                 toPlayer: !!toPlayer,
                 fromPlayerId,
                 toPlayerId,
-                availablePlayers: roomData.players?.map(p => ({ id: p.id, userId: p.userId, username: p.username })) || []
+                fromPlayerIdType: typeof fromPlayerId,
+                toPlayerIdType: typeof toPlayerId,
+                playersCount: roomData.players?.length || 0,
+                availablePlayers: roomData.players?.map((p, idx) => ({ 
+                    index: idx,
+                    id: p.id, 
+                    idType: typeof p.id,
+                    userId: p.userId,
+                    userIdType: typeof p.userId,
+                    username: p.username,
+                    name: p.name,
+                    allKeys: Object.keys(p)
+                })) || []
             });
             return res.status(404).json({ 
                 success: false, 
-                message: `Игрок не найден. Отправитель: ${fromPlayer ? 'найден' : 'не найден'}, Получатель: ${toPlayer ? 'найден' : 'не найден'}` 
+                message: `Игрок не найден. Отправитель: ${fromPlayer ? 'найден' : 'не найден'}, Получатель: ${toPlayer ? 'найден' : 'не найден'}. Проверьте логи сервера для деталей.` 
             });
         }
         
