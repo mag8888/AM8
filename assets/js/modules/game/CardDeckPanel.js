@@ -116,20 +116,34 @@
                     this.refresh();
                 });
                 
-                // Обновление карточек при действиях игрока
+                // Обновление карточек при действиях игрока с дебаунсингом
+                // Дебаунсинг для предотвращения множественных запросов
+                if (!this._debouncedLoadDecks) {
+                    this._debouncedLoadDecks = () => {
+                        if (this._loadDecksDebounceTimer) {
+                            clearTimeout(this._loadDecksDebounceTimer);
+                        }
+                        this._loadDecksDebounceTimer = setTimeout(() => {
+                            if (!this._isRateLimited()) {
+                                this.loadDecks();
+                            }
+                        }, 2000); // Дебаунсинг 2 секунды
+                    };
+                }
+                
                 this.eventBus.on('game:turnEnded', () => {
-                    console.log('🃏 CardDeckPanel: Обновление карточек после окончания хода');
-                    this.loadDecks();
+                    console.log('🃏 CardDeckPanel: Обновление карточек после окончания хода (debounced)');
+                    this._debouncedLoadDecks();
                 });
                 
                 this.eventBus.on('game:diceRolled', () => {
-                    console.log('🃏 CardDeckPanel: Обновление карточек после броска кубика');
-                    this.loadDecks();
+                    console.log('🃏 CardDeckPanel: Обновление карточек после броска кубика (debounced)');
+                    this._debouncedLoadDecks();
                 });
                 
                 this.eventBus.on('game:playerMoved', () => {
-                    console.log('🃏 CardDeckPanel: Обновление карточек после движения игрока');
-                    this.loadDecks();
+                    console.log('🃏 CardDeckPanel: Обновление карточек после движения игрока (debounced)');
+                    this._debouncedLoadDecks();
                 });
             }
         }
