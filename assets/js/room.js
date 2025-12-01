@@ -2386,8 +2386,18 @@ function buildPlayerBundle({ user, dream, token, isReady }) {
 function validatePlayerBundle(bundle) {
     console.log('🔍 Room: validatePlayerBundle - проверяем пакет:', bundle);
     
-    if (!bundle?.userId || !bundle?.username) {
-        console.log('❌ Room: validatePlayerBundle - отсутствует userId или username:', {
+    // Проверяем наличие username (обязательно)
+    if (!bundle?.username) {
+        console.error('❌ Room: validatePlayerBundle - отсутствует username');
+        return {
+            isValid: false,
+            message: 'Username обязателен'
+        };
+    }
+    
+    // userId может отсутствовать, если используется username для идентификации
+    if (!bundle?.userId && !bundle?.username) {
+        console.error('❌ Room: validatePlayerBundle - отсутствует userId и username:', {
             userId: bundle?.userId,
             username: bundle?.username
         });
