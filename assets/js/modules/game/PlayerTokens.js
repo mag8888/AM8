@@ -131,13 +131,19 @@ class PlayerTokens {
         const handlePlayersUpdate = (players) => {
             if (!Array.isArray(players) || players.length === 0) {
                 this._debug('handlePlayersUpdate: пустой массив игроков');
+                // Если игроков нет, но фишки должны быть видны, не очищаем их сразу
                 return;
             }
             
             // Проверяем, изменились ли данные (простая проверка по хешу)
-            const playersHash = JSON.stringify(players.map(p => ({ id: p.id, position: p.position })));
+            const playersHash = JSON.stringify(players.map(p => ({ id: p.id, position: p.position, isInner: p.isInner })));
             if (this._lastPlayersHash === playersHash && this._hasUpdatedTokens) {
                 this._debug('Данные игроков не изменились, пропускаем обновление');
+                // Но если фишки еще не были отображены, принудительно обновляем
+                if (!this._hasUpdatedTokens || this.tokens.size === 0) {
+                    this._info('Принудительное обновление: фишки еще не отображены', { playersCount: players.length });
+                    this.updateTokens(players);
+                }
                 return;
             }
             this._lastPlayersHash = playersHash;
