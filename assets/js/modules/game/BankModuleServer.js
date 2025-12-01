@@ -1631,8 +1631,34 @@ class BankModuleServer {
         const amountStr = this.ui.querySelector('#transfer-amount')?.value;
         const amount = parseInt(amountStr);
         
+        console.log('🔍 BankModuleServer: Проверка данных перевода:', {
+            recipientId,
+            amountStr,
+            amount,
+            bankState: {
+                roomId: this.bankState.roomId,
+                playerId: this.bankState.playerId,
+                balance: this.bankState.balance
+            }
+        });
+        
         if (!recipientId || !amountStr || isNaN(amount) || amount <= 0) {
             this.showNotification('Заполните все поля корректно', 'error');
+            this._isTransferring = false;
+            return;
+        }
+        
+        // Проверяем наличие roomId и playerId
+        if (!this.bankState.roomId) {
+            console.error('❌ BankModuleServer: roomId не найден');
+            this.showNotification('Ошибка: ID комнаты не найден', 'error');
+            this._isTransferring = false;
+            return;
+        }
+        
+        if (!this.bankState.playerId) {
+            console.error('❌ BankModuleServer: playerId не найден');
+            this.showNotification('Ошибка: ID игрока не найден', 'error');
             this._isTransferring = false;
             return;
         }
