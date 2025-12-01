@@ -1,0 +1,54 @@
+/* Кнопка для скрытия/показа меню на мобильных устройствах */
+.toggle-menu-btn {
+  display: none; /* Скрыта на десктопе */
+}
+
+@media (max-width: 1024px) {
+  .toggle-menu-btn {
+    display: flex !important;
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 10000 !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    background: rgba(15, 23, 42, 0.95) !important;
+    border: 2px solid rgba(148, 163, 184, 0.3) !important;
+    color: #fff !important;
+    font-size: 1.5rem !important;
+    cursor: pointer !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .toggle-menu-btn:hover,
+  .toggle-menu-btn:active {
+    background: rgba(30, 41, 59, 0.95) !important;
+    transform: scale(1.05) !important;
+  }
+  
+  .toggle-menu-btn.active {
+    background: rgba(59, 130, 246, 0.9) !important;
+  }
+  
+  .toggle-menu-icon {
+    display: block !important;
+    line-height: 1 !important;
+  }
+  
+  /* Скрытое меню */
+  #card-decks-panel.menu-hidden {
+    display: none !important;
+  }
+  
+  /* Показываем меню по умолчанию */
+  #card-decks-panel:not(.menu-hidden) {
+    display: flex !important;
+  }
+}
+

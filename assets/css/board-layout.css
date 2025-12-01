@@ -303,6 +303,47 @@
     max-width: 100% !important;
   }
   
+  /* Кнопка для скрытия/показа меню (только на мобильных) */
+  .toggle-menu-btn {
+    display: block !important;
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 10000 !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    background: rgba(15, 23, 42, 0.95) !important;
+    border: 2px solid rgba(148, 163, 184, 0.3) !important;
+    color: #fff !important;
+    font-size: 1.5rem !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  .toggle-menu-btn:hover {
+    background: rgba(30, 41, 59, 0.95) !important;
+    transform: scale(1.05) !important;
+  }
+  
+  .toggle-menu-btn.active {
+    background: rgba(59, 130, 246, 0.9) !important;
+  }
+  
+  /* Скрытое меню */
+  #card-decks-panel.menu-hidden {
+    display: none !important;
+  }
+  
+  /* Показываем меню по умолчанию */
+  #card-decks-panel:not(.menu-hidden) {
+    display: flex !important;
+  }
+  
   #game-page,
   .game-page {
     display: flex !important;
@@ -473,45 +514,34 @@
   }
   
   #card-decks-panel.card-decks-container {
-    display: flex !important;
+    display: contents !important; /* Расплющиваем контейнер, чтобы банк и карты стали отдельными блоками */
     visibility: visible !important;
     opacity: 1 !important;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    max-height: none !important; /* Убираем внутренний скролл */
-    order: 2 !important; /* Панель карточек (с банком внутри) - второй, после поля */
-    border-right: none !important;
-    border-left: none !important;
-    border-bottom: none !important;
-    padding: 0 !important; /* Убираем padding, добавляем только для банка и карточек */
-    position: relative !important;
-    transform: none !important;
-    flex-direction: column !important; /* Карточки в колонку */
-    gap: 0 !important; /* Убираем gap, используем padding в секциях */
-    flex-wrap: nowrap !important;
-    overflow-y: visible !important; /* Нет доп. скролла */
-    overflow-x: hidden !important;
-    background: transparent !important; /* Убираем подложку */
-    flex-shrink: 0 !important; /* Не сжимается */
+    order: initial !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
   }
   
-  /* Внутренний контейнер для карточек - отдельно от банка */
+  /* Внутренний контейнер для карточек - отдельно от банка, в самом низу */
   #card-decks-panel .card-decks-inner {
-    order: 4 !important; /* Карточки - четвертые (внизу) */
+    order: 4 !important; /* Карточки (сделки) - четвертые (в самом низу) */
     padding: 1rem !important;
     padding-top: 0 !important; /* Убираем верхний отступ, т.к. банк уже имеет нижний border */
     display: flex !important;
     flex-direction: column !important;
     gap: 0.75rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   
   /* Карточки напрямую в панели - тоже order 4 */
   #card-decks-panel > .card-deck-card {
-    order: 4 !important; /* Карточки - четвертые (внизу) */
+    order: 4 !important; /* Карточки (сделки) - четвертые (в самом низу) */
     padding: 1rem !important;
     padding-top: 0 !important; /* Убираем верхний отступ, т.к. банк уже имеет нижний border */
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   
   /* Карточки сделок на всю ширину */
