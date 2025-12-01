@@ -456,12 +456,16 @@
                 document.addEventListener('DOMContentLoaded', function() {
                     ensureContainers();
                     initMenuToggle();
+                    initMobileControls(); // Инициализация мобильных элементов управления
                     initBoardSize();
                 });
             } else {
                 ensureContainers();
                 // Небольшая задержка для инициализации кнопки, чтобы элементы точно были в DOM
-                setTimeout(initMenuToggle, 100);
+                setTimeout(function() {
+                    initMenuToggle();
+                    initMobileControls(); // Инициализация мобильных элементов управления
+                }, 100);
                 initBoardSize();
             }
         })();
