@@ -1050,9 +1050,9 @@ class PlayersPanel {
                 <span class="player-icon">${tokenIcon}</span>
             </div>
             <div class="player-info">
-                <div class="player-name">${player.username || 'Игрок ' + (index + 1)}</div>
-                <div class="player-status ${isActive ? 'active' : 'inactive'}">
-                    ${status}
+                <div class="player-name">
+                    <span class="player-status-emoji">${status}</span>
+                    ${player.username || 'Игрок ' + (index + 1)}
                 </div>
                 <div class="player-balance">$${balance}</div>
             </div>
@@ -2381,20 +2381,14 @@ class PlayersPanel {
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
             }
             
-            .player-status {
-                font-size: 0.75rem;
-                font-weight: 500;
-                margin-bottom: 0.25rem;
-            }
-            
-            .player-status.active {
-                color: #10b981;
-            }
-            
-            .player-status.inactive {
-                color: #6b7280;
+            .player-status-emoji {
+                font-size: 1rem;
+                flex-shrink: 0;
             }
             
             .player-balance {

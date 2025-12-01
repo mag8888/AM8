@@ -149,8 +149,8 @@
     visibility: visible !important;
     opacity: 1 !important;
     min-width: 320px !important; /* Минимальная ширина */
-    max-width: 450px !important; /* Максимальная ширина */
-    width: auto !important; /* Занимает необходимое место */
+    max-width: 100% !important; /* На всю ширину */
+    width: 100% !important; /* Занимает всю доступную ширину */
     min-height: 0 !important;
     height: 100% !important; /* На всю высоту */
     max-height: 100% !important;

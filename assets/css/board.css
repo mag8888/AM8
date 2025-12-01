@@ -707,7 +707,8 @@
     
     .players-panel-container {
         min-width: 220px;
-        max-width: 280px;
+        max-width: 100%;
+        width: 100%;
     }
 }
 
@@ -729,7 +730,8 @@
     
     .players-panel-container {
         min-width: 180px;
-        max-width: 220px;
+        max-width: 100%;
+        width: 100%;
     }
     
     /* Уменьшаем размеры клеток на мобильных */
