@@ -417,10 +417,15 @@ class BoardLayout {
             }
 
             if (this.innerTrackElement && innerCells.length) {
-                // Используем offsetWidth/offsetHeight вместо getBoundingClientRect для стабильности
+                // Получаем размеры родительского контейнера (board-wrapper) для стабильности
+                const boardWrapper = this.innerTrackElement.parentElement;
+                const wrapperWidth = boardWrapper ? (boardWrapper.offsetWidth || boardWrapper.getBoundingClientRect().width) : 0;
+                const wrapperHeight = boardWrapper ? (boardWrapper.offsetHeight || boardWrapper.getBoundingClientRect().height) : 0;
+                
+                // Используем размеры wrapper, так как трек центрирован через transform
                 const innerRect = {
-                    width: this.innerTrackElement.offsetWidth || this.innerTrackElement.getBoundingClientRect().width,
-                    height: this.innerTrackElement.offsetHeight || this.innerTrackElement.getBoundingClientRect().height,
+                    width: wrapperWidth || this.innerTrackElement.offsetWidth || this.innerTrackElement.getBoundingClientRect().width,
+                    height: wrapperHeight || this.innerTrackElement.offsetHeight || this.innerTrackElement.getBoundingClientRect().height,
                     left: 0,
                     top: 0
                 };
