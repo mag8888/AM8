@@ -360,10 +360,15 @@ class BoardLayout {
             this.pendingPositionFrame = null;
 
             if (this.outerTrackElement && outerCells.length) {
-                // Используем offsetWidth/offsetHeight вместо getBoundingClientRect для стабильности
+                // Получаем размеры родительского контейнера (board-wrapper) для стабильности
+                const boardWrapper = this.outerTrackElement.parentElement;
+                const wrapperWidth = boardWrapper ? (boardWrapper.offsetWidth || boardWrapper.getBoundingClientRect().width) : 0;
+                const wrapperHeight = boardWrapper ? (boardWrapper.offsetHeight || boardWrapper.getBoundingClientRect().height) : 0;
+                
+                // Используем размеры wrapper, так как трек центрирован через transform
                 const outerRect = {
-                    width: this.outerTrackElement.offsetWidth || this.outerTrackElement.getBoundingClientRect().width,
-                    height: this.outerTrackElement.offsetHeight || this.outerTrackElement.getBoundingClientRect().height,
+                    width: wrapperWidth || this.outerTrackElement.offsetWidth || this.outerTrackElement.getBoundingClientRect().width,
+                    height: wrapperHeight || this.outerTrackElement.offsetHeight || this.outerTrackElement.getBoundingClientRect().height,
                     left: 0,
                     top: 0
                 };
@@ -374,6 +379,7 @@ class BoardLayout {
                     this._lastOuterRadius = 0;
                 } else {
                     const outerCellRect = firstOuterCell.getBoundingClientRect();
+                    // Используем размеры wrapper для вычисления boardSize
                     const boardSize = Math.min(outerRect.width, outerRect.height);
                     const baseOuterRadius =
                         boardSize / 2 - outerCellRect.width / 2 - 6;
