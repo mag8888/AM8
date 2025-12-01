@@ -1314,12 +1314,26 @@ class App {
             const gameStateManager = this.getGameStateManager();
             if (gameStateManager && gameStateManager._state) {
                 if (typeof bankPreview.updatePreviewDataFromState === 'function') {
-                    bankPreview.updatePreviewDataFromState(gameStateManager._state);
-                    console.log('🏦 App: BankPreview данные обновлены из GameStateManager');
+                    // Принудительно обновляем данные банка
+                    setTimeout(() => {
+                        bankPreview.updatePreviewDataFromState(gameStateManager._state);
+                        console.log('🏦 App: BankPreview данные обновлены из GameStateManager');
+                    }, 300);
                 }
             } else if (typeof bankPreview.updatePreviewData === 'function') {
-            bankPreview.updatePreviewData();
-            console.log('🏦 App: BankPreview данные обновлены');
+                // Принудительно загружаем данные
+                setTimeout(() => {
+                    bankPreview.updatePreviewData();
+                    console.log('🏦 App: BankPreview данные обновлены');
+                }, 300);
+            }
+            
+            // Дополнительная попытка обновления через loadInitialData
+            if (typeof bankPreview.loadInitialData === 'function') {
+                setTimeout(() => {
+                    bankPreview.loadInitialData();
+                    console.log('🏦 App: BankPreview принудительная загрузка данных');
+                }, 500);
             }
         }
         
