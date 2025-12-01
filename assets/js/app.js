@@ -1020,13 +1020,21 @@ class App {
                     attempts++;
                     if (checkAndInitBoardLayout()) {
                         clearInterval(checkInterval);
+                        // После успешной инициализации BoardLayout принудительно загружаем данные
+                        this._forceLoadGameData(roomId);
                     } else if (attempts >= maxAttempts) {
                         clearInterval(checkInterval);
                         console.error('❌ App: BoardConfig не загружен после всех попыток');
                     }
                 }, 100);
+            } else {
+                // Если BoardLayout инициализирован сразу, принудительно загружаем данные
+                this._forceLoadGameData(roomId);
             }
         }
+
+        // Принудительная загрузка данных игры
+        this._forceLoadGameData(roomId);
 
         const ensureModule = (name, factory, { forceRecreate = shouldForce } = {}) => {
             if (forceRecreate) {
