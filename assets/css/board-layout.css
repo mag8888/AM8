@@ -116,28 +116,17 @@
     margin: 0 auto !important;
   }
   
-  /* Квадратная доска - фиксированные размеры для предотвращения сдвига */
+  /* Квадратная доска - по центру экрана */
   .game-page .board-wrapper {
-    width: 100% !important;
-    height: 100% !important;
+    width: min(95vh, 95vw) !important;
+    height: min(95vh, 95vw) !important;
     aspect-ratio: 1 / 1 !important; /* Всегда квадрат */
-    margin: 0 auto !important; /* Центрирование по горизонтали */
+    margin: 0 auto !important; /* Центрирование */
     max-width: 100% !important;
     max-height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
     box-sizing: border-box !important;
     position: relative !important;
-    /* Предотвращаем изменение размеров после загрузки */
-    flex: 0 0 auto !important; /* Не растягивается, использует aspect-ratio */
-    overflow: hidden !important; /* Скрываем переполнение */
-    /* Убираем contain, чтобы избежать проблем с пересчетом позиций */
-    /* contain: layout size style paint !important; */
-    /* Фиксируем позицию для предотвращения сдвига */
-    left: 0 !important;
-    right: 0 !important;
-    top: 0 !important;
-    bottom: 0 !important;
+    overflow: visible !important;
   }
   
   /* Треки внутри доски - не влияют на размеры контейнера */
