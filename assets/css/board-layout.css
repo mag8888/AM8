@@ -451,8 +451,8 @@
   .mobile-menu-btn {
     top: 1rem !important;
     right: 1rem !important;
-    width: 48px !important;
-    height: 48px !important;
+    width: 56px !important;
+    height: 56px !important;
     justify-content: center !important;
     padding: 0 !important;
   }
@@ -460,12 +460,12 @@
   .mobile-bank-btn {
     top: 1rem !important;
     left: 1rem !important;
-    min-width: 120px !important;
-    padding: 0.5rem 0.75rem !important;
+    min-width: 140px !important;
+    padding: 0.75rem 1rem !important;
   }
   
   .mobile-btn-icon {
-    font-size: 1.25rem !important;
+    font-size: 1.75rem !important;
     line-height: 1 !important;
   }
   
@@ -477,14 +477,14 @@
   }
   
   .mobile-bank-balance {
-    font-size: 1rem !important;
+    font-size: 1.25rem !important;
     font-weight: 700 !important;
     color: #10b981 !important;
     line-height: 1.2 !important;
   }
   
   .mobile-bank-credit {
-    font-size: 0.75rem !important;
+    font-size: 0.875rem !important;
     color: rgba(248, 250, 252, 0.7) !important;
     line-height: 1 !important;
   }
@@ -503,19 +503,19 @@
     background: rgba(17, 25, 40, 0.95) !important;
     border: 2px solid rgba(99, 102, 241, 0.5) !important;
     border-radius: 12px !important;
-    padding: 1rem 1.5rem !important;
+    padding: 1.25rem 1.75rem !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    gap: 0.5rem !important;
+    gap: 0.75rem !important;
     color: #f8fafc !important;
-    font-size: 0.875rem !important;
+    font-size: 1rem !important;
     font-weight: 600 !important;
     cursor: pointer !important;
     transition: all 0.2s ease !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
     backdrop-filter: blur(10px) !important;
-    min-width: 100px !important;
+    min-width: 120px !important;
   }
   
   .mobile-turn-btn:disabled {
@@ -541,12 +541,12 @@
   }
   
   .mobile-turn-icon {
-    font-size: 1.5rem !important;
+    font-size: 2rem !important;
     line-height: 1 !important;
   }
   
   .mobile-turn-label {
-    font-size: 0.875rem !important;
+    font-size: 1rem !important;
     line-height: 1 !important;
   }
 }
