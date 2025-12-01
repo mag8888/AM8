@@ -168,7 +168,7 @@ router.post('/transfer', async (req, res) => {
             console.error('❌ Bank API: Комната не найдена:', roomId);
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
         }
-        
+
         // Проверяем, что есть игроки
         if (!roomData.players || roomData.players.length === 0) {
             console.error('❌ Bank API: В комнате нет игроков:', {

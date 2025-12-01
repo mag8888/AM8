@@ -171,31 +171,31 @@ class MovementService {
         }, 30000); // 30 секунд таймаут
         
         try {
-            // Создаем объект движения
+        // Создаем объект движения
             movement = {
-                id: this.generateMovementId(),
-                playerId,
-                steps,
-                startPosition: { ...currentPosition },
-                endPosition: null,
-                path: [],
-                timestamp: Date.now()
-            };
-            
-            // Рассчитываем путь движения
-            movement.path = this.calculatePath(currentPosition, steps);
-            movement.endPosition = movement.path[movement.path.length - 1];
-            
-            // Обновляем позицию игрока
-            this.playerPositions.set(playerId, movement.endPosition);
-            this.currentMovement = movement;
-            
-            console.log(`🚀 MovementService: Игрок ${playerId} движется на ${steps} клеток:`, movement);
-            
-            const stepDelayMs = Number(options.stepDelayMs);
-            await this.emitMovementEvents(movement, {
-                stepDelayMs: Number.isFinite(stepDelayMs) && stepDelayMs > 0 ? stepDelayMs : 0
-            });
+            id: this.generateMovementId(),
+            playerId,
+            steps,
+            startPosition: { ...currentPosition },
+            endPosition: null,
+            path: [],
+            timestamp: Date.now()
+        };
+        
+        // Рассчитываем путь движения
+        movement.path = this.calculatePath(currentPosition, steps);
+        movement.endPosition = movement.path[movement.path.length - 1];
+        
+        // Обновляем позицию игрока
+        this.playerPositions.set(playerId, movement.endPosition);
+        this.currentMovement = movement;
+        
+        console.log(`🚀 MovementService: Игрок ${playerId} движется на ${steps} клеток:`, movement);
+        
+        const stepDelayMs = Number(options.stepDelayMs);
+        await this.emitMovementEvents(movement, {
+            stepDelayMs: Number.isFinite(stepDelayMs) && stepDelayMs > 0 ? stepDelayMs : 0
+        });
         } catch (error) {
             console.error('❌ MovementService: Ошибка во время движения:', error);
             // При ошибке возвращаем позицию игрока к начальной
@@ -207,9 +207,9 @@ class MovementService {
             throw error;
         } finally {
             clearTimeout(timeoutId);
-            this.isMoving = false;
+        this.isMoving = false;
             const completedMovement = this.currentMovement;
-            this.currentMovement = null;
+        this.currentMovement = null;
             console.log(`✅ MovementService: Движение завершено для игрока ${playerId}`);
         }
         

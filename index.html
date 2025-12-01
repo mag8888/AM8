@@ -321,26 +321,25 @@
                 });
             }
             
-            // Функция для установки квадратного размера контейнера на основе ширины
+            // Функция для установки квадратного размера контейнера на основе viewport
             function setSquareBoardSize() {
                 const boardWrapper = document.querySelector('.board-wrapper');
                 if (!boardWrapper) return;
                 
-                // Получаем ширину родительского контейнера для точности
-                const container = boardWrapper.parentElement;
-                if (!container) return;
+                // Используем размер viewport для создания квадрата
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const size = Math.min(viewportWidth, viewportHeight);
                 
-                const containerWidth = container.offsetWidth || container.clientWidth;
-                
-                if (containerWidth > 0) {
-                    // Устанавливаем строго квадратный размер
-                    const size = containerWidth + 'px';
-                    boardWrapper.style.width = size;
-                    boardWrapper.style.height = size;
-                    boardWrapper.style.minWidth = size;
-                    boardWrapper.style.minHeight = size;
-                    boardWrapper.style.maxWidth = size;
-                    boardWrapper.style.maxHeight = size;
+                if (size > 0) {
+                    // Устанавливаем строго квадратный размер на основе меньшей стороны экрана
+                    const sizePx = size + 'px';
+                    boardWrapper.style.width = sizePx;
+                    boardWrapper.style.height = sizePx;
+                    boardWrapper.style.minWidth = sizePx;
+                    boardWrapper.style.minHeight = sizePx;
+                    boardWrapper.style.maxWidth = sizePx;
+                    boardWrapper.style.maxHeight = sizePx;
                     boardWrapper.style.aspectRatio = '1 / 1';
                 }
             }
