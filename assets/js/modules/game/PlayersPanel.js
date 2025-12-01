@@ -1357,34 +1357,60 @@ class PlayersPanel {
      * @param {number} result - Результат броска
      */
     updateDiceResult(result) {
-        const diceResult = document.getElementById('dice-result-value');
+        // Обновляем отображение в панели действий
+        const diceResultDisplay = document.getElementById('dice-result-display');
+        const diceResultValue = document.getElementById('dice-result-value');
         const rollHistory = document.getElementById('roll-history');
         
-        if (diceResult) {
-            const numericValue = typeof result === 'object'
-                ? Number(result?.value ?? result?.total)
-                : Number(result);
+        const numericValue = typeof result === 'object'
+            ? Number(result?.value ?? result?.total)
+            : Number(result);
+        
+        if (Number.isFinite(numericValue) && numericValue >= 1 && numericValue <= 6) {
+            // Показываем результат в панели действий
+            if (diceResultValue) {
+                diceResultValue.textContent = numericValue;
+                diceResultValue.classList.add('dice-rolled');
+                setTimeout(() => {
+                    diceResultValue.classList.remove('dice-rolled');
+                }, 1000);
+            }
             
-            const diceFace = diceResult.querySelector('.dice-face');
+            if (diceResultDisplay) {
+                diceResultDisplay.style.display = 'flex';
+            }
+            
+            // Добавляем результат в историю бросков
+            this.addToRollHistory(numericValue, rollHistory);
+            
+            console.log('🎲 PlayersPanel: Результат броска отображен:', numericValue);
+        } else {
+            // Скрываем результат, если значение некорректно
+            if (diceResultDisplay) {
+                diceResultDisplay.style.display = 'none';
+            }
+            if (diceResultValue) {
+                diceResultValue.textContent = '-';
+            }
+        }
+        
+        // Старый код для совместимости (если есть другие элементы)
+        const oldDiceResult = document.getElementById('dice-result-value-old');
+        if (oldDiceResult) {
+            const diceFace = oldDiceResult.querySelector('.dice-face');
             const diceNumber = diceFace?.querySelector('.dice-number');
             
             if (Number.isFinite(numericValue) && numericValue >= 1 && numericValue <= 6) {
-                // Показываем результат
                 if (diceNumber) {
                     diceNumber.textContent = numericValue;
                 }
-                
                 if (diceFace) {
                     diceFace.classList.add('rolling');
                     setTimeout(() => {
                         diceFace.classList.remove('rolling');
                     }, 600);
                 }
-                
-                // Добавляем результат в историю бросков
-                this.addToRollHistory(numericValue, rollHistory);
             } else {
-                // Возвращаем placeholder состояние
                 if (diceNumber) {
                     diceNumber.textContent = '-';
                 }
