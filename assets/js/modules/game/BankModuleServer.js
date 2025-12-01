@@ -720,7 +720,23 @@ class BankModuleServer {
      */
     updatePlayersList() {
         const recipientSelect = this.getCachedElement('#transfer-recipient');
-        if (!recipientSelect) return;
+        if (!recipientSelect) {
+            console.warn('⚠️ BankModuleServer: Элемент #transfer-recipient не найден');
+            return;
+        }
+        
+        // Если игроки не загружены, пытаемся получить их из GameStateManager
+        if (!this.bankState.players || this.bankState.players.length === 0) {
+            console.log('🔧 BankModuleServer: Игроки не загружены, пытаемся получить из GameStateManager');
+            const gameStateManager = window.app?.getModule?.('gameStateManager');
+            if (gameStateManager && typeof gameStateManager.getState === 'function') {
+                const managerState = gameStateManager.getState();
+                if (managerState && managerState.players && managerState.players.length > 0) {
+                    console.log('✅ BankModuleServer: Получены игроки из GameStateManager:', managerState.players.length);
+                    this.bankState.players = managerState.players;
+                }
+            }
+        }
         
         // Используем DocumentFragment для батчевого обновления
         const fragment = document.createDocumentFragment();
@@ -730,21 +746,26 @@ class BankModuleServer {
         fragment.appendChild(defaultOption);
         
         // Добавляем игроков (исключая текущего)
-        this.bankState.players.forEach(player => {
-            if (player.id !== this.bankState.playerId) {
-                const option = document.createElement('option');
-                option.value = player.id;
-                const balance = player.balance || player.money || 0;
-                option.textContent = `${player.username || player.name} ($${CommonUtils.formatNumber(balance)})`;
-                fragment.appendChild(option);
-            }
-        });
+        if (this.bankState.players && this.bankState.players.length > 0) {
+            this.bankState.players.forEach(player => {
+                if (player.id !== this.bankState.playerId) {
+                    const option = document.createElement('option');
+                    option.value = player.id;
+                    const balance = player.balance || player.money || 0;
+                    option.textContent = `${player.username || player.name} ($${CommonUtils.formatNumber(balance)})`;
+                    fragment.appendChild(option);
+                }
+            });
+        } else {
+            console.warn('⚠️ BankModuleServer: Список игроков пуст, нечего добавить в селект');
+        }
         
         // Заменяем содержимое за один вызов
         recipientSelect.innerHTML = '';
         recipientSelect.appendChild(fragment);
         
-        console.log(`👥 BankModuleServer: Обновлен список игроков: ${this.bankState.players.length} игроков`);
+        const playersCount = this.bankState.players ? this.bankState.players.length : 0;
+        console.log(`👥 BankModuleServer: Обновлен список игроков: ${playersCount} игроков`);
     }
     
     /**
@@ -1533,10 +1554,19 @@ class BankModuleServer {
                     if (localState && localState.players && localState.players.length > 0) {
                         console.log('🔄 BankModuleServer: Обновляем состояние из GameStateManager при открытии');
                         this.updateBankStateFromServer(localState, null);
+                    } else {
+                        console.warn('⚠️ BankModuleServer: GameStateManager не содержит игроков');
                     }
+                } else {
+                    console.warn('⚠️ BankModuleServer: GameStateManager недоступен');
                 }
                 
                 this.updateUIFromServer();
+                
+                // Принудительно обновляем список игроков после обновления UI
+                setTimeout(() => {
+                    this.updatePlayersList();
+                }, 100);
                 
                 // Затем загружаем актуальные данные в фоне (неблокирующе)
                 setTimeout(() => {
