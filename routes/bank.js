@@ -135,22 +135,45 @@ router.post('/transfer', async (req, res) => {
         console.log('🏦 Bank API: Поиск игроков:', {
             fromPlayerId,
             toPlayerId,
-            availablePlayers: roomData.players?.map(p => ({ id: p.id, userId: p.userId, username: p.username })) || []
+            availablePlayers: roomData.players?.map(p => ({ 
+                id: p.id, 
+                userId: p.userId, 
+                playerId: p.playerId,
+                username: p.username 
+            })) || []
         });
         
-        // Ищем игроков по разным вариантам ID (id, userId)
-        const fromPlayer = roomData.players?.find(p => 
-            p.id === fromPlayerId || 
-            p.userId === fromPlayerId ||
-            String(p.id) === String(fromPlayerId) ||
-            String(p.userId) === String(fromPlayerId)
-        );
-        const toPlayer = roomData.players?.find(p => 
-            p.id === toPlayerId || 
-            p.userId === toPlayerId ||
-            String(p.id) === String(toPlayerId) ||
-            String(p.userId) === String(toPlayerId)
-        );
+        // Ищем игроков по разным вариантам ID (id, userId, playerId)
+        // Также проверяем строковые варианты и частичные совпадения
+        const fromPlayer = roomData.players?.find(p => {
+            const pId = String(p.id || '');
+            const pUserId = String(p.userId || '');
+            const pPlayerId = String(p.playerId || '');
+            const searchId = String(fromPlayerId || '');
+            
+            return pId === searchId || 
+                   pUserId === searchId ||
+                   pPlayerId === searchId ||
+                   pId.includes(searchId) ||
+                   pUserId.includes(searchId) ||
+                   searchId.includes(pId) ||
+                   searchId.includes(pUserId);
+        });
+        
+        const toPlayer = roomData.players?.find(p => {
+            const pId = String(p.id || '');
+            const pUserId = String(p.userId || '');
+            const pPlayerId = String(p.playerId || '');
+            const searchId = String(toPlayerId || '');
+            
+            return pId === searchId || 
+                   pUserId === searchId ||
+                   pPlayerId === searchId ||
+                   pId.includes(searchId) ||
+                   pUserId.includes(searchId) ||
+                   searchId.includes(pId) ||
+                   searchId.includes(pUserId);
+        });
         
         if (!fromPlayer || !toPlayer) {
             console.log('❌ Bank API: Игрок не найден:', { 

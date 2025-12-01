@@ -1712,22 +1712,45 @@ class BankModuleServer {
             }
             
             // Проверяем, что ID игроков правильные перед отправкой
-            const recipientPlayer = this.bankState.players?.find(p => p.id === recipientId);
+            const recipientPlayer = this.bankState.players?.find(p => 
+                p.id === recipientId || 
+                p.userId === recipientId ||
+                String(p.id) === String(recipientId) ||
+                String(p.userId) === String(recipientId)
+            );
             if (!recipientPlayer) {
                 console.error('❌ BankModuleServer: Получатель не найден в списке игроков перед отправкой:', {
                     recipientId,
-                    availablePlayers: this.bankState.players?.map(p => ({ id: p.id, username: p.username, userId: p.userId })) || []
+                    recipientIdType: typeof recipientId,
+                    availablePlayers: this.bankState.players?.map(p => ({ 
+                        id: p.id, 
+                        idType: typeof p.id,
+                        userId: p.userId, 
+                        userIdType: typeof p.userId,
+                        username: p.username 
+                    })) || []
                 });
                 throw new Error('Получатель не найден в списке игроков');
             }
             
+            // Определяем правильные ID для отправки на сервер
+            // Используем userId если доступен, иначе id
+            const serverFromPlayerId = this.bankState.playerId || this.bankState.currentPlayer?.userId || this.bankState.currentPlayer?.id;
+            const serverToPlayerId = recipientPlayer.userId || recipientPlayer.id;
+            
             console.log('🏦 BankModuleServer: Отправка перевода:', {
                 roomId: this.bankState.roomId,
-                fromPlayerId: this.bankState.playerId,
-                toPlayerId: recipientId,
+                fromPlayerId: serverFromPlayerId,
+                toPlayerId: serverToPlayerId,
                 recipientUsername: recipientPlayer.username,
                 amount: amount,
-                availablePlayers: this.bankState.players?.map(p => ({ id: p.id, username: p.username, userId: p.userId })) || []
+                clientFromPlayerId: this.bankState.playerId,
+                clientToPlayerId: recipientId,
+                availablePlayers: this.bankState.players?.map(p => ({ 
+                    id: p.id, 
+                    userId: p.userId, 
+                    username: p.username 
+                })) || []
             });
             
             // Используем ApiUrlHelper если доступен, иначе fallback на прямой путь
@@ -1741,8 +1764,8 @@ class BankModuleServer {
                 },
                 body: JSON.stringify({
                     roomId: this.bankState.roomId,
-                    fromPlayerId: this.bankState.playerId,
-                    toPlayerId: recipientId,
+                    fromPlayerId: serverFromPlayerId,
+                    toPlayerId: serverToPlayerId,
                     amount: amount,
                     description: `Перевод через BankModuleServer`
                 })
