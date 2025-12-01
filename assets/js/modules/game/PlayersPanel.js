@@ -567,13 +567,17 @@ class PlayersPanel {
     }
 
     /**
-     * Запуск периодических обновлений через GameStateManager
+     * ОТКЛЮЧЕНО: Периодические обновления отключены - обновления только по событиям
      */
     startPeriodicUpdatesViaGameStateManager(roomId) {
-        if (this.gameStateManager && typeof this.gameStateManager.startPeriodicUpdates === 'function') {
-            console.log('🔄 PlayersPanel: Запуск периодических обновлений через GameStateManager');
-            this.gameStateManager.startPeriodicUpdates(roomId, 90000); // 90 секунд интервал для снижения нагрузки
-        }
+        // ОТКЛЮЧЕНО: Автоматические обновления отключены для предотвращения rate limiting
+        // Обновления происходят только по событиям: действия игрока (ход, бросок) или push от сервера
+        console.log('🚫 PlayersPanel: Периодические обновления отключены. Обновления только по событиям.');
+        
+        // НЕ запускаем периодические обновления
+        // if (this.gameStateManager && typeof this.gameStateManager.startPeriodicUpdates === 'function') {
+        //     this.gameStateManager.startPeriodicUpdates(roomId, 90000);
+        // }
     }
 
     /**

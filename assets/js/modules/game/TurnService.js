@@ -123,6 +123,17 @@ class TurnService extends EventTarget {
             if (this.lastRollValue !== null) {
                 this.emit('dice:rolled', { value: this.lastRollValue });
             }
+            
+            // Обновляем GameStateManager после действия игрока (бросок кубика)
+            if (response?.state && this.gameStateManager && typeof this.gameStateManager.updateFromServer === 'function') {
+                this.gameStateManager.updateFromServer(response.state);
+                console.log('🔄 TurnService: GameStateManager обновлен после броска кубика');
+            }
+            
+            // Эмит события для обновления карточек и других компонентов
+            if (this.eventBus && typeof this.eventBus.emit === 'function') {
+                this.eventBus.emit('game:diceRolled', { value: this.lastRollValue, state: response?.state });
+            }
 
             console.log('🎮 TurnService: Кубик брошен успешно, значение =', this.lastRollValue);
 
@@ -302,6 +313,17 @@ class TurnService extends EventTarget {
             
             // Эмит успешного результата
             this.emit('end:success', response);
+            
+            // Обновляем GameStateManager после действия игрока (завершение хода)
+            if (response?.state && this.gameStateManager && typeof this.gameStateManager.updateFromServer === 'function') {
+                this.gameStateManager.updateFromServer(response.state);
+                console.log('🔄 TurnService: GameStateManager обновлен после завершения хода');
+            }
+            
+            // Эмит события для обновления карточек и других компонентов
+            if (this.eventBus && typeof this.eventBus.emit === 'function') {
+                this.eventBus.emit('game:turnEnded', { state: response?.state });
+            }
             
             console.log('✅ end:success', { roomId, activePlayer: response?.state?.activePlayer });
             console.log('🎮 TurnService: Ход завершен успешно');

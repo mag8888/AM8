@@ -312,24 +312,27 @@ class GameStateManager {
     }
 
     /**
-     * УЛУЧШЕНО: Безопасный запуск периодических обновлений
+     * ОТКЛЮЧЕНО: Периодические обновления отключены - обновления только по событиям (действия игрока или push от сервера)
      * @param {string} roomId - ID комнаты
      * @param {number} interval - Интервал в миллисекундах
      */
-    startPeriodicUpdates(roomId, interval = 180000) { // Увеличено до 180 секунд (3 минуты) для снижения нагрузки и предотвращения 429
-        if (this._updateTimer) {
-            clearInterval(this._updateTimer);
-        }
-
-        console.log(`🔄 GameStateManager: Запуск периодических обновлений каждые ${interval}ms`);
-        this._updateTimer = setInterval(async () => {
-            // Добавляем проверку circuit breaker и rate limiting
-            if (!this._circuitOpen && !this._isRateLimited()) {
-                await this.fetchGameState(roomId);
-            } else {
-                console.log('🚫 GameStateManager: Пропускаем обновление (circuit breaker или rate limit)');
-            }
-        }, interval);
+    startPeriodicUpdates(roomId, interval = 180000) {
+        // ОТКЛЮЧЕНО: Автоматические обновления отключены для предотвращения rate limiting
+        // Обновления происходят только по событиям: действия игрока (ход, бросок) или push от сервера
+        console.log('🚫 GameStateManager: Периодические обновления отключены. Обновления только по событиям.');
+        
+        // Останавливаем любые существующие таймеры
+        this.stopPeriodicUpdates();
+        
+        // НЕ запускаем setInterval - обновления только по событиям
+        // if (this._updateTimer) {
+        //     clearInterval(this._updateTimer);
+        // }
+        // this._updateTimer = setInterval(async () => {
+        //     if (!this._circuitOpen && !this._isRateLimited()) {
+        //         await this.fetchGameState(roomId);
+        //     }
+        // }, interval);
     }
 
     /**

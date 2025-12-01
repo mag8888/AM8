@@ -11,8 +11,9 @@ class PushClient {
         this.clientId = null;
         this.isRegistered = false;
         this.pollingInterval = null;
-        // Увеличиваем интервал для предотвращения 429 ошибок
-        this.pollingIntervalMs = 20000; // Увеличиваем до 20 секунд для предотвращения 429 ошибок
+        // ОТКЛЮЧЕНО: Polling отключен - обновления только по событиям (действия игрока или push от сервера)
+        // Увеличиваем интервал до максимума для предотвращения 429 ошибок
+        this.pollingIntervalMs = 300000; // 5 минут - практически отключен, обновления только по событиям
         this.retryCount = 0;
         this.maxRetries = 5;
         
@@ -327,6 +328,15 @@ class PushClient {
      */
     handlePushNotification(pushData) {
         console.log(`📱 PushClient: Получено push-уведомление:`, pushData);
+        
+        // Обновляем GameStateManager при получении push-уведомления от сервера
+        if (pushData?.data?.state && window.app && window.app.getModule) {
+            const gameStateManager = window.app.getModule('gameStateManager');
+            if (gameStateManager && typeof gameStateManager.updateFromServer === 'function') {
+                gameStateManager.updateFromServer(pushData.data.state);
+                console.log('🔄 PushClient: GameStateManager обновлен из push-уведомления');
+            }
+        }
 
         // Передаем уведомление через EventBus
         this.eventBus.emit('push:notification', pushData);
