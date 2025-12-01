@@ -316,7 +316,12 @@
   }
   
   /* Показываем мобильные элементы управления на мобильной версии */
-  .mobile-control-btn,
+  .mobile-control-btn {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
   .mobile-turn-controls {
     display: flex !important;
     visibility: visible !important;
@@ -497,9 +502,11 @@
     bottom: 1rem !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    display: none !important; /* По умолчанию скрыты */
+    display: flex !important; /* Показываем на мобильной версии */
     gap: 1rem !important;
     z-index: 1000 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .mobile-turn-btn {
