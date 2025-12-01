@@ -354,11 +354,6 @@ class PlayersPanel {
                             <div class="btn-label">Передать</div>
                             <div class="btn-glow"></div>
                         </button>
-                        <button class="action-btn exit-btn" id="exit-game" type="button">
-                            <div class="btn-icon">🚪</div>
-                            <div class="btn-label">Выход</div>
-                            <div class="btn-glow"></div>
-                        </button>
                     </div>
                 </div>
 
@@ -372,6 +367,15 @@ class PlayersPanel {
                     <div class="players-list" id="players-list">
                         <!-- Игроки будут добавлены динамически -->
                     </div>
+                </div>
+
+                <!-- Кнопка выхода внизу -->
+                <div class="exit-widget">
+                    <button class="action-btn exit-btn" id="exit-game" type="button">
+                        <div class="btn-icon">🚪</div>
+                        <div class="btn-label">Выход</div>
+                        <div class="btn-glow"></div>
+                    </button>
                 </div>
             </div>
         `;
