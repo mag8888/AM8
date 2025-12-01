@@ -350,10 +350,10 @@
 
 .inner-track {
     grid-area: board;
-    width: 50% !important; /* Уменьшено чтобы не накладывался на внешние клетки */
-    height: 50% !important;
-    top: 25% !important;
-    left: 25% !important;
+    width: 65% !important; /* Увеличено для большего внутреннего круга */
+    height: 65% !important;
+    top: 17.5% !important; /* Скорректировано для центрирования */
+    left: 17.5% !important;
     z-index: 3 !important; /* Внутренний круг поверх, но клетки не должны накладываться */
     pointer-events: none !important; /* Клетки обрабатывают события, но фишки должны быть видны */
 }
