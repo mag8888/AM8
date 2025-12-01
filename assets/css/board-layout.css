@@ -337,6 +337,15 @@
     overflow: visible !important;
     gap: 1rem !important;
     flex-wrap: nowrap !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Убеждаемся, что панель игроков видна на мобиле */
+  #players-list-container {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   /* Все секции внутри панели игроков на всю ширину */
