@@ -2869,6 +2869,53 @@ class PlayersPanel {
 
             /* Общие стили для виджетов */
             .active-player-widget,
+            /* Отображение результата броска */
+            .dice-result-display {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 0.75rem;
+                margin-bottom: 1rem;
+                background: rgba(99, 102, 241, 0.15);
+                border: 1px solid rgba(99, 102, 241, 0.3);
+                border-radius: 0.75rem;
+                backdrop-filter: blur(10px);
+            }
+            
+            .dice-result-label {
+                font-size: 0.9rem;
+                color: rgba(148, 163, 184, 0.8);
+                font-weight: 500;
+            }
+            
+            .dice-result-value {
+                font-size: 2rem;
+                font-weight: 700;
+                color: #fbbf24;
+                font-family: 'Courier New', monospace;
+                min-width: 2.5rem;
+                text-align: center;
+                transition: all 0.3s ease;
+            }
+            
+            .dice-result-value.dice-rolled {
+                animation: diceRollPulse 0.6s ease-in-out;
+            }
+            
+            @keyframes diceRollPulse {
+                0% {
+                    transform: scale(1);
+                }
+                50% {
+                    transform: scale(1.3);
+                    color: #f59e0b;
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+            
             .actions-widget,
             .players-widget {
                 background: rgba(255, 255, 255, 0.03);
