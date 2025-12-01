@@ -303,7 +303,8 @@
     .card-decks-container {
         flex-direction: column;
         gap: 0.5rem;
-        max-width: 280px;
+        max-width: 100%;
+        width: 100%;
     }
 
     .card-deck-card {
