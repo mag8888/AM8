@@ -1029,12 +1029,12 @@ class App {
                 }, 100);
             } else {
                 // Если BoardLayout инициализирован сразу, принудительно загружаем данные
-                this._forceLoadGameData(roomId);
+                setTimeout(() => this._forceLoadGameData(roomId), 500);
             }
         }
 
-        // Принудительная загрузка данных игры
-        this._forceLoadGameData(roomId);
+        // Принудительная загрузка данных игры после инициализации всех модулей
+        setTimeout(() => this._forceLoadGameData(roomId), 1000);
 
         const ensureModule = (name, factory, { forceRecreate = shouldForce } = {}) => {
             if (forceRecreate) {
