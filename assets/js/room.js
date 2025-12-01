@@ -2166,12 +2166,19 @@ async function toggleReadyStatus() {
         // Это гарантирует, что обновим правильного игрока
         const userForBundle = currentPlayer ? {
             ...currentUser,
-            id: currentPlayer.userId || currentUser.id || currentUser.userId,
-            userId: currentPlayer.userId || currentUser.userId || currentUser.id,
+            id: currentPlayer.userId || currentPlayer.id || currentUser.id || currentUser.userId,
+            userId: currentPlayer.userId || currentPlayer.id || currentUser.userId || currentUser.id,
             username: currentPlayer.username || currentUser.username
         } : currentUser;
         
-        console.log('🔍 Room: userForBundle (с userId из найденного игрока):', userForBundle);
+        console.log('🔍 Room: userForBundle (с userId из найденного игрока):', {
+            ...userForBundle,
+            hasId: !!userForBundle.id,
+            hasUserId: !!userForBundle.userId,
+            idValue: userForBundle.id,
+            userIdValue: userForBundle.userId,
+            username: userForBundle.username
+        });
         
         const playerData = buildPlayerBundle({
             user: userForBundle,
@@ -2179,7 +2186,14 @@ async function toggleReadyStatus() {
             token: selectedToken,
             isReady: newReadyState
         });
-        console.log('✅ Room: Пакет игрока сформирован:', playerData);
+        console.log('✅ Room: Пакет игрока сформирован:', {
+            ...playerData,
+            userId: playerData.userId || playerData.id,
+            username: playerData.username,
+            isReady: playerData.isReady,
+            hasDream: !!playerData.dream,
+            token: playerData.token
+        });
 
         console.log('🔍 Room: Валидируем пакет игрока...');
         const validation = validatePlayerBundle(playerData);
