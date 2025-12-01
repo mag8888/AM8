@@ -141,48 +141,151 @@ router.post('/transfer', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
         }
 
-        console.log('🏦 Bank API: Состояние комнаты:', roomData);
+        console.log('🏦 Bank API: Состояние комнаты:', JSON.stringify(roomData, null, 2));
         console.log('🏦 Bank API: Поиск игроков:', {
             fromPlayerId,
             toPlayerId,
-            availablePlayers: roomData.players?.map(p => ({ 
+            fromPlayerIdType: typeof fromPlayerId,
+            toPlayerIdType: typeof toPlayerId,
+            availablePlayers: roomData.players?.map((p, idx) => ({ 
+                index: idx,
                 id: p.id, 
-                userId: p.userId, 
+                idType: typeof p.id,
+                userId: p.userId,
+                userIdType: typeof p.userId,
                 playerId: p.playerId,
-                username: p.username 
+                playerIdType: typeof p.playerId,
+                username: p.username,
+                name: p.name,
+                allKeys: Object.keys(p)
             })) || []
         });
         
         // Ищем игроков по разным вариантам ID (id, userId, playerId)
         // Также проверяем строковые варианты и частичные совпадения
-        const fromPlayer = roomData.players?.find(p => {
+        // Нормализуем ID для сравнения (убираем подчеркивания и дефисы)
+        const normalizeId = (id) => String(id || '').toLowerCase().replace(/[_-]/g, '');
+        
+        const fromPlayer = roomData.players?.find((p, idx) => {
             const pId = String(p.id || '');
             const pUserId = String(p.userId || '');
             const pPlayerId = String(p.playerId || '');
             const searchId = String(fromPlayerId || '');
             
-            return pId === searchId || 
-                   pUserId === searchId ||
-                   pPlayerId === searchId ||
-                   pId.includes(searchId) ||
-                   pUserId.includes(searchId) ||
-                   searchId.includes(pId) ||
-                   searchId.includes(pUserId);
+            // Нормализованные версии для сравнения
+            const normPId = normalizeId(pId);
+            const normPUserId = normalizeId(pUserId);
+            const normSearchId = normalizeId(searchId);
+            
+            // Точное совпадение
+            const exactMatch = pId === searchId || 
+                              pUserId === searchId ||
+                              pPlayerId === searchId ||
+                              normPId === normSearchId ||
+                              normPUserId === normSearchId;
+            
+            // Частичное совпадение
+            const partialMatch = pId.includes(searchId) ||
+                                pUserId.includes(searchId) ||
+                                searchId.includes(pId) ||
+                                searchId.includes(pUserId) ||
+                                normPId.includes(normSearchId) ||
+                                normPUserId.includes(normSearchId) ||
+                                normSearchId.includes(normPId) ||
+                                normSearchId.includes(normPUserId);
+            
+            // Поиск по индексу (если ID вида "player1", "player2" и т.д.)
+            const indexMatch = normSearchId.match(/player(\d+)/);
+            if (indexMatch) {
+                const requestedIndex = parseInt(indexMatch[1]) - 1;
+                if (idx === requestedIndex) {
+                    console.log(`✅ Bank API: Отправитель найден по индексу (индекс ${idx}):`, {
+                        pId,
+                        pUserId,
+                        searchId,
+                        requestedIndex,
+                        actualIndex: idx
+                    });
+                    return true;
+                }
+            }
+            
+            if (exactMatch || partialMatch) {
+                console.log(`✅ Bank API: Отправитель найден (индекс ${idx}):`, {
+                    pId,
+                    pUserId,
+                    pPlayerId,
+                    searchId,
+                    normPId,
+                    normPUserId,
+                    normSearchId,
+                    exactMatch,
+                    partialMatch
+                });
+            }
+            
+            return exactMatch || partialMatch;
         });
         
-        const toPlayer = roomData.players?.find(p => {
+        const toPlayer = roomData.players?.find((p, idx) => {
             const pId = String(p.id || '');
             const pUserId = String(p.userId || '');
             const pPlayerId = String(p.playerId || '');
             const searchId = String(toPlayerId || '');
             
-            return pId === searchId || 
-                   pUserId === searchId ||
-                   pPlayerId === searchId ||
-                   pId.includes(searchId) ||
-                   pUserId.includes(searchId) ||
-                   searchId.includes(pId) ||
-                   searchId.includes(pUserId);
+            // Нормализованные версии для сравнения
+            const normPId = normalizeId(pId);
+            const normPUserId = normalizeId(pUserId);
+            const normSearchId = normalizeId(searchId);
+            
+            // Точное совпадение
+            const exactMatch = pId === searchId || 
+                              pUserId === searchId ||
+                              pPlayerId === searchId ||
+                              normPId === normSearchId ||
+                              normPUserId === normSearchId;
+            
+            // Частичное совпадение
+            const partialMatch = pId.includes(searchId) ||
+                                pUserId.includes(searchId) ||
+                                searchId.includes(pId) ||
+                                searchId.includes(pUserId) ||
+                                normPId.includes(normSearchId) ||
+                                normPUserId.includes(normSearchId) ||
+                                normSearchId.includes(normPId) ||
+                                normSearchId.includes(normPUserId);
+            
+            // Поиск по индексу (если ID вида "player1", "player2" и т.д.)
+            const indexMatch = normSearchId.match(/player(\d+)/);
+            if (indexMatch) {
+                const requestedIndex = parseInt(indexMatch[1]) - 1;
+                if (idx === requestedIndex) {
+                    console.log(`✅ Bank API: Получатель найден по индексу (индекс ${idx}):`, {
+                        pId,
+                        pUserId,
+                        searchId,
+                        requestedIndex,
+                        actualIndex: idx
+                    });
+                    return true;
+                }
+            }
+            
+            if (exactMatch || partialMatch) {
+                console.log(`✅ Bank API: Получатель найден (индекс ${idx}):`, {
+                    pId,
+                    pUserId,
+                    pPlayerId,
+                    searchId,
+                    normPId,
+                    normPUserId,
+                    normSearchId,
+                    exactMatch,
+                    partialMatch
+                });
+            }
+            
+            return exactMatch || partialMatch;
         });
         
         if (!fromPlayer || !toPlayer) {
