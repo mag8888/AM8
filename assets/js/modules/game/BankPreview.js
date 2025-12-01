@@ -646,7 +646,23 @@ class BankPreview {
                 return this._createBankDataFromPlayer(gameState.players[0]);
             }
             
+            // Попытка использовать активного игрока как fallback
+            if (gameState.activePlayer) {
+                console.log('🔄 BankPreview: Используем activePlayer как fallback');
+                return this._createBankDataFromPlayer(gameState.activePlayer);
+            }
+            
             return null;
+        }
+        
+        // Логирование успешного поиска игрока (только при первом успешном поиске)
+        if (!this._lastSuccessfulPlayerId || this._lastSuccessfulPlayerId !== currentPlayer.id) {
+            console.log('✅ BankPreview: Игрок найден для банка', {
+                playerId: currentPlayer.id,
+                username: currentPlayer.username,
+                balance: currentPlayer.money || currentPlayer.balance || 0
+            });
+            this._lastSuccessfulPlayerId = currentPlayer.id;
         }
         
         const bankData = this._createBankDataFromPlayer(currentPlayer);
