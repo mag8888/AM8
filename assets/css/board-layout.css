@@ -424,6 +424,7 @@
     max-width: 100% !important;
     min-width: 0 !important;
     flex: 0 0 auto !important;
+    flex-shrink: 0 !important; /* Не сжимается */
     margin-top: 0 !important;
     padding: 1rem !important;
     box-sizing: border-box !important;
@@ -436,6 +437,7 @@
   /* Карточки после банка на мобиле - в самом низу */
   #card-decks-panel .card-deck-card {
     order: 4 !important; /* Карточки - четвертые (внизу) */
+    flex-shrink: 0 !important; /* Не сжимается */
   }
   
   #bank-preview-container {
