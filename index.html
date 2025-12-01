@@ -347,11 +347,28 @@
             
             // Инициализация мобильных элементов управления
             function initMobileControls() {
-                // Кнопка меню - показываем/скрываем панели
+                // Кнопка меню - показываем/скрываем панели с карточками сделок
                 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
                 const mobileMenuIcon = mobileMenuBtn ? mobileMenuBtn.querySelector('.mobile-btn-icon') : null;
                 const cardDecksPanel = document.getElementById('card-decks-panel');
                 const topPanelContainer = document.querySelector('.top-panel-container');
+                
+                // Функция для загрузки карточек в меню
+                function loadCardsInMenu() {
+                    if (!cardDecksPanel || !cardDecksPanel.classList.contains('menu-visible')) return;
+                    
+                    // Получаем CardDeckPanel и загружаем карточки
+                    const app = window.app;
+                    if (app && app.getModule) {
+                        const cardDeckPanel = app.getModule('cardDeckPanel');
+                        if (cardDeckPanel && typeof cardDeckPanel.loadDecks === 'function') {
+                            console.log('🃏 Загружаем карточки для меню...');
+                            cardDeckPanel.loadDecks().catch(err => {
+                                console.warn('⚠️ Ошибка загрузки карточек:', err);
+                            });
+                        }
+                    }
+                }
                 
                 if (mobileMenuBtn) {
                     mobileMenuBtn.addEventListener('click', function() {
@@ -360,6 +377,11 @@
                         // Показываем/скрываем панели
                         if (cardDecksPanel) {
                             cardDecksPanel.classList.toggle('menu-visible');
+                            
+                            // Если меню открывается, загружаем карточки
+                            if (cardDecksPanel.classList.contains('menu-visible')) {
+                                setTimeout(loadCardsInMenu, 100);
+                            }
                         }
                         if (topPanelContainer) {
                             topPanelContainer.classList.toggle('menu-visible');
@@ -372,6 +394,38 @@
                                 mobileMenuIcon.textContent = '✕';
                             } else {
                                 mobileMenuIcon.textContent = '☰';
+                            }
+                        }
+                    });
+                }
+                
+                // Также для кнопки меню в нижнем меню
+                const mobileMenuBottomBtn = document.getElementById('mobile-menu-bottom-btn');
+                if (mobileMenuBottomBtn && cardDecksPanel) {
+                    mobileMenuBottomBtn.addEventListener('click', function() {
+                        const isMenuVisible = cardDecksPanel.classList.contains('menu-visible');
+                        
+                        if (cardDecksPanel) {
+                            cardDecksPanel.classList.toggle('menu-visible');
+                            
+                            // Если меню открывается, загружаем карточки
+                            if (cardDecksPanel.classList.contains('menu-visible')) {
+                                setTimeout(loadCardsInMenu, 100);
+                            }
+                        }
+                        if (topPanelContainer) {
+                            topPanelContainer.classList.toggle('menu-visible');
+                        }
+                        
+                        mobileMenuBottomBtn.classList.toggle('active');
+                        if (mobileMenuBtn) {
+                            mobileMenuBtn.classList.toggle('active');
+                            if (mobileMenuIcon) {
+                                if (cardDecksPanel.classList.contains('menu-visible')) {
+                                    mobileMenuIcon.textContent = '✕';
+                                } else {
+                                    mobileMenuIcon.textContent = '☰';
+                                }
                             }
                         }
                     });
