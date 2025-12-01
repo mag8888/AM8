@@ -1067,7 +1067,6 @@ class PlayersPanel {
                     <span class="player-status-emoji">${status}</span>
                     ${player.username || 'Игрок ' + (index + 1)}
                 </div>
-                <div class="player-balance">$${balance}</div>
             </div>
         `;
         
