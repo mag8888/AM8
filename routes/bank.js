@@ -14,6 +14,16 @@ const roomsModule = require('./rooms');
 const { getRoomGameState, updateRoomGameState, fetchOrCreateRoomState } = roomsModule;
 const gameStateByRoomId = roomsModule.gameStateByRoomId || new Map();
 
+// Получаем функцию для доступа к базе данных
+const getDatabase = roomsModule.getDatabase || (() => {
+    // Fallback: пытаемся получить из глобального контекста
+    try {
+        return require('./rooms').getDatabase();
+    } catch (e) {
+        return null;
+    }
+});
+
 // Используем прямые вызовы функций из routes/rooms.js для работы с состоянием игры
 
 // Глобальное хранилище банковских операций (временное решение)
@@ -241,6 +251,43 @@ router.post('/transfer', async (req, res) => {
         // Обновляем состояние комнаты
         console.log('🏦 Bank API: Обновление состояния комнаты');
         updateRoomGameState(roomId, roomData);
+        
+        // Сохраняем балансы в базу данных
+        try {
+            const db = getDatabase();
+            if (db) {
+                // Обновляем баланс отправителя
+                db.run(
+                    'UPDATE room_players SET money = ? WHERE room_id = ? AND (user_id = ? OR id = ?)',
+                    [fromPlayer.money, roomId, fromPlayer.userId || fromPlayer.id, fromPlayer.id],
+                    (err) => {
+                        if (err) {
+                            console.error('❌ Bank API: Ошибка обновления баланса отправителя в БД:', err);
+                        } else {
+                            console.log('✅ Bank API: Баланс отправителя обновлен в БД:', fromPlayer.money);
+                        }
+                    }
+                );
+                
+                // Обновляем баланс получателя
+                db.run(
+                    'UPDATE room_players SET money = ? WHERE room_id = ? AND (user_id = ? OR id = ?)',
+                    [toPlayer.money, roomId, toPlayer.userId || toPlayer.id, toPlayer.id],
+                    (err) => {
+                        if (err) {
+                            console.error('❌ Bank API: Ошибка обновления баланса получателя в БД:', err);
+                        } else {
+                            console.log('✅ Bank API: Баланс получателя обновлен в БД:', toPlayer.money);
+                        }
+                    }
+                );
+            } else {
+                console.log('⚠️ Bank API: База данных недоступна, балансы сохранены только в памяти');
+            }
+        } catch (dbError) {
+            console.error('❌ Bank API: Ошибка сохранения балансов в БД:', dbError);
+            // Не прерываем выполнение, перевод уже выполнен в памяти
+        }
         
         // Отправляем push-уведомления всем игрокам
         const pushData = {

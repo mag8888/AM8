@@ -1673,6 +1673,7 @@ router.get('/push/stats', (req, res) => {
 // Экспортируем router и дополнительные функции
 router.getRoomGameState = getRoomGameState;
 router.updateRoomGameState = updateRoomGameState;
+router.getDatabase = getDatabase;
 router.gameStateByRoomId = gameStateByRoomId;
 router.fetchOrCreateRoomState = fetchOrCreateRoomState;
 
