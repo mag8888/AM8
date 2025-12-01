@@ -431,6 +431,9 @@ class BankModuleServer {
         });
         
         this._syncPlayersWithGameState(gameState, currentPlayer);
+        
+        // Обновляем список игроков в UI после обновления состояния
+        this.updatePlayersList();
     }
     
     /**
