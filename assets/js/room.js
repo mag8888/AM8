@@ -547,17 +547,46 @@ function setupEventListeners() {
             console.log('🔍 Room: Состояние кнопки:', {
                 disabled: readyButton.disabled,
                 text: readyButton.textContent,
-                className: readyButton.className
+                className: readyButton.className,
+                dreamData: dreamData,
+                selectedToken: selectedToken,
+                currentUser: currentUser,
+                currentRoom: currentRoom
             });
             
             // Проверяем, не заблокирована ли кнопка
             if (readyButton.disabled) {
-                console.warn('⚠️ Room: Кнопка заблокирована, клик игнорируется');
+                const isDreamComplete = dreamData && 
+                    dreamData.id && 
+                    dreamData.title && 
+                    dreamData.description && 
+                    typeof dreamData.cost === 'number' && 
+                    dreamData.cost > 0;
+                const isTokenSelected = selectedToken !== null && selectedToken !== 'null' && selectedToken !== '';
+                
+                let message = 'Кнопка заблокирована. ';
+                if (!isDreamComplete) {
+                    message += 'Выберите и заполните мечту (стоимость должна быть больше 0). ';
+                }
+                if (!isTokenSelected) {
+                    message += 'Выберите фишку.';
+                }
+                
+                console.warn('⚠️ Room: Кнопка заблокирована:', {
+                    isDreamComplete,
+                    isTokenSelected,
+                    dreamData: dreamData,
+                    selectedToken: selectedToken,
+                    message: message
+                });
+                
+                showNotification(message.trim(), 'warning');
                 return;
             }
             
             event.preventDefault();
             event.stopPropagation();
+            console.log('✅ Room: Вызываем toggleReadyStatus...');
             toggleReadyStatus();
         });
         console.log('✅ Room: Обработчик клика добавлен к кнопке готовности');
