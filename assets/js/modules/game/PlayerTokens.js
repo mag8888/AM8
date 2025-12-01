@@ -467,7 +467,41 @@ class PlayerTokens {
         this._debug('🔍 getCellCenter вызван', { position, isInner });
         
         // Сначала пытаемся получить координаты из boardLayout (кэш)
-        const boardLayout = this.boardLayout || this._resolveBoardLayout();
+        let boardLayout = this.boardLayout || this._resolveBoardLayout();
+        
+        // Если boardLayout не найден, пытаемся подождать и повторить попытку
+        if (!boardLayout || typeof boardLayout.getCellCenter !== 'function') {
+            // Попытка повторного поиска с небольшой задержкой
+            if (!this._boardLayoutRetryAttempts) {
+                this._boardLayoutRetryAttempts = 0;
+            }
+            if (this._boardLayoutRetryAttempts < 3) {
+                this._boardLayoutRetryAttempts++;
+                this._warn(`⚠️ boardLayout не найден, попытка ${this._boardLayoutRetryAttempts}/3`, { 
+                    hasBoardLayout: !!boardLayout,
+                    boardLayoutType: typeof boardLayout,
+                    hasWindowApp: !!window?.app,
+                    hasWindowBoardLayout: !!window?.boardLayout
+                });
+                // Небольшая задержка и повторная попытка
+                setTimeout(() => {
+                    boardLayout = this.boardLayout || this._resolveBoardLayout();
+                    if (boardLayout && typeof boardLayout.getCellCenter === 'function') {
+                        this._info('✅ boardLayout найден после повторной попытки');
+                        this._boardLayoutRetryAttempts = 0;
+                    }
+                }, 100 * this._boardLayoutRetryAttempts);
+            } else {
+                this._warn('❌ boardLayout не найден после всех попыток, используем DOM', { 
+                    hasBoardLayout: !!boardLayout,
+                    boardLayoutType: typeof boardLayout
+                });
+            }
+        } else {
+            // Сбрасываем счетчик при успешном поиске
+            this._boardLayoutRetryAttempts = 0;
+        }
+        
         if (boardLayout && typeof boardLayout.getCellCenter === 'function') {
             const center = boardLayout.getCellCenter(position, isInner);
             this._info('📊 boardLayout.getCellCenter вернул', { position, isInner, center, centerType: typeof center });
@@ -482,11 +516,6 @@ class PlayerTokens {
             } else {
                 this._warn('❌ boardLayout.getCellCenter вернул невалидные координаты', { center, position, isInner });
             }
-        } else {
-            this._warn('❌ boardLayout не найден или не имеет метода getCellCenter', { 
-                hasBoardLayout: !!boardLayout,
-                boardLayoutType: typeof boardLayout
-            });
         }
 
         // Если координаты из boardLayout недоступны, вычисляем напрямую из DOM

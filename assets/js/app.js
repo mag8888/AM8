@@ -94,18 +94,6 @@ class App {
             console.log('✅ App: GameStateManager создан в _initializeCore');
         }
         
-        // Регистрируем базовые маршруты сразу, чтобы роутер мог их обработать
-        const router = this.getRouter();
-        if (router) {
-            router.route('/', () => this._handleHomeRoute(), 'Главная');
-            router.route('/index.html', () => this._handleHomeRoute(), 'Главная');
-            router.route('/auth', () => this._handleAuthRoute(), 'Авторизация');
-            router.route('/rooms', () => this._handleRoomsRoute(), 'Комнаты');
-            router.route('/game', (state) => this._handleGameRoute(state), 'Игра');
-            router.defaultRoute = '/';
-            console.log('✅ App: Базовые маршруты зарегистрированы в _initializeCore');
-        }
-        
         this.logger?.info('Основные сервисы созданы', {
             services: Array.from(this.services.keys())
         }, 'App');
@@ -193,15 +181,6 @@ class App {
                 modules: Array.from(this.modules.keys()),
                 config: this.config?.getEnvironmentInfo()
             });
-            
-            // После регистрации маршрутов обрабатываем текущий маршрут
-            const router = this.getRouter();
-            if (router && typeof router.handleCurrentRoute === 'function') {
-                // Используем requestAnimationFrame для обработки после рендеринга
-                requestAnimationFrame(() => {
-                    router.handleCurrentRoute();
-                });
-            }
 
         } catch (error) {
             this._initializationDepth = 0; // НОВОЕ: Сбрасываем глубину при ошибке
@@ -222,15 +201,19 @@ class App {
     _initializeServices() {
         this.logger?.info('Инициализация сервисов', null, 'App');
         
-        // Маршруты уже зарегистрированы в _initializeCore(), проверяем только наличие роутера
+        // Инициализация роутера
         const router = this.getRouter();
-        if (router) {
-            this.logger?.debug('Роутер настроен', {
-                routes: router.getRoutes?.() || 'routes info not available'
-            }, 'App');
-        } else {
-            console.warn('⚠️ App: Роутер не найден при инициализации сервисов');
-        }
+        router.route('/', () => this._handleHomeRoute(), 'Главная');
+        // Алиас для прямого захода на index.html, чтобы не было предупреждений Router
+        router.route('/index.html', () => this._handleHomeRoute(), 'Главная');
+        router.route('/auth', () => this._handleAuthRoute(), 'Авторизация');
+        router.route('/rooms', () => this._handleRoomsRoute(), 'Комнаты');
+        router.route('/game', (state) => this._handleGameRoute(state), 'Игра');
+        router.defaultRoute = '/';
+        
+        this.logger?.debug('Роутер настроен', {
+            routes: router.getRoutes?.() || 'routes info not available'
+        }, 'App');
     }
 
     /**
@@ -720,14 +703,17 @@ class App {
         
         if (window.PlayerTokens) {
             console.log('🎯 App: Инициализируем PlayerTokens...');
+            // Получаем boardLayout если он уже инициализирован
+            const boardLayout = this.modules.get('boardLayout');
             const playerTokens = new window.PlayerTokens({
                 gameState: this.getModule('gameState'),
                 eventBus: this.getEventBus(),
+                boardLayout: boardLayout, // Передаем boardLayout если доступен
                 outerTrackSelector: '#outer-track',
                 innerTrackSelector: '#inner-track'
             });
             this.modules.set('playerTokens', playerTokens);
-            console.log('🎯 PlayerTokens: Инициализирован');
+            console.log('🎯 PlayerTokens: Инициализирован', { hasBoardLayout: !!boardLayout });
         } else {
             console.warn('⚠️ App: PlayerTokens не найден в window');
             console.warn('⚠️ App: Доступные модули в window:', Object.keys(window).filter(key => key.includes('Token') || key.includes('Player')));

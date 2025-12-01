@@ -24,8 +24,9 @@ class GameStateManager {
 
         // УЛУЧШЕННАЯ защита от race conditions и рекурсии
         this._lastFetchTime = 0;
-        this._fetchInterval = 90000; // Увеличено до 90 секунд для снижения нагрузки
+        this._fetchInterval = 120000; // Увеличено до 120 секунд (2 минуты) для снижения нагрузки
         this._isUpdating = false;
+        this._lastUpdateTime = 0; // Время последнего обновления для обнаружения зависших операций
         this._isNotifying = false;
         this._updateTimer = null;
         this._rateLimitUntil = 0;
@@ -82,12 +83,20 @@ class GameStateManager {
         }
 
         // УЛУЧШЕНО: Проверяем, что мы не в процессе обновления
+        // Сбрасываем флаг если прошло больше 5 секунд (возможна зависшая операция)
+        if (this._isUpdating && this._lastUpdateTime && (Date.now() - this._lastUpdateTime) > 5000) {
+            console.warn('⚠️ GameStateManager: Сбрасываем зависший флаг обновления');
+            this._isUpdating = false;
+            this._recursionDepth = 0;
+        }
+        
         if (this._isUpdating) {
             console.log('🚫 GameStateManager: Обновление уже в процессе, пропускаем');
             return;
         }
 
         this._isUpdating = true;
+        this._lastUpdateTime = Date.now();
         this._recursionDepth++;
 
         try {
@@ -287,20 +296,30 @@ class GameStateManager {
     }
 
     /**
+     * Проверка, активен ли rate limit
+     * @returns {boolean}
+     */
+    _isRateLimited() {
+        return this._rateLimitUntil > Date.now();
+    }
+
+    /**
      * УЛУЧШЕНО: Безопасный запуск периодических обновлений
      * @param {string} roomId - ID комнаты
      * @param {number} interval - Интервал в миллисекундах
      */
-    startPeriodicUpdates(roomId, interval = 90000) { // Увеличено до 90 секунд для снижения нагрузки
+    startPeriodicUpdates(roomId, interval = 180000) { // Увеличено до 180 секунд (3 минуты) для снижения нагрузки и предотвращения 429
         if (this._updateTimer) {
             clearInterval(this._updateTimer);
         }
 
         console.log(`🔄 GameStateManager: Запуск периодических обновлений каждые ${interval}ms`);
         this._updateTimer = setInterval(async () => {
-            // Добавляем проверку circuit breaker
-            if (!this._circuitOpen) {
+            // Добавляем проверку circuit breaker и rate limiting
+            if (!this._circuitOpen && !this._isRateLimited()) {
                 await this.fetchGameState(roomId);
+            } else {
+                console.log('🚫 GameStateManager: Пропускаем обновление (circuit breaker или rate limit)');
             }
         }, interval);
     }

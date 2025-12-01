@@ -50,3 +50,4 @@ done
 echo "[$TIMESTAMP] Тестирование завершено" >> "$LOG_FILE"
 echo "---" >> "$LOG_FILE"
 
+

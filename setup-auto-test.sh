@@ -37,3 +37,4 @@ echo "Просмотр логов: tail -f $SCRIPT_DIR/site-test.log"
 echo "Просмотр задач: crontab -l"
 echo "Удаление задачи: crontab -e (удалите строку с test-site.js)"
 
+
