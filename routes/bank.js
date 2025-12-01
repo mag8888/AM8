@@ -166,7 +166,7 @@ router.post('/transfer', async (req, res) => {
         // Нормализуем ID для сравнения (убираем подчеркивания и дефисы)
         const normalizeId = (id) => String(id || '').toLowerCase().replace(/[_-]/g, '');
         
-        const fromPlayer = roomData.players?.find((p, idx) => {
+        let fromPlayer = roomData.players?.find((p, idx) => {
             const pId = String(p.id || '');
             const pUserId = String(p.userId || '');
             const pPlayerId = String(p.playerId || '');
@@ -227,7 +227,7 @@ router.post('/transfer', async (req, res) => {
             return exactMatch || partialMatch;
         });
         
-        const toPlayer = roomData.players?.find((p, idx) => {
+        let toPlayer = roomData.players?.find((p, idx) => {
             const pId = String(p.id || '');
             const pUserId = String(p.userId || '');
             const pPlayerId = String(p.playerId || '');
