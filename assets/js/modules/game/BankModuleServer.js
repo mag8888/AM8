@@ -358,6 +358,8 @@ class BankModuleServer {
         // Обновляем состояние банка
         this.bankState.roomId = this.getRoomId();
         this.bankState.playerId = currentPlayer.id;
+        // Сохраняем текущего игрока для доступа к userId
+        this.bankState.currentPlayer = currentPlayer;
         // Получаем баланс с fallback на стартовый баланс
         let balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
             ? currentPlayer.money 
@@ -1734,9 +1736,17 @@ class BankModuleServer {
             }
             
             // Определяем правильные ID для отправки на сервер
-            // Используем userId если доступен, иначе id
-            const serverFromPlayerId = this.bankState.playerId || this.bankState.currentPlayer?.userId || this.bankState.currentPlayer?.id;
-            const serverToPlayerId = recipientPlayer.userId || recipientPlayer.id;
+            // На сервере игроки ищутся по userId или id, поэтому используем userId если доступен
+            const currentPlayer = this.bankState.currentPlayer || this.bankState.players?.find(p => 
+                p.id === this.bankState.playerId || 
+                p.userId === this.bankState.playerId ||
+                String(p.id) === String(this.bankState.playerId) ||
+                String(p.userId) === String(this.bankState.playerId)
+            );
+            
+            // Приоритет: userId > id (для совместимости с сервером)
+            const serverFromPlayerId = currentPlayer?.userId || currentPlayer?.id || this.bankState.playerId;
+            const serverToPlayerId = recipientPlayer.userId || recipientPlayer.id || recipientId;
             
             console.log('🏦 BankModuleServer: Отправка перевода:', {
                 roomId: this.bankState.roomId,
