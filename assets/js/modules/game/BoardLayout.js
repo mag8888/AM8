@@ -411,7 +411,13 @@ class BoardLayout {
             }
 
             if (this.innerTrackElement && innerCells.length) {
-                const innerRect = this.innerTrackElement.getBoundingClientRect();
+                // Используем offsetWidth/offsetHeight вместо getBoundingClientRect для стабильности
+                const innerRect = {
+                    width: this.innerTrackElement.offsetWidth || this.innerTrackElement.getBoundingClientRect().width,
+                    height: this.innerTrackElement.offsetHeight || this.innerTrackElement.getBoundingClientRect().height,
+                    left: 0,
+                    top: 0
+                };
                 const firstInnerCell = innerCells[0];
                 const referenceCell = firstInnerCell && typeof firstInnerCell.getBoundingClientRect === 'function'
                     ? firstInnerCell.getBoundingClientRect()
