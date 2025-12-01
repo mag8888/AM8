@@ -216,6 +216,15 @@
                     </div>
                 </button>
                 
+                <!-- Кнопка "чей ход" (сверху по центру) -->
+                <button id="mobile-turn-info-btn" class="mobile-control-btn mobile-turn-info-btn" aria-label="Чей ход">
+                    <span class="mobile-btn-icon">👤</span>
+                    <div class="mobile-turn-info">
+                        <div class="mobile-turn-label-text">Ход:</div>
+                        <div class="mobile-turn-player-name" id="mobile-turn-player-name">-</div>
+                    </div>
+                </button>
+                
                 <!-- Кнопки хода (снизу) -->
                 <div class="mobile-turn-controls">
                     <button id="mobile-roll-btn" class="mobile-turn-btn mobile-roll-btn" disabled>
@@ -330,25 +339,77 @@
             
             // Инициализация мобильных элементов управления
             function initMobileControls() {
-                // Кнопка меню
+                // Кнопка меню - показываем/скрываем панели
                 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-                const menuPanel = document.getElementById('card-decks-panel');
+                const cardDecksPanel = document.getElementById('card-decks-panel');
+                const topPanelContainer = document.querySelector('.top-panel-container');
                 
-                if (mobileMenuBtn && menuPanel) {
+                if (mobileMenuBtn) {
                     mobileMenuBtn.addEventListener('click', function() {
-                        menuPanel.classList.toggle('menu-hidden');
+                        // Показываем/скрываем панели
+                        if (cardDecksPanel) {
+                            cardDecksPanel.classList.toggle('menu-visible');
+                        }
+                        if (topPanelContainer) {
+                            topPanelContainer.classList.toggle('menu-visible');
+                        }
                         mobileMenuBtn.classList.toggle('active');
                     });
                 }
                 
-                // Кнопка банка
+                // Кнопка банка - открываем банк на весь экран
                 const mobileBankBtn = document.getElementById('mobile-bank-btn');
                 const openBankBtn = document.getElementById('open-bank');
                 
-                if (mobileBankBtn && openBankBtn) {
+                if (mobileBankBtn) {
                     mobileBankBtn.addEventListener('click', function() {
-                        openBankBtn.click();
+                        // Открываем банк через существующую кнопку
+                        if (openBankBtn) {
+                            openBankBtn.click();
+                        } else {
+                            // Fallback: пытаемся открыть через PlayersPanel
+                            const app = window.app;
+                            if (app && app.getModule) {
+                                const playersPanel = app.getModule('playersPanel');
+                                if (playersPanel && typeof playersPanel.openBankModule === 'function') {
+                                    playersPanel.openBankModule();
+                                }
+                            }
+                        }
                     });
+                }
+                
+                // Кнопка "чей ход" - обновляем информацию о текущем игроке
+                const mobileTurnInfoBtn = document.getElementById('mobile-turn-info-btn');
+                const mobileTurnPlayerName = document.getElementById('mobile-turn-player-name');
+                
+                function updateTurnInfo() {
+                    if (!mobileTurnPlayerName) return;
+                    
+                    // Получаем информацию о текущем игроке
+                    const app = window.app;
+                    if (app && app.getModule) {
+                        const gameStateManager = app.getModule('gameStateManager');
+                        if (gameStateManager && typeof gameStateManager.getState === 'function') {
+                            const state = gameStateManager.getState();
+                            const activePlayer = state?.activePlayer;
+                            if (activePlayer) {
+                                mobileTurnPlayerName.textContent = activePlayer.username || activePlayer.name || '-';
+                            } else {
+                                mobileTurnPlayerName.textContent = '-';
+                            }
+                        }
+                    }
+                }
+                
+                // Обновляем информацию о ходе
+                updateTurnInfo();
+                setInterval(updateTurnInfo, 2000);
+                
+                // Слушаем изменения состояния игры
+                if (window.eventBus && typeof window.eventBus.on === 'function') {
+                    window.eventBus.on('game:turnChanged', updateTurnInfo);
+                    window.eventBus.on('game:playerChanged', updateTurnInfo);
                 }
                 
                 // Кнопки хода - подключаем к существующим обработчикам

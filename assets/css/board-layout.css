@@ -472,6 +472,34 @@
     padding: 0.75rem 1rem !important;
   }
   
+  .mobile-turn-info-btn {
+    top: 1rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    min-width: 140px !important;
+    padding: 0.75rem 1rem !important;
+  }
+  
+  .mobile-turn-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.25rem !important;
+    align-items: flex-start !important;
+  }
+  
+  .mobile-turn-label-text {
+    font-size: 0.75rem !important;
+    color: rgba(248, 250, 252, 0.7) !important;
+    line-height: 1 !important;
+  }
+  
+  .mobile-turn-player-name {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    color: #fbbf24 !important;
+    line-height: 1.2 !important;
+  }
+  
   .mobile-btn-icon {
     font-size: 1.75rem !important;
     line-height: 1 !important;
@@ -558,6 +586,43 @@
   .mobile-turn-label {
     font-size: 1rem !important;
     line-height: 1 !important;
+  }
+  
+  /* Банк на весь экран на мобильной версии */
+  .bank-module {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    background: rgba(15, 23, 42, 0.98) !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Показываем панели при открытом меню */
+  #card-decks-panel.menu-visible,
+  .top-panel-container.menu-visible {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    background: rgba(15, 23, 42, 0.98) !important;
+    overflow-y: auto !important;
+    padding: 1rem !important;
+    box-sizing: border-box !important;
+  }
+  
+  #card-decks-panel.menu-visible *,
+  .top-panel-container.menu-visible * {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 }
   
