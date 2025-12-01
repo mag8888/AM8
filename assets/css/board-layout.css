@@ -325,7 +325,7 @@
     --inner-cell-size: clamp(56px, 5.6vmin, 70px) !important; /* Уменьшено на 15% (было 66px, 6.6vmin, 82px) */
   }
   
-  /* Верхняя панель: только игроки (ход игроков) - на всю ширину, второй после поля */
+  /* Верхняя панель: только игроки (ход игроков) - на всю ширину, третий после поля и банка */
   .top-panel-container {
     display: flex !important;
     flex-direction: column !important;
@@ -334,7 +334,7 @@
     max-width: 100% !important;
     height: auto !important;
     max-height: none !important;
-    order: 2 !important; /* Ход игроков - второй после поля */
+    order: 3 !important; /* Ход игроков - третий (после поля и банка) */
     position: relative !important;
     transform: none !important;
     background: transparent !important; /* Убираем подложку */
