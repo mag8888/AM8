@@ -1816,7 +1816,16 @@ class BankModuleServer {
                 } catch {
                     errorData = { message: errorText || `HTTP ${response.status}` };
                 }
-                throw new Error(errorData.message || `Ошибка сервера: ${response.status}`);
+                
+                console.error('❌ BankModuleServer: Ошибка ответа сервера:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorText: errorText,
+                    errorData: errorData
+                });
+                
+                const errorMessage = errorData.message || errorData.error || errorData.details || `Ошибка сервера: ${response.status}`;
+                throw new Error(errorMessage);
             }
             
             const result = await response.json();
@@ -1844,6 +1853,12 @@ class BankModuleServer {
             }
         } catch (error) {
             console.error('❌ BankModuleServer: Ошибка перевода:', error);
+            console.error('❌ BankModuleServer: Error details:', {
+                name: error?.name,
+                message: error?.message,
+                stack: error?.stack
+            });
+            
             // Показываем конкретное сообщение об ошибке от сервера
             const errorMessage = error.message || 'Ошибка выполнения перевода';
             this.showNotification(errorMessage, 'error');
