@@ -225,17 +225,25 @@
                     </div>
                 </button>
                 
-                <!-- Кнопки хода (снизу) -->
-                <div class="mobile-turn-controls">
-                    <button id="mobile-roll-btn" class="mobile-turn-btn mobile-roll-btn" disabled>
-                        <span class="mobile-turn-icon">🎲</span>
-                        <span class="mobile-turn-label">Ход</span>
+                <!-- Нижнее меню (снизу) -->
+                <nav class="mobile-bottom-menu">
+                    <button id="mobile-roll-btn" class="mobile-bottom-menu-item" disabled>
+                        <span class="mobile-bottom-menu-icon">🎲</span>
+                        <span class="mobile-bottom-menu-label">Ход</span>
                     </button>
-                    <button id="mobile-pass-btn" class="mobile-turn-btn mobile-pass-btn" disabled>
-                        <span class="mobile-turn-icon">➡️</span>
-                        <span class="mobile-turn-label">Передать</span>
+                    <button id="mobile-pass-btn" class="mobile-bottom-menu-item" disabled>
+                        <span class="mobile-bottom-menu-icon">➡️</span>
+                        <span class="mobile-bottom-menu-label">Передать</span>
                     </button>
-                </div>
+                    <button id="mobile-bank-menu-btn" class="mobile-bottom-menu-item">
+                        <span class="mobile-bottom-menu-icon">🏦</span>
+                        <span class="mobile-bottom-menu-label">Банк</span>
+                    </button>
+                    <button id="mobile-menu-bottom-btn" class="mobile-bottom-menu-item">
+                        <span class="mobile-bottom-menu-icon">☰</span>
+                        <span class="mobile-bottom-menu-label">Меню</span>
+                    </button>
+                </nav>
                 
                 <!-- Кнопка для скрытия/показа меню (только на мобильных) -->
                 <button id="toggle-menu-btn" class="toggle-menu-btn" aria-label="Показать/скрыть меню">
@@ -424,7 +432,8 @@
                     window.eventBus.on('game:playerChanged', updateTurnInfo);
                 }
                 
-                // Кнопки хода - подключаем к существующим обработчикам
+                // Кнопки нижнего меню
+                // Кнопка "Ход"
                 const mobileRollBtn = document.getElementById('mobile-roll-btn');
                 const rollDiceBtn = document.getElementById('roll-dice-btn');
                 
@@ -443,10 +452,13 @@
                     mobileRollBtn.addEventListener('click', function() {
                         if (!mobileRollBtn.disabled) {
                             rollDiceBtn.click();
+                            mobileRollBtn.classList.add('active');
+                            setTimeout(() => mobileRollBtn.classList.remove('active'), 300);
                         }
                     });
                 }
                 
+                // Кнопка "Передать"
                 const mobilePassBtn = document.getElementById('mobile-pass-btn');
                 const passTurnBtn = document.getElementById('pass-turn');
                 
@@ -465,7 +477,46 @@
                     mobilePassBtn.addEventListener('click', function() {
                         if (!mobilePassBtn.disabled) {
                             passTurnBtn.click();
+                            mobilePassBtn.classList.add('active');
+                            setTimeout(() => mobilePassBtn.classList.remove('active'), 300);
                         }
+                    });
+                }
+                
+                // Кнопка "Банк" в нижнем меню
+                const mobileBankMenuBtn = document.getElementById('mobile-bank-menu-btn');
+                if (mobileBankMenuBtn) {
+                    mobileBankMenuBtn.addEventListener('click', function() {
+                        if (openBankBtn) {
+                            openBankBtn.click();
+                        } else {
+                            const app = window.app;
+                            if (app && app.getModule) {
+                                const playersPanel = app.getModule('playersPanel');
+                                if (playersPanel && typeof playersPanel.openBankModule === 'function') {
+                                    playersPanel.openBankModule();
+                                }
+                            }
+                        }
+                        mobileBankMenuBtn.classList.add('active');
+                        setTimeout(() => mobileBankMenuBtn.classList.remove('active'), 300);
+                    });
+                }
+                
+                // Кнопка "Меню" в нижнем меню
+                const mobileMenuBottomBtn = document.getElementById('mobile-menu-bottom-btn');
+                if (mobileMenuBottomBtn && cardDecksPanel) {
+                    mobileMenuBottomBtn.addEventListener('click', function() {
+                        const isMenuVisible = cardDecksPanel.classList.contains('menu-visible');
+                        
+                        if (cardDecksPanel) {
+                            cardDecksPanel.classList.toggle('menu-visible');
+                        }
+                        if (topPanelContainer) {
+                            topPanelContainer.classList.toggle('menu-visible');
+                        }
+                        
+                        mobileMenuBottomBtn.classList.toggle('active');
                     });
                 }
                 
