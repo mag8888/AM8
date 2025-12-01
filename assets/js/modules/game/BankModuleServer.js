@@ -238,7 +238,9 @@ class BankModuleServer {
                 const localState = this.gameStateManager.getState();
                 if (localState && localState.players && localState.players.length > 0) {
                     console.log('✅ BankModuleServer: Получены локальные данные из GameStateManager');
-                    this.updateBankStateFromServer({ players: localState.players }, null);
+                    this.updateBankStateFromServer(localState, null);
+                    // ВАЖНО: Обновляем UI после обновления состояния
+                    this.updateUIFromServer();
                     return;
                 }
             }
