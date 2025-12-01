@@ -260,37 +260,68 @@ class BankModuleServer {
             players: gameState.players?.map(p => ({ id: p.id, userId: p.userId, username: p.username }))
         });
         
-        // Находим данные текущего игрока по разным полям
-        let currentPlayer = gameState.players?.find(p => 
-            p.id === currentUser.id || 
-            p.userId === currentUser.id || 
-            p.username === currentUser.username ||
-            (p.userId && p.userId.toString() === currentUser.id.toString())
-        );
+        // Улучшенный поиск игрока с множественными вариантами сравнения
+        let currentPlayer = null;
         
-        // Если не найден по ID, пробуем найти по username из localStorage
-        if (!currentPlayer && currentUser.username) {
-            currentPlayer = gameState.players?.find(p => 
-                p.username === currentUser.username ||
-                p.name === currentUser.username
-            );
+        if (gameState.players && gameState.players.length > 0) {
+            // Поиск по ID (разные варианты)
+            if (currentUser.id) {
+                currentPlayer = gameState.players.find(p => {
+                    // Сравнение по ID (разные варианты)
+                    if (p.id === currentUser.id || 
+                        p.userId === currentUser.id ||
+                        String(p.id) === String(currentUser.id) ||
+                        String(p.userId) === String(currentUser.id)) {
+                        return true;
+                    }
+                    return false;
+                });
+            }
+            
+            // Поиск по username (если не найден по ID)
+            if (!currentPlayer && currentUser.username) {
+                currentPlayer = gameState.players.find(p => {
+                    if (p.username === currentUser.username ||
+                        p.name === currentUser.username ||
+                        (p.username && currentUser.username && 
+                         p.username.toLowerCase() === currentUser.username.toLowerCase())) {
+                        return true;
+                    }
+                    return false;
+                });
+            }
+        }
+        
+        // Fallback 1: Используем activePlayer если он есть
+        if (!currentPlayer && gameState.activePlayer) {
+            console.log('🔧 BankModuleServer: Используем activePlayer как fallback');
+            currentPlayer = gameState.activePlayer;
+        }
+        
+        // Fallback 2: Используем первого игрока
+        if (!currentPlayer && gameState.players && gameState.players.length > 0) {
+            console.log('🔧 BankModuleServer: Используем первого игрока как fallback');
+            currentPlayer = gameState.players[0];
         }
         
         if (!currentPlayer) {
             console.warn('⚠️ BankModuleServer: Текущий игрок не найден в данных игры', {
                 currentUser,
-                availablePlayers: gameState.players?.map(p => ({ id: p.id, userId: p.userId, username: p.username }))
+                hasPlayers: !!gameState.players,
+                playersCount: gameState.players?.length || 0,
+                hasActivePlayer: !!gameState.activePlayer,
+                availablePlayers: gameState.players?.map(p => ({ id: p.id, userId: p.userId, username: p.username })) || []
             });
-            // Используем первого игрока как fallback
-            currentPlayer = gameState.players?.[0];
-            if (currentPlayer) {
-                console.log('🔧 BankModuleServer: Используем первого игрока как fallback:', currentPlayer.username);
-            }
-        }
-        
-        if (!currentPlayer) {
             console.error('❌ BankModuleServer: Нет игроков в игре');
             return;
+        }
+        
+        if (currentPlayer) {
+            console.log('✅ BankModuleServer: Игрок найден для банка', {
+                playerId: currentPlayer.id,
+                username: currentPlayer.username,
+                balance: currentPlayer.money || currentPlayer.balance || 0
+            });
         }
         
         // Обновляем состояние банка
