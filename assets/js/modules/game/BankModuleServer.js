@@ -1648,9 +1648,12 @@ class BankModuleServer {
         if (!recipientExists) {
             console.error('❌ BankModuleServer: Получатель не найден в списке игроков:', {
                 recipientId,
-                availablePlayers: this.bankState.players?.map(p => ({ id: p.id, username: p.username })) || []
+                recipientIdType: typeof recipientId,
+                availablePlayers: this.bankState.players?.map(p => ({ id: p.id, idType: typeof p.id, username: p.username })) || []
             });
-            this.showNotification('Получатель не найден в списке игроков', 'error');
+            this.showNotification('Получатель не найден в списке игроков. Обновите список и попробуйте снова.', 'error');
+            // Пытаемся обновить список игроков
+            this.updatePlayersList();
             this._isTransferring = false;
             return;
         }
