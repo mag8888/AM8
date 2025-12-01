@@ -1639,7 +1639,7 @@ class PlayerTokens {
             token.style.setProperty('min-height', '32px', 'important');
             token.style.setProperty('opacity', '1', 'important'); // Устанавливаем opacity: 1 ДО анимации
             token.style.setProperty('position', 'absolute', 'important');
-            token.style.setProperty('z-index: 50000', 'important');
+            token.style.setProperty('z-index', '50000', 'important');
             
             // Дополнительно через обычные свойства
             token.style.display = 'flex';
@@ -1759,7 +1759,7 @@ class PlayerTokens {
         token.style.setProperty('height', '32px', 'important');
         token.style.setProperty('min-width', '32px', 'important');
         token.style.setProperty('min-height', '32px', 'important');
-        token.style.setProperty('z-index: 50000', 'important');
+        token.style.setProperty('z-index', '50000', 'important');
         token.style.setProperty('display', 'flex', 'important');
         token.style.setProperty('visibility', 'visible', 'important');
         token.style.setProperty('opacity', '1', 'important');

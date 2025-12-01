@@ -649,7 +649,7 @@ class BankPreview {
             return null;
         }
         
-        return this._createBankDataFromPlayer(currentPlayer);
+        const bankData = this._createBankDataFromPlayer(currentPlayer);
         
         // console.log('💰 BankPreview: Извлеченные данные банка:', bankData);
         
