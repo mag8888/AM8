@@ -154,6 +154,9 @@ class MovementService {
         
         this.isMoving = true;
         
+        // Объявляем movement вне try, чтобы она была доступна для return
+        let movement = null;
+        
         // Устанавливаем таймаут для автоматического сброса флага (на случай зависания)
         const timeoutId = setTimeout(() => {
             if (this.isMoving) {
@@ -169,7 +172,7 @@ class MovementService {
         
         try {
             // Создаем объект движения
-            const movement = {
+            movement = {
                 id: this.generateMovementId(),
                 playerId,
                 steps,
@@ -196,17 +199,19 @@ class MovementService {
         } catch (error) {
             console.error('❌ MovementService: Ошибка во время движения:', error);
             // При ошибке возвращаем позицию игрока к начальной
-            if (this.currentMovement && this.currentMovement.startPosition) {
+            if (movement && movement.startPosition) {
+                this.playerPositions.set(playerId, movement.startPosition);
+            } else if (this.currentMovement && this.currentMovement.startPosition) {
                 this.playerPositions.set(playerId, this.currentMovement.startPosition);
             }
             throw error;
         } finally {
             clearTimeout(timeoutId);
             this.isMoving = false;
+            const completedMovement = this.currentMovement;
             this.currentMovement = null;
             console.log(`✅ MovementService: Движение завершено для игрока ${playerId}`);
         }
-        this.currentMovement = null;
         
         return movement;
     }
