@@ -333,6 +333,8 @@ class BankModuleServer {
             this.bankState.maxCredit = 38000;
             this.bankState.credit = 0;
             this.bankState.players = gameState.players || [];
+            // Обновляем список игроков в UI даже при fallback
+            this.updatePlayersList();
             
             console.log('📊 BankModuleServer: Установлены fallback данные:', {
                 balance: this.bankState.balance,
@@ -371,6 +373,18 @@ class BankModuleServer {
         
         this.bankState.balance = balance;
         this.bankState.players = gameState.players || [];
+        
+        // Если игроки не загружены из gameState, пытаемся получить из GameStateManager
+        if (!this.bankState.players || this.bankState.players.length === 0) {
+            const gameStateManager = window.app?.getModule?.('gameStateManager');
+            if (gameStateManager && typeof gameStateManager.getState === 'function') {
+                const managerState = gameStateManager.getState();
+                if (managerState && managerState.players && managerState.players.length > 0) {
+                    console.log('🔧 BankModuleServer: Получаем игроков из GameStateManager');
+                    this.bankState.players = managerState.players;
+                }
+            }
+        }
         
         // Получаем данные профессии для расчета максимального кредита
         const professionId = currentPlayer.profession || 'entrepreneur';
