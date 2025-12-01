@@ -316,13 +316,8 @@
   }
   
   /* Показываем мобильные элементы управления на мобильной версии */
-  .mobile-control-btn {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-  
-  .mobile-turn-controls {
+  .mobile-control-btn,
+  .mobile-bottom-menu {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
