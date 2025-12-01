@@ -2396,12 +2396,10 @@ function validatePlayerBundle(bundle) {
     }
     
     // userId может отсутствовать, если используется username для идентификации
-    if (!bundle?.userId && !bundle?.username) {
-        console.error('❌ Room: validatePlayerBundle - отсутствует userId и username:', {
-            userId: bundle?.userId,
-            username: bundle?.username
-        });
-        return { isValid: false, message: 'Не удалось определить пользователя' };
+    // Но username уже проверен выше, так что эта проверка избыточна
+    // Оставляем только для логирования
+    if (!bundle?.userId) {
+        console.warn('⚠️ Room: validatePlayerBundle - userId отсутствует, используется username для идентификации');
     }
     if (!bundle?.token) {
         console.log('❌ Room: validatePlayerBundle - отсутствует token');
