@@ -1691,7 +1691,8 @@ class BankModuleServer {
             });
             
             // Используем ApiUrlHelper если доступен, иначе fallback на прямой путь
-            const apiUrl = window.ApiUrlHelper?.getBankUrl?.('transfer') || '/api/bank/transfer';
+            const apiUrl = window.ApiUrlHelper?.getBankUrl('transfer') || '/api/bank/transfer';
+            console.log('🌐 BankModuleServer: URL для перевода:', apiUrl);
             
             const response = await fetch(apiUrl, {
                 method: 'POST',

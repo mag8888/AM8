@@ -62,6 +62,22 @@ class ApiUrlHelper {
         
         return url;
     }
+    
+    /**
+     * Получить URL для банковских операций
+     * @param {string} action - Действие (например, 'transfer')
+     * @returns {string}
+     */
+    static getBankUrl(action = '') {
+        const baseUrl = this.getApiBaseUrl();
+        let url = `${baseUrl}/bank`;
+        
+        if (action) {
+            url += `/${action}`;
+        }
+        
+        return url;
+    }
 }
 
 // Экспорт
