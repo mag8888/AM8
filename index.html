@@ -328,6 +328,107 @@
         (function() {
             'use strict';
             
+            // Инициализация мобильных элементов управления
+            function initMobileControls() {
+                // Кнопка меню
+                const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+                const menuPanel = document.getElementById('card-decks-panel');
+                
+                if (mobileMenuBtn && menuPanel) {
+                    mobileMenuBtn.addEventListener('click', function() {
+                        menuPanel.classList.toggle('menu-hidden');
+                        mobileMenuBtn.classList.toggle('active');
+                    });
+                }
+                
+                // Кнопка банка
+                const mobileBankBtn = document.getElementById('mobile-bank-btn');
+                const openBankBtn = document.getElementById('open-bank');
+                
+                if (mobileBankBtn && openBankBtn) {
+                    mobileBankBtn.addEventListener('click', function() {
+                        openBankBtn.click();
+                    });
+                }
+                
+                // Кнопки хода - подключаем к существующим обработчикам
+                const mobileRollBtn = document.getElementById('mobile-roll-btn');
+                const rollDiceBtn = document.getElementById('roll-dice-btn');
+                
+                if (mobileRollBtn && rollDiceBtn) {
+                    // Синхронизируем состояние
+                    const syncRollBtn = () => {
+                        mobileRollBtn.disabled = rollDiceBtn.disabled;
+                    };
+                    syncRollBtn();
+                    
+                    // Слушаем изменения состояния
+                    const observer = new MutationObserver(syncRollBtn);
+                    observer.observe(rollDiceBtn, { attributes: true, attributeFilter: ['disabled'] });
+                    
+                    // Подключаем обработчик
+                    mobileRollBtn.addEventListener('click', function() {
+                        if (!mobileRollBtn.disabled) {
+                            rollDiceBtn.click();
+                        }
+                    });
+                }
+                
+                const mobilePassBtn = document.getElementById('mobile-pass-btn');
+                const passTurnBtn = document.getElementById('pass-turn');
+                
+                if (mobilePassBtn && passTurnBtn) {
+                    // Синхронизируем состояние
+                    const syncPassBtn = () => {
+                        mobilePassBtn.disabled = passTurnBtn.disabled;
+                    };
+                    syncPassBtn();
+                    
+                    // Слушаем изменения состояния
+                    const observer = new MutationObserver(syncPassBtn);
+                    observer.observe(passTurnBtn, { attributes: true, attributeFilter: ['disabled'] });
+                    
+                    // Подключаем обработчик
+                    mobilePassBtn.addEventListener('click', function() {
+                        if (!mobilePassBtn.disabled) {
+                            passTurnBtn.click();
+                        }
+                    });
+                }
+                
+                // Обновление данных банка в мобильной кнопке
+                function updateMobileBankData() {
+                    const balanceEl = document.getElementById('mobile-bank-balance');
+                    const creditEl = document.getElementById('mobile-bank-credit');
+                    
+                    if (!balanceEl || !creditEl) return;
+                    
+                    // Получаем данные из BankPreview или BankModuleServer
+                    const bankPreview = document.getElementById('bank-preview-balance');
+                    const bankCredit = document.getElementById('bank-preview-credit');
+                    
+                    if (bankPreview) {
+                        balanceEl.textContent = bankPreview.textContent || '$0';
+                    }
+                    
+                    if (bankCredit) {
+                        const credit = bankCredit.textContent || '$0';
+                        creditEl.textContent = `Кр: ${credit}`;
+                    }
+                }
+                
+                // Обновляем данные при загрузке и изменениях
+                setTimeout(updateMobileBankData, 1000);
+                setInterval(updateMobileBankData, 2000);
+                
+                // Слушаем изменения в DOM
+                const bankObserver = new MutationObserver(updateMobileBankData);
+                const bankContainer = document.getElementById('bank-preview-container');
+                if (bankContainer) {
+                    bankObserver.observe(bankContainer, { childList: true, subtree: true, characterData: true });
+                }
+            }
+            
             // Инициализация кнопки переключения меню на мобильных
             function initMenuToggle() {
                 const toggleBtn = document.getElementById('toggle-menu-btn');
