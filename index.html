@@ -341,11 +341,14 @@
             function initMobileControls() {
                 // Кнопка меню - показываем/скрываем панели
                 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+                const mobileMenuIcon = mobileMenuBtn ? mobileMenuBtn.querySelector('.mobile-btn-icon') : null;
                 const cardDecksPanel = document.getElementById('card-decks-panel');
                 const topPanelContainer = document.querySelector('.top-panel-container');
                 
                 if (mobileMenuBtn) {
                     mobileMenuBtn.addEventListener('click', function() {
+                        const isMenuVisible = cardDecksPanel && cardDecksPanel.classList.contains('menu-visible');
+                        
                         // Показываем/скрываем панели
                         if (cardDecksPanel) {
                             cardDecksPanel.classList.toggle('menu-visible');
@@ -354,6 +357,15 @@
                             topPanelContainer.classList.toggle('menu-visible');
                         }
                         mobileMenuBtn.classList.toggle('active');
+                        
+                        // Обновляем иконку кнопки
+                        if (mobileMenuIcon) {
+                            if (cardDecksPanel && cardDecksPanel.classList.contains('menu-visible')) {
+                                mobileMenuIcon.textContent = '✕';
+                            } else {
+                                mobileMenuIcon.textContent = '☰';
+                            }
+                        }
                     });
                 }
                 

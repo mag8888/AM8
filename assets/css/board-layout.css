@@ -463,6 +463,16 @@
     height: 56px !important;
     justify-content: center !important;
     padding: 0 !important;
+    z-index: 10001 !important; /* Выше чем меню, чтобы всегда была доступна */
+  }
+  
+  .mobile-menu-btn.active {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+  }
+  
+  .mobile-menu-btn.active .mobile-btn-icon::before {
+    content: '✕' !important;
   }
   
   .mobile-bank-btn {
@@ -611,7 +621,7 @@
     left: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    z-index: 9999 !important;
+    z-index: 10000 !important;
     background: rgba(15, 23, 42, 0.98) !important;
     overflow-y: auto !important;
     padding: 1rem !important;
@@ -623,6 +633,12 @@
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+  }
+  
+  /* Кнопка меню всегда видна, даже когда меню открыто */
+  .mobile-menu-btn {
+    position: fixed !important;
+    z-index: 10001 !important; /* Выше меню */
   }
 }
   
