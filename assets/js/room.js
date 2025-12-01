@@ -2014,12 +2014,19 @@ function updateReadyStatus() {
  */
 async function toggleReadyStatus() {
     try {
-        console.log('🎮 Room: КЛИК ПО КНОПКЕ ГОТОВНОСТИ!');
+        console.log('🎮 Room: toggleReadyStatus вызвана!');
         console.log('🎮 Room: Попытка переключения готовности:', {
             currentRoom: !!currentRoom,
+            currentRoomId: currentRoom?.id,
             currentUser: !!currentUser,
+            currentUserId: currentUser?.id,
+            currentUsername: currentUser?.username,
             selectedToken: selectedToken,
-            dreamData: dreamData
+            dreamData: dreamData,
+            hasDreamData: !!dreamData,
+            dreamDataId: dreamData?.id,
+            dreamDataTitle: dreamData?.title,
+            dreamDataCost: dreamData?.cost
         });
         
         // Проверяем, что функция не вызывается дважды
