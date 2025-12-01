@@ -330,11 +330,14 @@
     width: min(95vh, 95vw);
     overflow: visible;
     isolation: isolate;
-    display: grid;
-    place-items: center;
-    grid-template-areas: "board";
+    /* Убираем grid, используем block для абсолютного позиционирования дочерних элементов */
+    display: block;
     /* Гарантируем квадратную форму */
     aspect-ratio: 1;
+    /* Убираем все отступы для точного центрирования */
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 
@@ -344,27 +347,34 @@
 }
 
 .outer-track {
-    grid-area: board;
+    /* Абсолютное позиционирование для точного центрирования */
     width: 100% !important;
     height: 100% !important;
+    position: absolute !important;
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important; /* Точное центрирование внешнего квадрата */
-    position: absolute !important; /* Явно указываем position для правильного центрирования */
-    margin: 0 !important; /* Убираем все отступы */
-    padding: 0 !important; /* Убираем внутренние отступы */
+    margin: 0 !important;
+    padding: 0 !important;
     z-index: 2;
 }
 
 .inner-track {
-    grid-area: board;
-    width: 80% !important; /* Увеличен размер внутреннего круга */
+    /* Абсолютное позиционирование для точного центрирования */
+    width: 80% !important; /* Размер внутреннего круга */
     height: 80% !important;
+    position: absolute !important;
     top: 50% !important; /* Строго по центру по вертикали */
     left: 50% !important; /* Строго по центру по горизонтали */
     transform: translate(-50%, -50%) !important; /* Точное центрирование */
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
     z-index: 3 !important; /* Внутренний круг поверх, но клетки не должны накладываться */
     pointer-events: none !important; /* Клетки обрабатывают события, но фишки должны быть видны */
+    /* Убираем любые влияния на позиционирование */
+    right: auto !important;
+    bottom: auto !important;
 }
 
 /* Фишки должны быть видны даже если родитель имеет pointer-events: none */

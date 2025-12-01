@@ -429,12 +429,15 @@
     min-width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    min-height: 50vh;
+    min-height: min(100vw, 90vh) !important; /* Квадратное поле */
     order: 1 !important; /* Игровое поле - первое (вверху) */
-    padding: 0 !important; /* Убираем отступы */
+    padding: 0.5rem !important; /* Небольшой отступ */
     margin: 0 !important;
     overflow: visible !important; /* не режем контент поля */
     flex-shrink: 0 !important; /* Не сжимается */
+    display: flex !important;
+    justify-content: center !important; /* Центрируем поле */
+    align-items: center !important;
   }
   
   /* Банк на всю ширину, второй после поля */
