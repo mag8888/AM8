@@ -1627,12 +1627,16 @@ class BankModuleServer {
             return;
         }
         
-        const recipientId = this.ui.querySelector('#transfer-recipient')?.value;
-        const amountStr = this.ui.querySelector('#transfer-amount')?.value;
+        const recipientSelect = this.ui.querySelector('#transfer-recipient');
+        const recipientId = recipientSelect?.value?.trim();
+        const amountInput = this.ui.querySelector('#transfer-amount');
+        const amountStr = amountInput?.value?.trim();
         const amount = parseInt(amountStr);
         
         console.log('🔍 BankModuleServer: Проверка данных перевода:', {
             recipientId,
+            recipientSelectValue: recipientSelect?.value,
+            recipientSelectOptions: recipientSelect ? Array.from(recipientSelect.options).map(opt => ({ value: opt.value, text: opt.text })) : [],
             amountStr,
             amount,
             bankState: {
@@ -1642,6 +1646,20 @@ class BankModuleServer {
                 players: this.bankState.players?.map(p => ({ id: p.id, username: p.username })) || []
             }
         });
+        
+        // Ранняя проверка: получатель должен быть выбран
+        if (!recipientId || recipientId === '') {
+            this.showNotification('Выберите получателя из списка', 'error');
+            this._isTransferring = false;
+            return;
+        }
+        
+        // Проверка суммы
+        if (!amountStr || isNaN(amount) || amount <= 0) {
+            this.showNotification('Введите корректную сумму', 'error');
+            this._isTransferring = false;
+            return;
+        }
         
         // Проверяем, что получатель существует в списке игроков
         const recipientExists = this.bankState.players?.some(p => p.id === recipientId);
@@ -1654,12 +1672,6 @@ class BankModuleServer {
             this.showNotification('Получатель не найден в списке игроков. Обновите список и попробуйте снова.', 'error');
             // Пытаемся обновить список игроков
             this.updatePlayersList();
-            this._isTransferring = false;
-            return;
-        }
-        
-        if (!recipientId || !amountStr || isNaN(amount) || amount <= 0) {
-            this.showNotification('Заполните все поля корректно', 'error');
             this._isTransferring = false;
             return;
         }
