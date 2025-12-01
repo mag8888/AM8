@@ -109,7 +109,15 @@ class GameStateManager {
 
             if (Array.isArray(serverState.players)) {
                 const normalisedPlayers = serverState.players
-                    .map(player => this._normalisePlayer(player))
+                    .map(player => {
+                        const normalized = this._normalisePlayer(player);
+                        // Принудительно устанавливаем позицию 0 для всех игроков при загрузке
+                        if (normalized) {
+                            normalized.position = 0;
+                            normalized.isInner = false; // Начинаем с внешнего трека
+                        }
+                        return normalized;
+                    })
                     .filter(Boolean);
 
                 playersChanged = !this._arePlayersEqual(next.players, normalisedPlayers);
@@ -842,12 +850,19 @@ class GameStateManager {
         if (!player || typeof player !== 'object') return null;
         const id = player.id || player.userId;
         if (!id) return null;
+        
+        // Устанавливаем позицию 0 по умолчанию, если не задана или если игра только начинается
+        const position = typeof player.position === 'number' ? player.position : 0;
+        const isInner = typeof player.isInner === 'boolean' ? player.isInner : false;
+        
         return {
             ...player,
             id,
             userId: player.userId || id,
             username: player.username || player.name || `player-${id}`,
-            isReady: Boolean(player.isReady)
+            isReady: Boolean(player.isReady),
+            position: position, // Стартовая позиция - 1-я клетка
+            isInner: isInner // Начинаем с внешнего трека
         };
     }
 

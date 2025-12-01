@@ -1401,8 +1401,14 @@ class PlayerTokens {
             if (gameStateManager && typeof gameStateManager.getState === 'function') {
                 const state = gameStateManager.getState();
                 if (state && state.players && state.players.length > 0) {
-                    this._info('Получены данные из GameStateManager, обновляем фишки', state.players.length);
-                    this.updateTokens(state.players);
+                    // Принудительно устанавливаем позицию 0 для всех игроков
+                    const playersWithPosition0 = state.players.map(player => ({
+                        ...player,
+                        position: 0,
+                        isInner: false // Начинаем с внешнего трека
+                    }));
+                    this._info('Получены данные из GameStateManager, устанавливаем позицию 0 для всех игроков', playersWithPosition0.length);
+                    this.updateTokens(playersWithPosition0);
                     return;
                 } else {
                     this._warn('GameStateManager не содержит игроков', { hasState: !!state, playersCount: state?.players?.length || 0 });
@@ -1414,8 +1420,14 @@ class PlayerTokens {
         
         // Пробуем получить из gameState напрямую
         if (this.gameState && this.gameState.players && this.gameState.players.length > 0) {
-            this._info('Получены данные из gameState, обновляем фишки', this.gameState.players.length);
-            this.updateTokens(this.gameState.players);
+            // Принудительно устанавливаем позицию 0 для всех игроков
+            const playersWithPosition0 = this.gameState.players.map(player => ({
+                ...player,
+                position: 0,
+                isInner: false // Начинаем с внешнего трека
+            }));
+            this._info('Получены данные из gameState, устанавливаем позицию 0 для всех игроков', playersWithPosition0.length);
+            this.updateTokens(playersWithPosition0);
             return;
         }
         
