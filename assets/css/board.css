@@ -356,6 +356,8 @@
     transform: translate(-50%, -50%) !important; /* Точное центрирование внешнего квадрата */
     margin: 0 !important;
     padding: 0 !important;
+    box-sizing: border-box !important;
+    aspect-ratio: 1 / 1 !important; /* Гарантируем идеальный квадрат */
     z-index: 2;
 }
 
@@ -370,6 +372,8 @@
     margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
+    aspect-ratio: 1 / 1 !important; /* Гарантируем идеальный круг */
+    border-radius: 50% !important; /* Делаем идеальный круг */
     z-index: 3 !important; /* Внутренний круг поверх, но клетки не должны накладываться */
     pointer-events: none !important; /* Клетки обрабатывают события, но фишки должны быть видны */
     /* Убираем любые влияния на позиционирование */

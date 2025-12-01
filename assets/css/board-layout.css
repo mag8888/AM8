@@ -358,6 +358,40 @@
     box-sizing: border-box !important;
     position: relative !important;
     overflow: visible !important;
+    /* Гарантируем идеальный квадрат */
+    padding: 0 !important;
+    border: none !important;
+  }
+  
+  /* Внешний трек - идеальный квадрат, строго по центру */
+  .game-page .board-wrapper .outer-track,
+  .game-page .board-wrapper #outer-track {
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+  
+  /* Внутренний трек - идеальный круг, строго по центру квадрата */
+  .game-page .board-wrapper .inner-track,
+  .game-page .board-wrapper #inner-track {
+    width: 80% !important;
+    height: 80% !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important; /* Делаем идеальный круг */
   }
   
   /* Скрываем центральный логотип и другие элементы внутри поля на мобильной версии */
