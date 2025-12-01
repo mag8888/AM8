@@ -315,6 +315,14 @@
     opacity: 0 !important;
   }
   
+  /* Показываем мобильные элементы управления на мобильной версии */
+  .mobile-control-btn,
+  .mobile-turn-controls {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
   /* Игровое поле по центру экрана на мобильной версии */
   #game-page,
   .game-page {
