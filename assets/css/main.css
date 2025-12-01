@@ -431,7 +431,8 @@ a {
     
     .players-panel-container {
         min-width: 220px;
-        max-width: 280px;
+        max-width: 100%;
+        width: 100%;
     }
     
     /* Адаптация навигации для мобильных */
