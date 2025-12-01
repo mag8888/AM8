@@ -834,22 +834,50 @@ class BankPreview {
      */
     getCurrentUser() {
         try {
-            // Пытаемся получить из sessionStorage
-            const bundleRaw = sessionStorage.getItem('am_player_bundle');
-            if (bundleRaw) {
-                const bundle = JSON.parse(bundleRaw);
-                if (bundle.userId || bundle.id || bundle.username) {
+            // ПРИОРИТЕТ 1: Используем CommonUtils если доступен
+            if (window.CommonUtils) {
+                const userId = window.CommonUtils.getCurrentUserId();
+                const username = window.CommonUtils.getCurrentUsername();
+                if (userId || username) {
                     return {
-                        id: bundle.userId || bundle.id,
-                        username: bundle.username || bundle.currentUser?.username
+                        id: userId,
+                        username: username
                     };
                 }
             }
             
-            // Fallback: localStorage
+            // ПРИОРИТЕТ 2: Пытаемся получить из sessionStorage
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                if (bundle.userId || bundle.id || bundle.username || bundle.currentUser) {
+                    return {
+                        id: bundle.userId || bundle.id || bundle.currentUser?.id || bundle.currentUser?.userId,
+                        username: bundle.username || bundle.currentUser?.username || bundle.currentUser?.name
+                    };
+                }
+            }
+            
+            // ПРИОРИТЕТ 3: localStorage
             const userData = localStorage.getItem('currentUser');
             if (userData) {
-                return JSON.parse(userData);
+                const user = JSON.parse(userData);
+                if (user.id || user.userId || user.username) {
+                    return {
+                        id: user.id || user.userId,
+                        username: user.username || user.name
+                    };
+                }
+            }
+            
+            // ПРИОРИТЕТ 4: Дополнительные источники
+            const userIdRaw = localStorage.getItem('am_user_id');
+            const usernameRaw = localStorage.getItem('am_username');
+            if (userIdRaw || usernameRaw) {
+                return {
+                    id: userIdRaw,
+                    username: usernameRaw
+                };
             }
             
             return null;

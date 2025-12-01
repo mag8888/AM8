@@ -411,23 +411,23 @@ class BoardLayout {
                     ? firstInnerCell.getBoundingClientRect()
                     : (outerCells.length > 0 ? outerCells[0].getBoundingClientRect() : null);
 
-                // Увеличиваем радиус внутреннего круга для лучшей видимости
+                // Уменьшаем радиус внутреннего круга чтобы не накладывался на внешние клетки
                 // Внешние клетки находятся на периметре квадрата, внутренние должны быть внутри
-                // Рассчитываем безопасный радиус: внешний радиус минус размер клетки и минимальный отступ
+                // Рассчитываем безопасный радиус: внешний радиус минус размер клетки и отступ
                 const cellSize = referenceCell ? referenceCell.width : 50;
                 const safeInnerRadius = this._lastOuterRadius
-                    ? Math.max(this._lastOuterRadius - cellSize - 10, 0) // Уменьшен отступ от внешних клеток (было 20, стало 10)
-                    : Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 10;
+                    ? Math.max(this._lastOuterRadius - cellSize - 20, 0) // Отступ от внешних клеток
+                    : Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 20;
 
                 const fallbackInnerRadius = Math.max(
                     safeInnerRadius,
-                    Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 10, // Уменьшен отступ (было 20, стало 10)
+                    Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 20,
                     0
                 );
                 const computedInnerRadius =
                     referenceCell
                         ? Math.min(
-                            Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 10, // Уменьшен отступ (было 20, стало 10)
+                            Math.min(innerRect.width, innerRect.height) / 2 - cellSize / 2 - 20,
                             safeInnerRadius
                           )
                         : fallbackInnerRadius;

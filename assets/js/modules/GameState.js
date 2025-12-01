@@ -172,9 +172,9 @@ class GameState {
             // Проверяем глобальный rate limiter для game-state (если метод существует)
             if (window.CommonUtils && typeof window.CommonUtils.canMakeGameStateRequest === 'function') {
                 if (!window.CommonUtils.canMakeGameStateRequest(roomId)) {
-                    console.log('🚫 GameState: Пропускаем запрос из-за глобального rate limiting');
-                    this.addTestPlayers();
-                    return;
+                console.log('🚫 GameState: Пропускаем запрос из-за глобального rate limiting');
+                this.addTestPlayers();
+                return;
                 }
             }
             

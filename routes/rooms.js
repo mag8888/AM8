@@ -457,7 +457,7 @@ const fallbackRooms = [
 function getDatabase() {
     // SQLite отключен - используем только MongoDB
     // Все операции с данными выполняются через RoomRepository (MongoDB)
-    return null;
+        return null;
 }
 
 /**
@@ -1506,35 +1506,35 @@ router.post('/:id/start', async (req, res, next) => {
 
                     console.log('🎮 Игра запущена в комнате:', id);
 
-                    // Формируем игроков из текущего server-state (если есть)
-                    let startPlayers = [];
-                    const state = gameStateByRoomId.get(id);
-                    if (state && Array.isArray(state.players) && state.players.length) {
-                        startPlayers = state.players;
-                    } else {
-                        startPlayers = [{ id: userId, username: room.creator_name || 'player1' }];
-                    }
-
-                    // Отправляем push-уведомление о начале игры
-                    pushService.broadcastPush('game_started', { 
-                        roomId: id, 
-                        players: startPlayers,
-                        activePlayer: startPlayers[0] // Первый игрок начинает
-                    }).catch(err => console.error('❌ Ошибка отправки push о начале игры:', err));
-                    
-                    // Отправляем реальное push-уведомление
-                    pushService.sendRealPushNotification(
-                        '🎮 Игра началась!',
-                        `Игра в комнате "${room.name}" началась. Ваш ход!`,
-                        {
-                            data: { roomId: id, action: 'game_started' },
-                            actions: [
-                                { action: 'open_game', title: 'Открыть игру' }
-                            ],
-                            tag: 'game_started',
-                            requireInteraction: true
+                        // Формируем игроков из текущего server-state (если есть)
+                        let startPlayers = [];
+                        const state = gameStateByRoomId.get(id);
+                        if (state && Array.isArray(state.players) && state.players.length) {
+                            startPlayers = state.players;
+                        } else {
+                            startPlayers = [{ id: userId, username: room.creator_name || 'player1' }];
                         }
-                    ).catch(err => console.error('❌ Ошибка отправки реального push о начале игры:', err));
+
+                        // Отправляем push-уведомление о начале игры
+                        pushService.broadcastPush('game_started', { 
+                            roomId: id, 
+                            players: startPlayers,
+                            activePlayer: startPlayers[0] // Первый игрок начинает
+                        }).catch(err => console.error('❌ Ошибка отправки push о начале игры:', err));
+                        
+                        // Отправляем реальное push-уведомление
+                        pushService.sendRealPushNotification(
+                            '🎮 Игра началась!',
+                            `Игра в комнате "${room.name}" началась. Ваш ход!`,
+                            {
+                                data: { roomId: id, action: 'game_started' },
+                                actions: [
+                                    { action: 'open_game', title: 'Открыть игру' }
+                                ],
+                                tag: 'game_started',
+                                requireInteraction: true
+                            }
+                        ).catch(err => console.error('❌ Ошибка отправки реального push о начале игры:', err));
 
                     res.json({
                         success: true,
@@ -1571,7 +1571,7 @@ router.post('/:id/start', async (req, res, next) => {
                         });
                     }
                     // Если игрок является хостом, продолжаем
-                    ensureMemberThenStart();
+                ensureMemberThenStart();
                 });
                 return;
             }

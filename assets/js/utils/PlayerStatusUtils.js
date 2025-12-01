@@ -14,7 +14,11 @@ class PlayerStatusUtils {
      */
     static getPlayerStatus(player, activePlayer, isCurrentUser = false) {
         if (activePlayer && activePlayer.id === player.id) {
-            return '🎯'; // Ход игрока
+            return '🎯'; // Ходит
+        }
+        
+        if (player.isReady) {
+            return '✅';
         }
         
         return '⏳'; // Ожидание

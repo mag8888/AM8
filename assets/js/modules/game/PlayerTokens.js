@@ -512,10 +512,10 @@ class PlayerTokens {
                 return center;
                 } else {
                     this._warn('⚠️ Координаты из boardLayout отрицательные, вычисляем из DOM', { center, position, isInner });
-                }
+            }
             } else {
                 this._warn('❌ boardLayout.getCellCenter вернул невалидные координаты', { center, position, isInner });
-            }
+        }
         }
 
         // Если координаты из boardLayout недоступны, вычисляем напрямую из DOM
