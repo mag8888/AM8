@@ -137,7 +137,11 @@ class MovementService {
      */
     async movePlayer(playerId, steps, options = {}) {
         if (this.isMoving) {
-            console.warn('🚀 MovementService: Движение уже выполняется');
+            console.warn('🚀 MovementService: Движение уже выполняется', {
+                currentMovement: this.currentMovement,
+                playerId: playerId,
+                requestedSteps: steps
+            });
             throw new Error('Movement already in progress');
         }
         
@@ -150,33 +154,58 @@ class MovementService {
         
         this.isMoving = true;
         
-        // Создаем объект движения
-        const movement = {
-            id: this.generateMovementId(),
-            playerId,
-            steps,
-            startPosition: { ...currentPosition },
-            endPosition: null,
-            path: [],
-            timestamp: Date.now()
-        };
+        // Устанавливаем таймаут для автоматического сброса флага (на случай зависания)
+        const timeoutId = setTimeout(() => {
+            if (this.isMoving) {
+                console.warn('⚠️ MovementService: Движение зависло, принудительно сбрасываем флаг', {
+                    playerId,
+                    steps,
+                    movement: this.currentMovement
+                });
+                this.isMoving = false;
+                this.currentMovement = null;
+            }
+        }, 30000); // 30 секунд таймаут
         
-        // Рассчитываем путь движения
-        movement.path = this.calculatePath(currentPosition, steps);
-        movement.endPosition = movement.path[movement.path.length - 1];
-        
-        // Обновляем позицию игрока
-        this.playerPositions.set(playerId, movement.endPosition);
-        this.currentMovement = movement;
-        
-        console.log(`🚀 MovementService: Игрок ${playerId} движется на ${steps} клеток:`, movement);
-        
-        const stepDelayMs = Number(options.stepDelayMs);
-        await this.emitMovementEvents(movement, {
-            stepDelayMs: Number.isFinite(stepDelayMs) && stepDelayMs > 0 ? stepDelayMs : 0
-        });
-        
-        this.isMoving = false;
+        try {
+            // Создаем объект движения
+            const movement = {
+                id: this.generateMovementId(),
+                playerId,
+                steps,
+                startPosition: { ...currentPosition },
+                endPosition: null,
+                path: [],
+                timestamp: Date.now()
+            };
+            
+            // Рассчитываем путь движения
+            movement.path = this.calculatePath(currentPosition, steps);
+            movement.endPosition = movement.path[movement.path.length - 1];
+            
+            // Обновляем позицию игрока
+            this.playerPositions.set(playerId, movement.endPosition);
+            this.currentMovement = movement;
+            
+            console.log(`🚀 MovementService: Игрок ${playerId} движется на ${steps} клеток:`, movement);
+            
+            const stepDelayMs = Number(options.stepDelayMs);
+            await this.emitMovementEvents(movement, {
+                stepDelayMs: Number.isFinite(stepDelayMs) && stepDelayMs > 0 ? stepDelayMs : 0
+            });
+        } catch (error) {
+            console.error('❌ MovementService: Ошибка во время движения:', error);
+            // При ошибке возвращаем позицию игрока к начальной
+            if (this.currentMovement && this.currentMovement.startPosition) {
+                this.playerPositions.set(playerId, this.currentMovement.startPosition);
+            }
+            throw error;
+        } finally {
+            clearTimeout(timeoutId);
+            this.isMoving = false;
+            this.currentMovement = null;
+            console.log(`✅ MovementService: Движение завершено для игрока ${playerId}`);
+        }
         this.currentMovement = null;
         
         return movement;

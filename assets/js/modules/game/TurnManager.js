@@ -474,6 +474,17 @@ class TurnManager extends EventTarget {
             }
 
             // Запускаем анимацию для внешнего обновления
+            // Проверяем, не выполняется ли уже движение
+            if (this.movementService && this.movementService.isMoving) {
+                console.warn('⚠️ TurnManager: Движение уже выполняется, пропускаем анимацию внешнего обновления', {
+                    playerId,
+                    steps,
+                    currentMovement: this.movementService.currentMovement
+                });
+                this._ensureMovementPosition(player, { force: true });
+                return;
+            }
+            
             this._animatePlayer(playerId, steps).catch((error) => {
                 console.error('❌ TurnManager: failed to animate external movement', error);
                 this._ensureMovementPosition(player, { force: true });
@@ -508,11 +519,29 @@ class TurnManager extends EventTarget {
             return;
         }
 
+        // Проверяем, не выполняется ли уже движение
+        if (this.movementService.isMoving) {
+            console.warn('⚠️ TurnManager: Движение уже выполняется, пропускаем анимацию', {
+                playerId,
+                steps,
+                currentMovement: this.movementService.currentMovement
+            });
+            return;
+        }
+
         try {
             await this.movementService.movePlayer(playerId, steps, {
                 stepDelayMs: this.stepDelayMs
             });
         } catch (error) {
+            // Если ошибка "Movement already in progress", просто логируем и продолжаем
+            if (error.message && error.message.includes('Movement already in progress')) {
+                console.warn('⚠️ TurnManager: Движение уже выполняется, игнорируем запрос', {
+                    playerId,
+                    steps
+                });
+                return;
+            }
             console.error('❌ TurnManager: movement animation failed', error);
             throw error;
         }
