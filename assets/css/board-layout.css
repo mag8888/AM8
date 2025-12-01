@@ -478,7 +478,7 @@
     max-width: 100% !important;
     height: auto !important;
     max-height: none !important; /* Убираем внутренний скролл */
-    order: 3 !important; /* Панель карточек (с банком внутри) - третий, после хода игроков */
+    order: 2 !important; /* Панель карточек (с банком внутри) - второй, после поля */
     border-right: none !important;
     border-left: none !important;
     border-bottom: none !important;
