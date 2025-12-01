@@ -217,6 +217,103 @@ class CommonUtils {
         
         return cloned;
     }
+
+    /**
+     * Получение ID текущего пользователя
+     * @returns {string|null} ID пользователя
+     */
+    static getCurrentUserId() {
+        try {
+            // Пытаемся получить из sessionStorage
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                return bundle?.currentUser?.id || null;
+            }
+            
+            // Fallback к localStorage
+            const userRaw = localStorage.getItem('aura_money_user');
+            if (userRaw) {
+                const user = JSON.parse(userRaw);
+                return user?.id || null;
+            }
+            
+            // Дополнительный fallback
+            const userIdRaw = localStorage.getItem('am_user_id');
+            if (userIdRaw) {
+                return userIdRaw;
+            }
+        } catch (error) {
+            console.warn('⚠️ CommonUtils: Ошибка получения ID пользователя:', error);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Получение username текущего пользователя
+     * @returns {string|null} Username пользователя
+     */
+    static getCurrentUsername() {
+        try {
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                return bundle?.currentUser?.username || bundle?.currentUser?.name || null;
+            }
+            
+            const userRaw = localStorage.getItem('aura_money_user');
+            if (userRaw) {
+                const user = JSON.parse(userRaw);
+                return user?.username || user?.name || null;
+            }
+            
+            // Дополнительный fallback
+            const usernameRaw = localStorage.getItem('am_username');
+            if (usernameRaw) {
+                return usernameRaw;
+            }
+        } catch (error) {
+            console.warn('⚠️ CommonUtils: Ошибка получения username:', error);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Проверка, является ли текущий пользователь активным игроком
+     * @param {Object} activePlayer - Активный игрок
+     * @returns {boolean} true если ход текущего пользователя
+     */
+    static isMyTurn(activePlayer) {
+        if (!activePlayer) {
+            return false;
+        }
+        
+        const currentUserId = this.getCurrentUserId();
+        const currentUsername = this.getCurrentUsername();
+        
+        if (!currentUserId && !currentUsername) {
+            return false;
+        }
+        
+        // Проверяем по ID
+        if (currentUserId && activePlayer.id === currentUserId) {
+            return true;
+        }
+        
+        // Проверяем по userId (если есть)
+        if (currentUserId && activePlayer.userId === currentUserId) {
+            return true;
+        }
+        
+        // Проверяем по username
+        if (currentUsername && activePlayer.username) {
+            return activePlayer.username.toLowerCase() === currentUsername.toLowerCase();
+        }
+        
+        return false;
+    }
 }
 
 // Экспортируем в глобальную область видимости

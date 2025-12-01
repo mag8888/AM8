@@ -21,10 +21,39 @@ class BoardLayout {
             debug = false
         } = config;
 
+        // Улучшенная проверка загрузки конфигурации с ожиданием
         if ((!window.SMALL_CIRCLE_CELLS && !window.BoardConfig?.SMALL_CIRCLE) || 
             (!window.BIG_CIRCLE_CELLS && !window.BoardConfig?.BIG_CIRCLE)) {
-            this._error('Конфигурации клеток не загружены');
-            throw new Error('Board config not loaded');
+            // Пытаемся подождать загрузки конфигурации (максимум 1 секунда)
+            let attempts = 0;
+            const maxAttempts = 10;
+            const checkInterval = 100;
+            
+            while (attempts < maxAttempts && 
+                   (!window.SMALL_CIRCLE_CELLS && !window.BoardConfig?.SMALL_CIRCLE) && 
+                   (!window.BIG_CIRCLE_CELLS && !window.BoardConfig?.BIG_CIRCLE)) {
+                attempts++;
+                // Синхронное ожидание не рекомендуется, но для критической инициализации допустимо
+                const start = Date.now();
+                while (Date.now() - start < checkInterval) {
+                    // Busy wait
+                }
+            }
+            
+            // Если после ожидания конфигурация все еще не загружена
+            if ((!window.SMALL_CIRCLE_CELLS && !window.BoardConfig?.SMALL_CIRCLE) || 
+                (!window.BIG_CIRCLE_CELLS && !window.BoardConfig?.BIG_CIRCLE)) {
+                this._error('Конфигурации клеток не загружены после ожидания');
+                console.error('❌ BoardLayout: Конфигурация не найдена', {
+                    hasSMALL_CIRCLE_CELLS: !!window.SMALL_CIRCLE_CELLS,
+                    hasBIG_CIRCLE_CELLS: !!window.BIG_CIRCLE_CELLS,
+                    hasBoardConfig: !!window.BoardConfig,
+                    hasBoardConfigSMALL: !!window.BoardConfig?.SMALL_CIRCLE,
+                    hasBoardConfigBIG: !!window.BoardConfig?.BIG_CIRCLE
+                });
+                // Не выбрасываем ошибку, а используем пустые массивы для предотвращения краша
+                // throw new Error('Board config not loaded');
+            }
         }
 
         if (!outerTrackSelector || !innerTrackSelector) {
@@ -43,8 +72,16 @@ class BoardLayout {
         this.logger = logger || window.logger || null;
         this.debugEnabled = Boolean(debugFlag);
 
-        this.outerCellsConfig = window.BIG_CIRCLE_CELLS || window.BoardConfig?.BIG_CIRCLE;
-        this.innerCellsConfig = window.SMALL_CIRCLE_CELLS || window.BoardConfig?.SMALL_CIRCLE;
+        this.outerCellsConfig = window.BIG_CIRCLE_CELLS || window.BoardConfig?.BIG_CIRCLE || [];
+        this.innerCellsConfig = window.SMALL_CIRCLE_CELLS || window.BoardConfig?.SMALL_CIRCLE || [];
+        
+        // Проверяем, что конфигурация загружена
+        if (!this.outerCellsConfig.length || !this.innerCellsConfig.length) {
+            console.warn('⚠️ BoardLayout: Конфигурация пуста, клетки не будут отрендерены', {
+                outerCellsCount: this.outerCellsConfig.length,
+                innerCellsCount: this.innerCellsConfig.length
+            });
+        }
 
         this.outerTrackElement = null;
         this.innerTrackElement = null;
