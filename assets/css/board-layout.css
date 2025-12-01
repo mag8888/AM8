@@ -349,12 +349,10 @@
   }
   
   .game-page .board-wrapper {
-    width: min(95vh, 95vw) !important;
-    height: min(95vh, 95vw) !important;
-    aspect-ratio: 1 / 1 !important;
+    width: 100% !important; /* По всей ширине контейнера */
+    height: auto !important; /* Высота будет установлена через JavaScript */
     margin: 0 auto !important;
     max-width: 100% !important;
-    max-height: 100% !important;
     box-sizing: border-box !important;
     position: relative !important;
     overflow: visible !important;

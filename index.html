@@ -321,6 +321,44 @@
                 });
             }
             
+            // Функция для установки квадратного размера контейнера на основе ширины
+            function setSquareBoardSize() {
+                const boardWrapper = document.querySelector('.board-wrapper');
+                if (!boardWrapper) return;
+                
+                // Получаем ширину контейнера
+                const width = boardWrapper.offsetWidth || boardWrapper.clientWidth;
+                
+                if (width > 0) {
+                    // Устанавливаем такую же высоту
+                    boardWrapper.style.height = width + 'px';
+                }
+            }
+            
+            // Инициализация размера доски
+            function initBoardSize() {
+                // Устанавливаем размер при загрузке
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        setTimeout(setSquareBoardSize, 100);
+                    });
+                } else {
+                    setTimeout(setSquareBoardSize, 100);
+                }
+                
+                // Обновляем размер при изменении размера окна
+                let resizeTimer;
+                window.addEventListener('resize', function() {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(setSquareBoardSize, 100);
+                });
+                
+                // Также обновляем после полной загрузки страницы
+                window.addEventListener('load', function() {
+                    setTimeout(setSquareBoardSize, 200);
+                });
+            }
+            
             // Создание отсутствующих контейнеров
             function ensureContainers() {
                 const gamePage = document.querySelector('#game-page');
@@ -373,11 +411,13 @@
                 document.addEventListener('DOMContentLoaded', function() {
                     ensureContainers();
                     initMenuToggle();
+                    initBoardSize();
                 });
             } else {
                 ensureContainers();
                 // Небольшая задержка для инициализации кнопки, чтобы элементы точно были в DOM
                 setTimeout(initMenuToggle, 100);
+                initBoardSize();
             }
         })();
     </script>
