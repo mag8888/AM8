@@ -306,7 +306,11 @@ router.post('/:id/roll', (req, res, next) => {
         
         // Проверяем, можно ли бросать кубик
         // Если canRoll явно false и есть результат кубика, значит уже бросили
-        if (state.canRoll === false && state.lastDiceResult) {
+        // НО: если lastDiceResult старый (старше 30 секунд), разрешаем новый бросок
+        const diceResultAge = state.lastDiceResult?.at ? Date.now() - state.lastDiceResult.at : Infinity;
+        const isOldDiceResult = diceResultAge > 30000; // 30 секунд
+        
+        if (state.canRoll === false && state.lastDiceResult && !isOldDiceResult) {
             return res.status(400).json({ 
                 success: false, 
                 message: 'Бросок кубика уже выполнен. Используйте перемещение.', 
@@ -314,10 +318,16 @@ router.post('/:id/roll', (req, res, next) => {
             });
         }
         
-        // Если canRoll не определен, устанавливаем в true (начало хода)
-        if (typeof state.canRoll !== 'boolean') {
+        // Если canRoll не определен или результат кубика устарел, разрешаем бросок
+        if (typeof state.canRoll !== 'boolean' || isOldDiceResult) {
             state.canRoll = true;
         }
+        
+        // Если canRoll false, но результат устарел, разрешаем бросок
+        if (state.canRoll === false && isOldDiceResult) {
+            state.canRoll = true;
+        }
+        
         const value = Math.floor(Math.random()*6)+1;
         state.lastDiceResult = { value, at: Date.now() };
         state.canRoll = false;

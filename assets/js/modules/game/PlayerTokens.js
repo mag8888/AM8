@@ -62,6 +62,18 @@ class PlayerTokens {
         // Дополнительный наблюдатель для гарантированного первого рендера
         this.startInitialRenderWatcher();
         
+        // Принудительно получаем игроков из GameStateManager при инициализации
+        setTimeout(() => {
+            const gameStateManager = window.app?.getModule?.('gameStateManager');
+            if (gameStateManager) {
+                const state = gameStateManager.getState();
+                if (state && state.players && Array.isArray(state.players) && state.players.length > 0) {
+                    this._info('Принудительное обновление фишек при инициализации', { playersCount: state.players.length });
+                    this.updateTokens(state.players);
+                }
+            }
+        }, 300);
+        
         this._info('PlayerTokens инициализирован');
     }
     
