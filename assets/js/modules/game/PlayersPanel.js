@@ -3210,12 +3210,20 @@ class PlayersPanel {
                 box-shadow: 0 8px 20px rgba(34, 197, 94, 0.15);
             }
             
-            .exit-btn {
+            /* Кнопка выхода внизу */
+            .exit-widget {
+                margin-top: 1.5rem;
+                padding-top: 1.5rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .exit-widget .exit-btn {
+                width: 100%;
                 background: rgba(239, 68, 68, 0.1);
                 border-color: rgba(239, 68, 68, 0.3);
             }
             
-            .exit-btn:hover:not(:disabled) {
+            .exit-widget .exit-btn:hover:not(:disabled) {
                 background: rgba(239, 68, 68, 0.15);
                 border-color: rgba(239, 68, 68, 0.5);
                 box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
