@@ -394,8 +394,8 @@ function navigateToGameBoard(roomId) {
                     token: playerToken,
                     dream: p.dream || null,
                     isReady: !!p.isReady,
-                    position: 0,
-                    isInner: true,
+                    position: 0, // Стартовая позиция - 1-я клетка
+                    isInner: false, // Начинаем с внешнего трека
                     money: p.money || 5000
                 };
             })
