@@ -1,5 +1,5 @@
 /**
- * PlayerTokens v1.0.0
+ * PlayerTokens v2.0.0
  * Компонент для отображения фишек игроков на игровом поле
  */
 if (typeof console !== 'undefined' && typeof console.debug === 'function') {
