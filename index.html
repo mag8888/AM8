@@ -326,21 +326,30 @@
                 const boardWrapper = document.querySelector('.board-wrapper');
                 if (!boardWrapper) return;
                 
-                // Используем размер viewport для создания квадрата
-                const viewportWidth = window.innerWidth;
-                const viewportHeight = window.innerHeight;
-                const size = Math.min(viewportWidth, viewportHeight);
+                // Проверяем, мобильная ли версия
+                const isMobile = window.innerWidth <= 1024;
                 
-                if (size > 0) {
-                    // Устанавливаем строго квадратный размер на основе меньшей стороны экрана
-                    const sizePx = size + 'px';
-                    boardWrapper.style.width = sizePx;
-                    boardWrapper.style.height = sizePx;
-                    boardWrapper.style.minWidth = sizePx;
-                    boardWrapper.style.minHeight = sizePx;
-                    boardWrapper.style.maxWidth = sizePx;
-                    boardWrapper.style.maxHeight = sizePx;
-                    boardWrapper.style.aspectRatio = '1 / 1';
+                if (isMobile) {
+                    // На мобильной версии используем CSS (min(100vw, 100vh))
+                    // JavaScript только гарантирует, что размеры установлены
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    const size = Math.min(viewportWidth, viewportHeight);
+                    
+                    if (size > 0) {
+                        const sizePx = size + 'px';
+                        // Устанавливаем строго квадратный размер
+                        boardWrapper.style.width = sizePx;
+                        boardWrapper.style.height = sizePx;
+                        boardWrapper.style.minWidth = sizePx;
+                        boardWrapper.style.minHeight = sizePx;
+                        boardWrapper.style.maxWidth = sizePx;
+                        boardWrapper.style.maxHeight = sizePx;
+                        boardWrapper.style.aspectRatio = '1 / 1';
+                    }
+                } else {
+                    // На десктопе используем min(95vh, 95vw) через CSS
+                    // JavaScript не переопределяет размеры
                 }
             }
             

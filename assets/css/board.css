@@ -325,7 +325,8 @@
 
 .board-wrapper {
     position: relative;
-    /* Используем высоту экрана минус небольшой отступ для максимального размера */
+    /* На мобильной версии размер устанавливается через CSS в board-layout.css */
+    /* Для десктопа используем min(95vh, 95vw) */
     height: min(95vh, 95vw);
     width: min(95vh, 95vw);
     overflow: visible;
@@ -338,6 +339,15 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+/* На мобильной версии размер переопределяется в board-layout.css */
+@media (max-width: 1024px) {
+    .board-wrapper {
+        /* Размер устанавливается через board-layout.css для мобильной версии */
+        height: min(100vw, 100vh) !important;
+        width: min(100vw, 100vh) !important;
+    }
 }
 
 
