@@ -424,9 +424,9 @@
     background: transparent !important; /* Убираем подложку */
   }
   
-  /* Карточки после банка на мобиле */
+  /* Карточки после банка на мобиле - в самом низу */
   #card-decks-panel .card-deck-card {
-    order: 2 !important;
+    order: 4 !important; /* Карточки - четвертые (внизу) */
   }
   
   #bank-preview-container {
