@@ -61,7 +61,7 @@ function normalizePlayer(source, index = 0) {
         position: toNumber(source.position, 0),
         track,
         isInner,
-        token: source.token || source.avatar || source.icon || '🎯',
+        token: source.token || source.avatar || source.icon || '🎲',
         money: toNumber(source.money ?? source.balance ?? source.cash ?? source.wallet, 5000),
         salary,
         totalIncome,

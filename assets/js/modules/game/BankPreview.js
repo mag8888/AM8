@@ -604,50 +604,52 @@ class BankPreview {
             return null;
         }
         
-        const currentPlayer = gameState.players.find(p => 
-            p.id === currentUser.id || 
-            p.userId === currentUser.id || 
-            p.username === currentUser.username
-        );
+        // Улучшенный поиск игрока с множественными вариантами сравнения
+        const currentPlayer = gameState.players.find(p => {
+            // Сравнение по ID (разные варианты)
+            if (currentUser.id) {
+                if (p.id === currentUser.id || 
+                    p.userId === currentUser.id ||
+                    String(p.id) === String(currentUser.id) ||
+                    String(p.userId) === String(currentUser.id)) {
+                    return true;
+                }
+            }
+            
+            // Сравнение по username
+            if (currentUser.username) {
+                if (p.username === currentUser.username ||
+                    (p.username && currentUser.username && 
+                     p.username.toLowerCase() === currentUser.username.toLowerCase())) {
+                    return true;
+                }
+            }
+            
+            return false;
+        });
         
-        // Убираем спам логирование - поиск игрока работает нормально
-        
+        // Логирование для диагностики
         if (!currentPlayer) {
-            console.warn('⚠️ BankPreview: currentPlayer не найден в gameState.players');
+            console.warn('⚠️ BankPreview: currentPlayer не найден в gameState.players', {
+                currentUser: currentUser,
+                playersCount: gameState.players?.length || 0,
+                players: gameState.players?.map(p => ({
+                    id: p.id,
+                    userId: p.userId,
+                    username: p.username
+                })) || []
+            });
+            
+            // Попытка использовать первого игрока как fallback (если только один игрок)
+            if (gameState.players && gameState.players.length === 1) {
+                console.log('🔄 BankPreview: Используем единственного игрока как fallback');
+                return this._createBankDataFromPlayer(gameState.players[0]);
+            }
+            
             return null;
         }
         
-        // Получаем реальный баланс игрока
-        let balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
-            ? currentPlayer.money 
-            : ((currentPlayer.balance !== undefined && currentPlayer.balance !== null) 
-                ? currentPlayer.balance 
-                : 0); // Используем 0 если значения undefined/null
-        
-        // Убираем спам логирование - баланс извлекается нормально
-        
-        // Используем данные предпринимателя по умолчанию если это предприниматель
-        let bankData;
-        if (currentPlayer.profession === 'Предприниматель' || !currentPlayer.profession) {
-            bankData = {
-                balance: balance,
-                income: 10000,
-                expenses: 6200,
-                netIncome: 3800,
-                credit: currentPlayer.currentLoan || 0,
-                maxCredit: 38000
-            };
-        } else {
-        // Для других профессий используем их данные
-            bankData = {
-            balance: balance,
-            income: currentPlayer.totalIncome || currentPlayer.salary || 5000,
-            expenses: currentPlayer.monthlyExpenses || 2000,
-            netIncome: (currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000),
-            credit: currentPlayer.currentLoan || 0,
-            maxCredit: Math.max(((currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000)) * 10, 0)
-            };
-        }
+        return this._createBankDataFromPlayer(currentPlayer);
         
         // console.log('💰 BankPreview: Извлеченные данные банка:', bankData);
         

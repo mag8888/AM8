@@ -3,7 +3,7 @@
  * Компонент для отображения фишек игроков на игровом поле
  */
 if (typeof console !== 'undefined' && typeof console.debug === 'function') {
-    console.debug('🎯 PlayerTokens: Файл загружается...');
+    console.debug('🎲 PlayerTokens: Файл загружается...');
 }
 
 class PlayerTokens {
@@ -340,7 +340,7 @@ class PlayerTokens {
                 border: 3px solid rgba(255, 255, 255, 0.9);
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.2);
                 transition: all 0.3s ease;
-                z-index: 2000 !important;
+                z-index: 50000 !important;
                 pointer-events: auto !important;
                 visibility: visible !important;
                 opacity: 1 !important;
@@ -673,7 +673,7 @@ class PlayerTokens {
         token.dataset.playerName = player.username;
         token.setAttribute('data-position', player.position || 0); // Добавляем атрибут позиции
         token.dataset.isInner = String(Boolean(player.isInner));
-        token.style.zIndex = '2000'; /* Фишки поверх */
+        token.style.zIndex = '50000'; /* Фишки поверх */
         
         // Используем иконку фишки вместо текста
         const tokenIcon = this.getTokenIcon(player.token);
@@ -702,7 +702,7 @@ class PlayerTokens {
             'dolphin': '🐬'
         };
         
-        const icon = tokenIcons[tokenId] || '🎯';
+        const icon = tokenIcons[tokenId] || '🎲';
         return icon;
     }
     
@@ -1639,7 +1639,7 @@ class PlayerTokens {
             token.style.setProperty('min-height', '32px', 'important');
             token.style.setProperty('opacity', '1', 'important'); // Устанавливаем opacity: 1 ДО анимации
             token.style.setProperty('position', 'absolute', 'important');
-            token.style.setProperty('z-index', '10000', 'important');
+            token.style.setProperty('z-index: 50000', 'important');
             
             // Дополнительно через обычные свойства
             token.style.display = 'flex';
@@ -1650,7 +1650,7 @@ class PlayerTokens {
             token.style.minHeight = '32px';
             token.style.opacity = '1';
             token.style.position = 'absolute';
-            token.style.zIndex = '10000';
+            token.style.zIndex = '50000';
             
             // Проверяем, что фишка действительно в DOM
             if (!token.isConnected) {
@@ -1759,7 +1759,7 @@ class PlayerTokens {
         token.style.setProperty('height', '32px', 'important');
         token.style.setProperty('min-width', '32px', 'important');
         token.style.setProperty('min-height', '32px', 'important');
-        token.style.setProperty('z-index', '10000', 'important');
+        token.style.setProperty('z-index: 50000', 'important');
         token.style.setProperty('display', 'flex', 'important');
         token.style.setProperty('visibility', 'visible', 'important');
         token.style.setProperty('opacity', '1', 'important');
@@ -1773,7 +1773,7 @@ class PlayerTokens {
         token.style.height = '32px';
         token.style.minWidth = '32px';
         token.style.minHeight = '32px';
-        token.style.zIndex = '10000';
+        token.style.zIndex = '50000';
         token.style.display = 'flex';
         token.style.visibility = 'visible';
         token.style.opacity = '1';
@@ -1813,11 +1813,11 @@ class PlayerTokens {
         
         // Добавляем визуальную индикацию для множественных фишек
         if (totalPlayers > 1) {
-            token.style.zIndex = 2000 + Math.abs(offset.x + offset.y); /* Фишки поверх */
+            token.style.zIndex = 50000 + Math.abs(offset.x + offset.y); /* Фишки поверх */
             token.style.boxShadow = '0 0 8px rgba(255, 255, 255, 0.4)';
             token.style.border = '2px solid rgba(255, 255, 255, 0.6)';
         } else {
-            token.style.zIndex = '2000'; /* Базовый z-index */
+            token.style.zIndex = '50000'; /* Базовый z-index */
             token.style.boxShadow = '';
             token.style.border = '';
         }
@@ -1945,9 +1945,9 @@ class PlayerTokens {
 }
 
 if (typeof console !== 'undefined' && typeof console.debug === 'function') {
-    console.debug('🎯 PlayerTokens: Класс определен, экспортируем в window...');
+    console.debug('🎲 PlayerTokens: Класс определен, экспортируем в window...');
 }
 window.PlayerTokens = PlayerTokens;
 if (typeof console !== 'undefined' && typeof console.debug === 'function') {
-    console.debug('🎯 PlayerTokens: Экспорт завершен, window.PlayerTokens =', !!window.PlayerTokens);
+    console.debug('🎲 PlayerTokens: Экспорт завершен, window.PlayerTokens =', !!window.PlayerTokens);
 }

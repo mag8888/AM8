@@ -83,7 +83,7 @@ class TurnController {
         if (this.eventBus && typeof this.eventBus.on === 'function') {
             this.eventBus.on('push:message', (message) => {
                 if (message.type === 'turn_changed' || message.type === 'game_state_updated') {
-                    console.log('🎯 TurnController: Получено push-уведомление о смене хода');
+                    console.log('🎲 TurnController: Получено push-уведомление о смене хода');
                     // Принудительно обновляем состояние
                     if (this.gameStateManager && typeof this.gameStateManager.forceUpdate === 'function') {
                         this.gameStateManager.forceUpdate();
@@ -370,7 +370,7 @@ class TurnController {
      * @param {Object} data - Данные о смене хода
      */
     onTurnChanged(data) {
-        console.log('🎯 TurnController: Ход изменен', data);
+        console.log('🎲 TurnController: Ход изменен', data);
         // Обновляем UI при смене хода
         if (this.gameStateManager) {
             const state = this.gameStateManager.getState();
@@ -383,14 +383,14 @@ class TurnController {
      * @param {Array} players - Список игроков
      */
     onPlayersUpdated(players) {
-        console.log('🎯 TurnController: Игроки обновлены', players);
+        console.log('🎲 TurnController: Игроки обновлены', players);
         if (this.playerList) {
             // Проверяем, что players является массивом
             if (Array.isArray(players)) {
                 this.playerList.updatePlayers(players);
             } else if (players && players.players && Array.isArray(players.players)) {
                 // Если передан объект с полем players, извлекаем массив
-                console.log('🎯 TurnController: Извлекаем массив игроков из объекта');
+                console.log('🎲 TurnController: Извлекаем массив игроков из объекта');
                 this.playerList.updatePlayers(players.players);
             } else {
                 console.warn('TurnController: players не является массивом:', typeof players, players);
@@ -505,7 +505,7 @@ class TurnController {
         const playerToken = this.getPlayerToken(state.activePlayer);
         
         if (isMyTurn) {
-            turnInfo.innerHTML = `${playerToken} 🎯 ВАШ ХОД`;
+            turnInfo.innerHTML = `${playerToken} 🎲 ВАШ ХОД`;
             turnInfo.classList.add('my-turn');
             turnInfo.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
             turnInfo.style.animation = 'pulse 2s infinite';
@@ -622,7 +622,7 @@ class TurnController {
      * @returns {string} Эмодзи токена
      */
     getPlayerToken(player) {
-        if (!player) return '🎯';
+        if (!player) return '🎲';
         
         // Маппинг токенов по username (как на игровом поле)
         const tokenMap = {
@@ -632,7 +632,7 @@ class TurnController {
             'user': '👤'
         };
         
-        return tokenMap[player.username] || '🎯';
+        return tokenMap[player.username] || '🎲';
     }
     
     /**
@@ -993,7 +993,7 @@ class TurnController {
             return;
         }
         
-        console.log('🎯 TurnController: Начинаем перемещение для текущего пользователя');
+        console.log('🎲 TurnController: Начинаем перемещение для текущего пользователя');
         try {
             if (this.turnManager) {
                 await this.turnManager.moveActivePlayer(steps, {

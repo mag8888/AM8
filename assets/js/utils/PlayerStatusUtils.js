@@ -14,7 +14,7 @@ class PlayerStatusUtils {
      */
     static getPlayerStatus(player, activePlayer, isCurrentUser = false) {
         if (activePlayer && activePlayer.id === player.id) {
-            return '🎯'; // Ходит
+            return '🎲'; // Ходит
         }
         
         if (player.isReady) {
@@ -57,7 +57,7 @@ class PlayerStatusUtils {
             'dolphin': '🐬'
         };
         
-        return tokenIcons[player.token] || '🎯';
+        return tokenIcons[player.token] || '🎲';
     }
     
     /**
