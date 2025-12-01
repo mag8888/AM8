@@ -1745,8 +1745,35 @@ class BankModuleServer {
             );
             
             // Приоритет: userId > id (для совместимости с сервером)
-            const serverFromPlayerId = currentPlayer?.userId || currentPlayer?.id || this.bankState.playerId;
-            const serverToPlayerId = recipientPlayer.userId || recipientPlayer.id || recipientId;
+            // Если ID вида "player1", "player2", отправляем как есть - сервер найдет по индексу
+            let serverFromPlayerId = currentPlayer?.userId || currentPlayer?.id || this.bankState.playerId;
+            let serverToPlayerId = recipientPlayer.userId || recipientPlayer.id || recipientId;
+            
+            // Если ID не найдены, но есть индекс в массиве, используем его
+            // Например, если player1 = индекс 0, player2 = индекс 1
+            if (!serverFromPlayerId || (String(serverFromPlayerId).startsWith('player') && !currentPlayer?.userId)) {
+                const fromIndex = this.bankState.players?.findIndex(p => 
+                    p.id === this.bankState.playerId || 
+                    p.userId === this.bankState.playerId ||
+                    String(p.id) === String(this.bankState.playerId)
+                );
+                if (fromIndex >= 0) {
+                    // Используем индекс для поиска на сервере
+                    serverFromPlayerId = this.bankState.playerId; // Оставляем как есть, сервер найдет по индексу
+                }
+            }
+            
+            if (!serverToPlayerId || (String(serverToPlayerId).startsWith('player') && !recipientPlayer?.userId)) {
+                const toIndex = this.bankState.players?.findIndex(p => 
+                    p.id === recipientId || 
+                    p.userId === recipientId ||
+                    String(p.id) === String(recipientId)
+                );
+                if (toIndex >= 0) {
+                    // Используем индекс для поиска на сервере
+                    serverToPlayerId = recipientId; // Оставляем как есть, сервер найдет по индексу
+                }
+            }
             
             console.log('🏦 BankModuleServer: Отправка перевода:', {
                 roomId: this.bankState.roomId,
