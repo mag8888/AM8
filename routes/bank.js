@@ -127,6 +127,8 @@ router.post('/transfer', async (req, res) => {
         
         // Получаем состояние комнаты
         console.log('🏦 Bank API: Получение состояния комнаты:', roomId);
+        console.log('🏦 Bank API: Request body:', JSON.stringify(req.body, null, 2));
+        
         let roomData = getRoomGameState(roomId);
         if (!roomData) {
             try {
@@ -144,8 +146,9 @@ router.post('/transfer', async (req, res) => {
                     })) || []
                 });
             } catch (error) {
-                console.log('❌ Bank API: Не удалось инициализировать состояние комнаты:', error.message);
-                console.log('❌ Bank API: Stack trace:', error.stack);
+                console.error('❌ Bank API: Не удалось инициализировать состояние комнаты:', error);
+                console.error('❌ Bank API: Error message:', error.message);
+                console.error('❌ Bank API: Stack trace:', error.stack);
                 roomData = null;
             }
         } else {
@@ -162,21 +165,62 @@ router.post('/transfer', async (req, res) => {
             });
         }
         if (!roomData) {
-            console.log('❌ Bank API: Комната не найдена:', roomId);
+            console.error('❌ Bank API: Комната не найдена:', roomId);
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
         }
         
         // Проверяем, что есть игроки
         if (!roomData.players || roomData.players.length === 0) {
-            console.log('❌ Bank API: В комнате нет игроков:', {
+            console.error('❌ Bank API: В комнате нет игроков:', {
                 roomId,
                 roomDataKeys: Object.keys(roomData || {}),
-                roomData: JSON.stringify(roomData, null, 2)
+                hasRoomData: !!roomData,
+                roomDataType: typeof roomData,
+                roomDataString: JSON.stringify(roomData, null, 2).substring(0, 500)
             });
-            return res.status(404).json({ 
-                success: false, 
-                message: 'В комнате нет игроков. Убедитесь, что игра начата и игроки загружены.' 
-            });
+            
+            // Пытаемся загрузить игроков напрямую из MongoDB
+            try {
+                console.log('🔍 Bank API: Пытаемся загрузить игроков напрямую из MongoDB...');
+                const RoomRepository = require('../repositories/RoomRepository');
+                const repo = new RoomRepository();
+                const room = await repo.getById(roomId);
+                console.log('🔍 Bank API: Комната из MongoDB:', {
+                    hasRoom: !!room,
+                    hasPlayers: !!room?.players,
+                    playersCount: room?.players?.length || 0,
+                    players: room?.players?.map((p, idx) => ({
+                        index: idx,
+                        userId: p.userId,
+                        id: p.id,
+                        username: p.username,
+                        name: p.name
+                    })) || []
+                });
+                
+                if (room && room.players && room.players.length > 0) {
+                    // Пересоздаем состояние с игроками из MongoDB
+                    // Используем buildState через прямой доступ к модулю
+                    const roomsModule = require('./rooms');
+                    // buildState не экспортируется напрямую, но мы можем использовать fetchOrCreateRoomState
+                    // который вызовет buildState внутри
+                    console.log('🔄 Bank API: Пересоздаем состояние с игроками из MongoDB...');
+                    roomData = await fetchOrCreateRoomState(roomId);
+                    console.log('✅ Bank API: Состояние пересоздано:', {
+                        playersCount: roomData?.players?.length || 0
+                    });
+                }
+            } catch (mongoError) {
+                console.error('❌ Bank API: Ошибка загрузки из MongoDB:', mongoError);
+            }
+            
+            // Проверяем еще раз после попытки загрузки
+            if (!roomData.players || roomData.players.length === 0) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'В комнате нет игроков. Убедитесь, что игра начата и игроки загружены.' 
+                });
+            }
         }
 
         console.log('🏦 Bank API: Состояние комнаты:', JSON.stringify(roomData, null, 2));
