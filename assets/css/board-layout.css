@@ -437,9 +437,9 @@
     flex-shrink: 0 !important; /* Не сжимается */
   }
   
-  /* Банк на всю ширину, третий после поля и хода игроков */
+  /* Банк на всю ширину, второй после поля */
   #card-decks-panel #bank-section {
-    order: 3 !important; /* Банк - третий (после поля и хода игроков) */
+    order: 2 !important; /* Банк - второй (после поля) */
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;

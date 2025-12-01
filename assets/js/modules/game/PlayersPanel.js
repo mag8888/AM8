@@ -1362,6 +1362,13 @@ class PlayersPanel {
      * @param {number} result - Результат броска
      */
     updateDiceResult(result) {
+        // Дебаунсинг для предотвращения множественных вызовов
+        if (this._lastDiceResult === result && this._lastDiceResultTime && Date.now() - this._lastDiceResultTime < 100) {
+            return; // Пропускаем дубликаты в течение 100ms
+        }
+        this._lastDiceResult = result;
+        this._lastDiceResultTime = Date.now();
+        
         // Обновляем отображение в панели действий
         const diceResultDisplay = document.getElementById('dice-result-display');
         const diceResultValue = document.getElementById('dice-result-value');
