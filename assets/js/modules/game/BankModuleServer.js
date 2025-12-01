@@ -1646,7 +1646,28 @@ class BankModuleServer {
         }
         
         try {
-            const response = await fetch('/api/bank/transfer', {
+            // Проверяем наличие необходимых данных
+            if (!this.bankState.roomId) {
+                throw new Error('Room ID не найден');
+            }
+            if (!this.bankState.playerId) {
+                throw new Error('Player ID не найден');
+            }
+            if (!recipientId) {
+                throw new Error('Recipient ID не найден');
+            }
+            
+            console.log('🏦 BankModuleServer: Отправка перевода:', {
+                roomId: this.bankState.roomId,
+                fromPlayerId: this.bankState.playerId,
+                toPlayerId: recipientId,
+                amount: amount
+            });
+            
+            // Используем ApiUrlHelper если доступен, иначе fallback на прямой путь
+            const apiUrl = window.ApiUrlHelper?.getBankUrl?.('transfer') || '/api/bank/transfer';
+            
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1659,6 +1680,17 @@ class BankModuleServer {
                     description: `Перевод через BankModuleServer`
                 })
             });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    errorData = { message: errorText || `HTTP ${response.status}` };
+                }
+                throw new Error(errorData.message || `Ошибка сервера: ${response.status}`);
+            }
             
             const result = await response.json();
             

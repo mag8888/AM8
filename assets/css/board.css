@@ -350,6 +350,8 @@
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important; /* Точное центрирование внешнего квадрата */
+    position: absolute !important; /* Явно указываем position для правильного центрирования */
+    margin: 0 !important; /* Убираем все отступы */
     z-index: 2;
 }
 
