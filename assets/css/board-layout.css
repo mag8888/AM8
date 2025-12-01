@@ -123,11 +123,25 @@
   /* Треки внутри доски - не влияют на размеры контейнера */
   .game-page .board-wrapper .track {
     position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
     width: 100% !important;
     height: 100% !important;
     pointer-events: none !important; /* Клетки обрабатывают события */
+  }
+  
+  /* Внешний трек - центрирование как внутренний */
+  .game-page .board-wrapper .outer-track {
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+  }
+  
+  /* Внутренний трек - центрирование */
+  .game-page .board-wrapper .inner-track {
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
   }
   
   /* Клетки - абсолютное позиционирование, не влияют на размеры */

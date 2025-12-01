@@ -352,6 +352,7 @@
     transform: translate(-50%, -50%) !important; /* Точное центрирование внешнего квадрата */
     position: absolute !important; /* Явно указываем position для правильного центрирования */
     margin: 0 !important; /* Убираем все отступы */
+    padding: 0 !important; /* Убираем внутренние отступы */
     z-index: 2;
 }
 
