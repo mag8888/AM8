@@ -354,6 +354,11 @@ class PlayersPanel {
                             <div class="btn-label">Передать</div>
                             <div class="btn-glow"></div>
                         </button>
+                        <button class="action-btn exit-btn" id="exit-game" type="button">
+                            <div class="btn-icon">🚪</div>
+                            <div class="btn-label">Выход</div>
+                            <div class="btn-glow"></div>
+                        </button>
                     </div>
                 </div>
 
@@ -1651,6 +1656,11 @@ class PlayersPanel {
                 <div class="btn-label">Передать</div>
                 <div class="btn-glow"></div>
             </button>
+            <button class="action-btn exit-btn" id="exit-game" type="button">
+                <div class="btn-icon">🚪</div>
+                <div class="btn-label">Выход</div>
+                <div class="btn-glow"></div>
+            </button>
         `;
         
         // Привязываем обработчики событий (старые уже удалены в setupControls)
@@ -1773,6 +1783,44 @@ class PlayersPanel {
             await turnService.endTurn();
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка завершения хода:', error);
+        }
+    }
+    
+    /**
+     * Обработчик кнопки "Выход"
+     */
+    handleExitGame() {
+        console.log('🚪 PlayersPanel: Выход из игры...');
+        
+        // Показываем подтверждение
+        const confirmed = confirm('Вы уверены, что хотите выйти из игры?');
+        if (!confirmed) {
+            return;
+        }
+        
+        // Очищаем состояние игры из localStorage/sessionStorage
+        try {
+            // Очищаем данные игры
+            const gameStateKeys = ['am_game_state', 'am_room_data', 'am_player_bundle'];
+            gameStateKeys.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+            
+            console.log('🧹 PlayersPanel: Данные игры очищены');
+        } catch (error) {
+            console.warn('⚠️ PlayersPanel: Ошибка очистки данных:', error);
+        }
+        
+        // Возвращаемся на страницу комнат
+        // Проверяем, находимся ли мы на index.html или на отдельной странице
+        const currentPath = window.location.pathname;
+        if (currentPath.includes('index.html') || currentPath === '/' || currentPath.endsWith('/')) {
+            // На главной странице - переходим на страницу комнат
+            window.location.href = 'pages/rooms.html';
+        } else {
+            // На отдельной странице - переходим на страницу комнат относительно текущей
+            window.location.href = 'rooms.html';
         }
     }
     
@@ -3091,6 +3139,12 @@ class PlayersPanel {
                 gap: 1rem;
             }
             
+            @media (max-width: 768px) {
+                .actions-grid {
+                    grid-template-columns: 1fr 1fr;
+                }
+            }
+            
             .roll-btn:hover:not(:disabled) {
                 border-color: rgba(147, 51, 234, 0.3);
                 box-shadow: 0 8px 20px rgba(147, 51, 234, 0.15);
@@ -3137,6 +3191,17 @@ class PlayersPanel {
             .move-btn:hover:not(:disabled) {
                 border-color: rgba(34, 197, 94, 0.3);
                 box-shadow: 0 8px 20px rgba(34, 197, 94, 0.15);
+            }
+            
+            .exit-btn {
+                background: rgba(239, 68, 68, 0.1);
+                border-color: rgba(239, 68, 68, 0.3);
+            }
+            
+            .exit-btn:hover:not(:disabled) {
+                background: rgba(239, 68, 68, 0.15);
+                border-color: rgba(239, 68, 68, 0.5);
+                box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
             }
 
             .btn-icon {
@@ -3363,6 +3428,14 @@ class PlayersPanel {
         if (moveBtn) {
             moveBtn.addEventListener('click', () => {
                 this.handleDiceRoll();
+            });
+        }
+        
+        // Обработчик кнопки "Выход"
+        const exitBtn = this.container.querySelector('#exit-game');
+        if (exitBtn) {
+            exitBtn.addEventListener('click', () => {
+                this.handleExitGame();
             });
         }
         
