@@ -3135,13 +3135,26 @@ class PlayersPanel {
             /* Игровые действия */
             .actions-grid {
                 display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
+                grid-template-columns: repeat(3, 1fr);
                 gap: 1rem;
+            }
+            
+            /* Если кнопок 5, последняя занимает всю ширину или центрируется */
+            .actions-grid:has(button:nth-child(5)) {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .actions-grid button:nth-child(5) {
+                grid-column: 2 / 3; /* Центрируем последнюю кнопку */
             }
             
             @media (max-width: 768px) {
                 .actions-grid {
-                    grid-template-columns: 1fr 1fr;
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                
+                .actions-grid button:nth-child(5) {
+                    grid-column: 1 / -1; /* Последняя кнопка на всю ширину на мобиле */
                 }
             }
             
