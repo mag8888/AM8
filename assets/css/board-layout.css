@@ -535,67 +535,97 @@
     line-height: 1 !important;
   }
   
-  .mobile-turn-controls {
+  /* Нижнее меню в стиле навигации */
+  .mobile-bottom-menu {
     position: fixed !important;
-    bottom: 1rem !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    display: flex !important; /* Показываем на мобильной версии */
-    gap: 1rem !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    background: rgba(17, 25, 40, 0.98) !important;
+    border-top: 1px solid rgba(148, 163, 184, 0.2) !important;
+    padding: 0.5rem 0 !important;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom)) !important;
     z-index: 1000 !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(10px) !important;
   }
   
-  .mobile-turn-btn {
-    background: rgba(17, 25, 40, 0.95) !important;
-    border: 2px solid rgba(99, 102, 241, 0.5) !important;
-    border-radius: 12px !important;
-    padding: 1.25rem 1.75rem !important;
+  .mobile-bottom-menu-item {
+    flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    gap: 0.75rem !important;
-    color: #f8fafc !important;
-    font-size: 1rem !important;
-    font-weight: 600 !important;
+    justify-content: center !important;
+    gap: 0.25rem !important;
+    padding: 0.75rem 0.5rem !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: rgba(248, 250, 252, 0.6) !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
     cursor: pointer !important;
     transition: all 0.2s ease !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-    backdrop-filter: blur(10px) !important;
-    min-width: 120px !important;
+    min-width: 0 !important;
   }
   
-  .mobile-turn-btn:disabled {
-    opacity: 0.5 !important;
+  .mobile-bottom-menu-item:disabled {
+    opacity: 0.4 !important;
     cursor: not-allowed !important;
   }
   
-  .mobile-turn-btn:not(:disabled):active {
-    transform: scale(0.95) !important;
-    background: rgba(99, 102, 241, 0.2) !important;
+  .mobile-bottom-menu-item:not(:disabled):active {
+    background: rgba(99, 102, 241, 0.1) !important;
+    color: rgba(248, 250, 252, 0.9) !important;
   }
   
+  .mobile-bottom-menu-item.active {
+    color: #6366f1 !important;
+  }
+  
+  .mobile-bottom-menu-icon {
+    font-size: 1.5rem !important;
+    line-height: 1 !important;
+    display: block !important;
+  }
+  
+  .mobile-bottom-menu-label {
+    font-size: 0.7rem !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  /* Специальные стили для активных кнопок */
   .mobile-roll-btn:not(:disabled) {
-    border-color: rgba(16, 185, 129, 0.5) !important;
+    color: rgba(16, 185, 129, 0.8) !important;
   }
   
-  .mobile-roll-btn:not(:disabled):active {
-    background: rgba(16, 185, 129, 0.2) !important;
+  .mobile-roll-btn:not(:disabled).active {
+    color: #10b981 !important;
   }
   
   .mobile-pass-btn:not(:disabled) {
-    border-color: rgba(99, 102, 241, 0.5) !important;
+    color: rgba(99, 102, 241, 0.8) !important;
   }
   
-  .mobile-turn-icon {
-    font-size: 2rem !important;
-    line-height: 1 !important;
+  .mobile-pass-btn:not(:disabled).active {
+    color: #6366f1 !important;
   }
   
-  .mobile-turn-label {
-    font-size: 1rem !important;
-    line-height: 1 !important;
+  /* Старые классы для совместимости - скрываем */
+  .mobile-turn-controls {
+    display: none !important;
+  }
+  
+  .mobile-turn-btn {
+    display: none !important;
   }
   
   /* Банк на весь экран на мобильной версии */
