@@ -1568,6 +1568,17 @@ class BankModuleServer {
                     this.updatePlayersList();
                 }, 100);
                 
+                // Подписываемся на обновления GameStateManager для автоматического обновления списка игроков
+                if (this.gameStateManager && typeof this.gameStateManager.on === 'function') {
+                    this.gameStateManager.on('state:updated', (state) => {
+                        if (state && state.players && state.players.length > 0) {
+                            console.log('🔄 BankModuleServer: Получено обновление от GameStateManager, обновляем список игроков');
+                            this.bankState.players = state.players;
+                            this.updatePlayersList();
+                        }
+                    });
+                }
+                
                 // Затем загружаем актуальные данные в фоне (неблокирующе)
                 setTimeout(() => {
                     this.loadServerData(true).then(() => {
