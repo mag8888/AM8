@@ -345,6 +345,27 @@
     overflow: visible !important;
   }
   
+  /* Скрываем центральный логотип и другие элементы внутри поля на мобильной версии */
+  .game-page .board-wrapper .center-area,
+  .game-page .board-wrapper .logo-center,
+  .game-page .board-wrapper #logo-center,
+  .game-page .board-wrapper .center-logo,
+  .game-page .board-wrapper #center-logo {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+  
+  /* Показываем только внешний и внутренний треки */
+  .game-page .board-wrapper .outer-track,
+  .game-page .board-wrapper .inner-track,
+  .game-page .board-wrapper #outer-track,
+  .game-page .board-wrapper #inner-track {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
   /* Убираем все отступы у родительских контейнеров на мобиле */
   .app-content,
   #page-container {
