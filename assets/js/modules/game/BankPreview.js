@@ -661,6 +661,44 @@ class BankPreview {
     }
 
     /**
+     * Создание данных банка из данных игрока
+     * @private
+     */
+    _createBankDataFromPlayer(currentPlayer) {
+        // Получаем реальный баланс игрока
+        let balance = (currentPlayer.money !== undefined && currentPlayer.money !== null) 
+            ? currentPlayer.money 
+            : ((currentPlayer.balance !== undefined && currentPlayer.balance !== null) 
+                ? currentPlayer.balance 
+                : 0); // Используем 0 если значения undefined/null
+        
+        // Используем данные предпринимателя по умолчанию если это предприниматель
+        let bankData;
+        if (currentPlayer.profession === 'Предприниматель' || !currentPlayer.profession) {
+            bankData = {
+                balance: balance,
+                income: 10000,
+                expenses: 6200,
+                netIncome: 3800,
+                credit: currentPlayer.currentLoan || 0,
+                maxCredit: 38000
+            };
+        } else {
+            // Для других профессий используем их данные
+            bankData = {
+                balance: balance,
+                income: currentPlayer.totalIncome || currentPlayer.salary || 5000,
+                expenses: currentPlayer.monthlyExpenses || 2000,
+                netIncome: (currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000),
+                credit: currentPlayer.currentLoan || 0,
+                maxCredit: Math.max(((currentPlayer.totalIncome || currentPlayer.salary || 5000) - (currentPlayer.monthlyExpenses || 2000)) * 10, 0)
+            };
+        }
+        
+        return bankData;
+    }
+
+    /**
      * Получение fallback данных банка
      */
     getFallbackBankData() {
