@@ -1597,6 +1597,58 @@ class App {
         this._playerTokensForceUpdateCalled = false;
         console.log('🎯 App: Сброшен флаг _playerTokensForceUpdateCalled');
     }
+
+    /**
+     * Принудительная загрузка данных игры
+     * @param {string} roomId - ID комнаты
+     * @private
+     */
+    _forceLoadGameData(roomId) {
+        if (!roomId) {
+            console.warn('⚠️ App: roomId не указан для загрузки данных');
+            return;
+        }
+
+        const gameStateManager = this.services.get('gameStateManager');
+        if (!gameStateManager) {
+            console.warn('⚠️ App: GameStateManager не найден');
+            return;
+        }
+
+        console.log('🔄 App: Принудительная загрузка данных игры для комнаты:', roomId);
+        
+        // Принудительно загружаем состояние игры
+        gameStateManager.fetchGameState(roomId, true).then((state) => {
+            if (state) {
+                console.log('✅ App: Данные игры загружены:', {
+                    players: state.players?.length || 0,
+                    activePlayer: state.activePlayer?.username || 'нет'
+                });
+                
+                // Обновляем PlayersPanel
+                const playersPanel = this.modules.get('playersPanel');
+                if (playersPanel && typeof playersPanel.loadPlayersViaGameStateManager === 'function') {
+                    playersPanel.loadPlayersViaGameStateManager(true);
+                }
+                
+                // Обновляем BankPreview
+                const bankPreview = this.modules.get('bankPreview');
+                if (bankPreview && typeof bankPreview.updatePreviewData === 'function') {
+                    bankPreview.updatePreviewData();
+                }
+                
+                // Обновляем фишки
+                const playerTokens = this.modules.get('playerTokens');
+                if (playerTokens && typeof playerTokens.forceUpdate === 'function') {
+                    setTimeout(() => playerTokens.forceUpdate(), 200);
+                }
+            } else {
+                console.warn('⚠️ App: Данные игры не получены');
+            }
+        }).catch((error) => {
+            console.error('❌ App: Ошибка загрузки данных игры:', error);
+        });
+    }
     
     /**
      * Запуск мониторинга производительности
