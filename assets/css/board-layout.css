@@ -106,7 +106,7 @@
     width: 100% !important;
     height: 100% !important;
     aspect-ratio: 1 / 1 !important; /* Всегда квадрат */
-    margin: auto !important;
+    margin: 0 auto !important; /* Центрирование по горизонтали */
     max-width: 100% !important;
     max-height: 100% !important;
     min-width: 0 !important;
@@ -116,8 +116,13 @@
     /* Предотвращаем изменение размеров после загрузки */
     flex: 0 0 auto !important; /* Не растягивается, использует aspect-ratio */
     overflow: hidden !important; /* Скрываем переполнение */
-    /* Резервируем место для клеток до их загрузки */
-    contain: layout size style paint !important; /* Полная изоляция */
+    /* Убираем contain, чтобы избежать проблем с пересчетом позиций */
+    /* contain: layout size style paint !important; */
+    /* Фиксируем позицию для предотвращения сдвига */
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
   }
   
   /* Треки внутри доски - не влияют на размеры контейнера */

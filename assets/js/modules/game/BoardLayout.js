@@ -360,7 +360,13 @@ class BoardLayout {
             this.pendingPositionFrame = null;
 
             if (this.outerTrackElement && outerCells.length) {
-                const outerRect = this.outerTrackElement.getBoundingClientRect();
+                // Используем offsetWidth/offsetHeight вместо getBoundingClientRect для стабильности
+                const outerRect = {
+                    width: this.outerTrackElement.offsetWidth || this.outerTrackElement.getBoundingClientRect().width,
+                    height: this.outerTrackElement.offsetHeight || this.outerTrackElement.getBoundingClientRect().height,
+                    left: 0,
+                    top: 0
+                };
                 const firstOuterCell = outerCells[0];
                 if (!firstOuterCell || typeof firstOuterCell.getBoundingClientRect !== 'function') {
                     this.cellCentersCache.outer = [];
