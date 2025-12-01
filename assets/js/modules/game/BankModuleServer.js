@@ -122,13 +122,21 @@ class BankModuleServer {
                 // Обновляем состояние банка данными из gameState
                 this.updateBankStateFromServer(gameStateData, null);
                 
+                // ВАЖНО: Обновляем UI после обновления состояния
+                this.updateUIFromServer();
+                
                 // Загружаем историю операций
                 await this.loadTransactionsHistory();
+                
+                // Обновляем UI еще раз после загрузки истории
+                this.updateUIFromServer();
                 
                 console.log('✅ BankModuleServer: Данные загружены с сервера');
             } else {
                 console.warn('⚠️ BankModuleServer: Не удалось загрузить данные с сервера, используем локальные');
                 this.loadLocalData();
+                // Обновляем UI после загрузки локальных данных
+                this.updateUIFromServer();
             }
             
         } catch (error) {
@@ -312,8 +320,27 @@ class BankModuleServer {
                 hasActivePlayer: !!gameState.activePlayer,
                 availablePlayers: gameState.players?.map(p => ({ id: p.id, userId: p.userId, username: p.username })) || []
             });
-            console.error('❌ BankModuleServer: Нет игроков в игре');
-            return;
+            
+            // Вместо возврата, используем fallback данные для отображения
+            console.log('🔧 BankModuleServer: Используем fallback данные для отображения');
+            this.bankState.roomId = this.getRoomId();
+            this.bankState.balance = 5000; // Стартовый баланс
+            this.bankState.income = 10000;
+            this.bankState.expenses = 6200;
+            this.bankState.netIncome = 3800;
+            this.bankState.maxCredit = 38000;
+            this.bankState.credit = 0;
+            this.bankState.players = gameState.players || [];
+            
+            console.log('📊 BankModuleServer: Установлены fallback данные:', {
+                balance: this.bankState.balance,
+                income: this.bankState.income,
+                expenses: this.bankState.expenses,
+                netIncome: this.bankState.netIncome,
+                maxCredit: this.bankState.maxCredit
+            });
+            
+            return; // Возвращаемся, но данные уже установлены
         }
         
         if (currentPlayer) {
@@ -1481,15 +1508,26 @@ class BankModuleServer {
             
             // Показываем локальные данные немедленно для отзывчивости
             requestAnimationFrame(() => {
+                // Сначала пытаемся получить данные из GameStateManager
+                if (this.gameStateManager && typeof this.gameStateManager.getState === 'function') {
+                    const localState = this.gameStateManager.getState();
+                    if (localState && localState.players && localState.players.length > 0) {
+                        console.log('🔄 BankModuleServer: Обновляем состояние из GameStateManager при открытии');
+                        this.updateBankStateFromServer(localState, null);
+                    }
+                }
+                
                 this.updateUIFromServer();
                 
                 // Затем загружаем актуальные данные в фоне (неблокирующе)
                 setTimeout(() => {
                     this.loadServerData(true).then(() => {
-                        this.updateUIFromServer();
+                        // updateUIFromServer уже вызывается в loadServerData
                         console.log('✅ BankModuleServer: Данные банка загружены с сервера');
                     }).catch(error => {
                         console.warn('⚠️ BankModuleServer: Ошибка фоновой загрузки данных:', error);
+                        // Обновляем UI даже при ошибке, чтобы показать fallback данные
+                        this.updateUIFromServer();
                     });
                 }, 50); // Уменьшили задержку для быстрой загрузки
             });
