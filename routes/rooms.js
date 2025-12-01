@@ -1217,8 +1217,25 @@ router.put('/:id/player', async (req, res, next) => {
                 }
 
                 const players = Array.isArray(room.players) ? room.players.slice() : [];
-                let idx = players.findIndex(p => p.username === playerData.username || p.id === playerData.userId);
+                console.log('🔍 Room API: Поиск игрока для обновления:', {
+                    username: playerData.username,
+                    userId: playerData.userId,
+                    isReady: playerData.isReady,
+                    availablePlayers: players.map(p => ({
+                        username: p.username,
+                        userId: p.userId,
+                        id: p.id
+                    }))
+                });
+                
+                let idx = players.findIndex(p => 
+                    p.username === playerData.username || 
+                    p.id === playerData.userId ||
+                    (playerData.userId && p.userId === playerData.userId)
+                );
+                
                 if (idx === -1) {
+                    console.log('⚠️ Room API: Игрок не найден, добавляем нового');
                     // Если игрока нет — добавляем
                     players.push({
                         id: playerData.userId || uuidv4(),
@@ -1233,13 +1250,25 @@ router.put('/:id/player', async (req, res, next) => {
                         dreamCost: playerData.dreamCost,
                         dreamDescription: playerData.dreamDescription
                     });
+                    idx = players.length - 1;
                 } else {
+                    console.log('✅ Room API: Игрок найден, обновляем:', {
+                        index: idx,
+                        oldIsReady: players[idx].isReady,
+                        newIsReady: playerData.isReady
+                    });
                     const upd = { ...players[idx] };
                     if (playerData.token !== undefined) upd.token = playerData.token;
                     if (playerData.dream !== undefined) upd.dream = playerData.dream;
                     if (playerData.dreamCost !== undefined) upd.dreamCost = playerData.dreamCost;
                     if (playerData.dreamDescription !== undefined) upd.dreamDescription = playerData.dreamDescription;
-                    if (playerData.isReady !== undefined) upd.isReady = !!playerData.isReady;
+                    if (playerData.isReady !== undefined) {
+                        upd.isReady = !!playerData.isReady;
+                        console.log('✅ Room API: isReady обновлен:', {
+                            old: players[idx].isReady,
+                            new: upd.isReady
+                        });
+                    }
                     players[idx] = upd;
                 }
 

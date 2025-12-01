@@ -2007,9 +2007,31 @@ async function toggleReadyStatus() {
             readyButton.textContent = '⏳ Обрабатываем...';
         }
         
-        if (!currentRoom || !currentUser || !selectedToken) {
-            console.warn('⚠️ Room: Недостаточно данных для переключения готовности');
+        if (!currentRoom || !currentUser) {
+            console.error('❌ Room: Недостаточно данных для переключения готовности:', {
+                hasCurrentRoom: !!currentRoom,
+                hasCurrentUser: !!currentUser,
+                currentRoomId: currentRoom?.id,
+                currentUserId: currentUser?.id,
+                currentUsername: currentUser?.username
+            });
+            showNotification('Ошибка: данные комнаты или пользователя не загружены', 'error');
             window._toggleReadyStatusInProgress = false;
+            if (readyButton) {
+                readyButton.disabled = false;
+                updateReadyStatus();
+            }
+            return;
+        }
+        
+        if (!selectedToken) {
+            console.warn('⚠️ Room: Фишка не выбрана');
+            showNotification('Сначала выберите фишку', 'warning');
+            window._toggleReadyStatusInProgress = false;
+            if (readyButton) {
+                readyButton.disabled = false;
+                updateReadyStatus();
+            }
             return;
         }
         

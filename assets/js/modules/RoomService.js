@@ -1334,12 +1334,25 @@ class RoomService {
             // Принимаем единый PlayerBundle с полями { userId, username, token, dream{ id,title,description,cost }, isReady }
             const requestData = {
                 username: playerData.username || playerData.name || 'unknown',
+                userId: playerData.userId || playerData.id,
                 token: playerData.token || '',
                 dream: playerData.dream?.id || '',
                 dreamCost: playerData.dream?.cost || 0,
                 dreamDescription: playerData.dream?.description || '',
                 isReady: !!playerData.isReady
             };
+            
+            console.log('📤 RoomService: Отправка данных игрока на сервер:', {
+                roomId,
+                requestData,
+                originalPlayerData: {
+                    username: playerData.username,
+                    userId: playerData.userId,
+                    isReady: playerData.isReady,
+                    hasDream: !!playerData.dream,
+                    token: playerData.token
+                }
+            });
 
             await this._waitForRateLimit();
 
