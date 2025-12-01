@@ -201,6 +201,33 @@
         <div id="page-container">
             <!-- Страница игры -->
             <div id="game-page" class="page active">
+                <!-- Мобильные элементы управления -->
+                <!-- Кнопка меню (сверху справа) -->
+                <button id="mobile-menu-btn" class="mobile-control-btn mobile-menu-btn" aria-label="Меню">
+                    <span class="mobile-btn-icon">☰</span>
+                </button>
+                
+                <!-- Кнопка банка (сверху слева) -->
+                <button id="mobile-bank-btn" class="mobile-control-btn mobile-bank-btn" aria-label="Банк">
+                    <span class="mobile-btn-icon">🏦</span>
+                    <div class="mobile-bank-info">
+                        <div class="mobile-bank-balance" id="mobile-bank-balance">$0</div>
+                        <div class="mobile-bank-credit" id="mobile-bank-credit">Кр: $0</div>
+                    </div>
+                </button>
+                
+                <!-- Кнопки хода (снизу) -->
+                <div class="mobile-turn-controls">
+                    <button id="mobile-roll-btn" class="mobile-turn-btn mobile-roll-btn" disabled>
+                        <span class="mobile-turn-icon">🎲</span>
+                        <span class="mobile-turn-label">Ход</span>
+                    </button>
+                    <button id="mobile-pass-btn" class="mobile-turn-btn mobile-pass-btn" disabled>
+                        <span class="mobile-turn-icon">➡️</span>
+                        <span class="mobile-turn-label">Передать</span>
+                    </button>
+                </div>
+                
                 <!-- Кнопка для скрытия/показа меню (только на мобильных) -->
                 <button id="toggle-menu-btn" class="toggle-menu-btn" aria-label="Показать/скрыть меню">
                     <span class="toggle-menu-icon">☰</span>
