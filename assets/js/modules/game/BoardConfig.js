@@ -753,6 +753,17 @@ if (typeof window !== 'undefined') {
     // Совместимость со старым форматом
     window.BIG_CIRCLE_CELLS = BoardConfig.BIG_CIRCLE;
     window.SMALL_CIRCLE_CELLS = BoardConfig.SMALL_CIRCLE;
+    
+    // Логирование для диагностики
+    if (console && console.log) {
+        console.log('✅ BoardConfig загружен:', {
+            hasBoardConfig: !!window.BoardConfig,
+            hasBIG_CIRCLE: !!window.BIG_CIRCLE_CELLS,
+            hasSMALL_CIRCLE: !!window.SMALL_CIRCLE_CELLS,
+            bigCircleLength: window.BIG_CIRCLE_CELLS?.length || 0,
+            smallCircleLength: window.SMALL_CIRCLE_CELLS?.length || 0
+        });
+    }
 }
 
 if (typeof module !== 'undefined' && module.exports) {
