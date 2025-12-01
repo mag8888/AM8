@@ -316,15 +316,22 @@
   }
   
   /* Фишки игроков должны быть видны на мобильной версии */
-  .player-token,
-  .player-token *,
-  [id^="token-"],
-  [class*="token"] {
+  .outer-track .player-token,
+  .inner-track .player-token,
+  #outer-track .player-token,
+  #inner-track .player-token,
+  .board-wrapper .player-token,
+  [id^="token-"] {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
     z-index: 50000 !important;
     pointer-events: auto !important;
+    position: absolute !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
   }
   
   /* Показываем мобильные элементы управления на мобильной версии */
@@ -371,9 +378,12 @@
   .game-page .board-wrapper {
     width: min(100vw, 100vh) !important; /* Строго квадрат по меньшей стороне экрана */
     height: min(100vw, 100vh) !important;
-    margin: 0 auto !important;
+    margin: auto !important; /* Центрирование */
     box-sizing: border-box !important;
-    position: relative !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important; /* Точное центрирование */
     overflow: visible !important;
     /* Гарантируем идеальный квадрат */
     padding: 0 !important;

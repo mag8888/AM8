@@ -1388,9 +1388,13 @@
     }
     
     .player-token {
-        width: 20px;
-        height: 20px;
-        font-size: 10px;
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 16px !important;
+        z-index: 50000 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: flex !important;
         border-width: 2px;
     }
 }
@@ -1482,9 +1486,13 @@
     }
     
     .player-token {
-        width: 18px;
-        height: 18px;
-        font-size: 9px;
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 16px !important;
+        z-index: 50000 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: flex !important;
         border-width: 2px;
     }
 }
