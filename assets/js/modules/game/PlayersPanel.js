@@ -333,6 +333,11 @@ class PlayersPanel {
                         <span class="widget-icon">⚡</span>
                         <span class="widget-title">Действия</span>
                     </div>
+                    <!-- Отображение результата броска -->
+                    <div class="dice-result-display" id="dice-result-display" style="display: none;">
+                        <div class="dice-result-label">Выпало:</div>
+                        <div class="dice-result-value" id="dice-result-value">-</div>
+                    </div>
                     <div class="actions-grid">
                         <button class="action-btn bank-btn" id="open-bank" type="button">
                             <div class="btn-icon">🏦</div>
