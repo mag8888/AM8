@@ -1363,20 +1363,22 @@ class PlayersPanel {
      */
     updateDiceResult(result) {
         // Дебаунсинг для предотвращения множественных вызовов
-        if (this._lastDiceResult === result && this._lastDiceResultTime && Date.now() - this._lastDiceResultTime < 100) {
-            return; // Пропускаем дубликаты в течение 100ms
+        const numericValue = typeof result === 'object'
+            ? Number(result?.value ?? result?.total)
+            : Number(result);
+        
+        const now = Date.now();
+        // Увеличиваем время дебаунсинга до 500ms и проверяем по числовому значению
+        if (this._lastDiceResult === numericValue && this._lastDiceResultTime && now - this._lastDiceResultTime < 500) {
+            return; // Пропускаем дубликаты в течение 500ms
         }
-        this._lastDiceResult = result;
-        this._lastDiceResultTime = Date.now();
+        this._lastDiceResult = numericValue;
+        this._lastDiceResultTime = now;
         
         // Обновляем отображение в панели действий
         const diceResultDisplay = document.getElementById('dice-result-display');
         const diceResultValue = document.getElementById('dice-result-value');
         const rollHistory = document.getElementById('roll-history');
-        
-        const numericValue = typeof result === 'object'
-            ? Number(result?.value ?? result?.total)
-            : Number(result);
         
         if (Number.isFinite(numericValue) && numericValue >= 1 && numericValue <= 6) {
             // Показываем результат в панели действий
