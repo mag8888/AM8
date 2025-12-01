@@ -326,12 +326,16 @@
                 const boardWrapper = document.querySelector('.board-wrapper');
                 if (!boardWrapper) return;
                 
-                // Получаем ширину контейнера
-                const width = boardWrapper.offsetWidth || boardWrapper.clientWidth;
+                // Получаем ширину контейнера (используем getBoundingClientRect для точности)
+                const rect = boardWrapper.getBoundingClientRect();
+                const width = rect.width || boardWrapper.offsetWidth || boardWrapper.clientWidth;
                 
                 if (width > 0) {
-                    // Устанавливаем такую же высоту
+                    // Устанавливаем такую же высоту для идеального квадрата
                     boardWrapper.style.height = width + 'px';
+                    boardWrapper.style.width = width + 'px'; // Гарантируем, что ширина тоже фиксирована
+                    // Убираем aspect-ratio, так как мы устанавливаем размеры напрямую
+                    boardWrapper.style.aspectRatio = '1 / 1';
                 }
             }
             
