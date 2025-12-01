@@ -351,10 +351,11 @@
 
 .inner-track {
     grid-area: board;
-    width: 75% !important; /* Увеличено для еще большего внутреннего круга */
-    height: 75% !important;
-    top: 12.5% !important; /* Скорректировано для центрирования */
-    left: 12.5% !important;
+    width: 80% !important; /* Увеличен размер внутреннего круга */
+    height: 80% !important;
+    top: 50% !important; /* Строго по центру по вертикали */
+    left: 50% !important; /* Строго по центру по горизонтали */
+    transform: translate(-50%, -50%) !important; /* Точное центрирование */
     z-index: 3 !important; /* Внутренний круг поверх, но клетки не должны накладываться */
     pointer-events: none !important; /* Клетки обрабатывают события, но фишки должны быть видны */
 }
