@@ -130,15 +130,53 @@ router.post('/transfer', async (req, res) => {
         let roomData = getRoomGameState(roomId);
         if (!roomData) {
             try {
+                console.log('🏦 Bank API: Состояние комнаты не найдено в кэше, создаем новое...');
                 roomData = await fetchOrCreateRoomState(roomId);
+                console.log('🏦 Bank API: Состояние комнаты создано:', {
+                    hasPlayers: !!roomData?.players,
+                    playersCount: roomData?.players?.length || 0,
+                    players: roomData?.players?.map((p, idx) => ({
+                        index: idx,
+                        id: p.id,
+                        userId: p.userId,
+                        username: p.username,
+                        name: p.name
+                    })) || []
+                });
             } catch (error) {
                 console.log('❌ Bank API: Не удалось инициализировать состояние комнаты:', error.message);
+                console.log('❌ Bank API: Stack trace:', error.stack);
                 roomData = null;
             }
+        } else {
+            console.log('🏦 Bank API: Состояние комнаты найдено в кэше:', {
+                hasPlayers: !!roomData?.players,
+                playersCount: roomData?.players?.length || 0,
+                players: roomData?.players?.map((p, idx) => ({
+                    index: idx,
+                    id: p.id,
+                    userId: p.userId,
+                    username: p.username,
+                    name: p.name
+                })) || []
+            });
         }
         if (!roomData) {
             console.log('❌ Bank API: Комната не найдена:', roomId);
             return res.status(404).json({ success: false, message: 'Комната не найдена' });
+        }
+        
+        // Проверяем, что есть игроки
+        if (!roomData.players || roomData.players.length === 0) {
+            console.log('❌ Bank API: В комнате нет игроков:', {
+                roomId,
+                roomDataKeys: Object.keys(roomData || {}),
+                roomData: JSON.stringify(roomData, null, 2)
+            });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'В комнате нет игроков. Убедитесь, что игра начата и игроки загружены.' 
+            });
         }
 
         console.log('🏦 Bank API: Состояние комнаты:', JSON.stringify(roomData, null, 2));

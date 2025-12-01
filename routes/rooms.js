@@ -107,23 +107,59 @@ function buildState(players = []) {
 
 async function fetchOrCreateRoomState(roomId) {
     if (!roomId) {
+        console.log('⚠️ fetchOrCreateRoomState: roomId не указан');
         return null;
     }
 
     const existing = gameStateByRoomId.get(roomId);
     if (existing) {
+        console.log('✅ fetchOrCreateRoomState: Состояние найдено в кэше:', {
+            hasPlayers: !!existing.players,
+            playersCount: existing.players?.length || 0,
+            players: existing.players?.map((p, idx) => ({
+                index: idx,
+                id: p.id,
+                userId: p.userId,
+                username: p.username
+            })) || []
+        });
         return existing;
     }
 
     const db = getDatabase();
     if (!db) {
         try {
+            console.log('🔍 fetchOrCreateRoomState: Загрузка из MongoDB для roomId:', roomId);
             const repo = new RoomRepository();
             const room = await repo.getById(roomId);
+            console.log('🔍 fetchOrCreateRoomState: Комната из MongoDB:', {
+                hasRoom: !!room,
+                hasPlayers: !!room?.players,
+                playersCount: room?.players?.length || 0,
+                players: room?.players?.map((p, idx) => ({
+                    index: idx,
+                    userId: p.userId,
+                    id: p.id,
+                    username: p.username,
+                    name: p.name
+                })) || []
+            });
             const state = buildState(room?.players || []);
+            console.log('✅ fetchOrCreateRoomState: Состояние создано из MongoDB:', {
+                hasPlayers: !!state.players,
+                playersCount: state.players?.length || 0,
+                players: state.players?.map((p, idx) => ({
+                    index: idx,
+                    id: p.id,
+                    userId: p.userId,
+                    username: p.username
+                })) || []
+            });
             gameStateByRoomId.set(roomId, state);
             return state;
         } catch (error) {
+            console.error('❌ fetchOrCreateRoomState: Ошибка загрузки из MongoDB:', error);
+            console.error('❌ fetchOrCreateRoomState: Stack:', error.stack);
             const fallbackState = buildState([]);
             gameStateByRoomId.set(roomId, fallbackState);
             return fallbackState;
@@ -133,8 +169,13 @@ async function fetchOrCreateRoomState(roomId) {
     return new Promise((resolve, reject) => {
         ensureGameState(db, roomId, (err, state) => {
             if (err) {
+                console.error('❌ fetchOrCreateRoomState: Ошибка ensureGameState:', err);
                 return reject(err);
             }
+            console.log('✅ fetchOrCreateRoomState: Состояние создано через ensureGameState:', {
+                hasPlayers: !!state.players,
+                playersCount: state.players?.length || 0
+            });
             resolve(state);
         });
     });
