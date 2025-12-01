@@ -295,9 +295,24 @@
 @media (max-width: 1024px) {
   /* На мобильной версии скрываем все кроме игрового поля */
   #card-decks-panel,
+  #card-decks-panel *,
+  .card-decks-container,
+  .card-decks-container *,
+  #bank-section,
+  #bank-section *,
+  #bank-preview-container,
+  #bank-preview-container *,
   .top-panel-container,
-  .toggle-menu-btn {
+  .top-panel-container *,
+  #players-panel,
+  #players-panel *,
+  #players-list-container,
+  #players-list-container *,
+  .toggle-menu-btn,
+  .toggle-menu-btn * {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
   
   /* Игровое поле по центру экрана на мобильной версии */
