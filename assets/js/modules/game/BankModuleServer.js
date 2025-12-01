@@ -1638,9 +1638,22 @@ class BankModuleServer {
             bankState: {
                 roomId: this.bankState.roomId,
                 playerId: this.bankState.playerId,
-                balance: this.bankState.balance
+                balance: this.bankState.balance,
+                players: this.bankState.players?.map(p => ({ id: p.id, username: p.username })) || []
             }
         });
+        
+        // Проверяем, что получатель существует в списке игроков
+        const recipientExists = this.bankState.players?.some(p => p.id === recipientId);
+        if (!recipientExists) {
+            console.error('❌ BankModuleServer: Получатель не найден в списке игроков:', {
+                recipientId,
+                availablePlayers: this.bankState.players?.map(p => ({ id: p.id, username: p.username })) || []
+            });
+            this.showNotification('Получатель не найден в списке игроков', 'error');
+            this._isTransferring = false;
+            return;
+        }
         
         if (!recipientId || !amountStr || isNaN(amount) || amount <= 0) {
             this.showNotification('Заполните все поля корректно', 'error');
@@ -1744,7 +1757,9 @@ class BankModuleServer {
             }
         } catch (error) {
             console.error('❌ BankModuleServer: Ошибка перевода:', error);
-            this.showNotification('Ошибка выполнения перевода', 'error');
+            // Показываем конкретное сообщение об ошибке от сервера
+            const errorMessage = error.message || 'Ошибка выполнения перевода';
+            this.showNotification(errorMessage, 'error');
         } finally {
             this._isTransferring = false;
         }
