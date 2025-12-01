@@ -258,6 +258,18 @@ class TurnService extends EventTarget {
             
             // Эмит успешного результата
             this.emit('move:success', response);
+            
+            // Обновляем GameStateManager после действия игрока (движение)
+            if (response?.state && this.gameStateManager && typeof this.gameStateManager.updateFromServer === 'function') {
+                this.gameStateManager.updateFromServer(response.state);
+                console.log('🔄 TurnService: GameStateManager обновлен после движения игрока');
+            }
+            
+            // Эмит события для обновления карточек и других компонентов
+            if (this.eventBus && typeof this.eventBus.emit === 'function') {
+                this.eventBus.emit('game:playerMoved', { state: response?.state, steps: targetSteps });
+            }
+            
             console.log('✅ move:success', { roomId, steps: targetSteps, server: true, moveResult: response.moveResult });
             console.log(`🎮 TurnService: Игрок перемещен на ${targetSteps} шагов`);
             this.lastRollValue = null;

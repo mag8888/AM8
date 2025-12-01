@@ -343,6 +343,15 @@ class PushClient {
         
         // Обрабатываем конкретные типы уведомлений
         switch (pushData.type) {
+            case 'game_state_updated':
+            case 'dice_rolled':
+            case 'player_moved':
+            case 'turn_ended':
+                // Обновление состояния игры через push - уже обработано выше
+                if (pushData.data?.state && this.eventBus) {
+                    this.eventBus.emit('game:stateUpdated', pushData.data.state);
+                }
+                break;
             case 'deal_card_revealed': {
                 const dm = window.app?.getModule?.('dealModule');
                 if (dm && pushData.data?.deckId && pushData.data?.card) {
