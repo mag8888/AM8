@@ -326,15 +326,21 @@
                 const boardWrapper = document.querySelector('.board-wrapper');
                 if (!boardWrapper) return;
                 
-                // Получаем ширину контейнера (используем getBoundingClientRect для точности)
-                const rect = boardWrapper.getBoundingClientRect();
-                const width = rect.width || boardWrapper.offsetWidth || boardWrapper.clientWidth;
+                // Получаем ширину родительского контейнера для точности
+                const container = boardWrapper.parentElement;
+                if (!container) return;
                 
-                if (width > 0) {
-                    // Устанавливаем такую же высоту для идеального квадрата
-                    boardWrapper.style.height = width + 'px';
-                    boardWrapper.style.width = width + 'px'; // Гарантируем, что ширина тоже фиксирована
-                    // Убираем aspect-ratio, так как мы устанавливаем размеры напрямую
+                const containerWidth = container.offsetWidth || container.clientWidth;
+                
+                if (containerWidth > 0) {
+                    // Устанавливаем строго квадратный размер
+                    const size = containerWidth + 'px';
+                    boardWrapper.style.width = size;
+                    boardWrapper.style.height = size;
+                    boardWrapper.style.minWidth = size;
+                    boardWrapper.style.minHeight = size;
+                    boardWrapper.style.maxWidth = size;
+                    boardWrapper.style.maxHeight = size;
                     boardWrapper.style.aspectRatio = '1 / 1';
                 }
             }
