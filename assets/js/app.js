@@ -981,18 +981,50 @@ class App {
             this._destroyModule('boardLayout');
         }
         if (!this.modules.get('boardLayout') && window.BoardLayout) {
-            try {
-                const boardLayout = new window.BoardLayout({
-                    outerTrackSelector: '#outer-track',
-                    innerTrackSelector: '#inner-track',
-                    gameState: this.getModule('gameState'),
-                    eventBus,
-                    logger: this.logger,
-                    debug: this.config?.get?.('logging.boardLayoutDebug', false)
-                });
-                this.modules.set('boardLayout', boardLayout);
-            } catch (error) {
-                this.logger?.error('BoardLayout: ошибка инициализации', error, 'App');
+            // Проверяем наличие BoardConfig перед инициализацией
+            const checkAndInitBoardLayout = () => {
+                if (!window.BoardConfig && !window.BIG_CIRCLE_CELLS && !window.SMALL_CIRCLE_CELLS) {
+                    console.warn('⚠️ App: BoardConfig не загружен, ждем...', {
+                        hasBoardConfig: !!window.BoardConfig,
+                        hasBIG_CIRCLE: !!window.BIG_CIRCLE_CELLS,
+                        hasSMALL_CIRCLE: !!window.SMALL_CIRCLE_CELLS
+                    });
+                    return false;
+                }
+                
+                try {
+                    const boardLayout = new window.BoardLayout({
+                        outerTrackSelector: '#outer-track',
+                        innerTrackSelector: '#inner-track',
+                        gameState: this.getModule('gameState'),
+                        eventBus,
+                        logger: this.logger,
+                        debug: this.config?.get?.('logging.boardLayoutDebug', false)
+                    });
+                    this.modules.set('boardLayout', boardLayout);
+                    console.log('✅ App: BoardLayout инициализирован успешно');
+                    return true;
+                } catch (error) {
+                    this.logger?.error('BoardLayout: ошибка инициализации', error, 'App');
+                    console.error('❌ App: Ошибка инициализации BoardLayout:', error);
+                    return false;
+                }
+            };
+            
+            // Пытаемся инициализировать сразу
+            if (!checkAndInitBoardLayout()) {
+                // Если не получилось, ждем загрузки конфигурации
+                let attempts = 0;
+                const maxAttempts = 20; // 2 секунды максимум
+                const checkInterval = setInterval(() => {
+                    attempts++;
+                    if (checkAndInitBoardLayout()) {
+                        clearInterval(checkInterval);
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkInterval);
+                        console.error('❌ App: BoardConfig не загружен после всех попыток');
+                    }
+                }, 100);
             }
         }
 
