@@ -578,20 +578,36 @@ class PlayerTokens {
             return null;
         }
 
-        // Используем offsetLeft/offsetTop для координат относительно родителя (как в BoardLayout)
-        const cellRect = cell.getBoundingClientRect(); // Используем только для размеров
+        // Используем getBoundingClientRect для вычисления координат относительно trackElement
+        const cellRect = cell.getBoundingClientRect();
         const trackRect = trackElement.getBoundingClientRect();
-        const offsetLeft = cell.offsetLeft || 0;
-        const offsetTop = cell.offsetTop || 0;
         
         // Вычисляем координаты центра клетки относительно trackElement
-        // Используем offsetLeft/offsetTop для координат, getBoundingClientRect только для размеров
+        // Используем getBoundingClientRect для точных координат
         const coords = {
-            x: offsetLeft + (cellRect.width / 2),
-            y: offsetTop + (cellRect.height / 2),
+            x: (cellRect.left - trackRect.left) + (cellRect.width / 2),
+            y: (cellRect.top - trackRect.top) + (cellRect.height / 2),
             width: cellRect.width,
             height: cellRect.height
         };
+        
+        // Проверяем, что координаты валидны
+        if (!Number.isFinite(coords.x) || !Number.isFinite(coords.y) || coords.x < 0 || coords.y < 0) {
+            // Если координаты невалидные, пробуем использовать offsetLeft/offsetTop как fallback
+            const offsetLeft = cell.offsetLeft || 0;
+            const offsetTop = cell.offsetTop || 0;
+            this._warn('Координаты из getBoundingClientRect невалидные, используем offsetLeft/offsetTop', {
+                position,
+                isInner,
+                coords,
+                offsetLeft,
+                offsetTop,
+                cellRect: { left: cellRect.left, top: cellRect.top, width: cellRect.width, height: cellRect.height },
+                trackRect: { left: trackRect.left, top: trackRect.top, width: trackRect.width, height: trackRect.height }
+            });
+            coords.x = offsetLeft + (cellRect.width / 2);
+            coords.y = offsetTop + (cellRect.height / 2);
+        }
         
         // Логируем координаты для отладки
         this._debug('Координаты вычислены из DOM', {
