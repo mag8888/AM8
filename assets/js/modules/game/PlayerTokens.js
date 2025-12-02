@@ -1927,6 +1927,53 @@ class PlayerTokens {
         token.style.opacity = '1';
         token.style.pointerEvents = 'auto';
         
+        // Проверяем видимость фишки после позиционирования
+        requestAnimationFrame(() => {
+            const rect = token.getBoundingClientRect();
+            const computedStyle = window.getComputedStyle(token);
+            const isVisible = rect.width > 0 && rect.height > 0 && 
+                            computedStyle.visibility !== 'hidden' && 
+                            computedStyle.display !== 'none' &&
+                            computedStyle.opacity !== '0';
+            
+            if (!isVisible) {
+                this._warn('⚠️ Фишка не видна после позиционирования!', {
+                    playerId: token.dataset.playerId,
+                    rect: { width: rect.width, height: rect.height, left: rect.left, top: rect.top },
+                    computedStyle: {
+                        visibility: computedStyle.visibility,
+                        display: computedStyle.display,
+                        opacity: computedStyle.opacity,
+                        position: computedStyle.position,
+                        zIndex: computedStyle.zIndex
+                    },
+                    inlineStyle: {
+                        left: token.style.left,
+                        top: token.style.top,
+                        position: token.style.position,
+                        zIndex: token.style.zIndex
+                    },
+                    coords: { left, top, baseCoords, offset }
+                });
+                
+                // Принудительно устанавливаем стили еще раз
+                token.style.setProperty('position', 'absolute', 'important');
+                token.style.setProperty('left', `${left}px`, 'important');
+                token.style.setProperty('top', `${top}px`, 'important');
+                token.style.setProperty('width', '32px', 'important');
+                token.style.setProperty('height', '32px', 'important');
+                token.style.setProperty('z-index', '50000', 'important');
+                token.style.setProperty('display', 'flex', 'important');
+                token.style.setProperty('visibility', 'visible', 'important');
+                token.style.setProperty('opacity', '1', 'important');
+            } else {
+                this._debug('✅ Фишка видна после позиционирования', {
+                    playerId: token.dataset.playerId,
+                    rect: { width: rect.width, height: rect.height, left: rect.left, top: rect.top }
+                });
+            }
+        });
+        
         // ОПТИМИЗАЦИЯ: Минимизируем дорогие операции getBoundingClientRect() и getComputedStyle()
         // Эти операции вызывают reflow/repaint и очень дорогие
         // Выполняем валидацию только периодически, а не при каждом позиционировании
