@@ -349,20 +349,50 @@
             function removeBottomMenuOnDesktop() {
                 const isDesktop = window.innerWidth >= 1025;
                 if (isDesktop) {
+                    // Ищем все возможные варианты нижнего меню
                     const bottomMenu = document.querySelector('.mobile-bottom-menu');
+                    const bottomMenuById = document.getElementById('mobile-bottom-menu');
+                    const bottomMenuNav = document.querySelector('nav.mobile-bottom-menu');
+                    
+                    // Удаляем все найденные элементы
                     if (bottomMenu) {
                         bottomMenu.remove();
                     }
+                    if (bottomMenuById) {
+                        bottomMenuById.remove();
+                    }
+                    if (bottomMenuNav) {
+                        bottomMenuNav.remove();
+                    }
+                    
+                    // Также удаляем все кнопки нижнего меню
+                    const menuItems = document.querySelectorAll('.mobile-bottom-menu-item');
+                    menuItems.forEach(item => item.remove());
+                    
+                    // Удаляем по ID
+                    const rollBtn = document.getElementById('mobile-roll-btn');
+                    const passBtn = document.getElementById('mobile-pass-btn');
+                    const bankMenuBtn = document.getElementById('mobile-bank-menu-btn');
+                    const menuBottomBtn = document.getElementById('mobile-menu-bottom-btn');
+                    
+                    if (rollBtn) rollBtn.remove();
+                    if (passBtn) passBtn.remove();
+                    if (bankMenuBtn) bankMenuBtn.remove();
+                    if (menuBottomBtn) menuBottomBtn.remove();
                 }
             }
             
             // Вызываем сразу и при изменении размера окна
             removeBottomMenuOnDesktop();
+            
+            // Также вызываем с небольшой задержкой для гарантии
+            setTimeout(removeBottomMenuOnDesktop, 100);
+            setTimeout(removeBottomMenuOnDesktop, 500);
+            
             window.addEventListener('resize', function() {
                 const isDesktop = window.innerWidth >= 1025;
-                const bottomMenu = document.querySelector('.mobile-bottom-menu');
-                if (isDesktop && bottomMenu) {
-                    bottomMenu.remove();
+                if (isDesktop) {
+                    removeBottomMenuOnDesktop();
                 }
             });
             
