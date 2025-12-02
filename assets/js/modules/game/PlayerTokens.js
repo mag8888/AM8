@@ -1126,21 +1126,19 @@ class PlayerTokens {
         
         // Убеждаемся, что после анимации opacity = 1 и размер сохранен
         animation.onfinish = () => {
+            // Принудительно устанавливаем все стили с !important после анимации
+            token.style.setProperty('opacity', '1', 'important');
+            token.style.setProperty('visibility', 'visible', 'important');
+            token.style.setProperty('display', 'flex', 'important');
+            token.style.setProperty('width', '32px', 'important');
+            token.style.setProperty('height', '32px', 'important');
+            token.style.setProperty('min-width', '32px', 'important');
+            token.style.setProperty('min-height', '32px', 'important');
+            
+            // Дополнительно через обычные свойства
             token.style.opacity = '1';
             token.style.visibility = 'visible';
             token.style.display = 'flex';
-            token.style.width = '32px';
-            token.style.height = '32px';
-            token.style.minWidth = '32px';
-            token.style.minHeight = '32px';
-            this._debug('Анимация фишки завершена, стили установлены', {
-                playerId: token.dataset.playerId,
-                opacity: token.style.opacity,
-                visibility: token.style.visibility
-            });
-        };
-        animation.onfinish = () => {
-            token.style.opacity = '1';
             token.style.width = '32px';
             token.style.height = '32px';
             token.style.minWidth = '32px';
@@ -1154,12 +1152,21 @@ class PlayerTokens {
                         playerId: token.dataset.playerId,
                         rect: { width: rect.width, height: rect.height }
                     });
-                    // Принудительно устанавливаем размер еще раз
-                    token.style.width = '32px';
-                    token.style.height = '32px';
-                    token.style.minWidth = '32px';
-                    token.style.minHeight = '32px';
+                    // Принудительно устанавливаем размер еще раз с !important
+                    token.style.setProperty('width', '32px', 'important');
+                    token.style.setProperty('height', '32px', 'important');
+                    token.style.setProperty('min-width', '32px', 'important');
+                    token.style.setProperty('min-height', '32px', 'important');
+                    token.style.setProperty('opacity', '1', 'important');
+                    token.style.setProperty('visibility', 'visible', 'important');
+                    token.style.setProperty('display', 'flex', 'important');
                 }
+                this._debug('Анимация фишки завершена, стили установлены', {
+                    playerId: token.dataset.playerId,
+                    opacity: token.style.opacity,
+                    visibility: token.style.visibility,
+                    rect: { width: rect.width, height: rect.height }
+                });
             });
         };
     }
@@ -1689,24 +1696,33 @@ class PlayerTokens {
                 });
             }
             
-            // Используем requestAnimationFrame для гарантии, что стили применены перед анимацией
+            // НЕ запускаем анимацию появления, чтобы избежать мерцания
+            // Фишка уже видна благодаря установленным стилям выше
+            // Анимация может вызывать проблемы с видимостью при частых обновлениях
+            
+            // Используем requestAnimationFrame для гарантии, что стили применены
             requestAnimationFrame(() => {
                 // Проверяем размер после рендера
                 const rect = token.getBoundingClientRect();
                 if (rect.width === 0 || rect.height === 0) {
-                    // Принудительно устанавливаем размер еще раз
-                    token.style.width = '32px';
-                    token.style.height = '32px';
-                    token.style.minWidth = '32px';
-                    token.style.minHeight = '32px';
+                    // Принудительно устанавливаем размер еще раз с !important
+                    token.style.setProperty('width', '32px', 'important');
+                    token.style.setProperty('height', '32px', 'important');
+                    token.style.setProperty('min-width', '32px', 'important');
+                    token.style.setProperty('min-height', '32px', 'important');
+                    token.style.setProperty('opacity', '1', 'important');
+                    token.style.setProperty('visibility', 'visible', 'important');
+                    token.style.setProperty('display', 'flex', 'important');
                     this._warn('⚠️ Фишка имела нулевой размер после рендера, исправлено', {
                         player: player.username,
                         rect: { width: rect.width, height: rect.height }
                     });
                 }
                 
-                // Запускаем анимацию только после того, как размер установлен
-            this.animateTokenAppearance(token);
+                // Убеждаемся, что фишка видна
+                token.style.setProperty('opacity', '1', 'important');
+                token.style.setProperty('visibility', 'visible', 'important');
+                token.style.setProperty('display', 'flex', 'important');
             });
         } else {
             // Фишка уже существует и в DOM, обновляем её данные
