@@ -1770,6 +1770,17 @@ class PlayerTokens {
                     targetParent: trackElement.id
                 });
                 trackElement.appendChild(token);
+                // Убеждаемся, что фишка в конце DOM и имеет максимальный z-index
+                requestAnimationFrame(() => {
+                    const allChildren = Array.from(trackElement.children);
+                    const tokenIndex = allChildren.indexOf(token);
+                    if (tokenIndex >= 0 && tokenIndex < allChildren.length - 1) {
+                        trackElement.appendChild(token);
+                    }
+                    token.style.setProperty('z-index', '99999', 'important');
+                    token.style.setProperty('transform', 'translateZ(0)', 'important');
+                    token.style.setProperty('isolation', 'isolate', 'important');
+                });
             } else if (isInCorrectTrack && isConnected) {
                 // Фишка уже существует и в правильном месте, просто обновляем данные
                 this._debug('Фишка уже существует, обновляем данные', {
@@ -1796,8 +1807,31 @@ class PlayerTokens {
                 this._warn('ensureToken: trackElement is null', { player: player.username, isInner: player.isInner });
                 return null;
             }
-            // Добавляем фишку в конец DOM, чтобы она была поверх клеток
-            trackElement.appendChild(token);
+            // КРИТИЧНО: Добавляем фишку в КОНЕЦ DOM, чтобы она была поверх всех клеток
+            // Используем requestAnimationFrame для гарантии, что клетки уже отрендерены
+            requestAnimationFrame(() => {
+                // Добавляем фишку в конец DOM
+                trackElement.appendChild(token);
+                
+                // Принудительно перемещаем фишку в самый конец, если она не последняя
+                const allChildren = Array.from(trackElement.children);
+                const tokenIndex = allChildren.indexOf(token);
+                if (tokenIndex >= 0 && tokenIndex < allChildren.length - 1) {
+                    // Фишка не последняя - перемещаем в конец
+                    trackElement.appendChild(token);
+                    this._debug('Фишка перемещена в конец DOM для правильного z-index', {
+                        player: player.username,
+                        wasIndex: tokenIndex,
+                        totalChildren: allChildren.length
+                    });
+                }
+                
+                // Принудительно устанавливаем МАКСИМАЛЬНЫЙ z-index после добавления в DOM
+                token.style.setProperty('z-index', '99999', 'important');
+                token.style.setProperty('transform', 'translateZ(0)', 'important');
+                token.style.setProperty('isolation', 'isolate', 'important');
+            });
+            
             this._info('Фишка добавлена в DOM', {
                 player: player.username,
                 position: player.position,
@@ -1818,18 +1852,22 @@ class PlayerTokens {
             token.style.setProperty('min-height', '36px', 'important');
             token.style.setProperty('opacity', '1', 'important'); // Устанавливаем opacity: 1 ДО анимации
             token.style.setProperty('position', 'absolute', 'important');
-            token.style.setProperty('z-index', '50000', 'important');
+            token.style.setProperty('z-index', '99999', 'important'); // МАКСИМАЛЬНЫЙ z-index
+            token.style.setProperty('transform', 'translateZ(0)', 'important'); // Создаем новый stacking context
+            token.style.setProperty('isolation', 'isolate', 'important'); // Изолируем stacking context
             
             // Дополнительно через обычные свойства
             token.style.display = 'flex';
             token.style.visibility = 'visible';
-            token.style.width = '32px';
-            token.style.height = '32px';
-            token.style.minWidth = '32px';
-            token.style.minHeight = '32px';
+            token.style.width = '36px';
+            token.style.height = '36px';
+            token.style.minWidth = '36px';
+            token.style.minHeight = '36px';
             token.style.opacity = '1';
             token.style.position = 'absolute';
-            token.style.zIndex = '50000';
+            token.style.zIndex = '99999'; // МАКСИМАЛЬНЫЙ z-index
+            token.style.transform = 'translateZ(0)';
+            token.style.isolation = 'isolate';
             
             // Проверяем, что фишка действительно в DOM
             if (!token.isConnected) {
@@ -1849,13 +1887,26 @@ class PlayerTokens {
                 const rect = token.getBoundingClientRect();
                 if (rect.width === 0 || rect.height === 0) {
                     // Принудительно устанавливаем размер еще раз с !important
-                    token.style.setProperty('width', '32px', 'important');
-                    token.style.setProperty('height', '32px', 'important');
-                    token.style.setProperty('min-width', '32px', 'important');
-                    token.style.setProperty('min-height', '32px', 'important');
+                    token.style.setProperty('width', '36px', 'important');
+                    token.style.setProperty('height', '36px', 'important');
+                    token.style.setProperty('min-width', '36px', 'important');
+                    token.style.setProperty('min-height', '36px', 'important');
                     token.style.setProperty('opacity', '1', 'important');
                     token.style.setProperty('visibility', 'visible', 'important');
                     token.style.setProperty('display', 'flex', 'important');
+                    token.style.setProperty('z-index', '99999', 'important'); // МАКСИМАЛЬНЫЙ z-index
+                    token.style.setProperty('transform', 'translateZ(0)', 'important');
+                    token.style.setProperty('isolation', 'isolate', 'important');
+                    
+                    // Убеждаемся, что фишка в конце DOM
+                    const trackElement = token.parentElement;
+                    if (trackElement) {
+                        const allChildren = Array.from(trackElement.children);
+                        const tokenIndex = allChildren.indexOf(token);
+                        if (tokenIndex >= 0 && tokenIndex < allChildren.length - 1) {
+                            trackElement.appendChild(token);
+                        }
+                    }
                     this._warn('⚠️ Фишка имела нулевой размер после рендера, исправлено', {
                         player: player.username,
                         rect: { width: rect.width, height: rect.height }
@@ -1963,15 +2014,17 @@ class PlayerTokens {
         token.style.setProperty('position', 'absolute', 'important');
         token.style.setProperty('left', `${left}px`, 'important');
         token.style.setProperty('top', `${top}px`, 'important');
-        token.style.setProperty('width', '32px', 'important');
-        token.style.setProperty('height', '32px', 'important');
-        token.style.setProperty('min-width', '32px', 'important');
-        token.style.setProperty('min-height', '32px', 'important');
-        token.style.setProperty('z-index', '50000', 'important');
+        token.style.setProperty('width', '36px', 'important');
+        token.style.setProperty('height', '36px', 'important');
+        token.style.setProperty('min-width', '36px', 'important');
+        token.style.setProperty('min-height', '36px', 'important');
+        token.style.setProperty('z-index', '99999', 'important'); // МАКСИМАЛЬНЫЙ z-index
         token.style.setProperty('display', 'flex', 'important');
         token.style.setProperty('visibility', 'visible', 'important');
         token.style.setProperty('opacity', '1', 'important');
         token.style.setProperty('pointer-events', 'auto', 'important');
+        token.style.setProperty('transform', 'translateZ(0)', 'important'); // Создаем новый stacking context
+        token.style.setProperty('isolation', 'isolate', 'important'); // Изолируем stacking context
         
         // Дополнительно устанавливаем через обычные свойства для совместимости
         token.style.position = 'absolute';

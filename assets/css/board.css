@@ -406,22 +406,17 @@
 #inner-track .player-token,
 #outer-track .player-token {
     pointer-events: auto !important;
-    z-index: 50000 !important; /* Фишки поверх всех элементов */
+    z-index: 99999 !important; /* МАКСИМАЛЬНЫЙ z-index - фишки поверх ВСЕХ элементов */
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
     position: absolute !important;
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    min-height: 32px !important;
-}
-
-/* Фишки должны быть видны даже если родитель имеет pointer-events: none */
-.inner-track .player-token,
-.outer-track .player-token {
-    pointer-events: auto !important;
-    z-index: 10000 !important; /* Фишки поверх всех элементов */
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    transform: translateZ(0) !important; /* Создаем новый stacking context */
+    isolation: isolate !important; /* Изолируем stacking context */
 }
 
 .track-cell {
@@ -448,7 +443,8 @@
     font-weight: 700; /* Увеличена жирность шрифта */
     will-change: transform; /* Оптимизация для GPU */
     transform: translateZ(0); /* Принудительное использование GPU */
-    z-index: 1 !important; /* Клетки ниже фишек */
+    z-index: 1 !important; /* Клетки НИЖЕ фишек - фишки должны быть 99999 */
+    isolation: isolate !important; /* Изолируем stacking context клеток */
 }
 
 .outer-track .track-cell {
