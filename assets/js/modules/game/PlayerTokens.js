@@ -638,15 +638,34 @@ class PlayerTokens {
                 position,
                 isInner,
                 hasBoardLayout: !!this.boardLayout,
-                hasCellCenters: !!(isInner ? this.cellCenters.inner : this.cellCenters.outer)
+                hasCellCenters: !!(isInner ? this.cellCenters.inner : this.cellCenters.outer),
+                trackElement: this.getTrackElement(isInner)?.id
             });
             return null;
         }
-        this._debug('✅ getCellBaseCoordinates: координаты получены', { position, isInner, center });
-        return {
+        
+        // Проверяем, что координаты валидны
+        if (!Number.isFinite(center.x) || !Number.isFinite(center.y)) {
+            this._warn('getCellBaseCoordinates: координаты невалидны', {
+                position,
+                isInner,
+                center,
+                x: center.x,
+                y: center.y
+            });
+            return null;
+        }
+        
+        // Включаем width и height из center, если они есть
+        const result = {
             x: center.x,
-            y: center.y
+            y: center.y,
+            width: center.width || 50,
+            height: center.height || 50
         };
+        
+        this._info('✅ getCellBaseCoordinates: координаты получены', { position, isInner, result });
+        return result;
     }
     
     /**
