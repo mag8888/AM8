@@ -524,13 +524,9 @@ class PlayerTokens {
             const center = boardLayout.getCellCenter(position, isInner);
             this._info('📊 boardLayout.getCellCenter вернул', { position, isInner, center, centerType: typeof center });
             if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
-                // Проверяем, что координаты в пределах разумных значений
-                if (center.x >= 0 && center.y >= 0) {
-                    this._info('✅ Координаты получены из boardLayout', center);
+                // Используем координаты даже если они отрицательные (могут быть валидными относительно родителя)
+                this._info('✅ Координаты получены из boardLayout', { center, position, isInner });
                 return center;
-                } else {
-                    this._warn('⚠️ Координаты из boardLayout отрицательные, вычисляем из DOM', { center, position, isInner });
-            }
             } else {
                 this._warn('❌ boardLayout.getCellCenter вернул невалидные координаты', { center, position, isInner });
         }
@@ -556,6 +552,7 @@ class PlayerTokens {
 
         // Используем offsetLeft/offsetTop для координат относительно родителя (как в BoardLayout)
         const cellRect = cell.getBoundingClientRect(); // Используем только для размеров
+        const trackRect = trackElement.getBoundingClientRect();
         const offsetLeft = cell.offsetLeft || 0;
         const offsetTop = cell.offsetTop || 0;
         
@@ -568,35 +565,16 @@ class PlayerTokens {
             height: cellRect.height
         };
         
-        // Проверяем, что координаты находятся в пределах видимой области трека
-        const isWithinTrack = coords.x >= 0 && coords.x <= trackRect.width && 
-                              coords.y >= 0 && coords.y <= trackRect.height;
-        
-        if (!isWithinTrack) {
-            this._warn('⚠️ Координаты клетки выходят за пределы трека', {
-                coords,
-                trackRect: { 
-                    left: trackRect.left, 
-                    top: trackRect.top, 
-                    width: trackRect.width, 
-                    height: trackRect.height 
-                },
-                cellRect: { 
-                    left: cellRect.left, 
-                    top: cellRect.top, 
-                    width: cellRect.width, 
-                    height: cellRect.height 
-                },
-                trackElementId: trackElement.id,
-                computedTrackStyles: {
-                    position: window.getComputedStyle(trackElement).position,
-                    left: window.getComputedStyle(trackElement).left,
-                    top: window.getComputedStyle(trackElement).top,
-                    width: window.getComputedStyle(trackElement).width,
-                    height: window.getComputedStyle(trackElement).height
-                }
-            });
-        }
+        // Логируем координаты для отладки
+        this._debug('Координаты вычислены из DOM', {
+            coords,
+            offsetLeft,
+            offsetTop,
+            cellRect: { width: cellRect.width, height: cellRect.height },
+            trackElementId: trackElement.id,
+            position,
+            isInner
+        });
         
         this._debug('✅ Координаты вычислены из DOM', {
             position,
@@ -1759,8 +1737,23 @@ class PlayerTokens {
         }
         
         const halfSize = 16; // половина ширины/высоты токена
-        const left = baseCoords.x + offset.x - halfSize;
-        const top = baseCoords.y + offset.y - halfSize;
+        let left = baseCoords.x + offset.x - halfSize;
+        let top = baseCoords.y + offset.y - halfSize;
+        
+        // Проверяем, что координаты валидны и в видимой области
+        if (!Number.isFinite(left) || !Number.isFinite(top)) {
+            this._warn('positionTokenElement: невалидные координаты', { left, top, baseCoords, offset });
+            return;
+        }
+        
+        // Логируем координаты для отладки
+        this._debug('positionTokenElement: устанавливаем координаты', {
+            left,
+            top,
+            baseCoords,
+            offset,
+            playerId: token.dataset.playerId
+        });
         
         // Устанавливаем координаты с !important для гарантии видимости
         token.style.setProperty('left', `${left}px`, 'important');
