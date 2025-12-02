@@ -1892,6 +1892,28 @@ class PlayerTokens {
                 token.style.setProperty('z-index', '99999', 'important');
                 token.style.setProperty('transform', 'translateZ(0)', 'important');
                 token.style.setProperty('isolation', 'isolate', 'important');
+                
+                // КРИТИЧНО: Принудительно позиционируем фишку на клетке #24 после добавления в DOM
+                // Получаем координаты клетки #24 (позиция 23)
+                const cellPosition = 23;
+                const isInner = false;
+                const baseCoords = this.getCellBaseCoordinates(cellPosition, isInner);
+                if (baseCoords && Number.isFinite(baseCoords.x) && Number.isFinite(baseCoords.y)) {
+                    const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
+                    const offset = this.calculateOffset(0, 1, cellSize); // Для одной фишки offset = 0
+                    this.positionTokenElement(token, baseCoords, offset, 1);
+                    this._info('Фишка принудительно позиционирована на клетке #24', {
+                        player: player.username,
+                        position: cellPosition,
+                        coords: baseCoords,
+                        offset
+                    });
+                } else {
+                    this._warn('Не удалось получить координаты клетки #24 для принудительного позиционирования', {
+                        player: player.username,
+                        baseCoords
+                    });
+                }
             });
             
             // Принудительно устанавливаем стили для видимости ДО анимации с !important
