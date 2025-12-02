@@ -584,15 +584,17 @@ class PlayerTokens {
         
         // Вычисляем координаты центра клетки относительно trackElement
         // Используем getBoundingClientRect для точных координат
+        // Учитываем размер фишки (36px) для правильного центрирования
+        const tokenSize = 36; // Размер фишки
         const coords = {
-            x: (cellRect.left - trackRect.left) + (cellRect.width / 2),
-            y: (cellRect.top - trackRect.top) + (cellRect.height / 2),
+            x: (cellRect.left - trackRect.left) + (cellRect.width / 2) - (tokenSize / 2),
+            y: (cellRect.top - trackRect.top) + (cellRect.height / 2) - (tokenSize / 2),
             width: cellRect.width,
             height: cellRect.height
         };
         
         // Проверяем, что координаты валидны
-        if (!Number.isFinite(coords.x) || !Number.isFinite(coords.y) || coords.x < 0 || coords.y < 0) {
+        if (!Number.isFinite(coords.x) || !Number.isFinite(coords.y)) {
             // Если координаты невалидные, пробуем использовать offsetLeft/offsetTop как fallback
             const offsetLeft = cell.offsetLeft || 0;
             const offsetTop = cell.offsetTop || 0;
@@ -605,8 +607,8 @@ class PlayerTokens {
                 cellRect: { left: cellRect.left, top: cellRect.top, width: cellRect.width, height: cellRect.height },
                 trackRect: { left: trackRect.left, top: trackRect.top, width: trackRect.width, height: trackRect.height }
             });
-            coords.x = offsetLeft + (cellRect.width / 2);
-            coords.y = offsetTop + (cellRect.height / 2);
+            coords.x = offsetLeft + (cellRect.width / 2) - (tokenSize / 2);
+            coords.y = offsetTop + (cellRect.height / 2) - (tokenSize / 2);
         }
         
         // Логируем координаты для отладки
@@ -714,24 +716,28 @@ class PlayerTokens {
         token.setAttribute('data-position', player.position || 0); // Добавляем атрибут позиции
         token.dataset.isInner = String(Boolean(player.isInner));
         
-        // Устанавливаем все стили сразу при создании с !important
+        // Устанавливаем все стили сразу при создании с !important - улучшенная версия
         token.style.setProperty('position', 'absolute', 'important');
         token.style.setProperty('display', 'flex', 'important');
         token.style.setProperty('visibility', 'visible', 'important');
         token.style.setProperty('opacity', '1', 'important');
-        token.style.setProperty('z-index', '50000', 'important');
-        token.style.setProperty('width', '32px', 'important');
-        token.style.setProperty('height', '32px', 'important');
-        token.style.setProperty('min-width', '32px', 'important');
-        token.style.setProperty('min-height', '32px', 'important');
-        token.style.setProperty('max-width', '32px', 'important');
-        token.style.setProperty('max-height', '32px', 'important');
+        token.style.setProperty('z-index', '99999', 'important'); // Максимальный z-index
+        token.style.setProperty('width', '36px', 'important'); // Увеличено с 32px до 36px
+        token.style.setProperty('height', '36px', 'important');
+        token.style.setProperty('min-width', '36px', 'important');
+        token.style.setProperty('min-height', '36px', 'important');
+        token.style.setProperty('max-width', '36px', 'important');
+        token.style.setProperty('max-height', '36px', 'important');
         token.style.setProperty('pointer-events', 'auto', 'important');
         token.style.setProperty('align-items', 'center', 'important');
         token.style.setProperty('justify-content', 'center', 'important');
         token.style.setProperty('border-radius', '50%', 'important');
         token.style.setProperty('background', 'white', 'important');
-        token.style.setProperty('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.3)', 'important');
+        token.style.setProperty('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.1)', 'important');
+        token.style.setProperty('transform', 'translateZ(0)', 'important'); // Аппаратное ускорение
+        token.style.setProperty('will-change', 'left, top, transform', 'important'); // Оптимизация анимации
+        token.style.setProperty('backface-visibility', 'hidden', 'important'); // Улучшение производительности
+        token.style.setProperty('font-size', '18px', 'important'); // Увеличен размер иконки
         
         // Используем иконку фишки вместо текста
         const tokenIcon = this.getTokenIcon(player.token);
@@ -1067,8 +1073,10 @@ class PlayerTokens {
             }
             const total = Math.max(tokensOnPosition.length, 1);
             const offset = this.getTokenOffset(playerId, stepPosition, isInner, tokensOnPosition);
-            const targetX = baseCoords.x + offset.x - 16;
-            const targetY = baseCoords.y + offset.y - 16;
+            const tokenSize = 36; // Размер фишки
+            const halfSize = tokenSize / 2; // 18px
+            const targetX = baseCoords.x + offset.x - halfSize;
+            const targetY = baseCoords.y + offset.y - halfSize;
 
             this.animateTokenMovement(token, currentX, currentY, targetX, targetY);
 
@@ -1094,39 +1102,54 @@ class PlayerTokens {
         // Добавляем класс для анимации
         token.classList.add('moving');
         
-        // Создаем keyframes для анимации
+        // Улучшенная анимация движения с плавным переходом
         const keyframes = [
             { 
                 left: `${fromX}px`, 
                 top: `${fromY}px`,
-                transform: 'scale(1)'
+                transform: 'translateZ(0) scale(1)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)'
             },
             { 
                 left: `${(fromX + toX) / 2}px`, 
                 top: `${(fromY + toY) / 2}px`,
-                transform: 'scale(1.2)'
+                transform: 'translateZ(0) scale(1.15)',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(99, 102, 241, 0.3)'
             },
             { 
                 left: `${toX}px`, 
                 top: `${toY}px`,
-                transform: 'scale(1)'
+                transform: 'translateZ(0) scale(1)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)'
             }
         ];
         
-        // Выполняем анимацию
-        token.animate(keyframes, {
-            duration: 800,
-            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        // Выполняем анимацию с улучшенными параметрами
+        const animation = token.animate(keyframes, {
+            duration: 600, // Увеличена длительность для более плавного движения
+            easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)', // Более выразительная кривая
             fill: 'forwards'
-        }).onfinish = () => {
+        });
+        
+        animation.onfinish = () => {
             // Устанавливаем финальную позицию с !important
             token.style.setProperty('left', `${toX}px`, 'important');
             token.style.setProperty('top', `${toY}px`, 'important');
+            token.style.setProperty('transform', 'translateZ(0) scale(1)', 'important');
+            token.style.setProperty('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.1)', 'important');
+            
+            // Дополнительно через обычные свойства для совместимости
             token.style.left = `${toX}px`;
             token.style.top = `${toY}px`;
             
             // Убираем класс анимации
             token.classList.remove('moving');
+            
+            this._debug('Анимация движения фишки завершена', {
+                playerId: token.dataset.playerId,
+                from: { x: fromX, y: fromY },
+                to: { x: toX, y: toY }
+            });
         };
     }
     
@@ -1136,10 +1159,10 @@ class PlayerTokens {
     animateTokenAppearance(token) {
         // Убеждаемся, что размер установлен перед анимацией
         if (!token.style.width || token.style.width === '0px') {
-            token.style.width = '32px';
-            token.style.height = '32px';
-            token.style.minWidth = '32px';
-            token.style.minHeight = '32px';
+            token.style.width = '36px';
+            token.style.height = '36px';
+            token.style.minWidth = '36px';
+            token.style.minHeight = '36px';
         }
         
         // Убеждаемся, что фишка видна ДО анимации
@@ -1174,10 +1197,10 @@ class PlayerTokens {
             token.style.setProperty('opacity', '1', 'important');
             token.style.setProperty('visibility', 'visible', 'important');
             token.style.setProperty('display', 'flex', 'important');
-            token.style.setProperty('width', '32px', 'important');
-            token.style.setProperty('height', '32px', 'important');
-            token.style.setProperty('min-width', '32px', 'important');
-            token.style.setProperty('min-height', '32px', 'important');
+            token.style.setProperty('width', '36px', 'important');
+            token.style.setProperty('height', '36px', 'important');
+            token.style.setProperty('min-width', '36px', 'important');
+            token.style.setProperty('min-height', '36px', 'important');
             
             // Дополнительно через обычные свойства
             token.style.opacity = '1';
@@ -1789,10 +1812,10 @@ class PlayerTokens {
             // Принудительно устанавливаем стили для видимости ДО анимации с !important
             token.style.setProperty('display', 'flex', 'important');
             token.style.setProperty('visibility', 'visible', 'important');
-            token.style.setProperty('width', '32px', 'important');
-            token.style.setProperty('height', '32px', 'important');
-            token.style.setProperty('min-width', '32px', 'important');
-            token.style.setProperty('min-height', '32px', 'important');
+            token.style.setProperty('width', '36px', 'important');
+            token.style.setProperty('height', '36px', 'important');
+            token.style.setProperty('min-width', '36px', 'important');
+            token.style.setProperty('min-height', '36px', 'important');
             token.style.setProperty('opacity', '1', 'important'); // Устанавливаем opacity: 1 ДО анимации
             token.style.setProperty('position', 'absolute', 'important');
             token.style.setProperty('z-index', '50000', 'important');
@@ -1872,7 +1895,8 @@ class PlayerTokens {
             return;
         }
         
-        const halfSize = 16; // половина ширины/высоты токена
+        const tokenSize = 36; // Размер фишки (увеличен с 32px до 36px)
+        const halfSize = tokenSize / 2; // половина ширины/высоты токена (18px)
         let left = baseCoords.x + offset.x - halfSize;
         let top = baseCoords.y + offset.y - halfSize;
         
@@ -1953,11 +1977,11 @@ class PlayerTokens {
         token.style.position = 'absolute';
         token.style.left = `${left}px`;
         token.style.top = `${top}px`;
-        token.style.width = '32px';
-        token.style.height = '32px';
-        token.style.minWidth = '32px';
-        token.style.minHeight = '32px';
-        token.style.zIndex = '50000';
+        token.style.width = '36px';
+        token.style.height = '36px';
+        token.style.minWidth = '36px';
+        token.style.minHeight = '36px';
+        token.style.zIndex = '99999'; // Максимальный z-index
         token.style.display = 'flex';
         token.style.visibility = 'visible';
         token.style.opacity = '1';
