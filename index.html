@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/css/main.css?v=10">
     <link rel="stylesheet" href="assets/css/board.css?v=13">
     <link rel="stylesheet" href="assets/css/modals.css?v=10">
-    <link rel="stylesheet" href="assets/css/board-layout.css?v=14">
+    <link rel="stylesheet" href="assets/css/board-layout.css?v=15">
     <link rel="stylesheet" href="assets/css/game-optimized.css?v=2">
     <style>
         /* Оптимизированная цветовая схема v2 */
@@ -326,7 +326,7 @@
     <script src="assets/js/modules/game/TurnController.js?v=10" defer></script>
     <script src="assets/js/modules/game/BalanceManager.js?v=10" defer></script>
     <script src="assets/js/modules/game/PlayersPanel.js?v=21" defer></script>
-    <script src="assets/js/modules/game/PlayerTokens.js?v=17" defer></script>
+    <script src="assets/js/modules/game/PlayerTokens.js?v=18" defer></script>
     <script src="assets/js/modules/game/DiceDisplay.js?v=10" defer></script>
     <script src="assets/js/modules/game/ProfessionSystem.js?v=10" defer></script>
     <script src="assets/js/modules/game/PlayerBalanceDisplay.js?v=10" defer></script>
@@ -357,17 +357,23 @@
                     // Удаляем все найденные элементы
                     if (bottomMenu) {
                         bottomMenu.remove();
+                        console.log('✅ Нижнее меню удалено (querySelector)');
                     }
                     if (bottomMenuById) {
                         bottomMenuById.remove();
+                        console.log('✅ Нижнее меню удалено (getElementById)');
                     }
                     if (bottomMenuNav) {
                         bottomMenuNav.remove();
+                        console.log('✅ Нижнее меню удалено (nav.mobile-bottom-menu)');
                     }
                     
                     // Также удаляем все кнопки нижнего меню
                     const menuItems = document.querySelectorAll('.mobile-bottom-menu-item');
-                    menuItems.forEach(item => item.remove());
+                    menuItems.forEach(item => {
+                        item.remove();
+                        console.log('✅ Кнопка нижнего меню удалена');
+                    });
                     
                     // Удаляем по ID
                     const rollBtn = document.getElementById('mobile-roll-btn');
@@ -375,10 +381,22 @@
                     const bankMenuBtn = document.getElementById('mobile-bank-menu-btn');
                     const menuBottomBtn = document.getElementById('mobile-menu-bottom-btn');
                     
-                    if (rollBtn) rollBtn.remove();
-                    if (passBtn) passBtn.remove();
-                    if (bankMenuBtn) bankMenuBtn.remove();
-                    if (menuBottomBtn) menuBottomBtn.remove();
+                    if (rollBtn) {
+                        rollBtn.remove();
+                        console.log('✅ mobile-roll-btn удален');
+                    }
+                    if (passBtn) {
+                        passBtn.remove();
+                        console.log('✅ mobile-pass-btn удален');
+                    }
+                    if (bankMenuBtn) {
+                        bankMenuBtn.remove();
+                        console.log('✅ mobile-bank-menu-btn удален');
+                    }
+                    if (menuBottomBtn) {
+                        menuBottomBtn.remove();
+                        console.log('✅ mobile-menu-bottom-btn удален');
+                    }
                 }
             }
             

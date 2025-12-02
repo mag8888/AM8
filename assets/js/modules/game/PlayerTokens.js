@@ -528,16 +528,34 @@ class PlayerTokens {
                 this._info('✅ Координаты получены из boardLayout', { center, position, isInner });
                 return center;
             } else {
-                this._warn('❌ boardLayout.getCellCenter вернул невалидные координаты, вычисляем из DOM', { 
-                    center, 
-                    position, 
-                    isInner,
-                    centerType: typeof center,
-                    hasX: center && 'x' in center,
-                    hasY: center && 'y' in center,
-                    xValue: center?.x,
-                    yValue: center?.y
-                });
+                // Проверяем, может быть center это массив или объект без x/y
+                if (center && typeof center === 'object') {
+                    // Если это объект, но нет x/y, возможно это другой формат
+                    if ('x' in center && 'y' in center) {
+                        // Есть x и y, но они не Number.isFinite - возможно NaN или Infinity
+                        this._warn('❌ boardLayout.getCellCenter вернул координаты с NaN/Infinity, вычисляем из DOM', { 
+                            center, 
+                            position, 
+                            isInner,
+                            x: center.x,
+                            y: center.y
+                        });
+                    } else {
+                        this._warn('❌ boardLayout.getCellCenter вернул объект без x/y, вычисляем из DOM', { 
+                            center, 
+                            position, 
+                            isInner,
+                            centerKeys: Object.keys(center || {})
+                        });
+                    }
+                } else {
+                    this._warn('❌ boardLayout.getCellCenter вернул невалидные координаты, вычисляем из DOM', { 
+                        center, 
+                        position, 
+                        isInner,
+                        centerType: typeof center
+                    });
+                }
                 // Продолжаем вычисление из DOM
         }
         }
