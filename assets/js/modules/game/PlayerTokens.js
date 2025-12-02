@@ -2181,16 +2181,31 @@ class PlayerTokens {
             }
         }
         
-        // Убеждаемся, что родительский элемент имеет правильный position для абсолютного позиционирования
+        // КРИТИЧНО: Убеждаемся, что родительский элемент имеет правильный position для абсолютного позиционирования
         const parentElement = token.parentElement;
         if (parentElement) {
             const parentPosition = window.getComputedStyle(parentElement).position;
             if (parentPosition === 'static') {
                 // Устанавливаем position: relative для родителя, если он static
-                parentElement.style.position = 'relative';
-                this._debug('Установлен position: relative для родительского элемента трека', {
+                parentElement.style.setProperty('position', 'relative', 'important');
+                this._info('Установлен position: relative для родительского элемента трека', {
                     parentId: parentElement.id,
-                    parentTag: parentElement.tagName
+                    parentTag: parentElement.tagName,
+                    wasPosition: parentPosition
+                });
+            } else {
+                this._debug('Родительский элемент уже имеет position:', {
+                    parentId: parentElement.id,
+                    position: parentPosition
+                });
+            }
+            
+            // Дополнительно убеждаемся, что родитель видим
+            const parentRect = parentElement.getBoundingClientRect();
+            if (parentRect.width === 0 || parentRect.height === 0) {
+                this._warn('⚠️ Родительский элемент трека имеет нулевой размер!', {
+                    parentId: parentElement.id,
+                    rect: { width: parentRect.width, height: parentRect.height }
                 });
             }
         }
