@@ -2121,6 +2121,25 @@ class PlayerTokens {
         token.style.setProperty('left', `${left}px`, 'important');
         token.style.setProperty('top', `${top}px`, 'important');
         
+        // КРИТИЧНО: Убеждаемся, что все стили видимости установлены
+        token.style.setProperty('display', 'flex', 'important');
+        token.style.setProperty('visibility', 'visible', 'important');
+        token.style.setProperty('opacity', '1', 'important');
+        token.style.setProperty('z-index', '99999', 'important');
+        token.style.setProperty('position', 'absolute', 'important');
+        token.style.setProperty('width', '36px', 'important');
+        token.style.setProperty('height', '36px', 'important');
+        
+        this._info('✅ Координаты установлены для фишки', {
+            playerId: token.dataset.playerId,
+            left: `${left}px`,
+            top: `${top}px`,
+            baseCoords,
+            offset,
+            tokenInDOM: token.isConnected,
+            hasParent: !!token.parentElement
+        });
+        
         // Убеждаемся, что фишка имеет родителя перед позиционированием
         if (!token.parentElement) {
             this._debug('Фишка потеряла родителя перед позиционированием, пытаемся восстановить', {
