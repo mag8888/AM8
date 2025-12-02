@@ -174,24 +174,29 @@ class PlayerTokenRenderer {
         tokenElement.dataset.playerId = player.id;
         tokenElement.dataset.position = player.position || 0;
         
-        // Стили фишки
-        tokenElement.style.cssText = `
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 3px solid ${color};
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            z-index: 100;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        `;
+        // Стили фишки - используем setProperty для !important
+        tokenElement.style.setProperty('position', 'absolute', 'important');
+        tokenElement.style.setProperty('width', '32px', 'important');
+        tokenElement.style.setProperty('height', '32px', 'important');
+        tokenElement.style.setProperty('min-width', '32px', 'important');
+        tokenElement.style.setProperty('min-height', '32px', 'important');
+        tokenElement.style.setProperty('max-width', '32px', 'important');
+        tokenElement.style.setProperty('max-height', '32px', 'important');
+        tokenElement.style.setProperty('border-radius', '50%', 'important');
+        tokenElement.style.setProperty('border', `3px solid ${color}`, 'important');
+        tokenElement.style.setProperty('background', 'white', 'important');
+        tokenElement.style.setProperty('display', 'flex', 'important');
+        tokenElement.style.setProperty('align-items', 'center', 'important');
+        tokenElement.style.setProperty('justify-content', 'center', 'important');
+        tokenElement.style.setProperty('font-size', '16px', 'important');
+        tokenElement.style.setProperty('font-weight', 'bold', 'important');
+        tokenElement.style.setProperty('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.3)', 'important');
+        tokenElement.style.setProperty('z-index', '50000', 'important');
+        tokenElement.style.setProperty('transition', 'all 0.3s ease', 'important');
+        tokenElement.style.setProperty('cursor', 'pointer', 'important');
+        tokenElement.style.setProperty('visibility', 'visible', 'important');
+        tokenElement.style.setProperty('opacity', '1', 'important');
+        tokenElement.style.setProperty('pointer-events', 'auto', 'important');
         
         // Добавляем эмодзи токена
         tokenElement.textContent = player.token || '🎯';

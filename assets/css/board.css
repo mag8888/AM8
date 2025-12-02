@@ -872,21 +872,28 @@
 
 /* Player Tokens */
 .player-token {
-    position: absolute;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 3px solid;
-    background: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: bold;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    z-index: 2000; /* Фишки поверх клеток */
-    transition: all 0.3s ease;
-    cursor: pointer;
+    position: absolute !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    border: 3px solid !important;
+    background: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    z-index: 50000 !important; /* Фишки поверх всех элементов */
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
 }
 
 .player-token.active {
