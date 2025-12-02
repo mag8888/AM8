@@ -724,12 +724,14 @@
             // Инициализация после загрузки DOM
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', function() {
+                    removeBottomMenuOnDesktop(); // Удаляем нижнее меню на ПК
                     ensureContainers();
                     initMenuToggle();
                     initMobileControls(); // Инициализация мобильных элементов управления
                     initBoardSize();
                 });
             } else {
+                removeBottomMenuOnDesktop(); // Удаляем нижнее меню на ПК
                 ensureContainers();
                 // Небольшая задержка для инициализации кнопки, чтобы элементы точно были в DOM
                 setTimeout(function() {
