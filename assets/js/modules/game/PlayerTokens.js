@@ -704,17 +704,24 @@ class PlayerTokens {
     
     /**
      * Создание DOM элемента фишки
+     * Фишка всегда создается для клетки #1 (позиция 0)
      */
     createPlayerToken(player, index, totalPlayers) {
         const token = document.createElement('div');
         token.className = 'player-token';
-        token.classList.add(player.isInner ? 'inner' : 'outer');
-        token.classList.toggle('inner-track', !!player.isInner);
-        token.classList.toggle('outer-track', !player.isInner);
+        
+        // ВСЕ фишки создаются для клетки #1 (позиция 0) на внешнем треке
+        const cellPosition = 0; // Клетка #1
+        const isInnerTrack = false; // Внешний трек
+        
+        token.classList.add(isInnerTrack ? 'inner' : 'outer');
+        token.classList.toggle('inner-track', isInnerTrack);
+        token.classList.toggle('outer-track', !isInnerTrack);
         token.dataset.playerId = player.id;
         token.dataset.playerName = player.username;
-        token.setAttribute('data-position', player.position || 0); // Добавляем атрибут позиции
-        token.dataset.isInner = String(Boolean(player.isInner));
+        token.setAttribute('data-position', cellPosition); // ВСЕГДА позиция 0 (клетка #1)
+        token.dataset.isInner = String(isInnerTrack);
+        token.dataset.cellNumber = '1'; // Номер клетки для отображения
         
         // Устанавливаем все стили сразу при создании с !important - улучшенная версия
         token.style.setProperty('position', 'absolute', 'important');
