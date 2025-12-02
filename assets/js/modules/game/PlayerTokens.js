@@ -1660,17 +1660,47 @@ class PlayerTokens {
     ensureToken(player, index, totalPlayers, trackElement) {
         let token = this.tokens.get(player.id);
         
-        // Проверяем, что существующая фишка все еще в DOM
-        if (token && (!token.isConnected || !token.parentElement)) {
-            this._warn('Фишка найдена в кэше, но не в DOM, пересоздаем', {
-                player: player.username,
-                playerId: player.id,
-                tokenInDOM: token.isConnected,
-                hasParent: !!token.parentElement
-            });
-            // Удаляем старую фишку из кэша
-            this.tokens.delete(player.id);
-            token = null;
+        // Проверяем, что существующая фишка все еще в DOM и в правильном треке
+        if (token) {
+            const isInCorrectTrack = token.parentElement === trackElement;
+            const isConnected = token.isConnected && token.parentElement;
+            
+            if (!isConnected) {
+                this._warn('Фишка найдена в кэше, но не в DOM, пересоздаем', {
+                    player: player.username,
+                    playerId: player.id,
+                    tokenInDOM: token.isConnected,
+                    hasParent: !!token.parentElement
+                });
+                // Удаляем старую фишку из кэша
+                this.tokens.delete(player.id);
+                token = null;
+            } else if (!isInCorrectTrack && trackElement) {
+                // Фишка в неправильном треке, перемещаем её
+                this._debug('Фишка в неправильном треке, перемещаем', {
+                    player: player.username,
+                    currentParent: token.parentElement?.id,
+                    targetParent: trackElement.id
+                });
+                trackElement.appendChild(token);
+            } else if (isInCorrectTrack && isConnected) {
+                // Фишка уже существует и в правильном месте, просто обновляем данные
+                this._debug('Фишка уже существует, обновляем данные', {
+                    player: player.username,
+                    playerId: player.id
+                });
+                // Обновляем данные фишки без пересоздания
+                token.dataset.position = player.position;
+                token.dataset.playerName = player.username;
+                token.dataset.isInner = String(Boolean(player.isInner));
+                token.classList.toggle('inner', !!player.isInner);
+                token.classList.toggle('outer', !player.isInner);
+                token.classList.toggle('inner-track', !!player.isInner);
+                token.classList.toggle('outer-track', !player.isInner);
+                token.textContent = this.getTokenIcon(player.token);
+                token.title = `${player.username} - $${player.money || 0}`;
+                return token; // Возвращаем существующую фишку
+            }
         }
         
         if (!token) {
