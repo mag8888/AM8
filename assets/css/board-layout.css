@@ -1,6 +1,7 @@
 /* Desktop: трехколоночная раскладка, поле по центру квадратом */
 @media (min-width: 1025px) {
-  /* Скрываем нижнее мобильное меню на десктоп версии */
+  /* Скрываем нижнее мобильное меню на десктоп версии - максимальная специфичность */
+  nav.mobile-bottom-menu,
   .mobile-bottom-menu,
   .mobile-bottom-nav,
   .mobile-turn-controls,
@@ -8,16 +9,25 @@
   .mobile-bottom-nav-btn,
   #mobile-bottom-roll-btn,
   #mobile-bottom-pass-btn,
+  #mobile-bank-menu-btn,
+  #mobile-menu-bottom-btn,
   #mobile-bottom-bank-btn,
   #mobile-bottom-menu-btn,
   .mobile-bottom-nav-icon,
-  .mobile-bottom-nav-label {
+  .mobile-bottom-nav-label,
+  nav.mobile-bottom-menu *,
+  .mobile-bottom-menu *,
+  .mobile-bottom-menu-item * {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
     height: 0 !important;
     width: 0 !important;
     overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    pointer-events: none !important;
   }
   
   #game-page,
@@ -156,9 +166,13 @@
     pointer-events: none !important; /* Клетки обрабатывают события */
   }
   
-  /* Внешний трек - центрирование как внутренний */
+  /* Внешний трек - центрирование как внутренний - максимальная специфичность */
   .game-page .board-wrapper .outer-track,
-  .game-page .board-wrapper #outer-track {
+  .game-page .board-wrapper #outer-track,
+  #game-page .board-wrapper .outer-track,
+  #game-page .board-wrapper #outer-track,
+  .game-board-container .board-wrapper .outer-track,
+  .game-board-container .board-wrapper #outer-track {
     width: 100% !important;
     height: 100% !important;
     position: absolute !important;
@@ -169,6 +183,8 @@
     padding: 0 !important;
     box-sizing: border-box !important;
     aspect-ratio: 1 / 1 !important;
+    right: auto !important;
+    bottom: auto !important;
   }
   
   /* Внутренний трек - центрирование */
@@ -194,13 +210,26 @@
     box-sizing: border-box !important;
   }
   
-  /* Фишки игроков должны быть видны на десктоп версии */
+  /* Фишки игроков должны быть видны на десктоп версии - максимальная специфичность */
+  .game-page .board-wrapper .outer-track .player-token,
+  .game-page .board-wrapper .inner-track .player-token,
+  .game-page .board-wrapper #outer-track .player-token,
+  .game-page .board-wrapper #inner-track .player-token,
+  #game-page .board-wrapper .outer-track .player-token,
+  #game-page .board-wrapper .inner-track .player-token,
+  #game-page .board-wrapper #outer-track .player-token,
+  #game-page .board-wrapper #inner-track .player-token,
+  .game-board-container .board-wrapper .outer-track .player-token,
+  .game-board-container .board-wrapper .inner-track .player-token,
+  .game-board-container .board-wrapper #outer-track .player-token,
+  .game-board-container .board-wrapper #inner-track .player-token,
+  .board-wrapper .player-token,
   .outer-track .player-token,
   .inner-track .player-token,
   #outer-track .player-token,
   #inner-track .player-token,
-  .board-wrapper .player-token,
-  [id^="token-"] {
+  [id^="token-"],
+  div.player-token {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -211,6 +240,8 @@
     height: 32px !important;
     min-width: 32px !important;
     min-height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
   }
   
   /* Правая панель: игроки - GRID СЕТКА с фиксированными размерами */
