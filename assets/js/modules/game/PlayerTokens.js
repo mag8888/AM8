@@ -633,9 +633,7 @@ class PlayerTokens {
         // Логируем координаты для отладки
         this._debug('Координаты вычислены из DOM', {
             coords,
-            offsetLeft,
-            offsetTop,
-            cellRect: { width: cellRect.width, height: cellRect.height },
+            cellRect: { width: coords.width, height: coords.height },
             trackElementId: trackElement.id,
             position,
             isInner
