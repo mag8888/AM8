@@ -345,6 +345,27 @@
         (function() {
             'use strict';
             
+            // Удаляем нижнее меню на ПК версии при загрузке
+            function removeBottomMenuOnDesktop() {
+                const isDesktop = window.innerWidth >= 1025;
+                if (isDesktop) {
+                    const bottomMenu = document.querySelector('.mobile-bottom-menu');
+                    if (bottomMenu) {
+                        bottomMenu.remove();
+                    }
+                }
+            }
+            
+            // Вызываем сразу и при изменении размера окна
+            removeBottomMenuOnDesktop();
+            window.addEventListener('resize', function() {
+                const isDesktop = window.innerWidth >= 1025;
+                const bottomMenu = document.querySelector('.mobile-bottom-menu');
+                if (isDesktop && bottomMenu) {
+                    bottomMenu.remove();
+                }
+            });
+            
             // Инициализация мобильных элементов управления
             function initMobileControls() {
                 // Кнопка меню - показываем/скрываем панели с карточками сделок
