@@ -1807,11 +1807,38 @@ class PlayerTokens {
                 this._warn('ensureToken: trackElement is null', { player: player.username, isInner: player.isInner });
                 return null;
             }
-            // КРИТИЧНО: Добавляем фишку в КОНЕЦ DOM, чтобы она была поверх всех клеток
-            // Используем requestAnimationFrame для гарантии, что клетки уже отрендерены
+            
+            // КРИТИЧНО: Добавляем фишку в DOM СРАЗУ (не в requestAnimationFrame)
+            // Это гарантирует, что фишка будет в DOM до проверки isConnected
+            trackElement.appendChild(token);
+            
+            // Сохраняем в кэш сразу после добавления
+            this.tokens.set(player.id, token);
+            
+            this._info('Фишка добавлена в DOM', {
+                player: player.username,
+                position: player.position,
+                isInner: player.isInner,
+                trackElement: trackElement.tagName,
+                trackElementId: trackElement.id,
+                tokenInDOM: token.isConnected,
+                tokenParent: token.parentElement?.tagName
+            });
+            
+            // Используем requestAnimationFrame для перемещения в конец и установки z-index
+            // Это делается ПОСЛЕ того, как фишка уже в DOM
             requestAnimationFrame(() => {
-                // Добавляем фишку в конец DOM
-                trackElement.appendChild(token);
+                // Проверяем, что фишка все еще в DOM
+                if (!token.isConnected || !token.parentElement) {
+                    this._warn('Фишка потеряла связь с DOM в requestAnimationFrame, восстанавливаем', {
+                        player: player.username
+                    });
+                    // Восстанавливаем фишку в DOM
+                    if (trackElement && token) {
+                        trackElement.appendChild(token);
+                    }
+                    return;
+                }
                 
                 // Принудительно перемещаем фишку в самый конец, если она не последняя
                 const allChildren = Array.from(trackElement.children);
@@ -1831,17 +1858,6 @@ class PlayerTokens {
                 token.style.setProperty('transform', 'translateZ(0)', 'important');
                 token.style.setProperty('isolation', 'isolate', 'important');
             });
-            
-            this._info('Фишка добавлена в DOM', {
-                player: player.username,
-                position: player.position,
-                isInner: player.isInner,
-                trackElement: trackElement.tagName,
-                trackElementId: trackElement.id,
-                tokenInDOM: token.isConnected,
-                tokenParent: token.parentElement?.tagName
-            });
-            this.tokens.set(player.id, token);
             
             // Принудительно устанавливаем стили для видимости ДО анимации с !important
             token.style.setProperty('display', 'flex', 'important');
@@ -1869,13 +1885,29 @@ class PlayerTokens {
             token.style.transform = 'translateZ(0)';
             token.style.isolation = 'isolate';
             
-            // Проверяем, что фишка действительно в DOM
-            if (!token.isConnected) {
-                this._warn('⚠️ Фишка не подключена к DOM после appendChild!', {
-                    player: player.username,
-                    hasParent: !!token.parentElement
-                });
-            }
+            // Проверяем, что фишка действительно в DOM (с небольшой задержкой для синхронизации)
+            setTimeout(() => {
+                if (!token.isConnected || !token.parentElement) {
+                    this._warn('⚠️ Фишка не подключена к DOM после appendChild! Восстанавливаем...', {
+                        player: player.username,
+                        hasParent: !!token.parentElement,
+                        isConnected: token.isConnected
+                    });
+                    // Пытаемся восстановить фишку в DOM
+                    if (trackElement && token) {
+                        trackElement.appendChild(token);
+                        this._info('Фишка восстановлена в DOM', {
+                            player: player.username,
+                            tokenInDOM: token.isConnected
+                        });
+                    }
+                } else {
+                    this._debug('✅ Фишка успешно подключена к DOM', {
+                        player: player.username,
+                        parentId: token.parentElement?.id
+                    });
+                }
+            }, 10);
             
             // НЕ запускаем анимацию появления, чтобы избежать мерцания
             // Фишка уже видна благодаря установленным стилям выше
