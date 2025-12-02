@@ -1879,6 +1879,28 @@ class PlayerTokens {
                 tokenParent: token.parentElement?.tagName
             });
             
+            // КРИТИЧНО: Позиционируем фишку СРАЗУ после добавления в DOM
+            // Не ждем requestAnimationFrame, так как координаты могут быть уже готовы
+            const cellPosition = 23; // Клетка #24
+            const isInner = false;
+            const baseCoords = this.getCellBaseCoordinates(cellPosition, isInner);
+            if (baseCoords && Number.isFinite(baseCoords.x) && Number.isFinite(baseCoords.y)) {
+                const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
+                const offset = this.calculateOffset(0, 1, cellSize);
+                this.positionTokenElement(token, baseCoords, offset, 1);
+                this._info('Фишка позиционирована сразу после добавления в DOM', {
+                    player: player.username,
+                    position: cellPosition,
+                    coords: baseCoords,
+                    offset
+                });
+            } else {
+                this._warn('Координаты клетки #24 недоступны при создании фишки, будет повторная попытка', {
+                    player: player.username,
+                    baseCoords
+                });
+            }
+            
             // Используем requestAnimationFrame для перемещения в конец и установки z-index
             // Это делается ПОСЛЕ того, как фишка уже в DOM
             requestAnimationFrame(() => {
