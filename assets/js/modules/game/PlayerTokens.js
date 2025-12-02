@@ -1361,9 +1361,27 @@ class PlayerTokens {
                     } else {
                         const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
                         const offset = this.calculateOffset(index, playersAtPosition.length, cellSize);
-                this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
-                processed.add(player.id);
+                        this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
+                        processed.add(player.id);
                         tokensCreated++;
+                        
+                        // Проверяем, что фишка действительно видна после позиционирования
+                        setTimeout(() => {
+                            const rect = token.getBoundingClientRect();
+                            if (rect.width === 0 || rect.height === 0) {
+                                this._warn('⚠️ Фишка имеет нулевой размер после позиционирования, перепозиционируем', {
+                                    player: player.username,
+                                    position,
+                                    isInner,
+                                    rect: { width: rect.width, height: rect.height },
+                                    coords: baseCoords,
+                                    offset
+                                });
+                                // Перепозиционируем фишку
+                                this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
+                            }
+                        }, 100);
+                        
                         this._info(`Фишка создана для игрока ${player.username}`, { 
                             position, 
                             isInner, 
@@ -1373,7 +1391,9 @@ class PlayerTokens {
                                 left: token.style.left,
                                 top: token.style.top,
                                 zIndex: token.style.zIndex
-                            }
+                            },
+                            inDOM: token.isConnected,
+                            hasParent: !!token.parentElement
                         });
                     }
                 } else {
