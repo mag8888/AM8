@@ -356,12 +356,19 @@
     pointer-events: none;
 }
 
-.outer-track {
+.outer-track,
+#outer-track {
     /* Абсолютное позиционирование для точного центрирования */
     width: 100% !important;
     height: 100% !important;
     position: absolute !important;
     top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    aspect-ratio: 1 / 1 !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important; /* Точное центрирование внешнего квадрата */
     margin: 0 !important;

@@ -5,10 +5,19 @@
   .mobile-bottom-nav,
   .mobile-turn-controls,
   .mobile-bottom-menu-item,
-  .mobile-bottom-nav-btn {
+  .mobile-bottom-nav-btn,
+  #mobile-bottom-roll-btn,
+  #mobile-bottom-pass-btn,
+  #mobile-bottom-bank-btn,
+  #mobile-bottom-menu-btn,
+  .mobile-bottom-nav-icon,
+  .mobile-bottom-nav-label {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
   }
   
   #game-page,
@@ -148,19 +157,34 @@
   }
   
   /* Внешний трек - центрирование как внутренний */
-  .game-page .board-wrapper .outer-track {
+  .game-page .board-wrapper .outer-track,
+  .game-page .board-wrapper #outer-track {
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    aspect-ratio: 1 / 1 !important;
   }
   
   /* Внутренний трек - центрирование */
-  .game-page .board-wrapper .inner-track {
+  .game-page .board-wrapper .inner-track,
+  .game-page .board-wrapper #inner-track {
+    width: 80% !important;
+    height: 80% !important;
+    position: absolute !important;
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
   }
   
   /* Клетки - абсолютное позиционирование, не влияют на размеры */
