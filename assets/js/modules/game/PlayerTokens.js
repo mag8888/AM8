@@ -579,17 +579,18 @@ class PlayerTokens {
         }
 
         // КРИТИЧНО: Используем getBoundingClientRect для вычисления координат относительно trackElement
-        // Это более надежно, так как учитывает все трансформации родителя
+        // Это более надежно, так как учитывает все трансформации родителя (включая transform: translate(-50%, -50%))
         const cellRect = cell.getBoundingClientRect();
         const trackRect = trackElement.getBoundingClientRect();
         
         // Вычисляем координаты центра клетки относительно trackElement
-        // Учитываем, что trackElement может иметь transform: translate(-50%, -50%)
+        // Координаты из getBoundingClientRect() - это координаты относительно viewport
+        // Вычитаем позицию trackElement, чтобы получить координаты относительно него
         const cellCenterX = cellRect.left + (cellRect.width / 2);
         const cellCenterY = cellRect.top + (cellRect.height / 2);
         
         // Координаты относительно trackElement (вычитаем позицию trackElement)
-        const coords = {
+        let coords = {
             x: cellCenterX - trackRect.left,
             y: cellCenterY - trackRect.top,
             width: cellRect.width,
@@ -597,14 +598,15 @@ class PlayerTokens {
         };
         
         // Проверяем, что координаты валидны
-        if (!Number.isFinite(coords.x) || !Number.isFinite(coords.y)) {
-            // Fallback: используем offsetLeft/offsetTop
+        if (!Number.isFinite(coords.x) || !Number.isFinite(coords.y) || 
+            Math.abs(coords.x) > 10000 || Math.abs(coords.y) > 10000) {
+            // Fallback: используем offsetLeft/offsetTop (но это может быть неточно из-за трансформаций)
             const offsetLeft = cell.offsetLeft || 0;
             const offsetTop = cell.offsetTop || 0;
             const cellWidth = cellRect.width || 50;
             const cellHeight = cellRect.height || 50;
             
-            this._warn('Координаты из getBoundingClientRect невалидные, используем offsetLeft/offsetTop', {
+            this._warn('Координаты из getBoundingClientRect невалидные или слишком большие, используем offsetLeft/offsetTop', {
                 position,
                 isInner,
                 coords,
@@ -629,6 +631,16 @@ class PlayerTokens {
             });
             return null;
         }
+        
+        // Логируем для отладки
+        this._debug('Координаты вычислены из DOM через getBoundingClientRect', {
+            position,
+            isInner,
+            coords,
+            cellRect: { left: cellRect.left, top: cellRect.top, width: cellRect.width, height: cellRect.height },
+            trackRect: { left: trackRect.left, top: trackRect.top, width: trackRect.width, height: trackRect.height },
+            relativeCoords: { x: coords.x, y: coords.y }
+        });
         
         // Логируем координаты для отладки
         this._debug('Координаты вычислены из DOM', {
