@@ -664,15 +664,22 @@ class PlayerTokens {
             return null;
         }
         
+        // BoardLayout.getCellCenter возвращает координаты ЦЕНТРА клетки (x, y - это центр)
+        // НЕ нужно вычитать tokenSize/2 здесь - это будет сделано в positionTokenElement
         // Включаем width и height из center, если они есть
         const result = {
-            x: center.x,
-            y: center.y,
+            x: center.x,  // Это уже центр клетки
+            y: center.y,  // Это уже центр клетки
             width: center.width || 50,
             height: center.height || 50
         };
         
-        this._info('✅ getCellBaseCoordinates: координаты получены', { position, isInner, result });
+        this._info('✅ getCellBaseCoordinates: координаты получены', { 
+            position, 
+            isInner, 
+            result,
+            note: 'Координаты - это центр клетки, tokenSize/2 будет вычтен в positionTokenElement'
+        });
         return result;
     }
     
