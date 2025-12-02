@@ -1,6 +1,6 @@
 /* Desktop: трехколоночная раскладка, поле по центру квадратом */
 @media (min-width: 1025px) {
-  /* Скрываем нижнее мобильное меню на десктоп версии - максимальная специфичность */
+  /* Скрываем нижнее мобильное меню на десктоп версии - максимальная специфичность и агрессивное скрытие */
   nav.mobile-bottom-menu,
   .mobile-bottom-menu,
   .mobile-bottom-nav,
@@ -17,17 +17,39 @@
   .mobile-bottom-nav-label,
   nav.mobile-bottom-menu *,
   .mobile-bottom-menu *,
-  .mobile-bottom-menu-item * {
+  .mobile-bottom-menu-item *,
+  button.mobile-bottom-menu-item,
+  #game-page nav.mobile-bottom-menu,
+  #game-page .mobile-bottom-menu,
+  .game-page nav.mobile-bottom-menu,
+  .game-page .mobile-bottom-menu,
+  body nav.mobile-bottom-menu,
+  body .mobile-bottom-menu {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
     height: 0 !important;
     width: 0 !important;
+    max-height: 0 !important;
+    max-width: 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
     overflow: hidden !important;
-    position: absolute !important;
+    position: fixed !important;
     left: -9999px !important;
     top: -9999px !important;
+    right: -9999px !important;
+    bottom: -9999px !important;
     pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    z-index: -1 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
   }
   
   #game-page,
