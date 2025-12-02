@@ -399,37 +399,7 @@
                     });
                 }
                 
-                // Также для кнопки меню в нижнем меню
-                const mobileMenuBottomBtn = document.getElementById('mobile-menu-bottom-btn');
-                if (mobileMenuBottomBtn && cardDecksPanel) {
-                    mobileMenuBottomBtn.addEventListener('click', function() {
-                        const isMenuVisible = cardDecksPanel.classList.contains('menu-visible');
-                        
-                        if (cardDecksPanel) {
-                            cardDecksPanel.classList.toggle('menu-visible');
-                            
-                            // Если меню открывается, загружаем карточки
-                            if (cardDecksPanel.classList.contains('menu-visible')) {
-                                setTimeout(loadCardsInMenu, 100);
-                            }
-                        }
-                        if (topPanelContainer) {
-                            topPanelContainer.classList.toggle('menu-visible');
-                        }
-                        
-                        mobileMenuBottomBtn.classList.toggle('active');
-                        if (mobileMenuBtn) {
-                            mobileMenuBtn.classList.toggle('active');
-                            if (mobileMenuIcon) {
-                                if (cardDecksPanel.classList.contains('menu-visible')) {
-                                    mobileMenuIcon.textContent = '✕';
-                                } else {
-                                    mobileMenuIcon.textContent = '☰';
-                                }
-                            }
-                        }
-                    });
-                }
+                // Также для кнопки меню в нижнем меню (объявление будет позже, чтобы избежать дублирования)
                 
                 // Кнопка банка - открываем банк на весь экран
                 const mobileBankBtn = document.getElementById('mobile-bank-btn');
