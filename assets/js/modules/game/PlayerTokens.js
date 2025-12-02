@@ -1695,6 +1695,7 @@ class PlayerTokens {
 
     /**
      * Нормализация списка игроков (уникальные идентификаторы, позиции)
+     * ВСЕ игроки начинают с клетки #1 (позиция 0) - переделана логика
      */
     normalizePlayers(players = []) {
         const result = [];
@@ -1710,13 +1711,21 @@ class PlayerTokens {
                 return;
             }
             seen.add(key);
+            
+            // ВСЕ фишки генерируются к клетке #1 (позиция 0)
+            // Игнорируем позицию из данных игрока, всегда ставим 0
             result.push({
                 ...player,
                 id: player.id || player.userId || key,
-                position: Number(player.position) || 0,
-                isInner: Boolean(player.isInner),
+                position: 0, // ВСЕГДА клетка #1 (позиция 0)
+                isInner: false, // ВСЕГДА внешний трек для старта
                 token: player.token || this.getDefaultTokenForPlayer(player, idx)
             });
+        });
+        
+        this._info('Нормализация игроков: все фишки установлены на клетку #1 (позиция 0)', {
+            playersCount: result.length,
+            allPositions: result.map(p => ({ id: p.id, position: p.position }))
         });
         
         return result;
