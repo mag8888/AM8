@@ -1651,10 +1651,6 @@ class PlayerTokens {
             }
             // Добавляем фишку в конец DOM, чтобы она была поверх клеток
             trackElement.appendChild(token);
-            // Дополнительно перемещаем в самый конец для гарантии
-            if (token.parentElement) {
-                token.parentElement.appendChild(token);
-            }
             this._info('Фишка добавлена в DOM', {
                 player: player.username,
                 position: player.position,
