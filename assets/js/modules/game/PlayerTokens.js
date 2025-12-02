@@ -2145,6 +2145,56 @@ class PlayerTokens {
         token.style.setProperty('width', '36px', 'important');
         token.style.setProperty('height', '36px', 'important');
         
+        // КРИТИЧНО: Проверяем видимость фишки сразу после установки координат
+        requestAnimationFrame(() => {
+            const rect = token.getBoundingClientRect();
+            const computedStyle = window.getComputedStyle(token);
+            const isVisible = rect.width > 0 && rect.height > 0 && 
+                            computedStyle.visibility !== 'hidden' && 
+                            computedStyle.display !== 'none' &&
+                            computedStyle.opacity !== '0' &&
+                            (rect.left !== 0 || rect.top !== 0 || (rect.left === 0 && rect.top === 0 && rect.width > 0));
+            
+            if (!isVisible) {
+                this._warn('⚠️ Фишка не видна после установки координат!', {
+                    playerId: token.dataset.playerId,
+                    rect: { width: rect.width, height: rect.height, left: rect.left, top: rect.top },
+                    computedStyle: {
+                        visibility: computedStyle.visibility,
+                        display: computedStyle.display,
+                        opacity: computedStyle.opacity,
+                        position: computedStyle.position,
+                        zIndex: computedStyle.zIndex,
+                        left: computedStyle.left,
+                        top: computedStyle.top
+                    },
+                    inlineStyle: {
+                        left: token.style.left,
+                        top: token.style.top,
+                        position: token.style.position,
+                        zIndex: token.style.zIndex
+                    },
+                    coords: { left, top, baseCoords, offset }
+                });
+                
+                // Принудительно устанавливаем все стили еще раз
+                token.style.setProperty('position', 'absolute', 'important');
+                token.style.setProperty('left', `${left}px`, 'important');
+                token.style.setProperty('top', `${top}px`, 'important');
+                token.style.setProperty('width', '36px', 'important');
+                token.style.setProperty('height', '36px', 'important');
+                token.style.setProperty('z-index', '99999', 'important');
+                token.style.setProperty('display', 'flex', 'important');
+                token.style.setProperty('visibility', 'visible', 'important');
+                token.style.setProperty('opacity', '1', 'important');
+            } else {
+                this._info('✅ Фишка видна после установки координат', {
+                    playerId: token.dataset.playerId,
+                    rect: { width: rect.width, height: rect.height, left: rect.left, top: rect.top }
+                });
+            }
+        });
+        
         this._info('✅ Координаты установлены для фишки', {
             playerId: token.dataset.playerId,
             left: `${left}px`,
