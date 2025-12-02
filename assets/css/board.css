@@ -503,7 +503,7 @@
     text-align: center;
     line-height: 22px;
     letter-spacing: 0;
-    z-index: 1000;
+    z-index: 0 !important; /* Номер клетки ниже фишек */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -519,7 +519,7 @@
     position: relative;
     font-size: clamp(1.4rem, 3vmin, 2.2rem); /* Увеличен размер иконок */
     line-height: 1;
-    z-index: 2;
+    z-index: 0 !important; /* Иконка клетки ниже фишек */
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)); /* Добавлена тень */
     transition: all 0.3s ease;
 }
@@ -530,7 +530,7 @@
     right: 6px;
     font-size: 0.9rem;
     opacity: 0.85;
-    z-index: 2;
+    z-index: 0 !important; /* Сердечко ниже фишек */
 }
 
 .center-area {
