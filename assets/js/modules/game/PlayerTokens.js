@@ -691,7 +691,25 @@ class PlayerTokens {
         token.dataset.playerName = player.username;
         token.setAttribute('data-position', player.position || 0); // Добавляем атрибут позиции
         token.dataset.isInner = String(Boolean(player.isInner));
-        token.style.zIndex = '50000'; /* Фишки поверх */
+        
+        // Устанавливаем все стили сразу при создании с !important
+        token.style.setProperty('position', 'absolute', 'important');
+        token.style.setProperty('display', 'flex', 'important');
+        token.style.setProperty('visibility', 'visible', 'important');
+        token.style.setProperty('opacity', '1', 'important');
+        token.style.setProperty('z-index', '50000', 'important');
+        token.style.setProperty('width', '32px', 'important');
+        token.style.setProperty('height', '32px', 'important');
+        token.style.setProperty('min-width', '32px', 'important');
+        token.style.setProperty('min-height', '32px', 'important');
+        token.style.setProperty('max-width', '32px', 'important');
+        token.style.setProperty('max-height', '32px', 'important');
+        token.style.setProperty('pointer-events', 'auto', 'important');
+        token.style.setProperty('align-items', 'center', 'important');
+        token.style.setProperty('justify-content', 'center', 'important');
+        token.style.setProperty('border-radius', '50%', 'important');
+        token.style.setProperty('background', 'white', 'important');
+        token.style.setProperty('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.3)', 'important');
         
         // Используем иконку фишки вместо текста
         const tokenIcon = this.getTokenIcon(player.token);
@@ -1079,7 +1097,9 @@ class PlayerTokens {
             easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
             fill: 'forwards'
         }).onfinish = () => {
-            // Устанавливаем финальную позицию
+            // Устанавливаем финальную позицию с !important
+            token.style.setProperty('left', `${toX}px`, 'important');
+            token.style.setProperty('top', `${toY}px`, 'important');
             token.style.left = `${toX}px`;
             token.style.top = `${toY}px`;
             
@@ -1644,7 +1664,12 @@ class PlayerTokens {
                 this._warn('ensureToken: trackElement is null', { player: player.username, isInner: player.isInner });
                 return null;
             }
+            // Добавляем фишку в конец DOM, чтобы она была поверх клеток
             trackElement.appendChild(token);
+            // Дополнительно перемещаем в самый конец для гарантии
+            if (token.parentElement) {
+                token.parentElement.appendChild(token);
+            }
             this._info('Фишка добавлена в DOM', {
                 player: player.username,
                 position: player.position,
@@ -1736,6 +1761,10 @@ class PlayerTokens {
         const halfSize = 16; // половина ширины/высоты токена
         const left = baseCoords.x + offset.x - halfSize;
         const top = baseCoords.y + offset.y - halfSize;
+        
+        // Устанавливаем координаты с !important для гарантии видимости
+        token.style.setProperty('left', `${left}px`, 'important');
+        token.style.setProperty('top', `${top}px`, 'important');
         
         // Убеждаемся, что фишка имеет родителя перед позиционированием
         if (!token.parentElement) {

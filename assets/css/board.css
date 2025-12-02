@@ -448,6 +448,7 @@
     font-weight: 700; /* Увеличена жирность шрифта */
     will-change: transform; /* Оптимизация для GPU */
     transform: translateZ(0); /* Принудительное использование GPU */
+    z-index: 1 !important; /* Клетки ниже фишек */
 }
 
 .outer-track .track-cell {

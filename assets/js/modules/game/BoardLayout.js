@@ -195,6 +195,17 @@ class BoardLayout {
         this.outerTrackElement.appendChild(outerFragment);
         this.innerTrackElement.appendChild(innerFragment);
 
+        // Перемещаем все фишки в конец DOM, чтобы они были поверх клеток
+        const outerTokens = this.outerTrackElement.querySelectorAll('.player-token');
+        outerTokens.forEach(token => {
+            this.outerTrackElement.appendChild(token);
+        });
+        
+        const innerTokens = this.innerTrackElement.querySelectorAll('.player-token');
+        innerTokens.forEach(token => {
+            this.innerTrackElement.appendChild(token);
+        });
+
         const total =
             this.outerTrackElement.childElementCount +
             this.innerTrackElement.childElementCount;
