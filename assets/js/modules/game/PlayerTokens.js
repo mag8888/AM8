@@ -704,14 +704,14 @@ class PlayerTokens {
     
     /**
      * Создание DOM элемента фишки
-     * Фишка всегда создается для клетки #1 (позиция 0)
+     * Фишка всегда создается для клетки #24 (позиция 23)
      */
     createPlayerToken(player, index, totalPlayers) {
         const token = document.createElement('div');
         token.className = 'player-token';
         
-        // ВСЕ фишки создаются для клетки #1 (позиция 0) на внешнем треке
-        const cellPosition = 0; // Клетка #1
+        // ВСЕ фишки создаются для клетки #24 (позиция 23) на внешнем треке
+        const cellPosition = 23; // Клетка #24 (позиции начинаются с 0)
         const isInnerTrack = false; // Внешний трек
         
         token.classList.add(isInnerTrack ? 'inner' : 'outer');
@@ -719,9 +719,9 @@ class PlayerTokens {
         token.classList.toggle('outer-track', !isInnerTrack);
         token.dataset.playerId = player.id;
         token.dataset.playerName = player.username;
-        token.setAttribute('data-position', cellPosition); // ВСЕГДА позиция 0 (клетка #1)
+        token.setAttribute('data-position', cellPosition); // ВСЕГДА позиция 23 (клетка #24)
         token.dataset.isInner = String(isInnerTrack);
-        token.dataset.cellNumber = '1'; // Номер клетки для отображения
+        token.dataset.cellNumber = '24'; // Номер клетки для отображения
         
         // Устанавливаем все стили сразу при создании с !important - улучшенная версия
         token.style.setProperty('position', 'absolute', 'important');
@@ -1702,7 +1702,7 @@ class PlayerTokens {
 
     /**
      * Нормализация списка игроков (уникальные идентификаторы, позиции)
-     * ВСЕ игроки начинают с клетки #1 (позиция 0) - переделана логика
+     * ВСЕ игроки начинают с клетки #24 (позиция 23) - переделана логика
      */
     normalizePlayers(players = []) {
         const result = [];
@@ -1719,18 +1719,18 @@ class PlayerTokens {
             }
             seen.add(key);
             
-            // ВСЕ фишки генерируются к клетке #1 (позиция 0)
-            // Игнорируем позицию из данных игрока, всегда ставим 0
+            // ВСЕ фишки генерируются к клетке #24 (позиция 23)
+            // Игнорируем позицию из данных игрока, всегда ставим 23
             result.push({
                 ...player,
                 id: player.id || player.userId || key,
-                position: 0, // ВСЕГДА клетка #1 (позиция 0)
+                position: 23, // ВСЕГДА клетка #24 (позиция 23)
                 isInner: false, // ВСЕГДА внешний трек для старта
                 token: player.token || this.getDefaultTokenForPlayer(player, idx)
             });
         });
         
-        this._info('Нормализация игроков: все фишки установлены на клетку #1 (позиция 0)', {
+        this._info('Нормализация игроков: все фишки установлены на клетку #24 (позиция 23)', {
             playersCount: result.length,
             allPositions: result.map(p => ({ id: p.id, position: p.position }))
         });
