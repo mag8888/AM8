@@ -578,37 +578,45 @@ class PlayerTokens {
             return null;
         }
 
-        // Используем getBoundingClientRect для вычисления координат относительно trackElement
-        const cellRect = cell.getBoundingClientRect();
-        const trackRect = trackElement.getBoundingClientRect();
+        // КРИТИЧНО: Используем offsetLeft/offsetTop как BoardLayout для консистентности
+        // Это более надежно, так как не зависит от viewport и работает с абсолютным позиционированием
+        const offsetLeft = cell.offsetLeft || 0;
+        const offsetTop = cell.offsetTop || 0;
         
-        // Вычисляем координаты центра клетки относительно trackElement
-        // Используем getBoundingClientRect для точных координат
-        // Учитываем размер фишки (36px) для правильного центрирования
-        const tokenSize = 36; // Размер фишки
+        // Получаем размеры клетки
+        let cellWidth = 0;
+        let cellHeight = 0;
+        if (typeof cell.getBoundingClientRect === 'function') {
+            const rect = cell.getBoundingClientRect();
+            cellWidth = rect.width || 0;
+            cellHeight = rect.height || 0;
+        } else {
+            const styles = window.getComputedStyle(cell);
+            cellWidth = parseFloat(styles.width) || 0;
+            cellHeight = parseFloat(styles.height) || 0;
+        }
+        
+        // Координаты центра клетки относительно trackElement (как в BoardLayout)
+        // НЕ вычитаем tokenSize/2 здесь - это будет сделано в positionTokenElement
         const coords = {
-            x: (cellRect.left - trackRect.left) + (cellRect.width / 2) - (tokenSize / 2),
-            y: (cellRect.top - trackRect.top) + (cellRect.height / 2) - (tokenSize / 2),
-            width: cellRect.width,
-            height: cellRect.height
+            x: offsetLeft + (cellWidth / 2),
+            y: offsetTop + (cellHeight / 2),
+            width: cellWidth,
+            height: cellHeight
         };
         
         // Проверяем, что координаты валидны
         if (!Number.isFinite(coords.x) || !Number.isFinite(coords.y)) {
-            // Если координаты невалидные, пробуем использовать offsetLeft/offsetTop как fallback
-            const offsetLeft = cell.offsetLeft || 0;
-            const offsetTop = cell.offsetTop || 0;
-            this._warn('Координаты из getBoundingClientRect невалидные, используем offsetLeft/offsetTop', {
+            this._warn('Координаты из offsetLeft/offsetTop невалидные', {
                 position,
                 isInner,
                 coords,
                 offsetLeft,
                 offsetTop,
-                cellRect: { left: cellRect.left, top: cellRect.top, width: cellRect.width, height: cellRect.height },
-                trackRect: { left: trackRect.left, top: trackRect.top, width: trackRect.width, height: trackRect.height }
+                cellWidth,
+                cellHeight
             });
-            coords.x = offsetLeft + (cellRect.width / 2) - (tokenSize / 2);
-            coords.y = offsetTop + (cellRect.height / 2) - (tokenSize / 2);
+            return null;
         }
         
         // Логируем координаты для отладки
