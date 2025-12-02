@@ -1181,7 +1181,11 @@ class PlayerTokens {
         }
         
         const playersHash = JSON.stringify(players.map(p => ({ id: p.id, position: p.position })));
-        if (this._lastPlayersHash === playersHash && this._hasUpdatedTokens) {
+        const tokensMissing = this.tokens.size === 0;
+
+        // Не пропускаем обновление, если фишек нет в DOM (например, первая попытка не успела из-за отсутствия координат)
+        // Это исправляет проблему, когда первая попытка из-за отсутствия координат замораживала обновление
+        if (this._lastPlayersHash === playersHash && this._hasUpdatedTokens && !tokensMissing) {
             this._debug('Данные игроков не изменились, пропускаем updateTokens');
             return;
         }
@@ -1195,18 +1199,17 @@ class PlayerTokens {
         
         if (isFirstUpdate) {
             // Первое обновление выполняем немедленно
-            this._updateTokensInternal(players);
+            this._updateTokensInternal(players, playersHash);
         } else {
             // Последующие обновления - с увеличенным debounce для снижения нагрузки
             this._updateTokensTimer = setTimeout(() => {
-                this._updateTokensInternal(players);
+                this._updateTokensInternal(players, playersHash);
             }, this._updateTokensDebounceDelay || 500); // Увеличено до 500ms для снижения нагрузки
         }
     }
     
-    _updateTokensInternal(players) {
+    _updateTokensInternal(players, playersHash) {
         this._updateTokensTimer = null;
-        this._hasUpdatedTokens = true;
         this._debug('updateTokens вызван', { playersCount: players?.length || 0 });
         
         const normalized = this.normalizePlayers(players);
@@ -1218,6 +1221,9 @@ class PlayerTokens {
         
         this._debug('Нормализовано игроков', normalized.length);
         this.stopInitialRenderWatcher();
+        
+        // Сохраняем количество фишек до обновления
+        const tokensBeforeUpdate = this.tokens.size;
         
         const grouped = this.groupPlayersByPosition(normalized);
         const groupedArray = Array.isArray(grouped) ? grouped : Array.from(grouped.values());
@@ -1334,6 +1340,30 @@ class PlayerTokens {
         });
         
         this._debug('Фишки обработаны', { created: tokensCreated, skipped: tokensSkipped, total: processed.size });
+        
+        // Обновляем хеш и флаг только если фишки были успешно созданы
+        // Это исправляет проблему, когда первая попытка из-за отсутствия координат замораживала обновление
+        const tokensAfterUpdate = this.tokens.size;
+        if (tokensAfterUpdate > tokensBeforeUpdate || tokensAfterUpdate > 0) {
+            // Фишки были созданы или обновлены, можно пометить обновление как выполненное
+            this._hasUpdatedTokens = true;
+            if (playersHash) {
+                this._lastPlayersHash = playersHash;
+            }
+            this._debug('Обновление завершено успешно', { 
+                tokensBefore: tokensBeforeUpdate, 
+                tokensAfter: tokensAfterUpdate,
+                created: tokensCreated 
+            });
+        } else {
+            // Фишки не были созданы (возможно, координаты еще не готовы)
+            // Не обновляем флаг, чтобы следующая попытка не была пропущена
+            this._warn('Фишки не были созданы, следующее обновление не будет пропущено', {
+                tokensBefore: tokensBeforeUpdate,
+                tokensAfter: tokensAfterUpdate,
+                skipped: tokensSkipped
+            });
+        }
         
         // Удаляем фишки игроков, которых больше нет
         // Но делаем это только если фишка действительно не обработана и не в DOM
