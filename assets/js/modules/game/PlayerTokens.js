@@ -523,12 +523,22 @@ class PlayerTokens {
         if (boardLayout && typeof boardLayout.getCellCenter === 'function') {
             const center = boardLayout.getCellCenter(position, isInner);
             this._info('📊 boardLayout.getCellCenter вернул', { position, isInner, center, centerType: typeof center });
-            if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
+            if (center && typeof center === 'object' && Number.isFinite(center.x) && Number.isFinite(center.y)) {
                 // Используем координаты даже если они отрицательные (могут быть валидными относительно родителя)
                 this._info('✅ Координаты получены из boardLayout', { center, position, isInner });
                 return center;
             } else {
-                this._warn('❌ boardLayout.getCellCenter вернул невалидные координаты', { center, position, isInner });
+                this._warn('❌ boardLayout.getCellCenter вернул невалидные координаты, вычисляем из DOM', { 
+                    center, 
+                    position, 
+                    isInner,
+                    centerType: typeof center,
+                    hasX: center && 'x' in center,
+                    hasY: center && 'y' in center,
+                    xValue: center?.x,
+                    yValue: center?.y
+                });
+                // Продолжаем вычисление из DOM
         }
         }
 

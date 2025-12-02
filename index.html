@@ -385,9 +385,18 @@
             // Вызываем сразу и при изменении размера окна
             removeBottomMenuOnDesktop();
             
-            // Также вызываем с небольшой задержкой для гарантии
+            // Также вызываем с задержками для гарантии (включая после загрузки всех скриптов)
             setTimeout(removeBottomMenuOnDesktop, 100);
             setTimeout(removeBottomMenuOnDesktop, 500);
+            setTimeout(removeBottomMenuOnDesktop, 1000);
+            setTimeout(removeBottomMenuOnDesktop, 2000);
+            
+            // Также удаляем после полной загрузки страницы
+            window.addEventListener('load', function() {
+                if (window.innerWidth >= 1025) {
+                    removeBottomMenuOnDesktop();
+                }
+            });
             
             window.addEventListener('resize', function() {
                 const isDesktop = window.innerWidth >= 1025;
@@ -395,6 +404,29 @@
                     removeBottomMenuOnDesktop();
                 }
             });
+            
+            // Используем MutationObserver для отслеживания добавления нижнего меню
+            if (window.innerWidth >= 1025) {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1) { // Element node
+                                if (node.classList && node.classList.contains('mobile-bottom-menu')) {
+                                    node.remove();
+                                } else if (node.querySelector && node.querySelector('.mobile-bottom-menu')) {
+                                    const menu = node.querySelector('.mobile-bottom-menu');
+                                    if (menu) menu.remove();
+                                }
+                            }
+                        });
+                    });
+                });
+                
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+            }
             
             // Инициализация мобильных элементов управления
             function initMobileControls() {
