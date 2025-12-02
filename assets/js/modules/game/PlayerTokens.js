@@ -524,9 +524,17 @@ class PlayerTokens {
             const center = boardLayout.getCellCenter(position, isInner);
             this._info('📊 boardLayout.getCellCenter вернул', { position, isInner, center, centerType: typeof center });
             if (center && typeof center === 'object' && Number.isFinite(center.x) && Number.isFinite(center.y)) {
-                // Используем координаты даже если они отрицательные (могут быть валидными относительно родителя)
-                this._info('✅ Координаты получены из boardLayout', { center, position, isInner });
-                return center;
+                // КРИТИЧНО: BoardLayout.getCellCenter использует offsetLeft/offsetTop, которые НЕ учитывают
+                // трансформации родителя (transform: translate(-50%, -50%)). Поэтому мы всегда вычисляем
+                // координаты напрямую из DOM для точности.
+                // Пропускаем координаты из boardLayout и вычисляем из DOM
+                this._info('⚠️ Координаты из boardLayout получены, но вычисляем из DOM для учета трансформаций', { 
+                    center, 
+                    position, 
+                    isInner,
+                    note: 'BoardLayout использует offsetLeft/offsetTop, который не учитывает transform родителя'
+                });
+                // Продолжаем вычисление из DOM
             } else {
                 // Проверяем, может быть center это массив или объект без x/y
                 if (center && typeof center === 'object') {
