@@ -871,17 +871,16 @@ class PlayerTokens {
             return { x: 0, y: 0 };
         }
         
-        // УВЕЛИЧЕННЫЙ сдвиг для лучшей видимости - 35% от размера клетки
-        const offsetPercent = 0.35; // Увеличено до 35% для гарантированной видимости обеих фишек
+        // МАКСИМАЛЬНЫЙ сдвиг для гарантированной видимости - 40% от размера клетки
+        const offsetPercent = 0.40; // Увеличено до 40% для гарантированной видимости обеих фишек
         const offsetPx = cellSize * offsetPercent;
         
         // Конфигурация сдвига для разного количества фишек (в пикселях, рассчитанных от размера клетки)
-        // Улучшенная схема размещения для лучшей видимости
-        // Для двух фишек используем вертикальный сдвиг, чтобы они точно не перекрывались
+        // Для двух фишек используем диагональный сдвиг для максимальной видимости
         const offsetConfigs = {
             2: [
-                { x: 0, y: -offsetPx * 0.6 },  // Вверх (чтобы не перекрывать иконку клетки)
-                { x: 0, y: offsetPx * 0.6 }     // Вниз
+                { x: -offsetPx * 0.8, y: -offsetPx * 0.8 },  // Влево-вверх (диагональ)
+                { x: offsetPx * 0.8, y: offsetPx * 0.8 }      // Вправо-вниз (диагональ)
             ],
             3: [
                 { x: -offsetPx, y: -offsetPx * 0.7 },  // Влево-вверх
@@ -901,7 +900,7 @@ class PlayerTokens {
         
         // Добавляем визуальную индикацию для множественных фишек
         if (totalPlayers > 1) {
-            this._debug(`Фишка ${index + 1}/${totalPlayers} получает сдвиг 35% (${offsetPx.toFixed(1)}px)`, offset);
+            this._info(`Фишка ${index + 1}/${totalPlayers} получает сдвиг 40% (${offsetPx.toFixed(1)}px)`, offset);
         }
         
         return offset;
@@ -2255,13 +2254,22 @@ class PlayerTokens {
         token.style.setProperty('min-height', `${tokenSize}px`, 'important');
         token.style.setProperty('max-width', `${tokenSize}px`, 'important');
         token.style.setProperty('max-height', `${tokenSize}px`, 'important');
-        token.style.setProperty('z-index', '99999', 'important');
+        // КРИТИЧНО: Устанавливаем z-index с учетом индекса фишки, чтобы они не перекрывались
+        // Фишки с большим индексом должны быть выше
+        const zIndex = 99999 + (totalPlayers > 1 ? index : 0);
+        token.style.setProperty('z-index', `${zIndex}`, 'important');
         token.style.setProperty('display', 'flex', 'important');
         token.style.setProperty('visibility', 'visible', 'important');
         token.style.setProperty('opacity', '1', 'important');
         token.style.setProperty('pointer-events', 'auto', 'important');
         token.style.setProperty('transform', 'translateZ(0)', 'important');
         token.style.setProperty('isolation', 'isolate', 'important');
+        
+        // Дополнительно: убеждаемся, что фишка не скрыта overflow
+        if (cell && cell.style.overflow === 'hidden') {
+            cell.style.setProperty('overflow', 'visible', 'important');
+            this._debug('Установлен overflow: visible для клетки', { position, cellId: cell.id || cell.dataset.position });
+        }
         
         // КРИТИЧНО: Проверяем видимость фишки сразу после установки координат
         requestAnimationFrame(() => {
