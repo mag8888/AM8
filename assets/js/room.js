@@ -1187,11 +1187,21 @@ function updatePlayersList() {
         // 2. dream выбран (имеет id и title) И
         // 3. token выбран
         const isReadyFlag = isPlayerReady(player);
-        const hasDream = player.dream && (
-            (typeof player.dream === 'object' && player.dream.id && player.dream.title) ||
-            (typeof player.dream === 'string' && player.dream.trim() !== '')
-        );
-        const hasToken = player.token && player.token.trim() !== '' && player.token !== 'null';
+        
+        // Проверяем наличие мечты - может быть объектом или строкой
+        let hasDream = false;
+        if (player.dream) {
+            if (typeof player.dream === 'object') {
+                hasDream = !!(player.dream.id && player.dream.title);
+            } else if (typeof player.dream === 'string') {
+                hasDream = player.dream.trim() !== '';
+            }
+        }
+        
+        // Проверяем наличие фишки
+        const hasToken = !!(player.token && player.token.trim() !== '' && player.token !== 'null');
+        
+        // Игрок действительно готов только если все три условия выполнены
         const isActuallyReady = isReadyFlag && hasDream && hasToken;
         
         let status = 'Выбирает';
@@ -1413,15 +1423,20 @@ function updateStartGameButton() {
     const minPlayers = currentRoom.minPlayers || 2; // Минимум 2 игрока для старта
     const allPlayersReady = currentRoom.players?.every(player => {
         const isReadyFlag = isPlayerReady(player);
-        const hasDream = player.dream && (
-            (typeof player.dream === 'object' && 
-             player.dream.id && 
-             player.dream.title && 
-             typeof player.dream.cost === 'number' && 
-             player.dream.cost > 0) ||
-            (typeof player.dream === 'string' && player.dream.trim() !== '')
-        );
-        const hasToken = player.token && player.token.trim() !== '' && player.token !== 'null';
+        
+        // Проверяем наличие мечты - может быть объектом или строкой
+        let hasDream = false;
+        if (player.dream) {
+            if (typeof player.dream === 'object') {
+                hasDream = !!(player.dream.id && player.dream.title);
+            } else if (typeof player.dream === 'string') {
+                hasDream = player.dream.trim() !== '';
+            }
+        }
+        
+        // Проверяем наличие фишки
+        const hasToken = !!(player.token && player.token.trim() !== '' && player.token !== 'null');
+        
         return isReadyFlag && hasDream && hasToken;
     }) || false;
     
