@@ -507,7 +507,7 @@
     max-height: min(100vw, 100vh) !important;
   }
   
-  /* Внешний трек - идеальный квадрат, строго по центру */
+  /* Внешний трек - идеальный квадрат, строго по центру относительно лого */
   .game-page .board-wrapper .outer-track,
   .game-page .board-wrapper #outer-track {
     width: 100% !important;
@@ -515,7 +515,8 @@
     position: absolute !important;
     top: 50% !important;
     left: 50% !important;
-    transform: translate(-50%, -50%) !important;
+    transform: translate(-50%, -50%) !important; /* Точное центрирование относительно лого */
+    transform-origin: center center !important; /* Гарантируем центрирование относительно центра */
     margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
