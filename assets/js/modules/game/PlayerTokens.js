@@ -2234,6 +2234,17 @@ class PlayerTokens {
         const left = centerX + offsetX - halfSize;
         const top = centerY + offsetY - halfSize;
         
+        // Логируем позиционирование для отладки
+        this._debug('Позиционирование фишки в клетке', {
+            playerId: token.dataset.playerId,
+            position,
+            cellSize: { width: cellWidth, height: cellHeight },
+            center: { x: centerX, y: centerY },
+            offset: { x: offsetX, y: offsetY },
+            final: { left, top },
+            totalPlayers
+        });
+        
         // Устанавливаем все стили
         token.style.setProperty('position', 'absolute', 'important');
         token.style.setProperty('left', `${left}px`, 'important');
