@@ -2130,49 +2130,109 @@ class PlayerTokens {
 
     /**
      * Позиционирование фишки с учётом смещения
+     * НОВЫЙ ПОДХОД: Добавляем фишку как дочерний элемент клетки
      */
     positionTokenElement(token, baseCoords, offset, totalPlayers = 1) {
         if (!token) {
             this._warn('positionTokenElement: token is null');
             return;
         }
-        if (!baseCoords || !Number.isFinite(baseCoords.x) || !Number.isFinite(baseCoords.y)) {
-            this._warn('positionTokenElement: invalid baseCoords', { baseCoords, offset });
+        
+        // НОВЫЙ ПОДХОД: Находим клетку и добавляем фишку как дочерний элемент
+        const position = parseInt(token.dataset.position) || 23;
+        const isInner = token.dataset.isInner === 'true';
+        const trackElement = this.getTrackElement(isInner);
+        
+        if (!trackElement) {
+            this._warn('positionTokenElement: trackElement не найден', { position, isInner });
             return;
         }
         
-        const tokenSize = 36; // Размер фишки (увеличен с 32px до 36px)
-        const halfSize = tokenSize / 2; // половина ширины/высоты токена (18px)
-        let left = baseCoords.x + offset.x - halfSize;
-        let top = baseCoords.y + offset.y - halfSize;
-        
-        // Проверяем, что координаты валидны и в видимой области
-        if (!Number.isFinite(left) || !Number.isFinite(top)) {
-            this._warn('positionTokenElement: невалидные координаты', { left, top, baseCoords, offset });
+        const cell = trackElement.querySelector(`[data-position="${position}"]`);
+        if (!cell) {
+            this._warn('positionTokenElement: клетка не найдена, используем старый метод', { position, isInner });
+            // Fallback на старый метод
+            if (!baseCoords || !Number.isFinite(baseCoords.x) || !Number.isFinite(baseCoords.y)) {
+                this._warn('positionTokenElement: invalid baseCoords', { baseCoords, offset });
+                return;
+            }
+            
+            const tokenSize = 36;
+            const halfSize = tokenSize / 2;
+            let left = baseCoords.x + offset.x - halfSize;
+            let top = baseCoords.y + offset.y - halfSize;
+            
+            if (!Number.isFinite(left) || !Number.isFinite(top)) {
+                this._warn('positionTokenElement: невалидные координаты', { left, top, baseCoords, offset });
+                return;
+            }
+            
+            token.style.setProperty('left', `${left}px`, 'important');
+            token.style.setProperty('top', `${top}px`, 'important');
+            token.style.setProperty('display', 'flex', 'important');
+            token.style.setProperty('visibility', 'visible', 'important');
+            token.style.setProperty('opacity', '1', 'important');
+            token.style.setProperty('z-index', '99999', 'important');
+            token.style.setProperty('position', 'absolute', 'important');
+            token.style.setProperty('width', '36px', 'important');
+            token.style.setProperty('height', '36px', 'important');
             return;
         }
         
-        // Логируем координаты для отладки
-        this._debug('positionTokenElement: устанавливаем координаты', {
-            left,
-            top,
-            baseCoords,
-            offset,
-            playerId: token.dataset.playerId
-        });
+        // НОВЫЙ ПОДХОД: Добавляем фишку в клетку
+        // Убеждаемся, что клетка имеет position: relative
+        const cellStyle = window.getComputedStyle(cell);
+        if (cellStyle.position === 'static') {
+            cell.style.setProperty('position', 'relative', 'important');
+        }
         
-        // Устанавливаем координаты с !important для гарантии видимости
+        // Перемещаем фишку в клетку, если она еще не там
+        if (token.parentElement !== cell) {
+            cell.appendChild(token);
+            this._info('Фишка перемещена в клетку', {
+                playerId: token.dataset.playerId,
+                position,
+                cellId: cell.id || cell.dataset.position
+            });
+        }
+        
+        // Позиционируем фишку относительно клетки (центр клетки)
+        const tokenSize = 36;
+        const halfSize = tokenSize / 2;
+        
+        // Вычисляем смещение для нескольких фишек на одной клетке
+        const cellRect = cell.getBoundingClientRect();
+        const cellWidth = cellRect.width || 50;
+        const cellHeight = cellRect.height || 50;
+        
+        // Центр клетки
+        const centerX = cellWidth / 2;
+        const centerY = cellHeight / 2;
+        
+        // Смещение для нескольких фишек
+        const offsetX = offset.x || 0;
+        const offsetY = offset.y || 0;
+        
+        const left = centerX + offsetX - halfSize;
+        const top = centerY + offsetY - halfSize;
+        
+        // Устанавливаем все стили
+        token.style.setProperty('position', 'absolute', 'important');
         token.style.setProperty('left', `${left}px`, 'important');
         token.style.setProperty('top', `${top}px`, 'important');
-        
-        // КРИТИЧНО: Убеждаемся, что все стили видимости установлены
+        token.style.setProperty('width', `${tokenSize}px`, 'important');
+        token.style.setProperty('height', `${tokenSize}px`, 'important');
+        token.style.setProperty('min-width', `${tokenSize}px`, 'important');
+        token.style.setProperty('min-height', `${tokenSize}px`, 'important');
+        token.style.setProperty('max-width', `${tokenSize}px`, 'important');
+        token.style.setProperty('max-height', `${tokenSize}px`, 'important');
+        token.style.setProperty('z-index', '99999', 'important');
         token.style.setProperty('display', 'flex', 'important');
         token.style.setProperty('visibility', 'visible', 'important');
         token.style.setProperty('opacity', '1', 'important');
-        token.style.setProperty('z-index', '99999', 'important');
-        token.style.setProperty('position', 'absolute', 'important');
-        token.style.setProperty('width', '36px', 'important');
-        token.style.setProperty('height', '36px', 'important');
+        token.style.setProperty('pointer-events', 'auto', 'important');
+        token.style.setProperty('transform', 'translateZ(0)', 'important');
+        token.style.setProperty('isolation', 'isolate', 'important');
         
         // КРИТИЧНО: Проверяем видимость фишки сразу после установки координат
         requestAnimationFrame(() => {

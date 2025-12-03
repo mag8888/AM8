@@ -150,7 +150,7 @@
                     "bank";
                 padding: 0.5rem;
             }
-
+            
             .top-panel-container {
                 grid-area: players;
                 min-height: 200px;
@@ -258,18 +258,18 @@
                 </section>
 
                 <!-- Центральная панель: Игровое поле -->
-                <div class="game-board-container">
-                    <div class="board-wrapper">
-                        <div id="outer-track" class="track outer-track"></div>
-                        <div id="inner-track" class="track inner-track"></div>
-                        <div class="center-area">
-                            <div class="logo-center" id="logo-center">
+                    <div class="game-board-container">
+                        <div class="board-wrapper">
+                            <div id="outer-track" class="track outer-track"></div>
+                            <div id="inner-track" class="track inner-track"></div>
+                            <div class="center-area">
+                                <div class="logo-center" id="logo-center">
                                 <img src="assets/images/logo.svg?v=2" alt="Энергия денег" class="logo-img" id="center-logo" loading="lazy">
                             </div>
                         </div>
                     </div>
                 </div>
-
+                
                 <!-- Правая панель: Игроки -->
                 <div class="top-panel-container">
                     <div id="players-panel" class="top-panel-content">
@@ -326,7 +326,7 @@
     <script src="assets/js/modules/game/TurnController.js?v=10" defer></script>
     <script src="assets/js/modules/game/BalanceManager.js?v=10" defer></script>
     <script src="assets/js/modules/game/PlayersPanel.js?v=21" defer></script>
-    <script src="assets/js/modules/game/PlayerTokens.js?v=39" defer></script>
+    <script src="assets/js/modules/game/PlayerTokens.js?v=40" defer></script>
     <script src="assets/js/modules/game/DiceDisplay.js?v=10" defer></script>
     <script src="assets/js/modules/game/ProfessionSystem.js?v=10" defer></script>
     <script src="assets/js/modules/game/PlayerBalanceDisplay.js?v=10" defer></script>
@@ -511,7 +511,7 @@
                         // Открываем банк через существующую кнопку
                         if (openBankBtn) {
                             openBankBtn.click();
-                        } else {
+                                } else {
                             // Fallback: пытаемся открыть через PlayersPanel
                             const app = window.app;
                             if (app && app.getModule) {
@@ -694,10 +694,10 @@
                     const icon = toggleBtn.querySelector('.toggle-menu-icon');
                     if (icon) {
                         icon.textContent = menuPanel.classList.contains('menu-hidden') ? '☰' : '✕';
-                    }
-                });
-            }
-            
+                }
+            });
+        }
+        
             // Функция для установки квадратного размера контейнера на основе viewport
             function setSquareBoardSize() {
                 const boardWrapper = document.querySelector('.board-wrapper');
