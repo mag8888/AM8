@@ -188,7 +188,7 @@
     pointer-events: none !important; /* Клетки обрабатывают события */
   }
   
-  /* Внешний трек - центрирование как внутренний - максимальная специфичность */
+  /* Внешний трек - центрирование относительно лого (как и внутренний трек) - максимальная специфичность */
   .game-page .board-wrapper .outer-track,
   .game-page .board-wrapper #outer-track,
   #game-page .board-wrapper .outer-track,
@@ -200,13 +200,15 @@
     position: absolute !important;
     top: 50% !important;
     left: 50% !important;
-    transform: translate(-50%, -50%) !important;
+    transform: translate(-50%, -50%) !important; /* Точное центрирование относительно лого */
     margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
     aspect-ratio: 1 / 1 !important;
     right: auto !important;
     bottom: auto !important;
+    /* Гарантируем, что внешний круг центрирован относительно того же центра, что и лого */
+    transform-origin: center center !important;
   }
   
   /* Внутренний трек - центрирование */
