@@ -871,26 +871,28 @@ class PlayerTokens {
             return { x: 0, y: 0 };
         }
         
-        // Вычисляем 15% от размера клетки
-        const offsetPercent = 0.15;
+        // УВЕЛИЧЕННЫЙ сдвиг для лучшей видимости - 25% от размера клетки
+        const offsetPercent = 0.25; // Увеличено с 0.15 до 0.25
         const offsetPx = cellSize * offsetPercent;
         
         // Конфигурация сдвига для разного количества фишек (в пикселях, рассчитанных от размера клетки)
+        // Улучшенная схема размещения для лучшей видимости
+        // Улучшенная схема размещения с большим сдвигом для лучшей видимости
         const offsetConfigs = {
             2: [
-                { x: -offsetPx, y: 0 }, // 15% влево
-                { x: offsetPx, y: 0 }   // 15% вправо
+                { x: -offsetPx, y: 0 },      // 25% влево
+                { x: offsetPx, y: 0 }       // 25% вправо
             ],
             3: [
-                { x: -offsetPx, y: -offsetPx * 0.5 },
-                { x: 0, y: offsetPx * 0.5 },
-                { x: offsetPx, y: -offsetPx * 0.5 }
+                { x: -offsetPx, y: -offsetPx * 0.7 },  // Влево-вверх
+                { x: 0, y: offsetPx * 0.7 },          // Вниз
+                { x: offsetPx, y: -offsetPx * 0.7 }   // Вправо-вверх
             ],
             4: [
-                { x: -offsetPx, y: -offsetPx * 0.5 },
-                { x: offsetPx, y: -offsetPx * 0.5 },
-                { x: -offsetPx, y: offsetPx * 0.5 },
-                { x: offsetPx, y: offsetPx * 0.5 }
+                { x: -offsetPx, y: -offsetPx * 0.7 },  // Влево-вверх
+                { x: offsetPx, y: -offsetPx * 0.7 },    // Вправо-вверх
+                { x: -offsetPx, y: offsetPx * 0.7 },   // Влево-вниз
+                { x: offsetPx, y: offsetPx * 0.7 }    // Вправо-вниз
             ]
         };
         
@@ -899,7 +901,7 @@ class PlayerTokens {
         
         // Добавляем визуальную индикацию для множественных фишек
         if (totalPlayers > 1) {
-            this._debug(`Фишка ${index + 1}/${totalPlayers} получает сдвиг 15% (${offsetPx.toFixed(1)}px)`, offset);
+            this._debug(`Фишка ${index + 1}/${totalPlayers} получает сдвиг 25% (${offsetPx.toFixed(1)}px)`, offset);
         }
         
         return offset;
@@ -1801,20 +1803,20 @@ class PlayerTokens {
             }
             seen.add(key);
             
-            // ВСЕ фишки генерируются к клетке #24 (позиция 23)
+            // ВСЕ фишки генерируются к клетке #24 внутреннего круга (позиция 23)
             // Игнорируем позицию из данных игрока, всегда ставим 23
             result.push({
                 ...player,
                 id: player.id || player.userId || key,
-                position: 23, // ВСЕГДА клетка #24 (позиция 23)
-                isInner: false, // ВСЕГДА внешний трек для старта
+                position: 23, // ВСЕГДА клетка #24 (позиция 23) внутреннего круга
+                isInner: true, // ВСЕГДА внутренний трек (малый круг)
                 token: player.token || this.getDefaultTokenForPlayer(player, idx)
             });
         });
         
-        this._info('Нормализация игроков: все фишки установлены на клетку #24 (позиция 23)', {
+        this._info('Нормализация игроков: все фишки установлены на клетку #24 внутреннего круга (позиция 23)', {
             playersCount: result.length,
-            allPositions: result.map(p => ({ id: p.id, position: p.position }))
+            allPositions: result.map(p => ({ id: p.id, position: p.position, isInner: p.isInner }))
         });
         
         return result;
@@ -1998,7 +2000,7 @@ class PlayerTokens {
                 // Используем двойной requestAnimationFrame для гарантии, что DOM полностью готов
                 requestAnimationFrame(() => {
                     const cellPosition = 23;
-                    const isInner = false;
+                    const isInner = true; // Внутренний трек (малый круг)
                     const baseCoords = this.getCellBaseCoordinates(cellPosition, isInner);
                     if (baseCoords && Number.isFinite(baseCoords.x) && Number.isFinite(baseCoords.y)) {
                         const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
