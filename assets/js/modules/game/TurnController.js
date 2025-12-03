@@ -1093,7 +1093,9 @@ class TurnController {
         // Обновляем через PlayersPanel
         const playersPanel = window.app?.getModule?.('playersPanel');
         if (playersPanel && typeof playersPanel.updateDiceResult === 'function') {
-            playersPanel.updateDiceResult(value);
+            // Передаем значение как объект для совместимости
+            const diceData = typeof value === 'object' ? value : { value: value, total: value };
+            playersPanel.updateDiceResult(diceData);
                 // Убираем избыточное логирование - оставляем только при изменении значения
                 if (this._lastDiceValue !== value) {
             console.log(`🎲 TurnController: Обновлен кубик через PlayersPanel: ${value}`);

@@ -102,13 +102,35 @@ class TurnService extends EventTarget {
             response = await this.roomApi.rollDice(roomId, diceChoice, isReroll);
             this._applyServerState(response?.state);
 
-            const serverValue = Number(response?.diceResult?.value);
+            // Обрабатываем результат броска - может быть один кубик или несколько
+            const diceResult = response?.diceResult;
+            let serverValue = null;
+            let diceResults = null;
+            
+            if (diceResult) {
+                // Если есть массив results, используем его
+                if (Array.isArray(diceResult.results) && diceResult.results.length > 0) {
+                    diceResults = diceResult.results;
+                    serverValue = diceResult.total || diceResults.reduce((sum, val) => sum + val, 0);
+                } else if (diceResult.value !== undefined) {
+                    // Один кубик
+                    serverValue = Number(diceResult.value);
+                    diceResults = [serverValue];
+                } else if (diceResult.total !== undefined) {
+                    // Только сумма
+                    serverValue = Number(diceResult.total);
+                    diceResults = [serverValue];
+                }
+            }
+            
             if (Number.isFinite(serverValue)) {
                 this.lastRollValue = serverValue;
                 if (this.diceService && typeof this.diceService.setLastRoll === 'function') {
                     this.diceService.setLastRoll({
                         value: serverValue,
-                        diceCount: response?.diceResult?.diceCount || 1
+                        results: diceResults,
+                        diceCount: diceResult?.diceCount || diceResults?.length || 1,
+                        total: serverValue
                     });
                 }
             } else {
@@ -116,12 +138,17 @@ class TurnService extends EventTarget {
             }
 
             // Эмит успешного результата
-            const payload = { ...response, serverValue: this.lastRollValue };
+            const payload = { ...response, serverValue: this.lastRollValue, diceResult: diceResult };
             this.emit('roll:success', payload);
             
-            // Эмит события для обновления кубика в нижней панели
+            // Эмит события для обновления кубика в нижней панели - передаем полный объект
             if (this.lastRollValue !== null) {
-                this.emit('dice:rolled', { value: this.lastRollValue });
+                this.emit('dice:rolled', { 
+                    value: this.lastRollValue,
+                    results: diceResults,
+                    total: serverValue,
+                    diceCount: diceResult?.diceCount || diceResults?.length || 1
+                });
             }
             
             // Обновляем GameStateManager после действия игрока (бросок кубика)
