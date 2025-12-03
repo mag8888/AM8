@@ -117,14 +117,15 @@ class RoomService {
             maxBatchSize: 5
         };
         
-        // Rate limiting для предотвращения HTTP 429 - СУПЕР ОПТИМИЗИРОВАН
+        // Rate limiting для предотвращения HTTP 429 - улучшенная обработка
         this.requestQueue = {
             lastRequest: 0,
-            minInterval: 50, // 0.05 секунды между запросами (еще быстрее)
-            backoffMultiplier: 1.05, // Очень мягкий рост backoff
-            maxBackoff: 1000, // Максимум 1 секунда backoff
+            minInterval: 2000, // 2 секунды между запросами (увеличено для снижения нагрузки)
+            backoffMultiplier: 2.0, // Экспоненциальный рост backoff при повторных ошибках
+            maxBackoff: 60000, // Максимум 60 секунд backoff (увеличено с 1 секунды)
             currentBackoff: 0,
             rateLimitedUntil: 0,
+            consecutiveErrors: 0, // Счетчик последовательных ошибок 429
             // Система приоритетов - ВСЕ БЕЗ ЗАДЕРЖЕК
             priorities: {
                 CRITICAL: 0,    // Игровые действия (бросок, ход) - без задержки
@@ -551,15 +552,24 @@ class RoomService {
     _increaseBackoff(preferredMs = 0) {
         let newBackoff = 0;
         
+        // Увеличиваем счетчик последовательных ошибок
+        this.requestQueue.consecutiveErrors = (this.requestQueue.consecutiveErrors || 0) + 1;
+        
         if (preferredMs && preferredMs > 0) {
             // Если сервер указал конкретное время ожидания — уважаем его, но с разумными пределами
-            const maxServerWait = 60000; // Максимум 60 секунд от сервера (увеличено с 5)
-            const minServerWait = 2000;  // Минимум 2 секунды от сервера (увеличено с 0.5)
+            const maxServerWait = 60000; // Максимум 60 секунд от сервера
+            const minServerWait = 2000;  // Минимум 2 секунды от сервера
             newBackoff = Math.min(Math.max(preferredMs, minServerWait), maxServerWait);
-            console.log(`🔄 RoomService: Сервер запросил ${preferredMs}мс (${(preferredMs/1000).toFixed(1)}с), ограничиваем до ${newBackoff}мс (${(newBackoff/1000).toFixed(1)}с)`);
+            
+            // Учитываем количество последовательных ошибок - увеличиваем задержку
+            const errorMultiplier = Math.min(1 + (this.requestQueue.consecutiveErrors - 1) * 0.2, 2.0);
+            newBackoff = Math.min(newBackoff * errorMultiplier, maxServerWait);
+            
+            console.log(`🔄 RoomService: Сервер запросил ${preferredMs}мс (${(preferredMs/1000).toFixed(1)}с), с учетом ${this.requestQueue.consecutiveErrors} ошибок = ${newBackoff}мс (${(newBackoff/1000).toFixed(1)}с)`);
         } else if (this.requestQueue.currentBackoff === 0) {
-            // Первая ошибка - минимальная задержка
-            newBackoff = this.requestQueue.minInterval;
+            // Первая ошибка - минимальная задержка с учетом количества ошибок
+            newBackoff = this.requestQueue.minInterval * Math.pow(this.requestQueue.backoffMultiplier, this.requestQueue.consecutiveErrors - 1);
+            newBackoff = Math.min(newBackoff, this.requestQueue.maxBackoff);
         } else {
             // Экспоненциальное увеличение с ограничением
             newBackoff = Math.min(
@@ -582,6 +592,7 @@ class RoomService {
     _resetBackoff() {
         this.requestQueue.currentBackoff = 0;
         this.requestQueue.rateLimitedUntil = 0;
+        this.requestQueue.consecutiveErrors = 0; // Сбрасываем счетчик при успешном запросе
     }
 
     /**
