@@ -1362,17 +1362,38 @@ class PlayersPanel {
      * @param {number} result - Результат броска
      */
     updateDiceResult(result) {
-        // Дебаунсинг для предотвращения множественных вызовов
-        const numericValue = typeof result === 'object'
-            ? Number(result?.value ?? result?.total)
-            : Number(result);
+        // Обрабатываем как объект с результатами кубиков или как число
+        let diceResults = [];
+        let total = 0;
         
-        const now = Date.now();
-        // Увеличиваем время дебаунсинга до 500ms и проверяем по числовому значению
-        if (this._lastDiceResult === numericValue && this._lastDiceResultTime && now - this._lastDiceResultTime < 500) {
-            return; // Пропускаем дубликаты в течение 500ms
+        if (typeof result === 'object' && result !== null) {
+            // Если есть массив results, используем его
+            if (Array.isArray(result.results)) {
+                diceResults = result.results;
+                total = result.total || diceResults.reduce((sum, val) => sum + val, 0);
+            } else if (result.value !== undefined) {
+                // Один кубик
+                diceResults = [Number(result.value)];
+                total = diceResults[0];
+            } else if (result.total !== undefined) {
+                // Только сумма
+                diceResults = [Number(result.total)];
+                total = diceResults[0];
+            }
+        } else {
+            // Просто число
+            const numericValue = Number(result);
+            diceResults = [numericValue];
+            total = numericValue;
         }
-        this._lastDiceResult = numericValue;
+        
+        // Дебаунсинг
+        const now = Date.now();
+        const resultKey = diceResults.join(',');
+        if (this._lastDiceResult === resultKey && this._lastDiceResultTime && now - this._lastDiceResultTime < 500) {
+            return;
+        }
+        this._lastDiceResult = resultKey;
         this._lastDiceResultTime = now;
         
         // Обновляем отображение в панели действий
@@ -1380,10 +1401,26 @@ class PlayersPanel {
         const diceResultValue = document.getElementById('dice-result-value');
         const rollHistory = document.getElementById('roll-history');
         
-        if (Number.isFinite(numericValue) && numericValue >= 1 && numericValue <= 6) {
+        // Проверяем валидность результатов
+        const isValid = diceResults.length > 0 && diceResults.every(val => Number.isFinite(val) && val >= 1 && val <= 6);
+        
+        if (isValid) {
+            // Формируем текст для отображения
+            let displayText = '';
+            if (diceResults.length === 1) {
+                // Один кубик - просто число
+                displayText = String(diceResults[0]);
+            } else {
+                // Несколько кубиков - показываем все значения
+                displayText = diceResults.join(' + ');
+                if (diceResults.length > 1) {
+                    displayText += ` = ${total}`;
+                }
+            }
+            
             // Показываем результат в панели действий
             if (diceResultValue) {
-                diceResultValue.textContent = numericValue;
+                diceResultValue.textContent = displayText;
                 diceResultValue.classList.add('dice-rolled');
                 setTimeout(() => {
                     diceResultValue.classList.remove('dice-rolled');
@@ -1394,10 +1431,10 @@ class PlayersPanel {
                 diceResultDisplay.style.display = 'flex';
             }
             
-            // Добавляем результат в историю бросков
-            this.addToRollHistory(numericValue, rollHistory);
+            // Добавляем результат в историю бросков (используем сумму для истории)
+            this.addToRollHistory(total, rollHistory);
             
-            console.log('🎲 PlayersPanel: Результат броска отображен:', numericValue);
+            console.log('🎲 PlayersPanel: Результат броска отображен:', { diceResults, total, displayText });
         } else {
             // Скрываем результат, если значение некорректно
             if (diceResultDisplay) {

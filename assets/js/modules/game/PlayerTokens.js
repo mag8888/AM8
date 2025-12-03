@@ -1014,7 +1014,8 @@ class PlayerTokens {
         const tokensOnPosition = this._collectTokensOnPosition(position, isInner);
         const total = Math.max(tokensOnPosition.length, 1);
         const offset = this.getTokenOffset(playerId, position, isInner, tokensOnPosition);
-        this.positionTokenElement(token, baseCoords, offset, total);
+        const tokenIndex = tokensOnPosition.findIndex(t => t.playerId === playerId);
+        this.positionTokenElement(token, baseCoords, offset, total, tokenIndex >= 0 ? tokenIndex : 0);
         this._debug(`Фишка ${playerId} мгновенно перемещена на позицию ${position}`, { offset });
 
         // Обеспечиваем корректный сдвиг остальных фишек
@@ -1047,7 +1048,7 @@ class PlayerTokens {
 
         tokensOnPosition.forEach(({ token, playerId }, index) => {
             const offset = this.calculateOffset(index, total, cellSize);
-            this.positionTokenElement(token, baseCoords, offset, total);
+            this.positionTokenElement(token, baseCoords, offset, total, index);
             this._debug(`Фишка ${playerId} сдвинута`, { position, offset });
         });
     }
@@ -1410,7 +1411,7 @@ class PlayerTokens {
                             if (token) {
                                 const cellSize = Math.max(retryCoords.width || 50, retryCoords.height || 50);
                                 const offset = this.calculateOffset(index, playersAtPosition.length, cellSize);
-                                this.positionTokenElement(token, retryCoords, offset, playersAtPosition.length);
+                                this.positionTokenElement(token, retryCoords, offset, playersAtPosition.length, index);
                                 processed.add(player.id);
                                 tokensCreated++;
                             }
@@ -1451,7 +1452,7 @@ class PlayerTokens {
                         if (newToken && newToken.isConnected && newToken.parentElement) {
                             const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
                             const offset = this.calculateOffset(index, playersAtPosition.length, cellSize);
-                            this.positionTokenElement(newToken, baseCoords, offset, playersAtPosition.length);
+                            this.positionTokenElement(newToken, baseCoords, offset, playersAtPosition.length, index);
                             processed.add(player.id);
                             tokensCreated++;
                             this._info(`Фишка пересоздана для игрока ${player.username}`, { 
@@ -1467,7 +1468,7 @@ class PlayerTokens {
                     } else {
                         const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
                         const offset = this.calculateOffset(index, playersAtPosition.length, cellSize);
-                        this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
+                        this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length, index);
                         processed.add(player.id);
                         tokensCreated++;
                         
@@ -1493,7 +1494,7 @@ class PlayerTokens {
                                     }
                                 });
                                 // Перепозиционируем фишку с принудительной установкой стилей
-                                this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length);
+                                this.positionTokenElement(token, baseCoords, offset, playersAtPosition.length, index);
                                 
                                 // Принудительно устанавливаем все стили еще раз
                                 token.style.setProperty('display', 'flex', 'important');
@@ -1587,7 +1588,7 @@ class PlayerTokens {
                                     if (baseCoords) {
                                         const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
                                         const offset = this.calculateOffset(index, playersAtPosition.length, cellSize);
-                                        this.positionTokenElement(newToken, baseCoords, offset, playersAtPosition.length);
+                                        this.positionTokenElement(newToken, baseCoords, offset, playersAtPosition.length, index);
                                     }
                                 }
                             }
@@ -1786,7 +1787,7 @@ class PlayerTokens {
             const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
             tokens.forEach(({ token, playerId }, index) => {
                 const offset = this.calculateOffset(index, total, cellSize);
-                this.positionTokenElement(token, baseCoords, offset, total);
+                this.positionTokenElement(token, baseCoords, offset, total, index);
                 this._debug(`Фишка ${playerId} обновлена при массовом позиционировании`, {
                     position,
                     offset
@@ -1960,7 +1961,7 @@ class PlayerTokens {
             if (baseCoords) {
                 const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
                 const offset = this.calculateOffset(index, totalPlayers, cellSize);
-                this.positionTokenElement(token, baseCoords, offset, totalPlayers);
+                this.positionTokenElement(token, baseCoords, offset, totalPlayers, index);
                 this._info('Фишка позиционирована', {
                     player: player.username,
                     position: cellPosition,
@@ -2016,7 +2017,7 @@ class PlayerTokens {
                     if (baseCoords && Number.isFinite(baseCoords.x) && Number.isFinite(baseCoords.y)) {
                         const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
                         const offset = this.calculateOffset(0, 1, cellSize); // Для одной фишки offset = 0
-                        this.positionTokenElement(token, baseCoords, offset, 1);
+                        this.positionTokenElement(token, baseCoords, offset, 1, 0);
                         
                         // Дополнительная проверка через небольшую задержку
                         setTimeout(() => {
@@ -2027,7 +2028,7 @@ class PlayerTokens {
                                     rect: { width: rect.width, height: rect.height, left: rect.left, top: rect.top }
                                 });
                                 // Повторяем позиционирование
-                                this.positionTokenElement(token, baseCoords, offset, 1);
+                                this.positionTokenElement(token, baseCoords, offset, 1, 0);
                             } else {
                                 this._info('✅ Фишка видна после позиционирования', {
                                     player: player.username,
@@ -2161,7 +2162,7 @@ class PlayerTokens {
      * Позиционирование фишки с учётом смещения
      * НОВЫЙ ПОДХОД: Добавляем фишку как дочерний элемент клетки
      */
-    positionTokenElement(token, baseCoords, offset, totalPlayers = 1) {
+    positionTokenElement(token, baseCoords, offset, totalPlayers = 1, index = 0) {
         if (!token) {
             this._warn('positionTokenElement: token is null');
             return;
