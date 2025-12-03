@@ -1587,14 +1587,64 @@ function loadDreams() {
         return;
     }
     
+    // Получаем список уже выбранных мечт другими игроками
+    const takenDreamIds = getTakenDreamIds();
+    console.log('🔍 Room: Занятые мечты:', takenDreamIds);
+    
     DREAMS_CONFIG.forEach(dream => {
         const option = document.createElement('option');
         option.value = dream.id;
         option.textContent = `${dream.icon} ${dream.name} - ${formatCurrency(dream.cost)}`;
+        
+        // Блокируем мечты, которые уже выбраны другими игроками
+        const isTaken = takenDreamIds.includes(dream.id);
+        const isMyDream = dreamData && dreamData.id === dream.id;
+        
+        if (isTaken && !isMyDream) {
+            option.disabled = true;
+            option.textContent += ' (ЗАНЯТО)';
+        }
+        
         dreamSelect.appendChild(option);
     });
     
     console.log('✅ Room: Мечты загружены, добавлено опций:', DREAMS_CONFIG.length);
+}
+
+/**
+ * Получить список ID мечт, которые уже выбраны другими игроками
+ */
+function getTakenDreamIds() {
+    if (!currentRoom || !currentRoom.players || !currentUser) {
+        return [];
+    }
+    
+    const takenDreams = currentRoom.players
+        .filter(player => {
+            // Исключаем текущего игрока
+            const isNotCurrentUser = player.userId !== currentUser.id && 
+                                   player.username !== currentUser.username &&
+                                   (currentUser.id ? player.userId !== currentUser.id : true);
+            
+            // Проверяем, что у игрока есть выбранная мечта
+            const hasDream = player.dream && (
+                (typeof player.dream === 'object' && player.dream.id) ||
+                (typeof player.dream === 'string' && player.dream.trim() !== '')
+            );
+            
+            return isNotCurrentUser && hasDream;
+        })
+        .map(player => {
+            // Извлекаем ID мечты
+            if (typeof player.dream === 'object' && player.dream.id) {
+                return player.dream.id;
+            }
+            return null;
+        })
+        .filter(id => id !== null);
+    
+    console.log('🔍 Room: getTakenDreamIds - занятые мечты:', takenDreams);
+    return takenDreams;
 }
 
 /**
@@ -2531,6 +2581,7 @@ async function refreshRoomData() {
             updateStartGameButton();
             updateTokensAvailability(); // Обновляем доступность фишек
             updateReadyStatus(); // Обновляем состояние кнопки готовности
+            loadDreams(); // Обновляем список мечт с блокировкой выбранных
             
             // Проверяем, если игра только что началась
             if (wasNotStarted && isNowStarted) {
