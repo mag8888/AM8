@@ -195,8 +195,9 @@ class PlayersPanel {
             
             // Обработчик для обновления кубика
             this.eventBus.on('dice:rolled', (data) => {
-                if (data && data.value !== undefined) {
-                    this.updateDiceResult(data.value);
+                if (data) {
+                    // Передаем полный объект с результатами кубиков
+                    this.updateDiceResult(data);
                 }
             });
         }
