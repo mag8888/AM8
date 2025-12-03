@@ -1906,42 +1906,58 @@ class PlayerTokens {
                 return null;
             }
             
-            // КРИТИЧНО: Добавляем фишку в DOM СРАЗУ (не в requestAnimationFrame)
-            // Это гарантирует, что фишка будет в DOM до проверки isConnected
-            trackElement.appendChild(token);
+            // НОВЫЙ ПОДХОД: Находим клетку и добавляем фишку как дочерний элемент клетки
+            const cellPosition = player.position || 23;
+            const isInner = player.isInner || false;
+            const cell = trackElement.querySelector(`[data-position="${cellPosition}"]`);
+            
+            if (cell) {
+                // Убеждаемся, что клетка имеет position: relative
+                const cellStyle = window.getComputedStyle(cell);
+                if (cellStyle.position === 'static') {
+                    cell.style.setProperty('position', 'relative', 'important');
+                }
+                
+                // Добавляем фишку в клетку
+                cell.appendChild(token);
+                
+                this._info('Фишка добавлена в клетку (новый подход)', {
+                    player: player.username,
+                    position: cellPosition,
+                    isInner: isInner,
+                    cellId: cell.id || cell.dataset.position,
+                    tokenInDOM: token.isConnected,
+                    tokenParent: token.parentElement?.tagName
+                });
+            } else {
+                // Fallback: добавляем в trackElement, если клетка не найдена
+                this._warn('Клетка не найдена, добавляем фишку в trackElement (fallback)', {
+                    player: player.username,
+                    position: cellPosition,
+                    isInner: isInner
+                });
+                trackElement.appendChild(token);
+            }
             
             // Сохраняем в кэш сразу после добавления
             this.tokens.set(player.id, token);
             
-            this._info('Фишка добавлена в DOM', {
-                player: player.username,
-                position: player.position,
-                isInner: player.isInner,
-                trackElement: trackElement.tagName,
-                trackElementId: trackElement.id,
-                tokenInDOM: token.isConnected,
-                tokenParent: token.parentElement?.tagName
-            });
-            
-            // КРИТИЧНО: Позиционируем фишку СРАЗУ после добавления в DOM
-            // Не ждем requestAnimationFrame, так как координаты могут быть уже готовы
-            const cellPosition = 23; // Клетка #24
-            const isInner = false;
+            // Позиционируем фишку
             const baseCoords = this.getCellBaseCoordinates(cellPosition, isInner);
-            if (baseCoords && Number.isFinite(baseCoords.x) && Number.isFinite(baseCoords.y)) {
+            if (baseCoords) {
                 const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
-                const offset = this.calculateOffset(0, 1, cellSize);
-                this.positionTokenElement(token, baseCoords, offset, 1);
-                this._info('Фишка позиционирована сразу после добавления в DOM', {
+                const offset = this.calculateOffset(index, totalPlayers, cellSize);
+                this.positionTokenElement(token, baseCoords, offset, totalPlayers);
+                this._info('Фишка позиционирована', {
                     player: player.username,
                     position: cellPosition,
                     coords: baseCoords,
                     offset
                 });
             } else {
-                this._warn('Координаты клетки #24 недоступны при создании фишки, будет повторная попытка', {
+                this._warn('Координаты клетки недоступны при создании фишки', {
                     player: player.username,
-                    baseCoords
+                    position: cellPosition
                 });
             }
             
