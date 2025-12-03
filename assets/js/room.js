@@ -1408,15 +1408,20 @@ function updateStartGameButton() {
     // Игрок считается готовым ТОЛЬКО если: isReady = true И dream выбран (с cost > 0) И token выбран
     const readyCount = currentRoom.players?.filter(player => {
         const isReadyFlag = isPlayerReady(player);
-        const hasDream = player.dream && (
-            (typeof player.dream === 'object' && 
-             player.dream.id && 
-             player.dream.title && 
-             typeof player.dream.cost === 'number' && 
-             player.dream.cost > 0) ||
-            (typeof player.dream === 'string' && player.dream.trim() !== '')
-        );
-        const hasToken = player.token && player.token.trim() !== '' && player.token !== 'null';
+        
+        // Проверяем наличие мечты - может быть объектом или строкой
+        let hasDream = false;
+        if (player.dream) {
+            if (typeof player.dream === 'object') {
+                hasDream = !!(player.dream.id && player.dream.title);
+            } else if (typeof player.dream === 'string') {
+                hasDream = player.dream.trim() !== '';
+            }
+        }
+        
+        // Проверяем наличие фишки
+        const hasToken = !!(player.token && player.token.trim() !== '' && player.token !== 'null');
+        
         return isReadyFlag && hasDream && hasToken;
     }).length || 0;
     
