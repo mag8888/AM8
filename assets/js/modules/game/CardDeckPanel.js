@@ -47,6 +47,9 @@
             this._debouncedLoadDecks = null;
             this._lastRateLimitToastAt = 0;
             this.forceOfflineMode = this._shouldForceOfflineMode();
+            this.corsErrorDetected = false; // Флаг для предотвращения повторных запросов при CORS ошибке
+            this.corsErrorCooldown = 300000; // 5 минут до следующей попытки при CORS ошибке
+            this.corsErrorUntil = 0;
 
             this.handleContainerClick = this.handleContainerClick.bind(this);
 
@@ -213,6 +216,18 @@
                 return;
             }
             
+            // Проверка на CORS ошибку - не делаем запросы если была CORS ошибка недавно
+            if (this.corsErrorUntil && Date.now() < this.corsErrorUntil) {
+                const remaining = Math.ceil((this.corsErrorUntil - Date.now()) / 1000);
+                console.warn(`⚠️ CardDeckPanel: CORS ошибка обнаружена ранее, пропускаем запрос (повторим через ${remaining}с)`);
+                if (this.lastKnownDecks.length) {
+                    this.renderDecks(this.lastKnownDecks);
+                } else {
+                    this.renderDecks(this.getOfflineDecks());
+                }
+                return;
+            }
+            
             if (this.rateLimitUntil && Date.now() < this.rateLimitUntil) {
                 this._notifyRateLimit(this.rateLimitUntil - Date.now());
                 this.renderDecks(this.lastKnownDecks.length ? this.lastKnownDecks : this.getOfflineDecks());
@@ -237,6 +252,19 @@
 
             this.abortController = new AbortController();
 
+            // Убеждаемся, что используем относительный путь для избежания CORS проблем
+            let apiUrl = this.apiBaseUrl;
+            if (apiUrl.startsWith('http://') || apiUrl.startsWith('https://')) {
+                // Если передан полный URL, преобразуем в относительный путь
+                try {
+                    const url = new URL(apiUrl);
+                    apiUrl = url.pathname;
+                    console.warn(`⚠️ CardDeckPanel: Полный URL преобразован в относительный путь: ${apiUrl}`);
+                } catch (e) {
+                    console.warn(`⚠️ CardDeckPanel: Не удалось преобразовать URL, используем как есть: ${apiUrl}`);
+                }
+            }
+
             const requestInit = {
                 method: 'GET',
                 credentials: 'include', // Изменено с 'same-origin' для лучшей совместимости с CORS
@@ -248,7 +276,7 @@
             };
 
             try {
-                const response = await fetch(this.apiBaseUrl, requestInit);
+                const response = await fetch(apiUrl, requestInit);
 
                 if (response.status === 429) {
                     const retryAfter = this._applyRateLimitFromResponse(response);
@@ -299,6 +327,9 @@
                 const normalized = this.mergeWithDefaults(decks, stats);
                 this.lastKnownDecks = normalized;
                 this._resetRateLimit();
+                // Сбрасываем флаг CORS ошибки при успешном запросе
+                this.corsErrorDetected = false;
+                this.corsErrorUntil = 0;
                 this.renderDecks(normalized);
             } catch (error) {
                 if (error.name === 'AbortError') {
@@ -313,11 +344,17 @@
                                      error.message?.includes('Failed to fetch');
                 
                 if (isNetworkError) {
-                    console.warn('⚠️ CardDeckPanel: Сетевая/CORS ошибка, используем кэшированные данные');
+                    // Устанавливаем флаг CORS ошибки и cooldown период
+                    this.corsErrorDetected = true;
+                    this.corsErrorUntil = Date.now() + this.corsErrorCooldown;
+                    console.warn(`⚠️ CardDeckPanel: Сетевая/CORS ошибка обнаружена, используем кэшированные данные. Следующая попытка через ${Math.ceil(this.corsErrorCooldown / 1000)}с`);
                     if (this.lastKnownDecks.length) {
                         this.renderDecks(this.lastKnownDecks);
                         return;
                     }
+                    // Если нет кэшированных данных, используем offline данные
+                    this.renderDecks(this.getOfflineDecks());
+                    return;
                 }
                 
                 // Проверяем, является ли ошибка rate limiting или сетевой проблемой
@@ -360,6 +397,13 @@
         refresh() {
             if (this._isRateLimited()) {
                 console.warn('⚠️ CardDeckPanel: Обновление пропущено из-за rate limit');
+                return;
+            }
+            
+            // Проверка на CORS ошибку
+            if (this.corsErrorUntil && Date.now() < this.corsErrorUntil) {
+                const remaining = Math.ceil((this.corsErrorUntil - Date.now()) / 1000);
+                console.warn(`⚠️ CardDeckPanel: Обновление пропущено из-за CORS ошибки (повторим через ${remaining}с)`);
                 return;
             }
 
