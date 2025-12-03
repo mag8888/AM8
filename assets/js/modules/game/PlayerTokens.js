@@ -871,16 +871,16 @@ class PlayerTokens {
             return { x: 0, y: 0 };
         }
         
-        // МАКСИМАЛЬНЫЙ сдвиг для гарантированной видимости - 40% от размера клетки
-        const offsetPercent = 0.40; // Увеличено до 40% для гарантированной видимости обеих фишек
+        // МАКСИМАЛЬНЫЙ сдвиг для гарантированной видимости - 45% от размера клетки
+        const offsetPercent = 0.45; // Увеличено до 45% для гарантированной видимости обеих фишек
         const offsetPx = cellSize * offsetPercent;
         
         // Конфигурация сдвига для разного количества фишек (в пикселях, рассчитанных от размера клетки)
-        // Для двух фишек используем диагональный сдвиг для максимальной видимости
+        // Для двух фишек используем максимальный диагональный сдвиг для гарантированной видимости
         const offsetConfigs = {
             2: [
-                { x: -offsetPx * 0.8, y: -offsetPx * 0.8 },  // Влево-вверх (диагональ)
-                { x: offsetPx * 0.8, y: offsetPx * 0.8 }      // Вправо-вниз (диагональ)
+                { x: -offsetPx, y: -offsetPx * 0.5 },  // Влево-вверх (максимальный сдвиг)
+                { x: offsetPx, y: offsetPx * 0.5 }     // Вправо-вниз (максимальный сдвиг)
             ],
             3: [
                 { x: -offsetPx, y: -offsetPx * 0.7 },  // Влево-вверх
@@ -900,7 +900,11 @@ class PlayerTokens {
         
         // Добавляем визуальную индикацию для множественных фишек
         if (totalPlayers > 1) {
-            this._info(`Фишка ${index + 1}/${totalPlayers} получает сдвиг 40% (${offsetPx.toFixed(1)}px)`, offset);
+            this._info(`✅ Фишка ${index + 1}/${totalPlayers} получает сдвиг 45% (${offsetPx.toFixed(1)}px)`, {
+                offset,
+                cellSize,
+                offsetPercent: (offsetPx / cellSize * 100).toFixed(1) + '%'
+            });
         }
         
         return offset;
@@ -1420,6 +1424,14 @@ class PlayerTokens {
             }
             
             playersAtPosition.forEach((player, index) => {
+                this._info(`Обработка фишки ${index + 1}/${playersAtPosition.length} для игрока ${player.username}`, {
+                    playerId: player.id,
+                    position,
+                    isInner,
+                    index,
+                    total: playersAtPosition.length
+                });
+                
                 const token = this.ensureToken(player, index, playersAtPosition.length, trackElement);
                 if (token) {
                     // Проверяем, что фишка все еще в DOM перед позиционированием
