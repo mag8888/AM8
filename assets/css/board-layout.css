@@ -650,6 +650,18 @@
       visibility: visible !important;
       opacity: 1 !important;
     }
+    
+    /* На мобильных устройствах верхняя панель может быть скрыта, если есть мобильные кнопки */
+    .top-info-panel {
+      display: none !important;
+    }
+  }
+  
+  /* На десктопе показываем верхнюю панель */
+  @media (min-width: 1025px) {
+    .top-info-panel {
+      display: flex !important;
+    }
   }
   
   .mobile-control-btn:active {
