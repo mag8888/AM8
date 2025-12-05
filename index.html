@@ -707,14 +707,14 @@
             // Инициализация после загрузки DOM
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', function() {
-                    removeBottomMenuOnDesktop(); // Удаляем нижнее меню на ПК
+                    // Нижнее меню скрывается через CSS на десктопе (board-layout.css)
                     ensureContainers();
                     initMenuToggle();
                     initMobileControls(); // Инициализация мобильных элементов управления
                     initBoardSize();
                 });
             } else {
-                removeBottomMenuOnDesktop(); // Удаляем нижнее меню на ПК
+                // Нижнее меню скрывается через CSS на десктопе (board-layout.css)
                 ensureContainers();
                 // Небольшая задержка для инициализации кнопки, чтобы элементы точно были в DOM
                 setTimeout(function() {
