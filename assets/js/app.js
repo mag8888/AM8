@@ -154,13 +154,12 @@ class App {
 
         try {
             console.log('🔍 App: Начинаем инициализацию модулей...');
-            this.logger?.group('Инициализация приложения', () => {
-                this._initializeServices();
-                this._initializeModules();
-                this._setupNavigation();
-                this._checkAuthentication();
-                this._setupPerformanceMonitoring();
-            });
+            // Вызываем функции напрямую для надежности
+            this._initializeServices();
+            this._initializeModules();
+            this._setupNavigation();
+            this._checkAuthentication();
+            this._setupPerformanceMonitoring();
             
             // ИСПРАВЛЕНО: Проверяем, что GameStateManager уже создан (избегаем дубликатов)
             const existingGameStateManager = this.getModule('gameStateManager');
