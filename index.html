@@ -201,19 +201,19 @@
         <div id="page-container">
             <!-- Страница игры -->
             <div id="game-page" class="page active">
-                <!-- Верхняя информационная панель -->
+                <!-- Верхняя информационная панель (только на мобильной версии) -->
                 <div id="top-info-panel" class="top-info-panel">
-                    <!-- Ход игрока -->
-                    <div class="top-info-turn">
-                        <div class="top-info-label">Ход:</div>
-                        <div class="top-info-player-name" id="top-turn-player-name">-</div>
-                    </div>
+                    <!-- Кнопка Банк -->
+                    <button id="top-bank-btn" class="top-info-btn top-info-btn-bank" aria-label="Банк">
+                        <span class="top-info-btn-icon">🏦</span>
+                        <span class="top-info-btn-label">Банк</span>
+                    </button>
                     
-                    <!-- Банк мини -->
-                    <div class="top-info-bank">
-                        <div class="top-info-bank-balance" id="top-bank-balance">$0</div>
-                        <div class="top-info-bank-credit" id="top-bank-credit">Кр: $0</div>
-                    </div>
+                    <!-- Кнопка Игрок -->
+                    <button id="top-player-btn" class="top-info-btn top-info-btn-player" aria-label="Игрок">
+                        <span class="top-info-btn-icon">👤</span>
+                        <span class="top-info-btn-label">Игрок</span>
+                    </button>
                 </div>
                 
                 <!-- Мобильные элементы управления (скрыты на десктопе) -->

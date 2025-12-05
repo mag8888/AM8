@@ -5,9 +5,10 @@
   left: 0 !important;
   right: 0 !important;
   display: none !important; /* По умолчанию скрыта */
-  justify-content: space-between !important;
+  justify-content: center !important;
   align-items: center !important;
-  padding: 0.75rem 1.5rem !important;
+  gap: 1rem !important;
+  padding: 0.75rem 1rem !important;
   background: rgba(17, 25, 40, 0.95) !important;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2) !important;
   z-index: 1000 !important;
@@ -24,42 +25,67 @@
   }
 }
 
-.top-info-turn {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-}
-
-.top-info-label {
-  font-size: 0.875rem !important;
-  color: rgba(248, 250, 252, 0.7) !important;
-  font-weight: 500 !important;
-}
-
-.top-info-player-name {
-  font-size: 1rem !important;
-  font-weight: 700 !important;
-  color: #fbbf24 !important;
-}
-
-.top-info-bank {
+/* Кнопки верхней панели */
+.top-info-btn {
+  flex: 1 !important;
+  max-width: 200px !important;
   display: flex !important;
   flex-direction: column !important;
-  align-items: flex-end !important;
-  gap: 0.25rem !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  padding: 1rem 1.5rem !important;
+  background: rgba(30, 41, 59, 0.8) !important;
+  border: 2px solid rgba(99, 102, 241, 0.5) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
-.top-info-bank-balance {
-  font-size: 1.125rem !important;
-  font-weight: 700 !important;
-  color: #10b981 !important;
-  line-height: 1.2 !important;
+.top-info-btn:hover {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(99, 102, 241, 0.8) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
-.top-info-bank-credit {
-  font-size: 0.875rem !important;
-  color: rgba(248, 250, 252, 0.7) !important;
+.top-info-btn:active {
+  transform: translateY(0) !important;
+  background: rgba(99, 102, 241, 0.2) !important;
+}
+
+.top-info-btn-icon {
+  font-size: 2rem !important;
   line-height: 1 !important;
+}
+
+.top-info-btn-label {
+  font-size: 0.875rem !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.top-info-btn-bank {
+  border-color: rgba(16, 185, 129, 0.5) !important;
+}
+
+.top-info-btn-bank:hover {
+  border-color: rgba(16, 185, 129, 0.8) !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+}
+
+.top-info-btn-player {
+  border-color: rgba(251, 191, 36, 0.5) !important;
+}
+
+.top-info-btn-player:hover {
+  border-color: rgba(251, 191, 36, 0.8) !important;
+  background: rgba(251, 191, 36, 0.1) !important;
 }
 
 /* Desktop: трехколоночная раскладка, поле по центру квадратом */
