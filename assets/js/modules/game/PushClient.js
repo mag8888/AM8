@@ -72,6 +72,12 @@ class PushClient {
             });
 
             if (!response.ok) {
+                // 404 означает что эндпоинт не существует - это не критично, просто пропускаем регистрацию
+                if (response.status === 404) {
+                    console.warn('⚠️ PushClient: Эндпоинт /api/push/register не найден (404) - push уведомления недоступны');
+                    this.isRegistered = false;
+                    return; // Не бросаем ошибку, просто пропускаем регистрацию
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
