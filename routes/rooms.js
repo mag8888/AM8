@@ -90,6 +90,8 @@ function buildState(players = []) {
         .map((player, index) => normalizePlayer(player, index))
         .filter(Boolean);
 
+    const DEFAULT_TURN_TIME_MS = 30 * 1000; // 30 секунд по умолчанию
+
     return {
         players: normalized,
         currentPlayerIndex: 0,
@@ -98,11 +100,27 @@ function buildState(players = []) {
         canRoll: true,
         canMove: false,
         canEndTurn: false,
+        turnStartTime: Date.now(), // Время начала текущего хода
+        turnTimer: DEFAULT_TURN_TIME_MS, // Время на ход в миллисекундах
         board: {
             innerLength: INNER_TRACK_LENGTH,
             outerLength: OUTER_TRACK_LENGTH
         }
     };
+}
+
+/**
+ * Вычисляет оставшееся время хода
+ * @param {Object} state - Состояние игры
+ * @returns {number} Оставшееся время в миллисекундах (0 если время истекло)
+ */
+function calculateTurnTimeRemaining(state) {
+    if (!state.turnStartTime || !state.turnTimer) {
+        return 0;
+    }
+    const elapsed = Date.now() - state.turnStartTime;
+    const remaining = Math.max(0, state.turnTimer - elapsed);
+    return remaining;
 }
 
 async function fetchOrCreateRoomState(roomId) {
@@ -341,7 +359,13 @@ router.post('/:id/roll', (req, res, next) => {
             diceValue: value
         }).catch(err => console.error('❌ Ошибка отправки push о броске кубика:', err));
         
-        res.json({ success:true, diceResult:{ value }, state });
+        const turnTimeRemaining = calculateTurnTimeRemaining(state);
+        res.json({ 
+            success: true, 
+            diceResult: { value }, 
+            state,
+            turnTimeRemaining
+        });
     });
 });
 
@@ -402,7 +426,18 @@ router.post('/:id/move', (req, res, next) => {
             newPosition: current.position
         }).catch(err => console.error('❌ Ошибка отправки push о движении:', err));
         
-        res.json({ success:true, moveResult:{ steps: moveSteps }, state });
+        const turnTimeRemaining = calculateTurnTimeRemaining(state);
+        res.json({ 
+            success: true, 
+            moveResult: { 
+                steps: moveSteps,
+                finalPosition: current.position, // Финальная позиция после перемещения
+                isInner: isInnerTrack,
+                track: effectiveTrack
+            }, 
+            state,
+            turnTimeRemaining
+        });
     });
 });
 
@@ -421,6 +456,9 @@ router.post('/:id/end-turn', (req, res, next) => {
         state.canEndTurn = false;
         state.lastDiceResult = null;
         state.lastMove = null;
+        // Устанавливаем время начала нового хода
+        state.turnStartTime = Date.now();
+        const turnTimeRemaining = calculateTurnTimeRemaining(state);
         // Отправляем push-уведомление о смене хода
         pushService.broadcastPush('turn_changed', { 
             roomId: id, 
@@ -442,7 +480,12 @@ router.post('/:id/end-turn', (req, res, next) => {
             }
         ).catch(err => console.error('❌ Ошибка отправки реального push о смене хода:', err));
         
-        res.json({ success:true, state, event: { type: 'turn_changed', activePlayer: state.activePlayer } });
+        res.json({ 
+            success: true, 
+            state, 
+            turnTimeRemaining,
+            event: { type: 'turn_changed', activePlayer: state.activePlayer } 
+        });
     });
 });
 
