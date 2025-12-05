@@ -1,6 +1,6 @@
 /* Desktop: трехколоночная раскладка, поле по центру квадратом */
 @media (min-width: 1025px) {
-  /* Скрываем нижнее мобильное меню на десктоп версии - максимальная специфичность и агрессивное скрытие */
+  /* Скрываем ВСЕ мобильные элементы на десктоп версии - максимальная специфичность и агрессивное скрытие */
   nav.mobile-bottom-menu,
   .mobile-bottom-menu,
   .mobile-bottom-nav,
@@ -24,7 +24,30 @@
   .game-page nav.mobile-bottom-menu,
   .game-page .mobile-bottom-menu,
   body nav.mobile-bottom-menu,
-  body .mobile-bottom-menu {
+  body .mobile-bottom-menu,
+  /* Скрываем мобильные кнопки управления */
+  .mobile-control-btn,
+  #mobile-menu-btn,
+  #mobile-bank-btn,
+  #mobile-turn-info-btn,
+  .mobile-menu-btn,
+  .mobile-bank-btn,
+  .mobile-turn-info-btn,
+  /* Скрываем мобильные информационные блоки */
+  .mobile-bank-info,
+  .mobile-bank-balance,
+  .mobile-bank-credit,
+  .mobile-turn-info,
+  .mobile-turn-label-text,
+  .mobile-turn-player-name,
+  .mobile-btn-icon,
+  #mobile-bank-balance,
+  #mobile-bank-credit,
+  #mobile-turn-player-name,
+  /* Скрываем кнопку переключения меню */
+  #toggle-menu-btn,
+  .toggle-menu-btn,
+  .toggle-menu-icon {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
