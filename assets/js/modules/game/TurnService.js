@@ -366,6 +366,14 @@ class TurnService extends EventTarget {
             const response = await this.roomApi.endTurn(roomId);
             this._applyServerState(response?.state);
             
+            // Сохраняем turnTimeRemaining из ответа сервера
+            if (response?.turnTimeRemaining !== undefined && this.gameStateManager) {
+                const currentState = this.gameStateManager.getState();
+                if (currentState) {
+                    currentState.turnTimeRemaining = response.turnTimeRemaining;
+                }
+            }
+            
             // Эмит успешного результата
             this.emit('end:success', response);
             
