@@ -691,13 +691,7 @@
       opacity: 1 !important;
     }
     
-    /* На мобильных устройствах верхняя панель может быть скрыта, если есть мобильные кнопки */
-    .top-info-panel {
-      display: none !important;
-    }
   }
-  
-  /* На десктопе верхняя панель скрыта (см. правила выше) */
   
   .mobile-control-btn:active {
     transform: scale(0.95) !important;
