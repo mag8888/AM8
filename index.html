@@ -366,78 +366,44 @@
                     const topInfoPanel = document.getElementById('top-info-panel');
                     if (!topInfoPanel) return;
                     
-                    // Обновление информации о ходе игрока
-                    function updateTurnInfo() {
-                        const turnPlayerName = document.getElementById('top-turn-player-name');
-                        if (!turnPlayerName) return;
-                        
-                        // Получаем информацию о текущем игроке из состояния игры
-                        const app = window.app;
-                        if (app && app.getModule) {
-                            const gameStateManager = app.getModule('gameStateManager');
-                            if (gameStateManager && typeof gameStateManager.getState === 'function') {
-                                const state = gameStateManager.getState();
-                                if (state && state.activePlayer) {
-                                    const playerName = state.activePlayer.username || state.activePlayer.name || 'Игрок';
-                                    turnPlayerName.textContent = playerName;
+                    // Кнопка Банк
+                    const topBankBtn = document.getElementById('top-bank-btn');
+                    if (topBankBtn) {
+                        topBankBtn.addEventListener('click', function() {
+                            // Открываем банк модуль
+                            const app = window.app;
+                            if (app && app.getModule) {
+                                const playersPanel = app.getModule('playersPanel');
+                                if (playersPanel && typeof playersPanel.openBankModule === 'function') {
+                                    playersPanel.openBankModule();
                                 } else {
-                                    turnPlayerName.textContent = '-';
+                                    // Альтернативный способ открытия банка
+                                    const bankSection = document.getElementById('bank-section');
+                                    const cardDecksPanel = document.getElementById('card-decks-panel');
+                                    if (bankSection && cardDecksPanel) {
+                                        cardDecksPanel.classList.add('menu-visible');
+                                        bankSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
                                 }
                             }
-                        }
+                        });
                     }
                     
-                    // Обновление информации о банке
-                    function updateBankInfo() {
-                        const bankBalance = document.getElementById('top-bank-balance');
-                        const bankCredit = document.getElementById('top-bank-credit');
-                        if (!bankBalance || !bankCredit) return;
-                        
-                        // Получаем информацию о банке
-                        const app = window.app;
-                        if (app && app.getModule) {
-                            const gameStateManager = app.getModule('gameStateManager');
-                            if (gameStateManager && typeof gameStateManager.getState === 'function') {
-                                const state = gameStateManager.getState();
-                                if (state && state.activePlayer) {
-                                    const balance = state.activePlayer.money || 0;
-                                    const credit = state.activePlayer.currentLoan || 0;
-                                    bankBalance.textContent = `$${balance.toLocaleString()}`;
-                                    bankCredit.textContent = `Кр: $${credit.toLocaleString()}`;
-                                } else {
-                                    bankBalance.textContent = '$0';
-                                    bankCredit.textContent = 'Кр: $0';
+                    // Кнопка Игрок
+                    const topPlayerBtn = document.getElementById('top-player-btn');
+                    if (topPlayerBtn) {
+                        topPlayerBtn.addEventListener('click', function() {
+                            // Открываем панель игроков
+                            const topPanelContainer = document.querySelector('.top-panel-container');
+                            const playersPanel = document.getElementById('players-panel');
+                            if (topPanelContainer) {
+                                topPanelContainer.classList.toggle('menu-visible');
+                                if (playersPanel) {
+                                    playersPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                 }
                             }
-                        }
-                    }
-                    
-                    // Обновляем информацию при загрузке
-                    updateTurnInfo();
-                    updateBankInfo();
-                    
-                    // Подписываемся на события обновления состояния игры
-                    const eventBus = window.app?.getEventBus?.();
-                    if (eventBus && typeof eventBus.on === 'function') {
-                        eventBus.on('game:stateUpdated', () => {
-                            updateTurnInfo();
-                            updateBankInfo();
-                        });
-                        eventBus.on('game:playersUpdated', () => {
-                            updateTurnInfo();
-                            updateBankInfo();
-                        });
-                        eventBus.on('game:turnChanged', () => {
-                            updateTurnInfo();
-                            updateBankInfo();
                         });
                     }
-                    
-                    // Периодическое обновление (каждые 2 секунды)
-                    setInterval(() => {
-                        updateTurnInfo();
-                        updateBankInfo();
-                    }, 2000);
                 }
                 
                 initTopInfoPanel();
