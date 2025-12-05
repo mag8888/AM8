@@ -100,9 +100,48 @@ class PushClient {
      * Получение информации о пользователе
      */
     getUserInfo() {
-        const user = this.gameState.getCurrentUser();
+        // Получаем текущего пользователя из CommonUtils или localStorage
+        let user = null;
+        if (window.CommonUtils) {
+            const userId = window.CommonUtils.getCurrentUserId();
+            const username = window.CommonUtils.getCurrentUsername();
+            if (userId || username) {
+                user = { id: userId, username: username };
+            }
+        }
+        
+        // Fallback: получаем из sessionStorage
+        if (!user) {
+            try {
+                const bundleRaw = sessionStorage.getItem('am_player_bundle');
+                if (bundleRaw) {
+                    const bundle = JSON.parse(bundleRaw);
+                    if (bundle.userId || bundle.id || bundle.username) {
+                        user = {
+                            id: bundle.userId || bundle.id,
+                            username: bundle.username
+                        };
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ PushClient: Ошибка получения пользователя из sessionStorage:', e);
+            }
+        }
+        
+        // Fallback: получаем из localStorage
+        if (!user) {
+            try {
+                const userData = localStorage.getItem('currentUser');
+                if (userData) {
+                    user = JSON.parse(userData);
+                }
+            } catch (e) {
+                console.warn('⚠️ PushClient: Ошибка получения пользователя из localStorage:', e);
+            }
+        }
+        
         return {
-            userId: user?.id || null,
+            userId: user?.id || user?.userId || null,
             username: user?.username || 'Anonymous',
             userAgent: navigator.userAgent,
             timestamp: new Date().toISOString()
