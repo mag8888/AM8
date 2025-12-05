@@ -1083,6 +1083,12 @@ class BoardLayout {
             cancelAnimationFrame(this.pendingPositionFrame);
             this.pendingPositionFrame = null;
         }
+        
+        // Очищаем дебаунсинг таймер
+        if (this._emitDebounceTimer) {
+            clearTimeout(this._emitDebounceTimer);
+            this._emitDebounceTimer = null;
+        }
 
         this.detachTrackListeners();
         if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
