@@ -55,6 +55,37 @@
 
 /* Desktop: трехколоночная раскладка, поле по центру квадратом */
 @media (min-width: 1025px) {
+  /* Скрываем верхнюю информационную панель на десктопе */
+  #top-info-panel,
+  .top-info-panel,
+  .top-info-turn,
+  .top-info-bank,
+  .top-info-label,
+  .top-info-player-name,
+  .top-info-bank-balance,
+  .top-info-bank-credit,
+  #top-turn-player-name,
+  #top-bank-balance,
+  #top-bank-credit {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    width: 0 !important;
+    max-height: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    z-index: -1 !important;
+  }
+  
   /* Скрываем ВСЕ мобильные элементы на десктоп версии - максимальная специфичность и агрессивное скрытие */
   nav.mobile-bottom-menu,
   .mobile-bottom-menu,
@@ -657,12 +688,7 @@
     }
   }
   
-  /* На десктопе показываем верхнюю панель */
-  @media (min-width: 1025px) {
-    .top-info-panel {
-      display: flex !important;
-    }
-  }
+  /* На десктопе верхняя панель скрыта (см. правила выше) */
   
   .mobile-control-btn:active {
     transform: scale(0.95) !important;
