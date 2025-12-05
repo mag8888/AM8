@@ -50,6 +50,14 @@
             this.corsErrorDetected = false; // Флаг для предотвращения повторных запросов при CORS ошибке
             this.corsErrorCooldown = 300000; // 5 минут до следующей попытки при CORS ошибке
             this.corsErrorUntil = 0;
+            
+            // Оптимизации для снижения частоты запросов
+            this._lastRequestTime = 0; // Время последнего запроса к API
+            this._minRequestInterval = 5000; // Минимальный интервал между запросами (5 секунд)
+            this._cacheTimeout = 10000; // Кеш на 10 секунд
+            this._cachedData = null; // Кешированные данные
+            this._cacheTimestamp = 0; // Время, когда данные были закешированы
+            this._loadDecksDebounceDelay = 10000; // Увеличено до 10 секунд
 
             this.handleContainerClick = this.handleContainerClick.bind(this);
 
@@ -216,6 +224,26 @@
                 return;
             }
             
+            // Проверка кеша - используем кешированные данные если они свежие
+            const now = Date.now();
+            if (this._cachedData && (now - this._cacheTimestamp) < this._cacheTimeout) {
+                console.log('✅ CardDeckPanel: Используем кешированные данные');
+                this.renderDecks(this._cachedData);
+                return;
+            }
+            
+            // Проверка минимального интервала между запросами
+            if (now - this._lastRequestTime < this._minRequestInterval) {
+                const remaining = Math.ceil((this._minRequestInterval - (now - this._lastRequestTime)) / 1000);
+                console.log(`⏳ CardDeckPanel: Пропускаем запрос (слишком часто, повторим через ${remaining}с)`);
+                if (this._cachedData) {
+                    this.renderDecks(this._cachedData);
+                } else if (this.lastKnownDecks.length) {
+                    this.renderDecks(this.lastKnownDecks);
+                }
+                return;
+            }
+            
             // Проверка на CORS ошибку - не делаем запросы если была CORS ошибка недавно
             if (this.corsErrorUntil && Date.now() < this.corsErrorUntil) {
                 const remaining = Math.ceil((this.corsErrorUntil - Date.now()) / 1000);
@@ -326,6 +354,10 @@
 
                 const normalized = this.mergeWithDefaults(decks, stats);
                 this.lastKnownDecks = normalized;
+                // Кешируем данные для последующих запросов
+                this._cachedData = normalized;
+                this._cacheTimestamp = Date.now();
+                this._lastRequestTime = Date.now();
                 this._resetRateLimit();
                 // Сбрасываем флаг CORS ошибки при успешном запросе
                 this.corsErrorDetected = false;
