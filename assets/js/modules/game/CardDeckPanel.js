@@ -48,6 +48,7 @@
             this._lastRateLimitToastAt = 0;
             this.forceOfflineMode = this._shouldForceOfflineMode();
             this.corsErrorDetected = false; // Флаг для предотвращения повторных запросов при CORS ошибке
+            this._isRendering = false; // Флаг для предотвращения бесконечной рекурсии
             this.corsErrorCooldown = 300000; // 5 минут до следующей попытки при CORS ошибке
             this.corsErrorUntil = 0;
             
@@ -120,7 +121,12 @@
 
             if (this.eventBus && typeof this.eventBus.on === 'function') {
                 // Обновления только по событиям: действия игрока или push от сервера
+                // ИСПРАВЛЕНО: Добавлена защита от рекурсии - не обновляем если уже идет рендеринг
                 this.eventBus.on('cards:updated', () => {
+                    // Пропускаем если уже идет рендеринг (защита от рекурсии)
+                    if (this._isRendering) {
+                        return;
+                    }
                     // Дебаунсинг для предотвращения слишком частых обновлений
                     if (this._refreshTimer) {
                         clearTimeout(this._refreshTimer);
@@ -214,6 +220,12 @@
          * Загружает данные колод с API
          */
         async loadDecks() {
+            // Защита от рекурсии
+            if (this._isRendering) {
+                console.log('⚠️ CardDeckPanel: Пропускаем loadDecks - идет рендеринг');
+                return;
+            }
+            
             // Дебаунсинг для предотвращения множественных одновременных запросов
             if (this._loadDecksTimer) {
                 clearTimeout(this._loadDecksTimer);
@@ -599,9 +611,17 @@
                 cardsContainer.appendChild(tempDiv.firstChild);
             }
 
-            // Уведомляем другие компоненты об обновлении
-            if (this.eventBus) {
-                this.eventBus.emit('cards:updated', { decks });
+            // Уведомляем другие компоненты об обновлении (только если это не внутренний вызов)
+            if (this.eventBus && !this._isRendering) {
+                this._isRendering = true;
+                try {
+                    this.eventBus.emit('cards:updated', { decks });
+                } finally {
+                    // Сбрасываем флаг после небольшой задержки, чтобы избежать рекурсии
+                    setTimeout(() => {
+                        this._isRendering = false;
+                    }, 100);
+                }
             }
         }
 

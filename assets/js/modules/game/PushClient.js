@@ -37,7 +37,8 @@ class PushClient {
             
             console.log('✅ PushClient: Инициализация завершена');
         } catch (error) {
-            console.error('❌ PushClient: Ошибка инициализации:', error);
+            // Не критичная ошибка - push уведомления не обязательны для работы игры
+            console.warn('⚠️ PushClient: Ошибка инициализации (не критично):', error.message || error);
         }
     }
 
@@ -90,9 +91,10 @@ class PushClient {
                 throw new Error(result.error || 'Ошибка регистрации');
             }
         } catch (error) {
-            console.error('❌ PushClient: Ошибка регистрации:', error);
+            // Не критичная ошибка - просто логируем и продолжаем работу
+            console.warn('⚠️ PushClient: Ошибка регистрации (не критично):', error.message || error);
             this.isRegistered = false;
-            throw error;
+            // Не бросаем ошибку дальше - приложение должно работать без push уведомлений
         }
     }
 
