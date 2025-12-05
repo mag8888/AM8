@@ -303,7 +303,8 @@ router.get('/:id/game-state', (req, res, next) => {
                     state = buildState(room?.players || []);
                     gameStateByRoomId.set(id, state);
                 }
-                return res.json({ success: true, state });
+                const turnTimeRemaining = calculateTurnTimeRemaining(state);
+                return res.json({ success: true, state, turnTimeRemaining });
             } catch (e) {
                 return res.json({ success: true, state: { players: [], currentPlayerIndex: 0, activePlayer: null } });
             }

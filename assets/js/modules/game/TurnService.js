@@ -101,6 +101,14 @@ class TurnService extends EventTarget {
             this.emit('roll:start', { diceChoice, isReroll });
             response = await this.roomApi.rollDice(roomId, diceChoice, isReroll);
             this._applyServerState(response?.state);
+            
+            // Сохраняем turnTimeRemaining из ответа сервера
+            if (response?.turnTimeRemaining !== undefined && this.gameStateManager) {
+                const currentState = this.gameStateManager.getState();
+                if (currentState) {
+                    currentState.turnTimeRemaining = response.turnTimeRemaining;
+                }
+            }
 
             // Обрабатываем результат броска - может быть один кубик или несколько
             const diceResult = response?.diceResult;
@@ -260,6 +268,14 @@ class TurnService extends EventTarget {
                 track: trackId
             });
             this._applyServerState(response?.state);
+            
+            // Сохраняем turnTimeRemaining из ответа сервера
+            if (response?.turnTimeRemaining !== undefined && this.gameStateManager) {
+                const currentState = this.gameStateManager.getState();
+                if (currentState) {
+                    currentState.turnTimeRemaining = response.turnTimeRemaining;
+                }
+            }
             
             // Эмит событий для обновления фишек через eventBus
             if (this.eventBus && response?.state?.players) {

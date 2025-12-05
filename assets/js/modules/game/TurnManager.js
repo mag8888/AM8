@@ -171,14 +171,29 @@ class TurnManager extends EventTarget {
                 requireMyTurn: options.requireMyTurn !== false
             });
 
-            // Запоминаем локальное движение, чтобы не дублировать анимацию при обновлении состояния
-            this._lastLocalMove = {
-                playerId: activePlayer.id,
-                steps: normalizedSteps,
-                at: Date.now()
-            };
-
-            await this._animatePlayer(activePlayer.id, normalizedSteps);
+            // ИСПРАВЛЕНО: Используем готовую позицию с сервера вместо пошаговой анимации
+            // Сервер уже рассчитал финальную позицию, просто обновляем UI
+            if (response?.moveResult?.finalPosition !== undefined) {
+                // Обновляем позицию фишки напрямую на финальную позицию
+                if (this.eventBus) {
+                    this.eventBus.emit('players:positionsUpdated', {
+                        changes: [{
+                            playerId: activePlayer.id,
+                            position: response.moveResult.finalPosition,
+                            player: {
+                                ...activePlayer,
+                                position: response.moveResult.finalPosition,
+                                isInner: response.moveResult.isInner,
+                                track: response.moveResult.track
+                            }
+                        }],
+                        players: response.state?.players || []
+                    });
+                }
+            } else {
+                // Fallback: если сервер не вернул finalPosition, используем старую логику
+                await this._animatePlayer(activePlayer.id, normalizedSteps);
+            }
 
             return response;
         } finally {

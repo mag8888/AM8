@@ -1281,18 +1281,29 @@ class PlayersPanel {
         const timerText = timerElement.querySelector('.timer-text');
         if (!timerText) return;
 
-        let seconds = 30; // 30 секунд на ход
+        // Получаем оставшееся время с сервера из состояния игры
+        const state = this.gameStateManager?.getState?.();
+        const turnTimeRemaining = state?.turnTimeRemaining || 0;
+        
+        if (turnTimeRemaining <= 0) {
+            timerText.textContent = '0:00';
+            return;
+        }
+
+        let remainingMs = turnTimeRemaining;
         const updateTimer = () => {
+            const seconds = Math.floor(remainingMs / 1000);
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
             timerText.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
             
-            if (seconds <= 0) {
+            if (remainingMs <= 0) {
                 this.stopTurnTimer();
                 return;
             }
             
-            seconds--;
+            // Обновляем каждую секунду, но проверяем серверное время
+            remainingMs -= 1000;
             this.timerId = setTimeout(updateTimer, 1000);
         };
         
