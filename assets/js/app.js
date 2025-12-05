@@ -137,7 +137,9 @@ class App {
      * Основная инициализация приложения
      */
     async init() {
+        console.log('🔍 App: init() вызван', { isInitialized: this.isInitialized });
         if (this.isInitialized) {
+            console.log('⚠️ App: Приложение уже инициализировано, пропускаем');
             this.logger?.warn('Приложение уже инициализировано', null, 'App');
             return;
         }
@@ -151,6 +153,7 @@ class App {
         }
 
         try {
+            console.log('🔍 App: Начинаем инициализацию модулей...');
             this.logger?.group('Инициализация приложения', () => {
                 this._initializeServices();
                 this._initializeModules();
@@ -221,6 +224,7 @@ class App {
      * @private
      */
     _initializeModules() {
+        console.log('🔍 App: _initializeModules вызван');
         this.logger?.info('Инициализация модулей', null, 'App');
         
         // Инициализируем модули по необходимости
@@ -233,6 +237,7 @@ class App {
      * @private
      */
     _loadGameModules() {
+        console.log('🔍 App: _loadGameModules вызван');
         // ИСПРАВЛЕНО: Создаем GameState только если его нет (избегаем дубликатов)
         if (window.GameState && !this.modules.has('gameState')) {
             const gameState = new window.GameState(this.getEventBus());
@@ -243,17 +248,26 @@ class App {
             console.log('✅ App: GameState уже существует, пропускаем создание дубликата');
         }
 
+        console.log('🔍 App: Проверяем window.BoardLayout:', !!window.BoardLayout);
         if (window.BoardLayout) {
-            const boardLayout = new window.BoardLayout({
-                outerTrackSelector: '#outer-track',
-                innerTrackSelector: '#inner-track',
-                gameState: this.modules.get('gameState'),
-                eventBus: this.getEventBus(),
-                logger: this.logger,
-                debug: this.config?.get?.('logging.boardLayoutDebug', false)
-            });
-            this.modules.set('boardLayout', boardLayout);
-            this.logger?.debug('BoardLayout модуль загружен', null, 'App');
+            console.log('🔍 App: Создаем BoardLayout...');
+            try {
+                const boardLayout = new window.BoardLayout({
+                    outerTrackSelector: '#outer-track',
+                    innerTrackSelector: '#inner-track',
+                    gameState: this.modules.get('gameState'),
+                    eventBus: this.getEventBus(),
+                    logger: this.logger,
+                    debug: this.config?.get?.('logging.boardLayoutDebug', false)
+                });
+                this.modules.set('boardLayout', boardLayout);
+                this.logger?.debug('BoardLayout модуль загружен', null, 'App');
+                console.log('✅ App: BoardLayout создан в _loadGameModules');
+            } catch (error) {
+                console.error('❌ App: Ошибка при создании BoardLayout:', error);
+            }
+        } else {
+            console.warn('⚠️ App: window.BoardLayout не найден');
         }
         
         // Инициализируем PushClient для push-уведомлений
