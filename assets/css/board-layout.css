@@ -209,6 +209,19 @@
     bottom: auto !important;
     /* Гарантируем, что внешний круг центрирован относительно того же центра, что и лого */
     transform-origin: center center !important;
+    /* Фиксируем позицию - предотвращаем сдвиг при загрузке */
+    will-change: transform !important;
+    backface-visibility: hidden !important;
+    /* Запрещаем изменение позиции через JavaScript */
+    pointer-events: none !important;
+  }
+  
+  /* Разрешаем pointer-events только для клеток внутри внешнего трека */
+  .game-page .board-wrapper .outer-track .track-cell,
+  .game-page .board-wrapper #outer-track .track-cell,
+  #game-page .board-wrapper .outer-track .track-cell,
+  #game-page .board-wrapper #outer-track .track-cell {
+    pointer-events: auto !important;
   }
   
   /* Внутренний трек - центрирование */

@@ -375,6 +375,18 @@
     right: auto !important;
     bottom: auto !important;
     z-index: 2;
+    /* Фиксируем позицию - предотвращаем сдвиг при загрузке */
+    will-change: transform !important;
+    backface-visibility: hidden !important;
+    /* Запрещаем изменение позиции через JavaScript */
+    pointer-events: none !important;
+}
+
+/* Разрешаем pointer-events только для клеток внутри внешнего трека */
+#outer-track .track-cell,
+.board-wrapper .outer-track .track-cell,
+.board-wrapper #outer-track .track-cell {
+    pointer-events: auto !important;
 }
 
 .inner-track {
