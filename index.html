@@ -572,6 +572,9 @@
                 
                 // Кнопка "Меню" в нижнем меню
                 const mobileMenuBottomBtn = document.getElementById('mobile-menu-bottom-btn');
+                const cardDecksPanel = document.getElementById('card-decks-panel');
+                const topPanelContainer = document.querySelector('.top-panel-container');
+                
                 if (mobileMenuBottomBtn && cardDecksPanel) {
                     mobileMenuBottomBtn.addEventListener('click', function() {
                         const isMenuVisible = cardDecksPanel.classList.contains('menu-visible');
