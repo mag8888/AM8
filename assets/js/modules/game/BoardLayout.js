@@ -96,6 +96,8 @@ class BoardLayout {
         };
         this.pendingPositionFrame = null;
         this._lastOuterRadius = 0;
+        this._lastEmitTimestamp = 0; // Защита от дубликатов вызовов _emitCellsPositioned
+        this._emitDebounceTimer = null; // Дебаунсинг для _emitCellsPositioned
 
         this.highlightTimers = new Map();
         this.eventSubscriptions = [];
@@ -999,12 +1001,33 @@ class BoardLayout {
         if (!this.eventBus || typeof this.eventBus.emit !== 'function') {
             return;
         }
+        
+        // Защита от дубликатов: не эмитим если прошло меньше 100мс с последнего вызова
+        const now = Date.now();
+        if (now - this._lastEmitTimestamp < 100) {
+            // Дебаунсинг: отменяем предыдущий таймер и устанавливаем новый
+            if (this._emitDebounceTimer) {
+                clearTimeout(this._emitDebounceTimer);
+            }
+            this._emitDebounceTimer = setTimeout(() => {
+                this._emitCellsPositioned();
+            }, 150);
+            return;
+        }
+        
+        // Отменяем дебаунсинг таймер если он был установлен
+        if (this._emitDebounceTimer) {
+            clearTimeout(this._emitDebounceTimer);
+            this._emitDebounceTimer = null;
+        }
+        
+        this._lastEmitTimestamp = now;
         this.eventBus.emit('board:cellsPositioned', {
             outer: this.cellCentersCache.outer.slice(),
             inner: this.cellCentersCache.inner.slice(),
             outerTrackRect: this.trackRectCache.outer,
             innerTrackRect: this.trackRectCache.inner,
-            timestamp: Date.now()
+            timestamp: now
         });
     }
 
