@@ -140,7 +140,7 @@
                             if (!this._isRateLimited()) {
                                 this.loadDecks();
                             }
-                        }, 2000); // Дебаунсинг 2 секунды
+                        }, this._loadDecksDebounceDelay); // Дебаунсинг 10 секунд
                     };
                 }
                 
