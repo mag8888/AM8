@@ -390,9 +390,55 @@ class PushClient {
         
         // Обрабатываем конкретные типы уведомлений
         switch (pushData.type) {
-            case 'game_state_updated':
             case 'dice_rolled':
+                // Обновление состояния игры через push
+                if (pushData.data?.state && this.eventBus) {
+                    this.eventBus.emit('game:stateUpdated', pushData.data.state);
+                    // Эмитим событие о броске кубика для обновления UI
+                    if (pushData.data.diceValue) {
+                        this.eventBus.emit('game:diceRolled', {
+                            value: pushData.data.diceValue,
+                            state: pushData.data.state
+                        });
+                    }
+                }
+                break;
             case 'player_moved':
+                // Обновление состояния игры через push
+                if (pushData.data?.state && this.eventBus) {
+                    this.eventBus.emit('game:stateUpdated', pushData.data.state);
+                    // Эмитим событие о перемещении для обновления фишек у всех клиентов
+                    if (pushData.data.state?.players) {
+                        const playerUpdates = pushData.data.state.players.map(player => ({
+                            playerId: player.id || player.userId,
+                            position: player.position,
+                            player: player
+                        }));
+                        if (playerUpdates.length > 0) {
+                            this.eventBus.emit('players:positionsUpdated', {
+                                changes: playerUpdates,
+                                players: pushData.data.state.players
+                            });
+                        }
+                    }
+                    this.eventBus.emit('game:playerMoved', {
+                        state: pushData.data.state,
+                        steps: pushData.data.steps
+                    });
+                }
+                break;
+            case 'turn_changed':
+                // Обновление состояния игры через push
+                if (pushData.data?.state && this.eventBus) {
+                    this.eventBus.emit('game:stateUpdated', pushData.data.state);
+                    // Эмитим событие о смене хода для обновления UI и таймера
+                    this.eventBus.emit('game:turnChanged', {
+                        activePlayer: pushData.data.activePlayer,
+                        state: pushData.data.state
+                    });
+                }
+                break;
+            case 'game_state_updated':
             case 'turn_ended':
                 // Обновление состояния игры через push - уже обработано выше
                 if (pushData.data?.state && this.eventBus) {

@@ -353,11 +353,18 @@ router.post('/:id/roll', (req, res, next) => {
         state.canMove = true;
         state.canEndTurn = false;
         
-        // Отправляем push-уведомление о броске кубика
+        // Отправляем push-уведомление о броске кубика с полным состоянием для синхронизации всех клиентов
         pushService.broadcastPush('dice_rolled', { 
             roomId: id, 
             activePlayer: state.activePlayer,
-            diceValue: value
+            diceValue: value,
+            state: {
+                canRoll: state.canRoll,
+                canMove: state.canMove,
+                canEndTurn: state.canEndTurn,
+                lastDiceResult: state.lastDiceResult,
+                turnTimeRemaining: calculateTurnTimeRemaining(state)
+            }
         }).catch(err => console.error('❌ Ошибка отправки push о броске кубика:', err));
         
         const turnTimeRemaining = calculateTurnTimeRemaining(state);
@@ -419,12 +426,20 @@ router.post('/:id/move', (req, res, next) => {
         state.canEndTurn = true;
         state.lastMove = { steps: moveSteps, at: Date.now() };
         
-        // Отправляем push-уведомление о движении
+        // Отправляем push-уведомление о движении с полным состоянием для синхронизации всех клиентов
         pushService.broadcastPush('player_moved', { 
             roomId: id, 
             activePlayer: state.activePlayer,
             steps: moveSteps,
-            newPosition: current.position
+            newPosition: current.position,
+            state: {
+                players: state.players, // Полный список игроков с обновленными позициями
+                canRoll: state.canRoll,
+                canMove: state.canMove,
+                canEndTurn: state.canEndTurn,
+                lastMove: state.lastMove,
+                turnTimeRemaining: calculateTurnTimeRemaining(state)
+            }
         }).catch(err => console.error('❌ Ошибка отправки push о движении:', err));
         
         const turnTimeRemaining = calculateTurnTimeRemaining(state);
@@ -460,11 +475,20 @@ router.post('/:id/end-turn', (req, res, next) => {
         // Устанавливаем время начала нового хода
         state.turnStartTime = Date.now();
         const turnTimeRemaining = calculateTurnTimeRemaining(state);
-        // Отправляем push-уведомление о смене хода
+        // Отправляем push-уведомление о смене хода с полным состоянием для синхронизации всех клиентов
         pushService.broadcastPush('turn_changed', { 
             roomId: id, 
             activePlayer: state.activePlayer,
-            previousPlayer: state.players[state.currentPlayerIndex - 1] || state.players[state.players.length - 1]
+            previousPlayer: state.players[state.currentPlayerIndex - 1] || state.players[state.players.length - 1],
+            state: {
+                currentPlayerIndex: state.currentPlayerIndex,
+                players: state.players,
+                canRoll: state.canRoll,
+                canMove: state.canMove,
+                canEndTurn: state.canEndTurn,
+                turnStartTime: state.turnStartTime,
+                turnTimeRemaining: turnTimeRemaining
+            }
         }).catch(err => console.error('❌ Ошибка отправки push о смене хода:', err));
         
         // Отправляем реальное push-уведомление о смене хода
