@@ -142,22 +142,7 @@ class BoardLayout {
         
         this._debug('Track elements found, starting render');
         
-        // Фиксируем позицию внешнего трека по центру - предотвращаем сдвиг при загрузке
-        if (this.outerTrackElement) {
-            this.outerTrackElement.style.position = 'absolute';
-            this.outerTrackElement.style.top = '50%';
-            this.outerTrackElement.style.left = '50%';
-            this.outerTrackElement.style.transform = 'translate(-50%, -50%)';
-            this.outerTrackElement.style.transformOrigin = 'center center';
-            this.outerTrackElement.style.margin = '0';
-            this.outerTrackElement.style.padding = '0';
-            this.outerTrackElement.style.width = '100%';
-            this.outerTrackElement.style.height = '100%';
-            this.outerTrackElement.style.boxSizing = 'border-box';
-            this.outerTrackElement.style.aspectRatio = '1 / 1';
-            this.outerTrackElement.style.right = 'auto';
-            this.outerTrackElement.style.bottom = 'auto';
-        }
+        // Позиционирование задается через CSS с !important, не дублируем в JavaScript
 
         this.attachTrackListeners();
 

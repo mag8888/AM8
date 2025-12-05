@@ -357,36 +357,12 @@
 }
 
 .outer-track,
+/* ДУБЛИКАТ УДАЛЕН - позиционирование внешнего трека задано в board-layout.css (строки 192-217) */
+/* Оставляем только z-index для правильного наложения */
 #outer-track,
 .board-wrapper .outer-track,
 .board-wrapper #outer-track {
-    /* Абсолютное позиционирование для точного центрирования относительно лого */
-    width: 100% !important;
-    height: 100% !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important; /* Точное центрирование внешнего квадрата относительно лого */
-    transform-origin: center center !important; /* Гарантируем центрирование относительно центра */
-    margin: 0 !important;
-    padding: 0 !important;
-    box-sizing: border-box !important;
-    aspect-ratio: 1 / 1 !important;
-    right: auto !important;
-    bottom: auto !important;
     z-index: 2;
-    /* Фиксируем позицию - предотвращаем сдвиг при загрузке */
-    will-change: transform !important;
-    backface-visibility: hidden !important;
-    /* Запрещаем изменение позиции через JavaScript */
-    pointer-events: none !important;
-}
-
-/* Разрешаем pointer-events только для клеток внутри внешнего трека */
-#outer-track .track-cell,
-.board-wrapper .outer-track .track-cell,
-.board-wrapper #outer-track .track-cell {
-    pointer-events: auto !important;
 }
 
 .inner-track {
