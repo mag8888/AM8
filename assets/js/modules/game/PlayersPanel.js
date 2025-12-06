@@ -1530,6 +1530,12 @@ class PlayersPanel {
                 diceResultDisplay.style.opacity = '1';
             }
             
+            // ИСПРАВЛЕНО: Обновляем десктопную панель кубика
+            const desktopDiceValue = document.getElementById('desktop-dice-value');
+            if (desktopDiceValue) {
+                desktopDiceValue.textContent = displayText;
+            }
+            
             // Добавляем результат в историю бросков (используем сумму для истории)
             this.addToRollHistory(total, rollHistory);
             
