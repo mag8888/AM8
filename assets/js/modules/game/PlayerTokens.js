@@ -2229,6 +2229,17 @@ class PlayerTokens {
         const left = centerX + offsetX - halfSize;
         const top = centerY + offsetY - halfSize;
         
+        // КРИТИЧНО: Проверяем, что offset действительно применяется
+        // Если offset равен 0 для нескольких фишек, это ошибка
+        if (totalPlayers > 1 && (offsetX === 0 && offsetY === 0)) {
+            this._warn('⚠️ КРИТИЧНО: Смещение равно 0 для нескольких фишек!', {
+                playerId: token.dataset.playerId,
+                index,
+                totalPlayers,
+                offset: { x: offsetX, y: offsetY }
+            });
+        }
+        
         // Логируем позиционирование для отладки
         this._info('🎯 Позиционирование фишки в клетке', {
             playerId: token.dataset.playerId,
@@ -2239,13 +2250,32 @@ class PlayerTokens {
             center: { x: centerX, y: centerY },
             offset: { x: offsetX, y: offsetY },
             final: { left: left.toFixed(2) + 'px', top: top.toFixed(2) + 'px' },
-            offsetDistance: Math.sqrt(offsetX * offsetX + offsetY * offsetY).toFixed(2) + 'px'
+            offsetDistance: Math.sqrt(offsetX * offsetX + offsetY * offsetY).toFixed(2) + 'px',
+            calculatedLeft: left,
+            calculatedTop: top
         });
         
-        // Устанавливаем все стили
+        // Устанавливаем все стили с принудительным применением
         token.style.setProperty('position', 'absolute', 'important');
         token.style.setProperty('left', `${left}px`, 'important');
         token.style.setProperty('top', `${top}px`, 'important');
+        
+        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Убеждаемся, что координаты установлены правильно
+        requestAnimationFrame(() => {
+            const actualLeft = parseFloat(token.style.left) || 0;
+            const actualTop = parseFloat(token.style.top) || 0;
+            if (Math.abs(actualLeft - left) > 0.1 || Math.abs(actualTop - top) > 0.1) {
+                this._warn('⚠️ Координаты не совпадают после установки!', {
+                    playerId: token.dataset.playerId,
+                    expected: { left, top },
+                    actual: { left: actualLeft, top: actualTop },
+                    difference: { left: Math.abs(actualLeft - left), top: Math.abs(actualTop - top) }
+                });
+                // Принудительно устанавливаем еще раз
+                token.style.setProperty('left', `${left}px`, 'important');
+                token.style.setProperty('top', `${top}px`, 'important');
+            }
+        });
         token.style.setProperty('width', `${tokenSize}px`, 'important');
         token.style.setProperty('height', `${tokenSize}px`, 'important');
         token.style.setProperty('min-width', `${tokenSize}px`, 'important');
