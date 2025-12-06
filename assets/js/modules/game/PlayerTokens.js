@@ -2150,6 +2150,13 @@ class PlayerTokens {
             return;
         }
         
+        // КРИТИЧНО: Сохраняем параметры позиционирования в dataset для отладки
+        const playerId = token.dataset.playerId;
+        token.dataset.positioningIndex = String(index);
+        token.dataset.positioningTotal = String(totalPlayers);
+        token.dataset.positioningOffsetX = String(offset?.x || 0);
+        token.dataset.positioningOffsetY = String(offset?.y || 0);
+        
         // ИСПРАВЛЕНО: Используем явную проверку числа, чтобы позиция 0 не заменялась на 23
         const pos = Number.isFinite(+token.dataset.position) ? +token.dataset.position : 0;
         const position = pos;
