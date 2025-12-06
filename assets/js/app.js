@@ -1048,26 +1048,11 @@ class App {
             }
         }
 
-        const ensureModule = (name, factory, { forceRecreate = shouldForce, lazyLoad = false } = {}) => {
+        const ensureModule = (name, factory, { forceRecreate = shouldForce } = {}) => {
             if (forceRecreate) {
                 this._destroyModule(name);
             }
             if (!this.modules.get(name)) {
-                // Если модуль требует ленивой загрузки, загружаем его сначала (синхронно)
-                if (lazyLoad && window.ModuleLoader && this._lazyModulesMap && this._lazyModulesMap[name]) {
-                    const modulePath = this._lazyModulesMap[name];
-                    if (!window.ModuleLoader.isLoaded(modulePath)) {
-                        console.log(`⚡ App: Загружаем модуль ${name} по требованию...`);
-                        // Синхронная загрузка для критических модулей
-                        const script = document.createElement('script');
-                        script.src = `assets/js/${modulePath}?v=${Date.now()}`;
-                        script.async = false;
-                        document.head.appendChild(script);
-                        // Помечаем как загруженный
-                        window.ModuleLoader.loadedModules.add(modulePath);
-                    }
-                }
-                
                 const instance = factory();
                 if (instance) {
                     this.modules.set(name, instance);
@@ -1082,7 +1067,7 @@ class App {
                 containerSelector: '#card-decks-panel',
                 eventBus
             });
-        }, { forceRecreate: false, lazyLoad: true });
+        }, { forceRecreate: false });
 
         ensureModule('bankPreview', () => {
             if (!window.BankPreview || !window.BankPreview.getInstance) return null;
@@ -1091,7 +1076,7 @@ class App {
                 eventBus,
                 gameStateManager
             });
-        }, { forceRecreate: false, lazyLoad: true });
+        }, { forceRecreate: false });
 
         ensureModule('dealModule', () => {
             if (!window.DealModule) return null;
@@ -1109,7 +1094,7 @@ class App {
                 outerTrackSelector: '#outer-track',
                 innerTrackSelector: '#inner-track'
             });
-        }, { lazyLoad: true });
+        });
 
         ensureModule('diceService', () => {
             if (!window.DiceService) return null;
@@ -1170,7 +1155,7 @@ class App {
                 eventBus,
                 containerId: 'players-panel'
             });
-        }, { lazyLoad: true });
+        });
 
         ensureModule('turnService', () => {
             if (!window.TurnService) return null;
