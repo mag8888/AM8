@@ -357,14 +357,14 @@
     position: relative !important;
     /* Предотвращаем изменение размеров после загрузки */
     flex: 0 0 auto !important; /* Не растягивается, использует aspect-ratio */
-    overflow: hidden !important; /* Скрываем переполнение */
-    /* Убираем contain, чтобы избежать проблем с пересчетом позиций */
-    /* contain: layout size style paint !important; */
+    overflow: visible !important; /* Разрешаем видимость для центрирования */
     /* Фиксируем позицию для предотвращения сдвига */
     left: 0 !important;
     right: 0 !important;
     top: 0 !important;
     bottom: 0 !important;
+    /* Гарантируем центрирование */
+    display: block !important;
   }
   
   /* Треки внутри доски - не влияют на размеры контейнера */
