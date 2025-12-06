@@ -1183,7 +1183,11 @@ class PlayersPanel {
      * Добавление стилей для меню
      */
     addMenuStyles() {
-        if (document.getElementById('game-menu-styles')) return;
+        // Удаляем старые стили если они есть (для обновления)
+        const oldStyle = document.getElementById('game-menu-styles');
+        if (oldStyle) {
+            oldStyle.remove();
+        }
         
         const style = document.createElement('style');
         style.id = 'game-menu-styles';
