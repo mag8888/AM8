@@ -1313,6 +1313,11 @@ class PlayersPanel {
         const state = this.gameStateManager?.getState?.();
         const turnTimeRemaining = state?.turnTimeRemaining || 0;
         
+        // ИСПРАВЛЕНО: Обновляем десктопную панель таймера
+        if (typeof this.updateDesktopTimer === 'function') {
+            this.updateDesktopTimer();
+        }
+        
         if (turnTimeRemaining <= 0) {
             timerText.textContent = '0:00';
             // ИСПРАВЛЕНО: Таймер работает на сервере, клиент только отображает
