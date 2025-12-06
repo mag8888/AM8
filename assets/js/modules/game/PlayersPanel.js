@@ -76,6 +76,26 @@ class PlayersPanel {
         this.setupEventListeners();
         this.render();
         
+        // Настраиваем обработчики кнопок с задержкой для надежности
+        setTimeout(() => {
+            this.setupControls();
+        }, 100);
+        
+        // Дополнительная попытка через 1 секунду на случай, если DOM еще не готов
+        setTimeout(() => {
+            const menuBtn = document.getElementById('mobile-menu-bottom-btn');
+            if (menuBtn && !menuBtn.hasAttribute('data-handler-attached')) {
+                console.log('📋 PlayersPanel: Повторная привязка обработчика меню (отложенная)');
+                menuBtn.setAttribute('data-handler-attached', 'true');
+                menuBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('📋 PlayersPanel: Клик по кнопке "Меню" (отложенная привязка)');
+                    this.toggleMenu();
+                });
+            }
+        }, 1000);
+        
         // Создаем BankModule при инициализации
         this.createBankModule();
         
