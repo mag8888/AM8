@@ -475,11 +475,36 @@ class PlayersPanel {
         
         // Кнопка "Меню" - создаем меню с разделами
         const menuBtn = document.getElementById('mobile-menu-bottom-btn');
+        console.log('📋 PlayersPanel: Поиск кнопки меню:', { menuBtn: !!menuBtn, buttonId: 'mobile-menu-bottom-btn' });
         if (menuBtn) {
-            menuBtn.addEventListener('click', () => {
+            // Удаляем старые обработчики перед добавлением нового
+            const newMenuBtn = menuBtn.cloneNode(true);
+            menuBtn.parentNode.replaceChild(newMenuBtn, menuBtn);
+            
+            newMenuBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 console.log('📋 PlayersPanel: Клик по кнопке "Меню"');
                 this.toggleMenu();
             });
+            console.log('✅ PlayersPanel: Обработчик кнопки меню привязан');
+        } else {
+            console.error('❌ PlayersPanel: Кнопка меню не найдена! ID: mobile-menu-bottom-btn');
+            // Попытка найти кнопку позже
+            setTimeout(() => {
+                const retryBtn = document.getElementById('mobile-menu-bottom-btn');
+                if (retryBtn) {
+                    console.log('✅ PlayersPanel: Кнопка меню найдена при повторной попытке');
+                    retryBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('📋 PlayersPanel: Клик по кнопке "Меню" (повторная попытка)');
+                        this.toggleMenu();
+                    });
+                } else {
+                    console.error('❌ PlayersPanel: Кнопка меню не найдена даже при повторной попытке');
+                }
+            }, 1000);
         }
     }
     
