@@ -1170,7 +1170,7 @@ class PlayerTokens {
             this.handleTokenCollisions(stepPosition, isInner);
 
             stepIndex += 1;
-            setTimeout(moveToNextStep, 200);
+            setTimeout(moveToNextStep, 500); // ИСПРАВЛЕНО: Задержка 0.5 сек между шагами
         };
         
         // Начинаем движение

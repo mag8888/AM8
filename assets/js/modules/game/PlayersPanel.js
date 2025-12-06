@@ -1960,6 +1960,18 @@ class PlayersPanel {
             return;
         }
         
+        // ИСПРАВЛЕНО: Отключаем кнопку сразу после нажатия
+        const rollBtn = document.getElementById('roll-dice-btn');
+        const moveBtn = document.getElementById('move-btn');
+        if (rollBtn) {
+            rollBtn.disabled = true;
+            rollBtn.classList.remove('active');
+        }
+        if (moveBtn) {
+            moveBtn.disabled = true;
+            moveBtn.classList.remove('active');
+        }
+        
         try {
             this._isRolling = true;
             console.log('🎲 PlayersPanel: Обработка броска кубиков');

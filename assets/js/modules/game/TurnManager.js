@@ -171,25 +171,53 @@ class TurnManager extends EventTarget {
                 requireMyTurn: options.requireMyTurn !== false
             });
 
-            // ИСПРАВЛЕНО: Используем готовую позицию с сервера вместо пошаговой анимации
-            // Сервер уже рассчитал финальную позицию, просто обновляем UI
+            // ИСПРАВЛЕНО: Реализуем пошаговое движение с задержкой 0.5 сек
             if (response?.moveResult?.finalPosition !== undefined) {
-                // Обновляем позицию фишки напрямую на финальную позицию
-                if (this.eventBus) {
-                    this.eventBus.emit('players:positionsUpdated', {
-                        changes: [{
-                            playerId: activePlayer.id,
-                            position: response.moveResult.finalPosition,
-                            player: {
-                                ...activePlayer,
-                                position: response.moveResult.finalPosition,
-                                isInner: response.moveResult.isInner,
-                                track: response.moveResult.track
-                            }
-                        }],
-                        players: response.state?.players || []
-                    });
+                const finalPosition = response.moveResult.finalPosition;
+                const finalIsInner = response.moveResult.isInner || response.moveResult.track === 'inner';
+                const currentPosition = activePlayer.position || 0;
+                const currentIsInner = activePlayer.isInner !== false;
+                
+                // Вычисляем количество шагов
+                const stepsToMove = normalizedSteps;
+                
+                // Выполняем пошаговое движение через PlayerTokens
+                if (this.eventBus && window.app) {
+                    const playerTokens = window.app.getModule('playerTokens');
+                    if (playerTokens && typeof playerTokens.moveTokenStepByStep === 'function') {
+                        // Находим токен игрока
+                        const token = playerTokens.tokens?.get(activePlayer.id);
+                        if (token) {
+                            // Запускаем пошаговое движение
+                            playerTokens.moveTokenStepByStep(
+                                token,
+                                activePlayer.id,
+                                currentPosition,
+                                finalPosition,
+                                currentIsInner
+                            );
+                        }
+                    }
                 }
+                
+                // После завершения движения обновляем позицию в состоянии
+                setTimeout(() => {
+                    if (this.eventBus) {
+                        this.eventBus.emit('players:positionsUpdated', {
+                            changes: [{
+                                playerId: activePlayer.id,
+                                position: finalPosition,
+                                player: {
+                                    ...activePlayer,
+                                    position: finalPosition,
+                                    isInner: finalIsInner,
+                                    track: response.moveResult.track || (finalIsInner ? 'inner' : 'outer')
+                                }
+                            }],
+                            players: response.state?.players || []
+                        });
+                    }
+                }, stepsToMove * 500 + 100); // Задержка = количество шагов * 500ms + 100ms
             } else {
                 // Fallback: если сервер не вернул finalPosition, используем старую логику
                 await this._animatePlayer(activePlayer.id, normalizedSteps);
