@@ -2468,16 +2468,27 @@ class PlayersPanel {
         
         // Проверяем, мой ли это ход
         const currentUserId = this.getCurrentUserId();
+        const currentUsername = this.getCurrentUsername();
         const activePlayer = state.activePlayer;
         
         // Расширенная проверка isMyTurn с дополнительными проверками
         let isMyTurn = false;
-        if (activePlayer && currentUserId) {
-            isMyTurn = 
-                activePlayer.id === currentUserId ||
-                activePlayer.userId === currentUserId ||
-                activePlayer.username === currentUserId ||
-                (activePlayer.username && currentUserId && activePlayer.username === currentUserId);
+        if (activePlayer) {
+            // Проверка по ID (разные варианты)
+            if (currentUserId) {
+                isMyTurn = 
+                    activePlayer.id === currentUserId ||
+                    activePlayer.userId === currentUserId ||
+                    String(activePlayer.id) === String(currentUserId) ||
+                    String(activePlayer.userId) === String(currentUserId);
+            }
+            
+            // Проверка по username (если не совпало по ID)
+            if (!isMyTurn && currentUsername && activePlayer.username) {
+                isMyTurn = 
+                    activePlayer.username === currentUsername ||
+                    activePlayer.username.toLowerCase() === currentUsername.toLowerCase();
+            }
         }
         
         // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если isMyTurn все еще false, попробуем альтернативные способы
@@ -2514,6 +2525,7 @@ class PlayersPanel {
         
         console.log('🔍 PlayersPanel: Проверка isMyTurn:', {
             currentUserId,
+            currentUsername,
             activePlayerId: activePlayer?.id,
             activePlayerUserId: activePlayer?.userId,
             activePlayerUsername: activePlayer?.username,
@@ -2521,7 +2533,7 @@ class PlayersPanel {
             comparison: {
                 idMatch: activePlayer?.id === currentUserId,
                 userIdMatch: activePlayer?.userId === currentUserId,
-                usernameMatch: activePlayer?.username === currentUserId
+                usernameMatch: activePlayer?.username === currentUsername
             }
         });
         
