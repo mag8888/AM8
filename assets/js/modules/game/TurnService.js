@@ -486,21 +486,36 @@ class TurnService extends EventTarget {
     canRoll() {
         try {
             const state = this.getState();
-            
-            // УПРОЩЕННАЯ ЛОГИКА: если это мой ход - разрешаем бросок
             const isMyTurn = this.isMyTurn();
+            
+            // Проверяем состояние из GameStateManager (приоритет)
+            if (this.gameStateManager) {
+                const gameState = this.gameStateManager.getState();
+                if (gameState && typeof gameState.canRoll === 'boolean') {
+                    const can = gameState.canRoll === true && isMyTurn;
+                    console.log('🎲 TurnService.canRoll ->', can, { isMyTurn, stateCanRoll: gameState.canRoll, source: 'GameStateManager' });
+                    return can;
+                }
+            }
+            
+            // Fallback: проверяем состояние из локального state
+            if (state && typeof state.canRoll === 'boolean') {
+                const can = state.canRoll === true && isMyTurn;
+                console.log('🎲 TurnService.canRoll ->', can, { isMyTurn, stateCanRoll: state.canRoll, source: 'localState' });
+                return can;
+            }
+            
+            // Если состояние не готово, но это мой ход - разрешаем (для начального состояния)
             if (isMyTurn) {
-                console.log('🎲 TurnService.canRoll -> true (мой ход)');
+                console.log('🎲 TurnService.canRoll -> true (мой ход, состояние не готово)');
                 return true;
             }
             
-            // Если не мой ход, проверяем state.canRoll
-            const can = state && state.canRoll === true;
-            console.log('🎲 TurnService.canRoll ->', can, { isMyTurn, stateCanRoll: state?.canRoll });
-            return can;
+            console.log('🎲 TurnService.canRoll -> false (не мой ход или состояние не готово)');
+            return false;
         } catch (e) {
-            console.warn('⚠️ TurnService.canRoll: no state yet, разрешаем бросок по умолчанию');
-            return true; // позволяем бросок, если состояние не готово
+            console.warn('⚠️ TurnService.canRoll: ошибка при проверке:', e);
+            return false; // Безопаснее запретить бросок при ошибке
         }
     }
     
