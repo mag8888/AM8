@@ -1334,7 +1334,7 @@ class BankModuleServer {
                 background: linear-gradient(135deg, #3b82f6, #1d4ed8);
                 color: white;
                 border: none;
-                padding: 12px 20px;
+                padding: 14px 20px;
                 border-radius: 8px;
                 font-weight: 600;
                 cursor: pointer;
@@ -1343,6 +1343,21 @@ class BankModuleServer {
                 align-items: center;
                 justify-content: center;
                 gap: 8px;
+                transition: all 0.3s ease;
+                min-height: 48px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+            
+            .transfer-btn:hover {
+                background: linear-gradient(135deg, #1d4ed8, #1e40af);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+            }
+            
+            .transfer-btn:active {
+                transform: translateY(0);
             }
             
             .transfer-reset {
