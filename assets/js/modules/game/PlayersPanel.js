@@ -1099,6 +1099,11 @@ class PlayersPanel {
         const playerTimer = document.getElementById('player-timer');
         const statusIndicator = document.getElementById('player-status-indicator');
         
+        // ИСПРАВЛЕНО: Запускаем таймер при обновлении активного игрока
+        if (playerTimer && activePlayer) {
+            this.startTurnTimer(playerTimer);
+        }
+        
         if (currentPlayerName) {
             if (activePlayer) {
                 const displayName = PlayerStatusUtils.getPlayerDisplayName(activePlayer);
