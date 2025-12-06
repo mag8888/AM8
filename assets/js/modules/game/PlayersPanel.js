@@ -808,15 +808,16 @@ class PlayersPanel {
                 <button class="menu-close-btn" id="menu-close-btn">✕</button>
             </div>
             <div class="menu-content">
-                <div class="menu-section" id="menu-assets-section">
-                    <div class="menu-section-header">
-                        <span class="menu-section-icon">💼</span>
-                        <span class="menu-section-title">Активы</span>
-                    </div>
-                    <div class="menu-section-content" id="menu-assets-content">
-                        <div class="menu-loading">Загрузка активов...</div>
+                <!-- Имя игрока с балансом в самом верху -->
+                <div class="menu-player-info" id="menu-player-info">
+                    <div class="menu-player-avatar" id="menu-player-avatar">👤</div>
+                    <div class="menu-player-details">
+                        <div class="menu-player-name" id="menu-player-name">Загрузка...</div>
+                        <div class="menu-player-balance" id="menu-player-balance">$0</div>
                     </div>
                 </div>
+                
+                <!-- Список всех игроков -->
                 <div class="menu-section" id="menu-players-section">
                     <div class="menu-section-header">
                         <span class="menu-section-icon">👥</span>
@@ -826,14 +827,13 @@ class PlayersPanel {
                         <div class="menu-loading">Загрузка игроков...</div>
                     </div>
                 </div>
-                <div class="menu-section" id="menu-cards-section">
-                    <div class="menu-section-header">
-                        <span class="menu-section-icon">🃏</span>
-                        <span class="menu-section-title">Карточки сделок</span>
-                    </div>
-                    <div class="menu-section-content" id="menu-cards-content">
-                        <div class="menu-loading">Загрузка карточек...</div>
-                    </div>
+                
+                <!-- Кнопка выхода в самом низу -->
+                <div class="menu-footer">
+                    <button class="menu-exit-btn" id="menu-exit-btn">
+                        <span class="menu-exit-icon">🚪</span>
+                        <span class="menu-exit-text">Выход</span>
+                    </button>
                 </div>
             </div>
         `;
@@ -845,6 +845,14 @@ class PlayersPanel {
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
                 menuPanel.classList.remove('menu-visible');
+            });
+        }
+        
+        // Обработчик кнопки выхода
+        const exitBtn = menuPanel.querySelector('#menu-exit-btn');
+        if (exitBtn) {
+            exitBtn.addEventListener('click', () => {
+                this.handleExit();
             });
         }
         
@@ -860,13 +868,83 @@ class PlayersPanel {
     }
     
     /**
+     * Обработка выхода из игры
+     */
+    handleExit() {
+        if (confirm('Вы уверены, что хотите выйти из игры?')) {
+            // Очищаем данные игры
+            if (this.gameStateManager) {
+                this.gameStateManager.clearState();
+            }
+            
+            // Очищаем localStorage и sessionStorage
+            localStorage.removeItem('currentRoomId');
+            sessionStorage.removeItem('am_player_bundle');
+            
+            // Перенаправляем на страницу комнат
+            window.location.href = '/index.html#rooms';
+        }
+    }
+    
+    /**
      * Обновление данных в меню
      */
     updateMenuData() {
-        this.updateMenuAssets();
+        this.updateMenuPlayerInfo();
         this.updateMenuPlayers();
-        this.updateMenuCards();
         this.updateAssetsBadge();
+    }
+    
+    /**
+     * Обновление информации о текущем игроке в меню (вверху)
+     */
+    updateMenuPlayerInfo() {
+        const playerNameEl = document.getElementById('menu-player-name');
+        const playerBalanceEl = document.getElementById('menu-player-balance');
+        const playerAvatarEl = document.getElementById('menu-player-avatar');
+        
+        if (!playerNameEl || !playerBalanceEl) return;
+        
+        const state = this.gameStateManager?.getState?.();
+        const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
+                             sessionStorage.getItem('userId') || 
+                             localStorage.getItem('userId');
+        const currentUsername = window.CommonUtils?.getCurrentUsername?.();
+        
+        if (!state || !currentUserId) {
+            playerNameEl.textContent = 'Игрок';
+            playerBalanceEl.textContent = '$0';
+            return;
+        }
+        
+        // Ищем текущего игрока
+        const currentPlayer = state.players?.find(p => 
+            p.id === currentUserId || 
+            p.userId === currentUserId ||
+            (currentUsername && p.username === currentUsername)
+        );
+        
+        if (currentPlayer) {
+            const displayName = currentPlayer.username || currentPlayer.name || 'Игрок';
+            const balance = currentPlayer.money || currentPlayer.balance || 0;
+            
+            playerNameEl.textContent = displayName;
+            playerBalanceEl.textContent = `$${balance.toLocaleString()}`;
+            
+            // Обновляем аватар
+            if (playerAvatarEl) {
+                const token = currentPlayer.token || '👤';
+                playerAvatarEl.textContent = token;
+            }
+        } else {
+            // Fallback на username из CommonUtils
+            if (currentUsername) {
+                playerNameEl.textContent = currentUsername;
+            } else {
+                playerNameEl.textContent = 'Игрок';
+            }
+            playerBalanceEl.textContent = '$0';
+        }
     }
     
     /**
@@ -1047,10 +1125,97 @@ class PlayersPanel {
                 padding: 1.5rem;
                 max-width: 600px;
                 width: 90%;
-                max-height: 80vh;
+                max-height: 85vh;
                 overflow-y: auto;
                 border: 1px solid rgba(148, 163, 184, 0.2);
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                display: flex;
+                flex-direction: column;
+            }
+            
+            /* Информация о текущем игроке вверху */
+            .menu-player-info {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 1rem;
+                background: linear-gradient(135deg, rgba(99, 102, 246, 0.2), rgba(139, 92, 246, 0.2));
+                border-radius: 0.75rem;
+                border: 1px solid rgba(99, 102, 246, 0.3);
+                margin-bottom: 1.5rem;
+            }
+            
+            .menu-player-avatar {
+                width: 3.5rem;
+                height: 3.5rem;
+                border-radius: 50%;
+                background: rgba(99, 102, 246, 0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.75rem;
+                flex-shrink: 0;
+            }
+            
+            .menu-player-details {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+            
+            .menu-player-name {
+                font-size: 1.125rem;
+                font-weight: 600;
+                color: #f8fafc;
+            }
+            
+            .menu-player-balance {
+                font-size: 1rem;
+                font-weight: 700;
+                color: #10b981;
+            }
+            
+            /* Кнопка выхода внизу */
+            .menu-footer {
+                margin-top: auto;
+                padding-top: 1.5rem;
+                border-top: 1px solid rgba(148, 163, 184, 0.2);
+            }
+            
+            .menu-exit-btn {
+                width: 100%;
+                padding: 1rem;
+                background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+                border: 1px solid rgba(239, 68, 68, 0.4);
+                border-radius: 0.75rem;
+                color: #f8fafc;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                transition: all 0.2s ease;
+            }
+            
+            .menu-exit-btn:hover {
+                background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3));
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            }
+            
+            .menu-exit-btn:active {
+                transform: translateY(0);
+            }
+            
+            .menu-exit-icon {
+                font-size: 1.25rem;
+            }
+            
+            .menu-exit-text {
+                font-size: 1rem;
             }
             
             .menu-header {
