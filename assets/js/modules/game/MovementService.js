@@ -116,8 +116,8 @@ class MovementService {
      */
     initializePlayerPosition(playerId) {
         const startPosition = {
-            track: 'outer', // Начинаем с внешнего трека
-            position: 0,    // Первая клетка (Паспортный доход)
+            track: 'inner', // Начинаем с внутреннего трека
+            position: 23,    // Клетка #24 (последняя клетка внутреннего трека)
             totalMoves: 0   // Общее количество ходов
         };
         

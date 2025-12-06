@@ -774,8 +774,8 @@ class PlayerTokens {
         token.className = 'player-token';
         
         // Используем реальную позицию игрока из данных, или 0 по умолчанию
-        const cellPosition = Number.isFinite(Number(player.position)) ? Number(player.position) : 0;
-        const isInnerTrack = typeof player.isInner === 'boolean' ? player.isInner : false;
+        const cellPosition = Number.isFinite(Number(player.position)) ? Number(player.position) : 23; // Начальная позиция 23 (клетка #24 внутреннего трека)
+        const isInnerTrack = typeof player.isInner === 'boolean' ? player.isInner : true; // Начинаем с внутреннего трека
         
         token.classList.add(isInnerTrack ? 'inner' : 'outer');
         token.classList.toggle('inner-track', isInnerTrack);
@@ -1643,8 +1643,8 @@ class PlayerTokens {
                     // Не перезаписываем позиции, если они есть с сервера
                     const playersWithRealPositions = state.players.map(player => ({
                         ...player,
-                        position: typeof player.position === 'number' ? player.position : (player.position === null || player.position === undefined ? 0 : Number(player.position) || 0),
-                        isInner: typeof player.isInner === 'boolean' ? player.isInner : (player.isInner === null || player.isInner === undefined ? false : Boolean(player.isInner))
+                        position: typeof player.position === 'number' ? player.position : (player.position === null || player.position === undefined ? 23 : Number(player.position) || 23), // Начальная позиция 23 (клетка #24 внутреннего трека)
+                        isInner: typeof player.isInner === 'boolean' ? player.isInner : (player.isInner === null || player.isInner === undefined ? true : Boolean(player.isInner)) // Начинаем с внутреннего трека
                     }));
                     this._info('Получены данные из GameStateManager, используем реальные позиции игроков', {
                         playersCount: playersWithRealPositions.length,
@@ -1665,8 +1665,8 @@ class PlayerTokens {
             // ИСПРАВЛЕНО: Используем позиции из состояния игры с сервера без изменений
             const playersWithRealPositions = this.gameState.players.map(player => ({
                 ...player,
-                position: typeof player.position === 'number' ? player.position : (player.position === null || player.position === undefined ? 0 : Number(player.position) || 0),
-                isInner: typeof player.isInner === 'boolean' ? player.isInner : (player.isInner === null || player.isInner === undefined ? false : Boolean(player.isInner))
+                position: typeof player.position === 'number' ? player.position : (player.position === null || player.position === undefined ? 23 : Number(player.position) || 23), // Начальная позиция 23 (клетка #24 внутреннего трека)
+                isInner: typeof player.isInner === 'boolean' ? player.isInner : (player.isInner === null || player.isInner === undefined ? true : Boolean(player.isInner)) // Начинаем с внутреннего трека
             }));
             this._info('Получены данные из gameState, используем реальные позиции игроков', {
                 playersCount: playersWithRealPositions.length,
@@ -1827,10 +1827,10 @@ class PlayerTokens {
             // Дефолт 0 устанавливается только если сервер явно не передал позицию
             const playerPosition = typeof player.position === 'number' 
                 ? player.position 
-                : (player.position === null || player.position === undefined ? 0 : Number(player.position) || 0);
+                : (player.position === null || player.position === undefined ? 23 : Number(player.position) || 23); // Начальная позиция 23 (клетка #24 внутреннего трека)
             const playerIsInner = typeof player.isInner === 'boolean' 
                 ? player.isInner 
-                : (player.isInner === null || player.isInner === undefined ? false : Boolean(player.isInner));
+                : (player.isInner === null || player.isInner === undefined ? true : Boolean(player.isInner)); // Начинаем с внутреннего трека
             
             result.push({
                 ...player,

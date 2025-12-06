@@ -856,10 +856,10 @@ class GameStateManager {
         // Если сервер передал позицию (даже 0), используем её как есть
         const position = typeof player.position === 'number' 
             ? player.position 
-            : (player.position === null || player.position === undefined ? 0 : Number(player.position) || 0);
+            : (player.position === null || player.position === undefined ? 23 : Number(player.position) || 23); // Начальная позиция 23 (клетка #24 внутреннего трека)
         const isInner = typeof player.isInner === 'boolean' 
             ? player.isInner 
-            : (player.isInner === null || player.isInner === undefined ? false : Boolean(player.isInner));
+            : (player.isInner === null || player.isInner === undefined ? true : Boolean(player.isInner)); // Начинаем с внутреннего трека
         
         return {
             ...player,
