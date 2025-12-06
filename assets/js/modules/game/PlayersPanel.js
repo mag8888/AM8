@@ -1228,19 +1228,19 @@ class PlayersPanel {
                 overflow-y: auto;
                 border: 1px solid rgba(148, 163, 184, 0.2);
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-                display: grid;
-                grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr auto;
-                gap: 1.5rem;
+                display: grid !important;
+                grid-template-columns: 1fr !important;
+                grid-template-rows: auto 1fr auto !important;
+                gap: 1.5rem !important;
                 margin-top: 1rem;
             }
             
             /* Информация о текущем игроке вверху - Grid layout */
             .menu-player-info {
-                display: grid;
-                grid-template-columns: auto 1fr;
+                display: grid !important;
+                grid-template-columns: auto 1fr !important;
                 grid-template-areas: 
-                    "avatar details";
+                    "avatar details" !important;
                 align-items: center;
                 gap: 1rem;
                 padding: 1.25rem;
@@ -1419,10 +1419,10 @@ class PlayersPanel {
             .menu-asset-item,
             .menu-player-item,
             .menu-deck-item {
-                display: grid;
-                grid-template-columns: auto 1fr auto;
+                display: grid !important;
+                grid-template-columns: auto 1fr auto !important;
                 grid-template-areas: 
-                    "icon name value";
+                    "icon name value" !important;
                 align-items: center;
                 gap: 0.75rem;
                 padding: 0.875rem;
