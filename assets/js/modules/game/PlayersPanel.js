@@ -205,6 +205,11 @@ class PlayersPanel {
             setInterval(() => {
                 this.updateDesktopTimer();
             }, 1000);
+            
+            // Обновление бейджа активов
+            setInterval(() => {
+                this.updateAssetsBadge();
+            }, 2000);
         }
 
         // Подписываемся на обновления состояния игры
@@ -368,6 +373,12 @@ class PlayersPanel {
                             <div class="btn-label">Банк</div>
                             <div class="btn-glow"></div>
                         </button>
+                        <button class="action-btn assets-btn" id="open-assets" type="button">
+                            <div class="btn-icon">💼</div>
+                            <div class="btn-label">Активы</div>
+                            <div class="btn-badge" id="assets-badge">$0</div>
+                            <div class="btn-glow"></div>
+                        </button>
                         <button class="action-btn roll-btn" id="roll-dice-btn" type="button" disabled>
                             <div class="btn-icon">🎲</div>
                             <div class="btn-label">Бросить</div>
@@ -437,6 +448,15 @@ class PlayersPanel {
                 this.openBankModule();
             });
             console.log('✅ PlayersPanel: Обработчик кнопки банка привязан в setupControls');
+        }
+        
+        // Кнопка "Активы" - открываем меню с активами
+        const openAssetsBtn = document.getElementById('open-assets');
+        if (openAssetsBtn) {
+            openAssetsBtn.addEventListener('click', () => {
+                console.log('💼 PlayersPanel: Клик по кнопке "Активы"');
+                this.toggleMenu();
+            });
         }
         
         // Кнопка "Меню" - создаем меню с разделами
@@ -542,6 +562,7 @@ class PlayersPanel {
         this.updateMenuAssets();
         this.updateMenuPlayers();
         this.updateMenuCards();
+        this.updateAssetsBadge();
     }
     
     /**
@@ -1977,6 +1998,11 @@ class PlayersPanel {
             const desktopDiceValue = document.getElementById('desktop-dice-value');
             if (desktopDiceValue) {
                 desktopDiceValue.textContent = displayText;
+                // Показываем панель на десктопе
+                const desktopPanel = document.getElementById('desktop-dice-timer-panel');
+                if (desktopPanel) {
+                    desktopPanel.style.display = 'flex';
+                }
             }
             
             // Добавляем результат в историю бросков (используем сумму для истории)

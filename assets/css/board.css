@@ -1159,6 +1159,27 @@
     font-size: 1.1rem;
 }
 
+/* Кнопка активов */
+.assets-btn {
+    position: relative;
+}
+
+.btn-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 40px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    z-index: 10;
+}
+
 /* Move Buttons */
 .move-buttons {
     display: grid;
