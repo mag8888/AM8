@@ -482,8 +482,8 @@ class TurnController {
      * @param {number} count - Количество игроков
      */
     updatePlayersCount(count) {
-        if (!this.ui) return;
-        const playersCount = this.ui.querySelector('.players-count');
+        const container = (this.ui && this.ui !== document) ? this.ui : document;
+        const playersCount = container.querySelector('.players-count');
         if (playersCount) {
             playersCount.textContent = `${count}/4`;
         }
@@ -564,12 +564,8 @@ class TurnController {
      */
     updateTurnInfo(state) {
         // Ищем элемент turnInfo в UI или в документе
-        let turnInfo = null;
-        if (this.ui) {
-            turnInfo = this.ui.querySelector('.turn-info');
-        } else {
-            turnInfo = document.querySelector('.turn-info');
-        }
+        const container = (this.ui && this.ui !== document) ? this.ui : document;
+        const turnInfo = container.querySelector('.turn-info');
         
         if (!turnInfo) {
             return; // Элемент не найден, выходим
@@ -653,8 +649,9 @@ class TurnController {
      * @param {Object} diceResult - Результат броска
      */
     updateDiceInfo(diceResult) {
-        if (diceResult && this.ui) {
-            const diceInfo = this.ui.querySelector('.dice-info');
+        if (diceResult) {
+            const container = (this.ui && this.ui !== document) ? this.ui : document;
+            const diceInfo = container.querySelector('.dice-info');
             if (diceInfo) {
                 diceInfo.textContent = this.getDiceEmoji(diceResult.value);
                 diceInfo.style.color = '#10b981';
@@ -667,8 +664,8 @@ class TurnController {
      * @param {Object} activePlayer - Активный игрок
      */
     updateCurrentPlayer(activePlayer) {
-        if (!this.ui) return;
-        const currentPlayer = this.ui.querySelector('.current-player');
+        const container = (this.ui && this.ui !== document) ? this.ui : document;
+        const currentPlayer = container.querySelector('.current-player');
         if (currentPlayer) {
             if (activePlayer) {
                 currentPlayer.textContent = PlayerStatusUtils.getPlayerDisplayName(activePlayer);
@@ -783,7 +780,8 @@ class TurnController {
             canEndTurn: this.turnManager ? this.turnManager.canEndTurn : this.turnService?.canEndTurn?.() ?? false
         };
 
-        const rollBtn = this.ui.querySelector('#roll-dice-btn');
+        const container = (this.ui && this.ui !== document) ? this.ui : document;
+        const rollBtn = container.querySelector('#roll-dice-btn');
         if (rollBtn) {
             rollBtn.disabled = !isMyTurn ||
                 !resolvedState.canRoll ||
@@ -792,7 +790,7 @@ class TurnController {
             rollBtn.classList.toggle('rolling', resolvedState.isRolling);
         }
 
-        const endTurnBtn = this.ui.querySelector('#end-turn-btn');
+        const endTurnBtn = container.querySelector('#end-turn-btn');
         if (endTurnBtn) {
             endTurnBtn.disabled = !isMyTurn ||
                 !resolvedState.canEndTurn ||

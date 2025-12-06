@@ -1113,14 +1113,16 @@ class App {
             });
         });
 
-        ensureModule('playerTokenRenderer', () => {
-            if (!window.PlayerTokenRenderer) return null;
-            return new window.PlayerTokenRenderer({
-                gameState: this.getModule('gameState'),
-                eventBus,
-                movementService: this.modules.get('movementService')
-            });
-        });
+        // ОТКЛЮЧЕНО: PlayerTokenRenderer конфликтует с PlayerTokens
+        // PlayerTokens - единственный источник истины для рендеринга фишек с данными сервера
+        // ensureModule('playerTokenRenderer', () => {
+        //     if (!window.PlayerTokenRenderer) return null;
+        //     return new window.PlayerTokenRenderer({
+        //         gameState: this.getModule('gameState'),
+        //         eventBus,
+        //         movementService: this.modules.get('movementService')
+        //     });
+        // });
 
         ensureModule('professionSystem', () => {
             if (!window.ProfessionSystem) return null;
