@@ -1032,18 +1032,12 @@ class PlayersPanel {
             return '<div class="menu-empty">Нет доступных карточек</div>';
         }
         
-        // Фильтруем только карточки сделок (opportunity cards)
-        const dealCards = decks.filter(deck => 
-            deck.type === 'opportunity' || 
-            deck.name?.toLowerCase().includes('сделка') ||
-            deck.name?.toLowerCase().includes('opportunity')
-        );
-        
-        if (dealCards.length === 0) {
-            return '<div class="menu-empty">Нет карточек сделок</div>';
+        // Показываем все колоды карт
+        if (decks.length === 0) {
+            return '<div class="menu-empty">Нет доступных карточек</div>';
         }
         
-        return dealCards.map((deck, index) => {
+        return decks.map((deck, index) => {
             const cardCount = deck.drawCount || deck.count || 0;
             const deckName = deck.name || deck.id || `Колода ${index + 1}`;
             const deckIcon = this.getDeckIcon(deck.id || deck.name || '');
