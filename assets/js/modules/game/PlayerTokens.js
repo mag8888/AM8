@@ -864,34 +864,36 @@ class PlayerTokens {
     }
     
     /**
-     * Расчет смещения для множественных фишек (15% от размера клетки)
+     * Расчет смещения для множественных фишек
+     * Увеличено смещение для предотвращения наложения фишек друг на друга
      */
     calculateOffset(index, totalPlayers, cellSize = 50) {
         if (totalPlayers === 1) {
             return { x: 0, y: 0 };
         }
         
-        // МАКСИМАЛЬНЫЙ сдвиг для гарантированной видимости - 60% от размера клетки
-        const offsetPercent = 0.60; // Увеличено до 60% для максимального расстояния между фишками
+        // УВЕЛИЧЕНО: сдвиг 75% от размера клетки для гарантированного разделения фишек
+        // Размер фишки 36px, минимальное расстояние между центрами должно быть ~40px
+        const offsetPercent = 0.75; // Увеличено до 75% для лучшего разделения
         const offsetPx = cellSize * offsetPercent;
         
-        // Конфигурация сдвига для разного количества фишек (в пикселях, рассчитанных от размера клетки)
-        // Для двух фишек используем максимальный диагональный сдвиг для максимального расстояния
+        // Конфигурация сдвига для разного количества фишек
+        // Используем равномерное распределение по кругу для лучшей видимости
         const offsetConfigs = {
             2: [
-                { x: -offsetPx * 0.9, y: -offsetPx * 0.6 },  // Влево-вверх (54% и 36% от клетки)
-                { x: offsetPx * 0.9, y: offsetPx * 0.6 }     // Вправо-вниз (54% и 36% от клетки)
+                { x: -offsetPx * 0.85, y: -offsetPx * 0.5 },  // Влево-вверх
+                { x: offsetPx * 0.85, y: offsetPx * 0.5 }     // Вправо-вниз
             ],
             3: [
-                { x: -offsetPx, y: -offsetPx * 0.7 },  // Влево-вверх
-                { x: 0, y: offsetPx * 0.7 },          // Вниз
-                { x: offsetPx, y: -offsetPx * 0.7 }   // Вправо-вверх
+                { x: -offsetPx * 0.8, y: -offsetPx * 0.6 },  // Влево-вверх
+                { x: 0, y: offsetPx * 0.8 },                 // Вниз
+                { x: offsetPx * 0.8, y: -offsetPx * 0.6 }    // Вправо-вверх
             ],
             4: [
-                { x: -offsetPx, y: -offsetPx * 0.7 },  // Влево-вверх
-                { x: offsetPx, y: -offsetPx * 0.7 },    // Вправо-вверх
-                { x: -offsetPx, y: offsetPx * 0.7 },   // Влево-вниз
-                { x: offsetPx, y: offsetPx * 0.7 }    // Вправо-вниз
+                { x: -offsetPx * 0.8, y: -offsetPx * 0.6 },  // Влево-вверх
+                { x: offsetPx * 0.8, y: -offsetPx * 0.6 },   // Вправо-вверх
+                { x: -offsetPx * 0.8, y: offsetPx * 0.6 },   // Влево-вниз
+                { x: offsetPx * 0.8, y: offsetPx * 0.6 }     // Вправо-вниз
             ]
         };
         
@@ -900,10 +902,11 @@ class PlayerTokens {
         
         // Добавляем визуальную индикацию для множественных фишек
         if (totalPlayers > 1) {
-            this._info(`✅ Фишка ${index + 1}/${totalPlayers} получает сдвиг 60% (${offsetPx.toFixed(1)}px)`, {
+            this._info(`✅ Фишка ${index + 1}/${totalPlayers} получает сдвиг 75% (${offsetPx.toFixed(1)}px)`, {
                 offset,
                 cellSize,
-                offsetPercent: (offsetPx / cellSize * 100).toFixed(1) + '%'
+                offsetPercent: (offsetPx / cellSize * 100).toFixed(1) + '%',
+                distance: Math.sqrt(offset.x * offset.x + offset.y * offset.y).toFixed(1) + 'px'
             });
         }
         
