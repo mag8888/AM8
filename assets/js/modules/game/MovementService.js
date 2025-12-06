@@ -68,33 +68,24 @@ class MovementService {
      * Получение ID текущего пользователя
      */
     _getCurrentUserId() {
+        // ИСПРАВЛЕНО: Используем общую утилиту CommonUtils вместо дублирования логики
+        if (window.CommonUtils && typeof window.CommonUtils.getCurrentUserId === 'function') {
+            return window.CommonUtils.getCurrentUserId();
+        }
+        
+        // Fallback для обратной совместимости
         try {
-            // Из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
-                return bundle.userId || bundle.id || bundle.username || bundle.currentUser?.id || bundle.currentUser?.username;
+                return bundle?.currentUser?.id || bundle?.currentUser?.userId || null;
             }
             
-            // Из localStorage
-            const userData = localStorage.getItem('aura_money_user');
-            if (userData) {
-                const user = JSON.parse(userData);
-                return user.id || user.userId || user.username;
-            }
-            
-            // Из window.app
-            if (window.app) {
-                const userModel = window.app.getModule('userModel');
-                if (userModel) {
-                    return userModel.getId() || userModel.getUsername();
-                }
-            }
+            return null;
         } catch (error) {
             console.warn('⚠️ MovementService: Ошибка получения ID пользователя:', error);
+            return null;
         }
-        
-        return null;
     }
     
     /**

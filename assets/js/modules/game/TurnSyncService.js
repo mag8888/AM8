@@ -382,43 +382,20 @@ class TurnSyncService {
      * Получение ID текущего пользователя
      */
     _getCurrentUserId() {
+        // ИСПРАВЛЕНО: Используем общую утилиту CommonUtils вместо дублирования логики
+        if (window.CommonUtils && typeof window.CommonUtils.getCurrentUserId === 'function') {
+            return window.CommonUtils.getCurrentUserId();
+        }
+        
+        // Fallback для обратной совместимости
         try {
-            // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
                 const userId = bundle?.currentUser?.id || bundle?.currentUser?.userId;
-                if (userId) {
-                    console.log('🔍 TurnSyncService: ID пользователя из bundle:', userId);
-                    return userId;
-                }
+                if (userId) return userId;
             }
             
-            // Пытаемся получить из localStorage
-            const userRaw = localStorage.getItem('aura_money_user');
-            if (userRaw) {
-                const user = JSON.parse(userRaw);
-                const userId = user?.id || user?.userId;
-                if (userId) {
-                    console.log('🔍 TurnSyncService: ID пользователя из localStorage:', userId);
-                    return userId;
-                }
-            }
-            
-            // Пытаемся получить из глобального объекта app
-            if (window.app && window.app.getModule) {
-                const userModel = window.app.getModule('userModel');
-                if (userModel && userModel.getCurrentUser) {
-                    const currentUser = userModel.getCurrentUser();
-                    if (currentUser && (currentUser.id || currentUser.userId)) {
-                        const userId = currentUser.id || currentUser.userId;
-                        console.log('🔍 TurnSyncService: ID пользователя из userModel:', userId);
-                        return userId;
-                    }
-                }
-            }
-            
-            console.warn('⚠️ TurnSyncService: ID пользователя не найден');
             return null;
         } catch (error) {
             console.error('❌ TurnSyncService: Ошибка получения userId:', error);
