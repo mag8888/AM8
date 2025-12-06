@@ -1408,6 +1408,39 @@ class PlayersPanel {
     }
     
     /**
+     * Обновление десктопной панели таймера
+     */
+    updateDesktopTimer() {
+        const desktopTimerValue = document.getElementById('desktop-timer-value');
+        if (!desktopTimerValue) return;
+        
+        const state = this.gameStateManager?.getState?.();
+        if (!state) {
+            desktopTimerValue.textContent = '0:00';
+            return;
+        }
+        
+        // Получаем turnTimeRemaining из состояния или вычисляем из turnStartTime и turnTimer
+        let turnTimeRemaining = state?.turnTimeRemaining;
+        
+        // Если turnTimeRemaining не задан, вычисляем его из turnStartTime и turnTimer
+        if (turnTimeRemaining === undefined || turnTimeRemaining === null) {
+            if (state?.turnStartTime && state?.turnTimer) {
+                const elapsed = Date.now() - state.turnStartTime;
+                turnTimeRemaining = Math.max(0, state.turnTimer - elapsed);
+            } else {
+                turnTimeRemaining = 0;
+            }
+        }
+        
+        // Всегда показываем время в формате MM:SS, даже если 0
+        const seconds = Math.floor(Math.max(0, turnTimeRemaining) / 1000);
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        desktopTimerValue.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    /**
      * Открытие банк модуля
      */
     async openBankModule() {
