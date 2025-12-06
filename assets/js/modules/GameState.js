@@ -396,7 +396,7 @@ class GameState {
                 const id = player?.id || player?.userId;
                 if (!id) return;
                 previousPositions.set(id, {
-                    position: Number(player.position) || 0,
+                    position: Number(player.position) || 23, // Начальная позиция 23 (клетка #24 внутреннего трека)
                     isInner: Boolean(player.isInner)
                 });
             });
@@ -453,7 +453,7 @@ class GameState {
                 const id = player?.id || player?.userId;
                 if (!id) return;
                 const prev = previousPositions.get(id);
-                const currentPosition = Number(player.position) || 0;
+                const currentPosition = Number(player.position) || 23; // Начальная позиция 23 (клетка #24 внутреннего трека)
                 const currentIsInner = Boolean(player.isInner);
                 if (!prev || prev.position !== currentPosition || prev.isInner !== currentIsInner) {
                     positionChanges.push({
@@ -730,8 +730,8 @@ class GameState {
                 this.players = roomData.players.map((player, index) => ({
                     id: player.userId || `player${index + 1}`,
                     username: player.username || `Игрок ${index + 1}`,
-                    position: 0, // Все игроки начинают с 1-й клетки (позиция 0)
-                    isInner: false, // Начинаем с внешнего трека
+                    position: 23, // Все игроки начинают с клетки #24 (позиция 23 внутреннего трека)
+                    isInner: true, // Начинаем с внутреннего трека
                     money: 5000,
                     salary: 5000,
                     totalIncome: 0,
