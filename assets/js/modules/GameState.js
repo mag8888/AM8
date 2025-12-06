@@ -762,41 +762,20 @@ class GameState {
     }
 
     /**
-     * Переместить игрока на новую позицию
+     * ⚠️ DEPRECATED: Перемещение игрока должно происходить только через сервер
+     * Позиции игроков приходят только с сервера через GameStateManager.updateFromServer()
+     * Этот метод отключен для предотвращения конфликтов с данными сервера
+     * 
+     * @deprecated Используйте GameStateManager.updateFromServer() для обновления позиций
      * @param {string} playerId - ID игрока
      * @param {number} newPosition - Новая позиция
      * @param {boolean} isInner - На внутреннем круге
      */
     movePlayer(playerId, newPosition, isInner = false) {
-        const player = this.getPlayerById(playerId);
-        if (!player) {
-            console.warn('⚠️ GameState: Игрок не найден для перемещения:', playerId);
-            return;
-        }
-
-        const oldPosition = player.position;
-        const oldIsInner = player.isInner;
-
-        // Обновляем позицию игрока
-        player.position = newPosition;
-        player.isInner = isInner;
-
-        console.log(`🎯 GameState: Игрок ${player.username} перемещен с позиции ${oldPosition} на позицию ${newPosition} (${isInner ? 'внутренний' : 'внешний'} круг)`);
-
-        // Эмитируем событие о перемещении
-        if (this.eventBus) {
-            this.eventBus.emit('player:moved', {
-                playerId,
-                player,
-                oldPosition,
-                newPosition,
-                oldIsInner,
-                isInner
-            });
-
-            // Событие обновления позиции будет эмитировано через updateFromServerState
-            // чтобы избежать дублирования анимации
-        }
+        console.warn('⚠️ GameState.movePlayer() DEPRECATED: Позиции игроков должны обновляться только через сервер. Используйте GameStateManager.updateFromServer()');
+        // Метод отключен - позиции приходят только с сервера
+        // Не изменяем позицию на клиенте, чтобы избежать конфликтов
+        return;
     }
 
     /**

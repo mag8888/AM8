@@ -851,9 +851,15 @@ class GameStateManager {
         const id = player.id || player.userId;
         if (!id) return null;
         
-        // Устанавливаем позицию 0 по умолчанию, если не задана или если игра только начинается
-        const position = typeof player.position === 'number' ? player.position : 0;
-        const isInner = typeof player.isInner === 'boolean' ? player.isInner : false;
+        // ИСПРАВЛЕНО: Используем позицию из данных сервера без изменений
+        // Дефолт 0 устанавливается только если сервер явно не передал позицию (null/undefined)
+        // Если сервер передал позицию (даже 0), используем её как есть
+        const position = typeof player.position === 'number' 
+            ? player.position 
+            : (player.position === null || player.position === undefined ? 0 : Number(player.position) || 0);
+        const isInner = typeof player.isInner === 'boolean' 
+            ? player.isInner 
+            : (player.isInner === null || player.isInner === undefined ? false : Boolean(player.isInner));
         
         return {
             ...player,
@@ -861,8 +867,8 @@ class GameStateManager {
             userId: player.userId || id,
             username: player.username || player.name || `player-${id}`,
             isReady: Boolean(player.isReady),
-            position: position, // Стартовая позиция - 1-я клетка
-            isInner: isInner // Начинаем с внешнего трека
+            position: position, // Позиция с сервера (единственный источник истины)
+            isInner: isInner // Трек с сервера (единственный источник истины)
         };
     }
 
