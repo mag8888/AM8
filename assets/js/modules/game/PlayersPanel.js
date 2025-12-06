@@ -1291,21 +1291,59 @@ class PlayersPanel {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.8);
-                backdrop-filter: blur(10px);
                 z-index: 100000;
                 display: none;
-                align-items: flex-start;
-                justify-content: center;
-                padding-top: 2rem;
                 opacity: 0;
-                transition: opacity 0.3s ease;
+                transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                transform: translateX(-100%);
             }
             
             .game-menu-panel.menu-visible {
-                display: flex !important;
+                display: block !important;
                 opacity: 1 !important;
                 visibility: visible !important;
+                transform: translateX(0);
+            }
+            
+            .menu-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.85);
+                backdrop-filter: blur(10px);
+                transition: opacity 0.3s ease;
+            }
+            
+            .menu-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                max-width: 600px;
+                height: 100%;
+                background: rgba(15, 23, 42, 0.98);
+                box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+                display: grid;
+                grid-template-rows: auto 1fr auto;
+                overflow: hidden;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            .game-menu-panel.menu-visible .menu-container {
+                transform: translateX(0);
+            }
+            
+            .menu-header {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                align-items: center;
+                gap: 1rem;
+                padding: 1rem 1.5rem;
+                background: rgba(15, 23, 42, 0.95);
+                border-bottom: 1px solid rgba(148, 163, 184, 0.2);
             }
             
             .menu-body {
