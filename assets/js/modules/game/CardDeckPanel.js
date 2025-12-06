@@ -28,7 +28,8 @@
     class CardDeckPanel {
         constructor(config = {}) {
             this.containerSelector = config.containerSelector || '#card-decks-panel';
-            this.apiBaseUrl = config.apiBaseUrl || '/api/cards';
+            // ИСПРАВЛЕНО: Используем ApiUrlHelper для правильного определения API URL
+            this.apiBaseUrl = config.apiBaseUrl || (window.ApiUrlHelper ? window.ApiUrlHelper.getApiUrl('cards') : '/api/cards');
             this.eventBus = config.eventBus || null;
             this.refreshInterval = typeof config.refreshInterval === 'number'
                 ? config.refreshInterval

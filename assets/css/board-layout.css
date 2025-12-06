@@ -119,6 +119,8 @@
   border: 1px solid rgba(148, 163, 184, 0.2) !important;
   border-radius: 8px !important;
   backdrop-filter: blur(10px) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .desktop-dice-info {
