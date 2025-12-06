@@ -826,21 +826,31 @@ class BankModuleServer {
                                         <span class="summary-value expense" id="bank-expenses">$0</span>
                                     </div>
                                     <div class="summary-item">
-                                        <span class="summary-icon net">💎</span>
-                                        <span class="summary-label">Чистый доход:</span>
-                                        <span class="summary-value net" id="bank-net-income">$0/мес</span>
+                                        <span class="summary-icon payday">💰</span>
+                                        <span class="summary-label">PAYDAY:</span>
+                                        <span class="summary-value payday" id="bank-salary">$0/мес</span>
                                     </div>
                                 </div>
                                 
                                 <div class="credit-info">
                                     <div class="credit-item">
-                                        <span class="credit-icon">💳</span>
+                                        <span class="credit-icon">📄</span>
                                         <span class="credit-label">Кредит:</span>
                                         <span class="credit-value" id="bank-credit">$0</span>
                                     </div>
                                     <div class="credit-item">
                                         <span class="credit-label">Макс. кредит:</span>
                                         <span class="credit-value max" id="bank-max-credit">$0</span>
+                                    </div>
+                                    <div class="credit-actions">
+                                        <button class="credit-btn no-credit" id="no-credit-btn" style="display: none;">
+                                            <span class="btn-icon">✓</span>
+                                            <span>БЕЗ КРЕДИТОВ</span>
+                                        </button>
+                                        <button class="credit-btn take-credit" id="take-credit-btn">
+                                            <span class="btn-icon">📄</span>
+                                            <span>ВЗЯТЬ</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1075,6 +1085,27 @@ class BankModuleServer {
                 border-bottom: none;
                 flex: 1;
                 padding-top: 0;
+            }
+            
+            /* Десктоп версия: две колонки */
+            @media (min-width: 1025px) {
+                .bank-content {
+                    flex-direction: row !important;
+                }
+                
+                .bank-left {
+                    width: 40% !important;
+                    max-width: 450px !important;
+                    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+                    border-bottom: none !important;
+                    padding: 30px !important;
+                }
+                
+                .bank-right {
+                    width: 60% !important;
+                    flex: 1 !important;
+                    padding: 30px !important;
+                }
             }
             
             .bank-status {
@@ -1482,6 +1513,24 @@ class BankModuleServer {
         const loanRepay = this.ui.querySelector('#loan-repay-server');
         if (loanTake) loanTake.addEventListener('click', () => this.takeCreditInline());
         if (loanRepay) loanRepay.addEventListener('click', () => this.repayCreditInline());
+        
+        // Кнопки кредита в левой панели
+        const noCreditBtn = this.ui.querySelector('#no-credit-btn');
+        const takeCreditBtn = this.ui.querySelector('#take-credit-btn');
+        if (noCreditBtn) noCreditBtn.addEventListener('click', () => {
+            // Показываем сообщение, что кредитов нет
+            if (window.showNotification) {
+                window.showNotification('У вас нет активных кредитов', 'info');
+            }
+        });
+        if (takeCreditBtn) takeCreditBtn.addEventListener('click', () => {
+            // Фокусируемся на поле кредита в правой панели
+            const loanAmountInput = this.ui.querySelector('#loan-amount-server');
+            if (loanAmountInput) {
+                loanAmountInput.focus();
+                loanAmountInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
         
         console.log('🏦 BankModuleServer: Обработчики настроены');
     }
