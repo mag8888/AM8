@@ -247,8 +247,8 @@
     grid-template-rows: 1fr !important;
     grid-template-areas: "card-decks game-board players-panel" !important;
     gap: 1rem !important;
-    align-items: stretch !important;
-    justify-items: stretch !important;
+    align-items: center !important; /* ИСПРАВЛЕНО: Центрируем по вертикали */
+    justify-items: center !important; /* ИСПРАВЛЕНО: Центрируем по горизонтали */
     padding: 0.5rem !important;
     max-width: 100% !important;
     margin: 0 auto !important;
@@ -328,16 +328,14 @@
     align-items: center !important;
     min-width: 0 !important; /* Позволяет сжиматься в grid */
     min-height: 0 !important;
-    /* ИСПРАВЛЕНО: Делаем строго квадратным - используем меньшую сторону */
-    width: 100% !important;
-    height: 100% !important;
-    max-width: 100% !important;
-    max-height: 100% !important;
+    /* ИСПРАВЛЕНО: Делаем строго квадратным - используем меньшую сторону доступного пространства */
+    /* Размер определяется по меньшей стороне (ширина или высота grid-ячейки) */
+    width: min(100%, 100vh - 2rem) !important; /* Минимум из ширины ячейки и высоты экрана */
+    height: min(100%, 100vh - 2rem) !important; /* Минимум из высоты ячейки и высоты экрана */
     /* Гарантируем квадратную форму через aspect-ratio */
     aspect-ratio: 1 / 1 !important;
-    /* Размер определяется по меньшей стороне контейнера */
-    width: min(100%, 100%) !important;
-    height: min(100%, 100%) !important;
+    max-width: min(100%, 100vh - 2rem) !important;
+    max-height: min(100%, 100vh - 2rem) !important;
     padding: 0.5rem !important;
     box-sizing: border-box !important;
     overflow: hidden !important; /* Скрываем переполнение */
@@ -345,8 +343,6 @@
     /* Предотвращаем изменение размеров после загрузки */
     flex: 0 0 auto !important; /* Не растягивается, использует aspect-ratio */
     /* Фиксируем позицию для предотвращения сдвига */
-    left: 0 !important;
-    right: 0 !important;
     margin: auto !important; /* Центрирование */
   }
   
