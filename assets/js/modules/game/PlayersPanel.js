@@ -1159,8 +1159,9 @@ class PlayersPanel {
                 backdrop-filter: blur(10px);
                 z-index: 100000;
                 display: none;
-                align-items: center;
+                align-items: flex-start;
                 justify-content: center;
+                padding-top: 2rem;
                 opacity: 0;
                 transition: opacity 0.3s ease;
             }
@@ -1183,6 +1184,7 @@ class PlayersPanel {
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
                 display: flex;
                 flex-direction: column;
+                margin-top: 1rem;
             }
             
             /* Информация о текущем игроке вверху */
