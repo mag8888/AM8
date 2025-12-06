@@ -954,7 +954,10 @@ class PlayersPanel {
         const playerBalanceEl = document.getElementById('menu-player-balance');
         const playerAvatarEl = document.getElementById('menu-player-avatar');
         
-        if (!playerNameEl || !playerBalanceEl) return;
+        if (!playerNameEl || !playerBalanceEl) {
+            console.warn('⚠️ PlayersPanel: Элементы информации об игроке не найдены в меню');
+            return;
+        }
         
         const state = this.gameStateManager?.getState?.();
         const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
@@ -962,9 +965,19 @@ class PlayersPanel {
                              localStorage.getItem('userId');
         const currentUsername = window.CommonUtils?.getCurrentUsername?.();
         
+        console.log('📋 PlayersPanel: Обновление информации об игроке в меню:', { 
+            currentUserId, 
+            currentUsername, 
+            hasState: !!state,
+            playersCount: state?.players?.length || 0
+        });
+        
         if (!state || !currentUserId) {
             playerNameEl.textContent = 'Игрок';
             playerBalanceEl.textContent = '$0';
+            if (playerAvatarEl) {
+                playerAvatarEl.textContent = '👤';
+            }
             return;
         }
         
@@ -987,6 +1000,8 @@ class PlayersPanel {
                 const token = currentPlayer.token || '👤';
                 playerAvatarEl.textContent = token;
             }
+            
+            console.log('✅ PlayersPanel: Информация об игроке обновлена:', { displayName, balance });
         } else {
             // Fallback на username из CommonUtils
             if (currentUsername) {
@@ -995,6 +1010,10 @@ class PlayersPanel {
                 playerNameEl.textContent = 'Игрок';
             }
             playerBalanceEl.textContent = '$0';
+            if (playerAvatarEl) {
+                playerAvatarEl.textContent = '👤';
+            }
+            console.warn('⚠️ PlayersPanel: Текущий игрок не найден в списке игроков');
         }
     }
     
@@ -1043,11 +1062,15 @@ class PlayersPanel {
      */
     updateMenuPlayers() {
         const playersContent = document.getElementById('menu-players-content');
-        if (!playersContent) return;
+        if (!playersContent) {
+            console.warn('⚠️ PlayersPanel: Контейнер списка игроков не найден');
+            return;
+        }
         
         const state = this.gameStateManager?.getState?.();
         if (!state || !state.players) {
             playersContent.innerHTML = '<div class="menu-empty">Нет данных об игроках</div>';
+            console.warn('⚠️ PlayersPanel: Нет данных об игроках в состоянии');
             return;
         }
         
@@ -1057,16 +1080,27 @@ class PlayersPanel {
             return;
         }
         
+        console.log('📋 PlayersPanel: Обновление списка игроков в меню:', { playersCount: players.length });
+        
         playersContent.innerHTML = players.map(player => {
-            const isActive = state.activePlayer?.id === player.id || state.activePlayer?.userId === player.id;
+            const isActive = state.activePlayer?.id === player.id || 
+                           state.activePlayer?.userId === player.id ||
+                           (state.activePlayer?.username && player.username && 
+                            state.activePlayer.username === player.username);
+            const playerToken = player.token || '👤';
+            const playerName = player.username || player.name || 'Игрок';
+            const playerBalance = player.money || player.balance || 0;
+            
             return `
                 <div class="menu-player-item ${isActive ? 'active' : ''}">
-                    <span class="player-token">${player.token || '👤'}</span>
-                    <span class="player-name">${player.username || player.name || 'Игрок'}</span>
-                    <span class="player-balance">$${player.balance || 0}</span>
+                    <span class="player-token">${playerToken}</span>
+                    <span class="player-name">${playerName}</span>
+                    <span class="player-balance">$${playerBalance.toLocaleString()}</span>
                 </div>
             `;
         }).join('');
+        
+        console.log('✅ PlayersPanel: Список игроков обновлен в меню');
     }
     
     /**
