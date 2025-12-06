@@ -1930,8 +1930,8 @@ class PlayerTokens {
             }
             
             // НОВЫЙ ПОДХОД: Находим клетку и добавляем фишку как дочерний элемент клетки
-            const cellPosition = player.position || 23;
-            const isInner = player.isInner || false;
+            const cellPosition = Number.isFinite(Number(player.position)) ? Number(player.position) : 0;
+            const isInner = typeof player.isInner === 'boolean' ? player.isInner : false;
             const cell = trackElement.querySelector(`[data-position="${cellPosition}"]`);
             
             if (cell) {
