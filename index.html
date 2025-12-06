@@ -444,19 +444,23 @@
                                         const elapsed = Date.now() - state.turnStartTime;
                                         turnTimeRemaining = Math.max(0, state.turnTimer - elapsed);
                                     } else {
+                                        // ИСПРАВЛЕНО: Когда таймер не запущен, показываем "0:00" вместо прочерков
                                         turnTimeRemaining = 0;
                                     }
                                 }
                                 
-                                if (turnTimeRemaining > 0) {
-                                    const seconds = Math.floor(turnTimeRemaining / 1000);
-                                    const mins = Math.floor(seconds / 60);
-                                    const secs = seconds % 60;
-                                    timerValue.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-                                } else {
-                                    timerValue.textContent = '0:00';
-                                }
+                                // ИСПРАВЛЕНО: Всегда показываем время в формате MM:SS, даже если 0
+                                const seconds = Math.floor(Math.max(0, turnTimeRemaining) / 1000);
+                                const mins = Math.floor(seconds / 60);
+                                const secs = seconds % 60;
+                                timerValue.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                            } else {
+                                // ИСПРАВЛЕНО: Если GameStateManager недоступен, показываем "0:00"
+                                timerValue.textContent = '0:00';
                             }
+                        } else {
+                            // ИСПРАВЛЕНО: Если app недоступен, показываем "0:00"
+                            timerValue.textContent = '0:00';
                         }
                     }
                     
