@@ -450,12 +450,12 @@ class PlayersPanel {
             console.log('✅ PlayersPanel: Обработчик кнопки банка привязан в setupControls');
         }
         
-        // Кнопка "Активы" - открываем меню с активами
+        // Кнопка "Активы" - открываем каталог активов (купленные карточки)
         const openAssetsBtn = document.getElementById('open-assets');
         if (openAssetsBtn) {
             openAssetsBtn.addEventListener('click', () => {
                 console.log('💼 PlayersPanel: Клик по кнопке "Активы"');
-                this.toggleMenu();
+                this.openAssetsCatalog();
             });
         }
         
