@@ -111,11 +111,8 @@ class GameStateManager {
                 const normalisedPlayers = serverState.players
                     .map(player => {
                         const normalized = this._normalisePlayer(player);
-                        // Принудительно устанавливаем позицию 0 для всех игроков при загрузке
-                        if (normalized) {
-                            normalized.position = 0;
-                            normalized.isInner = false; // Начинаем с внешнего трека
-                        }
+                        // Используем реальные позиции из сервера (не принудительно устанавливаем 0)
+                        // Если позиция не указана в данных игрока, _normalisePlayer установит 0 по умолчанию
                         return normalized;
                     })
                     .filter(Boolean);

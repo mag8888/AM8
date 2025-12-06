@@ -3814,18 +3814,29 @@ class PlayersPanel {
         const currentUserId = this.getCurrentUserId();
         const currentUsername = this.getCurrentUsername();
         
-        // Проверяем через TurnService
+        // Проверяем через TurnService и GameStateManager
         let shouldActivate = false;
         try {
             const turnService = window.app?.getModule?.('turnService');
-            if (turnService) {
-                // Базовое правило: ход и право броска
-                shouldActivate = Boolean(turnService.canRoll() && turnService.isMyTurn());
+            const gameStateManager = this.gameStateManager || window.app?.getModule?.('gameStateManager');
+            
+            if (turnService && gameStateManager) {
+                const state = gameStateManager.getState();
+                const isMyTurn = turnService.isMyTurn();
+                const canRoll = turnService.canRoll();
+                
+                // Проверяем и через TurnService, и через состояние игры
+                shouldActivate = Boolean(isMyTurn && canRoll && state?.canRoll === true);
+                
+                console.log('🔧 PlayersPanel: TurnService проверка:', {
+                    canRoll,
+                    isMyTurn,
+                    stateCanRoll: state?.canRoll,
+                    shouldActivate
+                });
                 
                 // Допуск в одиночной игре/демо: если игроков <= 1 или нет активного игрока — разрешаем бросок
                 if (!shouldActivate) {
-                    const gsm = window.app?.getGameStateManager?.();
-                    const state = typeof gsm?.getState === 'function' ? gsm.getState() : null;
                     const gsModule = window.app?.getModule?.('gameState');
                     const playersFromGS = Array.isArray(gsModule?.players) ? gsModule.players : [];
                     const playersFromState = Array.isArray(state?.players) ? state.players : [];
@@ -3835,11 +3846,6 @@ class PlayersPanel {
                         shouldActivate = Boolean(turnService.canRoll());
                     }
                 }
-                console.log('🔧 PlayersPanel: TurnService проверка:', { 
-                    canRoll: turnService.canRoll(), 
-                    isMyTurn: turnService.isMyTurn(), 
-                    shouldActivate 
-                });
             }
         } catch (error) {
             console.warn('⚠️ PlayersPanel: Ошибка проверки TurnService:', error);

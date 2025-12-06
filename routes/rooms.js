@@ -213,13 +213,18 @@ function ensureGameState(db, roomId, cb) {
         if (refreshed.lastDiceResult === null) {
             refreshed.canRoll = true;
             refreshed.canMove = false;
+            refreshed.canEndTurn = false;
         } else {
             // Если есть результат кубика, используем сохраненное значение или false
             refreshed.canRoll = typeof cachedState.canRoll === 'boolean' ? cachedState.canRoll : false;
             refreshed.canMove = typeof cachedState.canMove === 'boolean' ? cachedState.canMove : true;
+            refreshed.canEndTurn = typeof cachedState.canEndTurn === 'boolean' ? cachedState.canEndTurn : false;
         }
         
-        refreshed.canEndTurn = typeof cachedState.canEndTurn === 'boolean' ? cachedState.canEndTurn : refreshed.canEndTurn;
+        // Если canEndTurn не установлен, устанавливаем из кэша или false
+        if (typeof refreshed.canEndTurn !== 'boolean') {
+            refreshed.canEndTurn = typeof cachedState.canEndTurn === 'boolean' ? cachedState.canEndTurn : false;
+        }
 
         if (cachedState.activePlayer) {
             const activeCandidate = refreshed.players.find(
