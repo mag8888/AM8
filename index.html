@@ -428,6 +428,45 @@
                         }
                     }
                     
+                    // Обновление результата броска кубика
+                    function updateDiceResult() {
+                        const diceValue = document.getElementById('top-dice-value');
+                        if (!diceValue) return;
+                        
+                        const app = window.app;
+                        if (app && app.getModule) {
+                            const gameStateManager = app.getModule('gameStateManager');
+                            if (gameStateManager && typeof gameStateManager.getState === 'function') {
+                                const state = gameStateManager.getState();
+                                
+                                // Получаем последний результат броска кубика
+                                if (state && state.lastDiceResult && Array.isArray(state.lastDiceResult) && state.lastDiceResult.length > 0) {
+                                    const diceResults = state.lastDiceResult;
+                                    const total = diceResults.reduce((sum, val) => sum + val, 0);
+                                    
+                                    // Формируем текст для отображения
+                                    let displayText = '';
+                                    if (diceResults.length === 1) {
+                                        displayText = String(diceResults[0]);
+                                    } else {
+                                        displayText = diceResults.join(' + ');
+                                        if (diceResults.length > 1) {
+                                            displayText += ` = ${total}`;
+                                        }
+                                    }
+                                    diceValue.textContent = displayText;
+                                } else {
+                                    // Если нет результата броска, показываем "-"
+                                    diceValue.textContent = '-';
+                                }
+                            } else {
+                                diceValue.textContent = '-';
+                            }
+                        } else {
+                            diceValue.textContent = '-';
+                        }
+                    }
+                    
                     // Обновление таймера
                     function updateTimer() {
                         const timerValue = document.getElementById('top-timer-value');
