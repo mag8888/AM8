@@ -1287,6 +1287,8 @@ class PlayersPanel {
         
         if (turnTimeRemaining <= 0) {
             timerText.textContent = '0:00';
+            // ИСПРАВЛЕНО: Автоматический переход хода при истечении времени
+            this.handleAutoEndTurn();
             return;
         }
 
@@ -1299,6 +1301,8 @@ class PlayersPanel {
             
             if (remainingMs <= 0) {
                 this.stopTurnTimer();
+                // ИСПРАВЛЕНО: Автоматический переход хода при истечении времени
+                this.handleAutoEndTurn();
                 return;
             }
             
@@ -1308,6 +1312,39 @@ class PlayersPanel {
         };
         
         updateTimer();
+    }
+    
+    /**
+     * Автоматический переход хода при истечении времени
+     */
+    async handleAutoEndTurn() {
+        console.log('⏰ PlayersPanel: Время хода истекло, автоматический переход хода');
+        
+        try {
+            const app = window.app;
+            const turnService = app && app.getModule ? app.getModule('turnService') : null;
+            
+            if (!turnService) {
+                console.warn('⚠️ PlayersPanel: TurnService не найден для автоматического перехода хода');
+                return;
+            }
+            
+            // Проверяем, что это действительно ход текущего игрока
+            const isMyTurn = turnService.isMyTurn && typeof turnService.isMyTurn === 'function'
+                ? turnService.isMyTurn()
+                : false;
+            
+            if (!isMyTurn) {
+                console.log('ℹ️ PlayersPanel: Автоматический переход хода пропущен - не ваш ход');
+                return;
+            }
+            
+            // Вызываем handleEndTurn для автоматического перехода хода
+            await this.handleEndTurn();
+            console.log('✅ PlayersPanel: Автоматический переход хода выполнен успешно');
+        } catch (error) {
+            console.error('❌ PlayersPanel: Ошибка автоматического перехода хода:', error);
+        }
     }
 
     stopTurnTimer() {

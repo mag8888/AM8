@@ -90,7 +90,7 @@ function buildState(players = []) {
         .map((player, index) => normalizePlayer(player, index))
         .filter(Boolean);
 
-    const DEFAULT_TURN_TIME_MS = 30 * 1000; // 30 секунд по умолчанию
+    const DEFAULT_TURN_TIME_MS = 120 * 1000; // 120 секунд (2 минуты) по умолчанию
 
     return {
         players: normalized,
