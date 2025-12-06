@@ -1572,11 +1572,29 @@ class BankModuleServer {
                 
                 // Подписываемся на обновления GameStateManager для автоматического обновления списка игроков
                 if (this.gameStateManager && typeof this.gameStateManager.on === 'function') {
+                    // ИСПРАВЛЕНО: Добавляем debouncing и проверку на изменения, чтобы предотвратить бесконечный цикл
+                    let _lastPlayersHash = null;
+                    let _updateTimer = null;
+                    
                     this.gameStateManager.on('state:updated', (state) => {
                         if (state && state.players && state.players.length > 0) {
-                            console.log('🔄 BankModuleServer: Получено обновление от GameStateManager, обновляем список игроков');
-                            this.bankState.players = state.players;
-                            this.updatePlayersList();
+                            // Проверяем, изменились ли игроки
+                            const playersHash = state.players.map(p => `${p.id}:${p.username}:${p.money || 0}`).join('|');
+                            
+                            if (playersHash !== _lastPlayersHash) {
+                                _lastPlayersHash = playersHash;
+                                
+                                // Debouncing для предотвращения множественных обновлений
+                                if (_updateTimer) {
+                                    clearTimeout(_updateTimer);
+                                }
+                                
+                                _updateTimer = setTimeout(() => {
+                                    console.log('🔄 BankModuleServer: Получено обновление от GameStateManager, обновляем список игроков');
+                                    this.bankState.players = state.players;
+                                    this.updatePlayersList();
+                                }, 300); // Задержка 300ms для debouncing
+                            }
                         }
                     });
                 }
