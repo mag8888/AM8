@@ -667,6 +667,47 @@ class PlayersPanel {
     }
     
     /**
+     * Расчет суммы активов игрока
+     */
+    calculateAssetsTotal() {
+        const state = this.gameStateManager?.getState?.();
+        const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
+                             sessionStorage.getItem('userId') || 
+                             localStorage.getItem('userId');
+        
+        if (!state || !currentUserId) {
+            return 0;
+        }
+        
+        const currentPlayer = state.players?.find(p => p.id === currentUserId || p.userId === currentUserId);
+        if (!currentPlayer) {
+            return 0;
+        }
+        
+        // Получаем активы игрока
+        const assets = currentPlayer.assets || [];
+        
+        // Суммируем стоимость активов
+        const total = assets.reduce((sum, asset) => {
+            const value = typeof asset.value === 'number' ? asset.value : 0;
+            return sum + value;
+        }, 0);
+        
+        return total;
+    }
+    
+    /**
+     * Обновление бейджа с суммой активов
+     */
+    updateAssetsBadge() {
+        const assetsBadge = document.getElementById('assets-badge');
+        if (!assetsBadge) return;
+        
+        const total = this.calculateAssetsTotal();
+        assetsBadge.textContent = `$${total.toLocaleString()}`;
+    }
+    
+    /**
      * Добавление стилей для меню
      */
     addMenuStyles() {
