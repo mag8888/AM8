@@ -200,6 +200,11 @@ class PlayersPanel {
                     this.updateDiceResult(data);
                 }
             });
+            
+            // ИСПРАВЛЕНО: Периодическое обновление десктопной панели таймера
+            setInterval(() => {
+                this.updateDesktopTimer();
+            }, 1000);
         }
 
         // Подписываемся на обновления состояния игры
@@ -214,6 +219,8 @@ class PlayersPanel {
                 if (playerTimer && data?.activePlayer) {
                     this.startTurnTimer(playerTimer);
                 }
+                // ИСПРАВЛЕНО: Обновляем десктопную панель таймера
+                this.updateDesktopTimer();
             });
             this.gameStateManager.on('players:updated', (players) => {
                 this.onPlayersUpdated(players);
@@ -1322,13 +1329,24 @@ class PlayersPanel {
             const seconds = Math.floor(remainingMs / 1000);
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
-            timerText.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            const timeText = `${mins}:${secs.toString().padStart(2, '0')}`;
+            timerText.textContent = timeText;
+            
+            // ИСПРАВЛЕНО: Обновляем десктопную панель таймера
+            const desktopTimerValue = document.getElementById('desktop-timer-value');
+            if (desktopTimerValue) {
+                desktopTimerValue.textContent = timeText;
+            }
             
             if (remainingMs <= 0) {
                 this.stopTurnTimer();
                 // ИСПРАВЛЕНО: Таймер работает на сервере, клиент только отображает
                 // Автоматический переход хода выполняется на сервере
                 timerText.textContent = '0:00';
+                const desktopTimerValue = document.getElementById('desktop-timer-value');
+                if (desktopTimerValue) {
+                    desktopTimerValue.textContent = '0:00';
+                }
                 // Обновляем состояние с сервера для получения нового хода
                 if (this.gameStateManager) {
                     this.gameStateManager.forceUpdate();
