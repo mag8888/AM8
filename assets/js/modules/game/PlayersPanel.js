@@ -819,72 +819,93 @@ class PlayersPanel {
     }
     
     /**
-     * Переключение меню
+     * Переключение меню - НОВАЯ РЕАЛИЗАЦИЯ
      */
     toggleMenu() {
         console.log('📋 PlayersPanel: toggleMenu вызван');
-        // Создаем или показываем меню, если его еще нет
-        let menuPanel = document.getElementById('game-menu-panel');
-        if (!menuPanel) {
-            console.log('📋 PlayersPanel: Меню не найдено, создаем новое');
-            this.createMenuPanel();
-            menuPanel = document.getElementById('game-menu-panel');
+        
+        // Удаляем старое меню если есть
+        const oldMenu = document.getElementById('game-menu-panel');
+        if (oldMenu) {
+            oldMenu.remove();
         }
         
-        if (menuPanel) {
-            const isVisible = menuPanel.classList.contains('menu-visible');
-            console.log('📋 PlayersPanel: Текущее состояние меню:', { isVisible, menuPanelExists: !!menuPanel });
-            menuPanel.classList.toggle('menu-visible');
-            
-            // Обновляем данные при открытии
-            if (!isVisible) {
-                console.log('📋 PlayersPanel: Обновляем данные меню');
-                // Принудительно пересоздаем стили для применения изменений
-                this.addMenuStyles();
-                // Обновляем данные
-                this.updateMenuData();
-            }
-        } else {
-            console.error('❌ PlayersPanel: Не удалось создать или найти меню');
+        // Удаляем старые стили
+        const oldStyles = document.getElementById('game-menu-styles');
+        if (oldStyles) {
+            oldStyles.remove();
         }
+        
+        // Создаем новое меню
+        this.createNewMenu();
     }
     
     /**
-     * Создание панели меню
+     * Создание нового меню с нуля
      */
-    createMenuPanel() {
+    createNewMenu() {
+        console.log('📋 PlayersPanel: Создание нового меню');
+        
+        // Создаем контейнер меню
         const menuPanel = document.createElement('div');
         menuPanel.id = 'game-menu-panel';
         menuPanel.className = 'game-menu-panel';
+        
+        // Получаем данные игрока
+        const state = this.gameStateManager?.getState?.();
+        const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
+                             sessionStorage.getItem('userId') || 
+                             localStorage.getItem('userId');
+        const currentUsername = window.CommonUtils?.getCurrentUsername?.();
+        
+        // Находим текущего игрока
+        let currentPlayer = null;
+        if (state && state.players && currentUserId) {
+            currentPlayer = state.players.find(p => 
+                p.id === currentUserId || 
+                p.userId === currentUserId ||
+                (currentUsername && p.username === currentUsername)
+            );
+        }
+        
+        const playerName = currentPlayer?.username || currentPlayer?.name || currentUsername || 'Игрок';
+        const playerBalance = currentPlayer?.money || currentPlayer?.balance || 0;
+        const playerToken = currentPlayer?.token || '👤';
+        
+        // Создаем HTML меню
         menuPanel.innerHTML = `
-            <div class="menu-header">
-                <h3 class="menu-title">Меню</h3>
-                <button class="menu-close-btn" id="menu-close-btn">✕</button>
-            </div>
-            <div class="menu-content">
-                <!-- Имя игрока с балансом в самом верху -->
-                <div class="menu-player-info" id="menu-player-info">
-                    <div class="menu-player-avatar" id="menu-player-avatar">👤</div>
-                    <div class="menu-player-details">
-                        <div class="menu-player-name" id="menu-player-name">Загрузка...</div>
-                        <div class="menu-player-balance" id="menu-player-balance">$0</div>
-                    </div>
+            <div class="menu-overlay"></div>
+            <div class="menu-container">
+                <div class="menu-header">
+                    <h3 class="menu-title">Меню</h3>
+                    <button class="menu-close-btn" id="menu-close-btn" type="button">✕</button>
                 </div>
                 
-                <!-- Список всех игроков -->
-                <div class="menu-section" id="menu-players-section">
-                    <div class="menu-section-header">
-                        <span class="menu-section-icon">👥</span>
-                        <span class="menu-section-title">Игроки в комнате</span>
+                <div class="menu-body">
+                    <!-- Имя игрока с балансом в самом верху -->
+                    <div class="menu-current-player">
+                        <div class="menu-player-avatar">${playerToken}</div>
+                        <div class="menu-player-info">
+                            <div class="menu-player-name">${playerName}</div>
+                            <div class="menu-player-balance">$${playerBalance.toLocaleString()}</div>
+                        </div>
                     </div>
-                    <div class="menu-section-content" id="menu-players-content">
-                        <div class="menu-loading">Загрузка игроков...</div>
+                    
+                    <!-- Список всех игроков -->
+                    <div class="menu-players-section">
+                        <div class="menu-section-title">
+                            <span class="menu-icon">👥</span>
+                            <span>Игроки в комнате</span>
+                        </div>
+                        <div class="menu-players-list" id="menu-players-list">
+                            ${this.renderPlayersList(state)}
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Кнопка выхода в самом низу -->
                 <div class="menu-footer">
-                    <button class="menu-exit-btn" id="menu-exit-btn">
+                    <button class="menu-exit-btn" id="menu-exit-btn" type="button">
                         <span class="menu-exit-icon">🚪</span>
                         <span class="menu-exit-text">Выход</span>
                     </button>
@@ -892,44 +913,112 @@ class PlayersPanel {
             </div>
         `;
         
+        // Добавляем в DOM
         document.body.appendChild(menuPanel);
         
-        // Обработчик закрытия меню
+        // Привязываем обработчики
+        this.attachMenuHandlers(menuPanel);
+        
+        // Добавляем стили
+        this.injectMenuStyles();
+        
+        // Показываем меню
+        requestAnimationFrame(() => {
+            menuPanel.classList.add('menu-visible');
+        });
+        
+        console.log('✅ PlayersPanel: Новое меню создано и отображено');
+    }
+    
+    /**
+     * Рендеринг списка игроков
+     */
+    renderPlayersList(state) {
+        if (!state || !state.players || state.players.length === 0) {
+            return '<div class="menu-empty">Нет игроков в комнате</div>';
+        }
+        
+        const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
+                             sessionStorage.getItem('userId') || 
+                             localStorage.getItem('userId');
+        
+        return state.players.map(player => {
+            const isActive = state.activePlayer && (
+                state.activePlayer.id === player.id || 
+                state.activePlayer.userId === player.id ||
+                (state.activePlayer.username && player.username && state.activePlayer.username === player.username)
+            );
+            const isCurrent = player.id === currentUserId || player.userId === currentUserId;
+            const playerToken = player.token || '👤';
+            const playerName = player.username || player.name || 'Игрок';
+            const playerBalance = player.money || player.balance || 0;
+            
+            return `
+                <div class="menu-player-item ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}">
+                    <div class="player-item-avatar">${playerToken}</div>
+                    <div class="player-item-name">${playerName}</div>
+                    <div class="player-item-balance">$${playerBalance.toLocaleString()}</div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    /**
+     * Привязка обработчиков меню
+     */
+    attachMenuHandlers(menuPanel) {
+        // Закрытие по кнопке
         const closeBtn = menuPanel.querySelector('#menu-close-btn');
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
-                menuPanel.classList.remove('menu-visible');
+                this.closeMenu();
             });
         }
         
-        // Обработчик кнопки выхода
+        // Выход из игры
         const exitBtn = menuPanel.querySelector('#menu-exit-btn');
         if (exitBtn) {
             exitBtn.addEventListener('click', () => {
-                this.handleExit();
+                this.handleMenuExit();
             });
         }
         
-        // Закрытие при клике вне меню
-        menuPanel.addEventListener('click', (e) => {
-            if (e.target === menuPanel) {
-                menuPanel.classList.remove('menu-visible');
+        // Закрытие по клику на overlay
+        const overlay = menuPanel.querySelector('.menu-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                this.closeMenu();
+            });
+        }
+        
+        // Закрытие по ESC
+        const escHandler = (e) => {
+            if (e.key === 'Escape' && menuPanel.classList.contains('menu-visible')) {
+                this.closeMenu();
             }
-        });
-        
-        // Добавляем стили для меню
-        this.addMenuStyles();
-        
-        // Принудительно обновляем данные при создании меню
-        setTimeout(() => {
-            this.updateMenuData();
-        }, 100);
+        };
+        document.addEventListener('keydown', escHandler);
+        menuPanel._escHandler = escHandler; // Сохраняем для удаления
+    }
+    
+    /**
+     * Закрытие меню
+     */
+    closeMenu() {
+        const menuPanel = document.getElementById('game-menu-panel');
+        if (menuPanel) {
+            menuPanel.classList.remove('menu-visible');
+            // Удаляем обработчик ESC
+            if (menuPanel._escHandler) {
+                document.removeEventListener('keydown', menuPanel._escHandler);
+            }
+        }
     }
     
     /**
      * Обработка выхода из игры
      */
-    handleExit() {
+    handleMenuExit() {
         if (confirm('Вы уверены, что хотите выйти из игры?')) {
             // Очищаем данные игры
             if (this.gameStateManager) {
@@ -943,172 +1032,6 @@ class PlayersPanel {
             // Перенаправляем на страницу комнат
             window.location.href = '/index.html#rooms';
         }
-    }
-    
-    /**
-     * Обновление данных в меню
-     */
-    updateMenuData() {
-        this.updateMenuPlayerInfo();
-        this.updateMenuPlayers();
-        this.updateAssetsBadge();
-    }
-    
-    /**
-     * Обновление информации о текущем игроке в меню (вверху)
-     */
-    updateMenuPlayerInfo() {
-        const playerNameEl = document.getElementById('menu-player-name');
-        const playerBalanceEl = document.getElementById('menu-player-balance');
-        const playerAvatarEl = document.getElementById('menu-player-avatar');
-        
-        if (!playerNameEl || !playerBalanceEl) {
-            console.warn('⚠️ PlayersPanel: Элементы информации об игроке не найдены в меню');
-            return;
-        }
-        
-        const state = this.gameStateManager?.getState?.();
-        const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
-                             sessionStorage.getItem('userId') || 
-                             localStorage.getItem('userId');
-        const currentUsername = window.CommonUtils?.getCurrentUsername?.();
-        
-        console.log('📋 PlayersPanel: Обновление информации об игроке в меню:', { 
-            currentUserId, 
-            currentUsername, 
-            hasState: !!state,
-            playersCount: state?.players?.length || 0
-        });
-        
-        if (!state || !currentUserId) {
-            playerNameEl.textContent = 'Игрок';
-            playerBalanceEl.textContent = '$0';
-            if (playerAvatarEl) {
-                playerAvatarEl.textContent = '👤';
-            }
-            return;
-        }
-        
-        // Ищем текущего игрока
-        const currentPlayer = state.players?.find(p => 
-            p.id === currentUserId || 
-            p.userId === currentUserId ||
-            (currentUsername && p.username === currentUsername)
-        );
-        
-        if (currentPlayer) {
-            const displayName = currentPlayer.username || currentPlayer.name || 'Игрок';
-            const balance = currentPlayer.money || currentPlayer.balance || 0;
-            
-            playerNameEl.textContent = displayName;
-            playerBalanceEl.textContent = `$${balance.toLocaleString()}`;
-            
-            // Обновляем аватар
-            if (playerAvatarEl) {
-                const token = currentPlayer.token || '👤';
-                playerAvatarEl.textContent = token;
-            }
-            
-            console.log('✅ PlayersPanel: Информация об игроке обновлена:', { displayName, balance });
-        } else {
-            // Fallback на username из CommonUtils
-            if (currentUsername) {
-                playerNameEl.textContent = currentUsername;
-            } else {
-                playerNameEl.textContent = 'Игрок';
-            }
-            playerBalanceEl.textContent = '$0';
-            if (playerAvatarEl) {
-                playerAvatarEl.textContent = '👤';
-            }
-            console.warn('⚠️ PlayersPanel: Текущий игрок не найден в списке игроков');
-        }
-    }
-    
-    /**
-     * Обновление списка активов в меню
-     */
-    updateMenuAssets() {
-        const assetsContent = document.getElementById('menu-assets-content');
-        if (!assetsContent) return;
-        
-        const state = this.gameStateManager?.getState?.();
-        const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
-                             sessionStorage.getItem('userId') || 
-                             localStorage.getItem('userId');
-        
-        if (!state || !currentUserId) {
-            assetsContent.innerHTML = '<div class="menu-empty">Нет данных об активах</div>';
-            return;
-        }
-        
-        const currentPlayer = state.players?.find(p => p.id === currentUserId || p.userId === currentUserId);
-        if (!currentPlayer) {
-            assetsContent.innerHTML = '<div class="menu-empty">Игрок не найден</div>';
-            return;
-        }
-        
-        // Получаем активы игрока (если они есть в данных)
-        const assets = currentPlayer.assets || [];
-        
-        if (assets.length === 0) {
-            assetsContent.innerHTML = '<div class="menu-empty">Нет активов</div>';
-            return;
-        }
-        
-        assetsContent.innerHTML = assets.map(asset => `
-            <div class="menu-asset-item">
-                <span class="asset-icon">${asset.icon || '📦'}</span>
-                <span class="asset-name">${asset.name || 'Актив'}</span>
-                <span class="asset-value">${asset.value ? `$${asset.value}` : ''}</span>
-            </div>
-        `).join('');
-    }
-    
-    /**
-     * Обновление списка игроков в меню
-     */
-    updateMenuPlayers() {
-        const playersContent = document.getElementById('menu-players-content');
-        if (!playersContent) {
-            console.warn('⚠️ PlayersPanel: Контейнер списка игроков не найден');
-            return;
-        }
-        
-        const state = this.gameStateManager?.getState?.();
-        if (!state || !state.players) {
-            playersContent.innerHTML = '<div class="menu-empty">Нет данных об игроках</div>';
-            console.warn('⚠️ PlayersPanel: Нет данных об игроках в состоянии');
-            return;
-        }
-        
-        const players = state.players || [];
-        if (players.length === 0) {
-            playersContent.innerHTML = '<div class="menu-empty">Нет игроков в комнате</div>';
-            return;
-        }
-        
-        console.log('📋 PlayersPanel: Обновление списка игроков в меню:', { playersCount: players.length });
-        
-        playersContent.innerHTML = players.map(player => {
-            const isActive = state.activePlayer?.id === player.id || 
-                           state.activePlayer?.userId === player.id ||
-                           (state.activePlayer?.username && player.username && 
-                            state.activePlayer.username === player.username);
-            const playerToken = player.token || '👤';
-            const playerName = player.username || player.name || 'Игрок';
-            const playerBalance = player.money || player.balance || 0;
-            
-            return `
-                <div class="menu-player-item ${isActive ? 'active' : ''}">
-                    <span class="player-token">${playerToken}</span>
-                    <span class="player-name">${playerName}</span>
-                    <span class="player-balance">$${playerBalance.toLocaleString()}</span>
-                </div>
-            `;
-        }).join('');
-        
-        console.log('✅ PlayersPanel: Список игроков обновлен в меню');
     }
     
     /**
