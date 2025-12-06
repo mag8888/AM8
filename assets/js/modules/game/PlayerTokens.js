@@ -914,7 +914,7 @@ class PlayerTokens {
         const result = [];
         const targetInner = Boolean(isInner);
         this.tokens.forEach((token, playerId) => {
-            const tokenPosition = parseInt(token.getAttribute('data-position')) || 0;
+            const tokenPosition = Number.isFinite(+token.getAttribute('data-position')) ? +token.getAttribute('data-position') : 0;
             const tokenIsInner = token.dataset?.isInner
                 ? token.dataset.isInner === 'true'
                 : token.classList.contains('inner-track') || token.classList.contains('inner');
@@ -951,7 +951,7 @@ class PlayerTokens {
         const nowTs = Date.now();
         const lastUpdateTs = parseInt(token.getAttribute('data-update-ts')) || 0;
         const currentPositionTsWindowMs = 1200; // окно защиты от отката
-        const currentPosition = parseInt(token.getAttribute('data-position')) || 0;
+        const currentPosition = Number.isFinite(+token.getAttribute('data-position')) ? +token.getAttribute('data-position') : 0;
         if (lastUpdateTs && (nowTs - lastUpdateTs) < currentPositionTsWindowMs) {
             const maxPosition = isInner ? 23 : 43;
             const isWrapAround = (currentPosition > newPosition) && ((currentPosition - newPosition) > 6) && (currentPosition === maxPosition || newPosition === 0);
@@ -1769,7 +1769,7 @@ class PlayerTokens {
         const positionGroups = new Map();
         
         this.tokens.forEach((token, playerId) => {
-            const position = parseInt(token.getAttribute('data-position')) || 0;
+            const position = Number.isFinite(+token.getAttribute('data-position')) ? +token.getAttribute('data-position') : 0;
             const isInner = token.classList.contains('inner-track');
             const key = `${position}-${isInner}`;
             
@@ -2183,8 +2183,9 @@ class PlayerTokens {
             return;
         }
         
-        // НОВЫЙ ПОДХОД: Находим клетку и добавляем фишку как дочерний элемент
-        const position = parseInt(token.dataset.position) || 23;
+        // ИСПРАВЛЕНО: Используем явную проверку числа, чтобы позиция 0 не заменялась на 23
+        const pos = Number.isFinite(+token.dataset.position) ? +token.dataset.position : 0;
+        const position = pos;
         const isInner = token.dataset.isInner === 'true';
         const trackElement = this.getTrackElement(isInner);
         

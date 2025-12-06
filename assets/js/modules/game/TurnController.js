@@ -142,13 +142,26 @@ class TurnController {
     createUI() {
         console.log('🎮 TurnController v2.0: Привязка к существующим элементам UI');
         
+        // ИСПРАВЛЕНО: Привязываем this.ui к реальному контейнеру для работы методов обновления кнопок
+        // Ищем контейнер players-panel или создаем fallback
+        this.ui = document.getElementById('players-panel') || 
+                  document.querySelector('.players-panel') ||
+                  document.querySelector('#game-controls') ||
+                  document.body; // Fallback на body, если ничего не найдено
+        
+        if (!this.ui || this.ui === document.body) {
+            console.warn('⚠️ TurnController: Не найден контейнер players-panel, используем document для селекторов');
+            // Если не нашли контейнер, будем использовать document для селекторов
+            this.ui = document;
+        }
+        
         // Вместо создания новых элементов, привязываемся к существующим из PlayersPanel
         this.bindToExistingUI();
         
-        // Сохраняем ссылку на UI (будет null, так как не создаем новые элементы)
-        this.ui = null;
-        
-        console.log('🎮 TurnController v2.0: Привязка к UI завершена');
+        console.log('🎮 TurnController v2.0: Привязка к UI завершена', { 
+            uiElement: this.ui?.id || this.ui?.className || 'document',
+            hasUI: !!this.ui 
+        });
     }
     
     /**
@@ -670,10 +683,11 @@ class TurnController {
      * @param {Object} state - Состояние игры
      */
     updateControlButtons(state) {
-        if (!this.ui) return;
+        // ИСПРАВЛЕНО: Используем document для поиска, если this.ui не установлен или это document
+        const container = (this.ui && this.ui !== document) ? this.ui : document;
         
-        const rollBtn = this.ui.querySelector('#roll-dice-btn');
-        const endTurnBtn = this.ui.querySelector('#end-turn-btn');
+        const rollBtn = container.querySelector('#roll-dice-btn');
+        const endTurnBtn = container.querySelector('#end-turn-btn');
         
         if (rollBtn) {
             // Кнопка броска активна только если это мой ход И можно бросать
@@ -688,7 +702,7 @@ class TurnController {
         }
         
         // Обновляем кнопки перемещения
-        const moveBtns = this.ui.querySelectorAll('.move-btn');
+        const moveBtns = container.querySelectorAll('.move-btn');
         moveBtns.forEach(btn => {
             // Кнопка активна только если это мой ход И можно двигаться
             const isMyTurn = this.turnService ? this.turnService.isMyTurn() : false;
