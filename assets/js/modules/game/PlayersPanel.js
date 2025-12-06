@@ -3119,48 +3119,23 @@ class PlayersPanel {
     }
     
     getCurrentUsername() {
+        // ИСПРАВЛЕНО: Используем общую утилиту CommonUtils вместо дублирования логики
+        if (window.CommonUtils && typeof window.CommonUtils.getCurrentUsername === 'function') {
+            return window.CommonUtils.getCurrentUsername();
+        }
+        
+        // Fallback для обратной совместимости
         try {
-            // Пытаемся получить из currentUser в localStorage
-            const currentUserRaw = localStorage.getItem('currentUser');
-            if (currentUserRaw) {
-                const currentUser = JSON.parse(currentUserRaw);
-                const username = currentUser?.username;
-                if (username) {
-                    console.log('🔍 PlayersPanel: Username из currentUser:', username);
-                    return username;
-                }
-            }
-            
-            // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
-                const username = bundle?.currentUser?.username;
-                if (username) {
-                    console.log('🔍 PlayersPanel: Username из bundle:', username);
-                    return username;
-                }
+                const username = bundle?.currentUser?.username || bundle?.currentUser?.name;
+                if (username) return username;
             }
             
-            // Пытаемся получить из localStorage
-            const userRaw = localStorage.getItem('aura_money_user');
-            if (userRaw) {
-                const user = JSON.parse(userRaw);
-                const username = user?.username;
-                if (username) {
-                    console.log('🔍 PlayersPanel: Username из localStorage:', username);
-                    return username;
-                }
-            }
-            
-            // Прямой способ из localStorage
             const directUsername = localStorage.getItem('username');
-            if (directUsername) {
-                console.log('🔍 PlayersPanel: Username из localStorage (прямой):', directUsername);
-                return directUsername;
-            }
+            if (directUsername) return directUsername;
             
-            console.warn('⚠️ PlayersPanel: Не удалось получить username пользователя');
             return null;
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка получения username пользователя:', error);
