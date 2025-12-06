@@ -872,29 +872,29 @@ class PlayerTokens {
             return { x: 0, y: 0 };
         }
         
-        // ИСПРАВЛЕНО: Используем абсолютные значения в пикселях вместо процентов
-        // Размер фишки 36px, минимальное расстояние между краями должно быть ~10px
-        // Значит расстояние между центрами должно быть минимум 36 + 10 = 46px
-        // Используем 50px для гарантированного разделения
-        const baseOffsetPx = 50; // Абсолютное смещение в пикселях
+        // ИСПРАВЛЕНО: Используем абсолютные значения в пикселях для гарантированного разделения
+        // Размер фишки 36px, минимальное расстояние между краями должно быть ~15px
+        // Значит расстояние между центрами должно быть минимум 36 + 15 = 51px
+        // Используем 60px для гарантированного разделения
+        const baseOffsetPx = 60; // Увеличено до 60px для лучшего разделения
         
         // Конфигурация сдвига для разного количества фишек
         // Используем равномерное распределение по кругу для лучшей видимости
         const offsetConfigs = {
             2: [
-                { x: -baseOffsetPx * 0.7, y: -baseOffsetPx * 0.4 },  // Влево-вверх (35px, 20px)
-                { x: baseOffsetPx * 0.7, y: baseOffsetPx * 0.4 }     // Вправо-вниз (35px, 20px)
+                { x: -baseOffsetPx * 0.8, y: -baseOffsetPx * 0.5 },  // Влево-вверх (48px, 30px)
+                { x: baseOffsetPx * 0.8, y: baseOffsetPx * 0.5 }     // Вправо-вниз (48px, 30px)
             ],
             3: [
-                { x: -baseOffsetPx * 0.6, y: -baseOffsetPx * 0.5 },  // Влево-вверх (30px, 25px)
-                { x: 0, y: baseOffsetPx * 0.7 },                      // Вниз (0px, 35px)
-                { x: baseOffsetPx * 0.6, y: -baseOffsetPx * 0.5 }    // Вправо-вверх (30px, 25px)
+                { x: -baseOffsetPx * 0.7, y: -baseOffsetPx * 0.6 },  // Влево-вверх (42px, 36px)
+                { x: 0, y: baseOffsetPx * 0.8 },                      // Вниз (0px, 48px)
+                { x: baseOffsetPx * 0.7, y: -baseOffsetPx * 0.6 }    // Вправо-вверх (42px, 36px)
             ],
             4: [
-                { x: -baseOffsetPx * 0.6, y: -baseOffsetPx * 0.5 },  // Влево-вверх (30px, 25px)
-                { x: baseOffsetPx * 0.6, y: -baseOffsetPx * 0.5 },   // Вправо-вверх (30px, 25px)
-                { x: -baseOffsetPx * 0.6, y: baseOffsetPx * 0.5 },   // Влево-вниз (30px, 25px)
-                { x: baseOffsetPx * 0.6, y: baseOffsetPx * 0.5 }     // Вправо-вниз (30px, 25px)
+                { x: -baseOffsetPx * 0.7, y: -baseOffsetPx * 0.6 },  // Влево-вверх (42px, 36px)
+                { x: baseOffsetPx * 0.7, y: -baseOffsetPx * 0.6 },   // Вправо-вверх (42px, 36px)
+                { x: -baseOffsetPx * 0.7, y: baseOffsetPx * 0.6 },   // Влево-вниз (42px, 36px)
+                { x: baseOffsetPx * 0.7, y: baseOffsetPx * 0.6 }     // Вправо-вниз (42px, 36px)
             ]
         };
         
