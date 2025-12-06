@@ -4439,8 +4439,14 @@ class PlayersPanel {
                 const isMyTurn = turnService.isMyTurn();
                 const canRoll = turnService.canRoll();
                 
-                // Проверяем и через TurnService, и через состояние игры
-                shouldActivate = Boolean(isMyTurn && canRoll && state?.canRoll === true);
+                // Упрощенная проверка: если мой ход И можно бросать (по TurnService), активируем
+                // state.canRoll может быть undefined на начальном этапе, поэтому не требуем его строго
+                shouldActivate = Boolean(isMyTurn && canRoll);
+                
+                // Если state.canRoll явно false, отключаем кнопку
+                if (state?.canRoll === false) {
+                    shouldActivate = false;
+                }
                 
                 console.log('🔧 PlayersPanel: TurnService проверка:', {
                     canRoll,
