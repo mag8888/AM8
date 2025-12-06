@@ -339,6 +339,17 @@ class PlayersPanel {
                         <span class="widget-icon">⚡</span>
                         <span class="widget-title">Действия</span>
                     </div>
+                    <!-- ИСПРАВЛЕНО: Панель кубика и таймера для десктопа -->
+                    <div class="desktop-dice-timer-panel" id="desktop-dice-timer-panel">
+                        <div class="desktop-dice-info">
+                            <span class="desktop-dice-icon">🎲</span>
+                            <span class="desktop-dice-value" id="desktop-dice-value">-</span>
+                        </div>
+                        <div class="desktop-timer-info">
+                            <span class="desktop-timer-icon">⏱</span>
+                            <span class="desktop-timer-value" id="desktop-timer-value">0:00</span>
+                        </div>
+                    </div>
                     <!-- Отображение результата броска -->
                     <div class="dice-result-display" id="dice-result-display" style="display: none;">
                         <div class="dice-result-label">Выпало:</div>
