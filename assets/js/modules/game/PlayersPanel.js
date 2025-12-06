@@ -1216,39 +1216,46 @@ class PlayersPanel {
                 overflow-y: auto;
                 border: 1px solid rgba(148, 163, 184, 0.2);
                 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-                display: flex;
-                flex-direction: column;
+                display: grid;
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+                gap: 1.5rem;
                 margin-top: 1rem;
             }
             
-            /* Информация о текущем игроке вверху */
+            /* Информация о текущем игроке вверху - Grid layout */
             .menu-player-info {
-                display: flex;
+                display: grid;
+                grid-template-columns: auto 1fr;
+                grid-template-areas: 
+                    "avatar details";
                 align-items: center;
                 gap: 1rem;
-                padding: 1rem;
+                padding: 1.25rem;
                 background: linear-gradient(135deg, rgba(99, 102, 246, 0.2), rgba(139, 92, 246, 0.2));
                 border-radius: 0.75rem;
                 border: 1px solid rgba(99, 102, 246, 0.3);
-                margin-bottom: 1.5rem;
+                box-shadow: 0 4px 12px rgba(99, 102, 246, 0.2);
             }
             
             .menu-player-avatar {
+                grid-area: avatar;
                 width: 3.5rem;
                 height: 3.5rem;
                 border-radius: 50%;
-                background: rgba(99, 102, 246, 0.3);
+                background: linear-gradient(135deg, rgba(99, 102, 246, 0.4), rgba(139, 92, 246, 0.4));
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-size: 1.75rem;
                 flex-shrink: 0;
+                box-shadow: 0 2px 8px rgba(99, 102, 246, 0.3);
             }
             
             .menu-player-details {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
+                grid-area: details;
+                display: grid;
+                grid-template-rows: auto auto;
                 gap: 0.25rem;
             }
             
@@ -1264,16 +1271,23 @@ class PlayersPanel {
                 color: #10b981;
             }
             
-            /* Кнопка выхода внизу */
+            /* Кнопка выхода внизу - Grid layout */
             .menu-footer {
-                margin-top: auto;
+                display: grid;
+                grid-template-columns: 1fr;
                 padding-top: 1.5rem;
                 border-top: 1px solid rgba(148, 163, 184, 0.2);
             }
             
             .menu-exit-btn {
-                width: 100%;
-                padding: 1rem;
+                display: grid;
+                grid-template-columns: auto 1fr;
+                grid-template-areas: 
+                    "icon text";
+                align-items: center;
+                justify-items: center;
+                gap: 0.75rem;
+                padding: 1rem 1.5rem;
                 background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
                 border: 1px solid rgba(239, 68, 68, 0.4);
                 border-radius: 0.75rem;
@@ -1281,17 +1295,14 @@ class PlayersPanel {
                 font-size: 1rem;
                 font-weight: 600;
                 cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
                 transition: all 0.2s ease;
+                box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
             }
             
             .menu-exit-btn:hover {
                 background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3));
                 transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
             }
             
             .menu-exit-btn:active {
@@ -1299,11 +1310,17 @@ class PlayersPanel {
             }
             
             .menu-exit-icon {
+                grid-area: icon;
                 font-size: 1.25rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .menu-exit-text {
+                grid-area: text;
                 font-size: 1rem;
+                justify-self: start;
             }
             
             .menu-header {
@@ -1343,22 +1360,23 @@ class PlayersPanel {
             }
             
             .menu-section {
-                margin-bottom: 1.5rem;
-            }
-            
-            .menu-section:last-child {
-                margin-bottom: 0;
+                display: grid;
+                grid-template-rows: auto 1fr;
+                gap: 0.75rem;
             }
             
             .menu-section-header {
-                display: flex;
+                display: grid;
+                grid-template-columns: auto 1fr;
                 align-items: center;
                 gap: 0.5rem;
-                margin-bottom: 0.75rem;
             }
             
             .menu-section-icon {
                 font-size: 1.25rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .menu-section-title {
@@ -1368,6 +1386,9 @@ class PlayersPanel {
             }
             
             .menu-section-content {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
                 background: rgba(255, 255, 255, 0.03);
                 border-radius: 0.5rem;
                 padding: 0.75rem;
@@ -1386,13 +1407,16 @@ class PlayersPanel {
             .menu-asset-item,
             .menu-player-item,
             .menu-deck-item {
-                display: flex;
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                grid-template-areas: 
+                    "icon name value";
                 align-items: center;
                 gap: 0.75rem;
-                padding: 0.75rem;
+                padding: 0.875rem;
                 background: rgba(255, 255, 255, 0.05);
                 border-radius: 0.5rem;
-                margin-bottom: 0.5rem;
+                border: 1px solid rgba(148, 163, 184, 0.1);
                 transition: all 0.2s ease;
             }
             
@@ -1400,32 +1424,54 @@ class PlayersPanel {
             .menu-player-item:hover,
             .menu-deck-item:hover {
                 background: rgba(255, 255, 255, 0.1);
+                transform: translateX(4px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             }
             
             .menu-player-item.active {
                 border: 1px solid rgba(99, 102, 246, 0.5);
-                background: rgba(99, 102, 246, 0.1);
+                background: linear-gradient(135deg, rgba(99, 102, 246, 0.15), rgba(139, 92, 246, 0.15));
+                box-shadow: 0 2px 8px rgba(99, 102, 246, 0.3);
             }
             
             .asset-icon,
             .player-token,
             .deck-icon {
+                grid-area: icon;
                 font-size: 1.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 2.5rem;
+                height: 2.5rem;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.05);
             }
             
             .asset-name,
             .player-name,
             .deck-name {
-                flex: 1;
+                grid-area: name;
                 color: #f8fafc;
                 font-weight: 500;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             
             .asset-value,
             .player-balance,
             .deck-count {
-                color: rgba(148, 163, 184, 0.8);
+                grid-area: value;
+                color: rgba(148, 163, 184, 0.9);
                 font-size: 0.875rem;
+                font-weight: 600;
+                text-align: right;
+            }
+            
+            .player-balance {
+                color: #10b981;
+                font-weight: 700;
             }
         `;
         document.head.appendChild(style);
