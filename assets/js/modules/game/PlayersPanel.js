@@ -470,6 +470,296 @@ class PlayersPanel {
     }
     
     /**
+     * Открытие каталога активов (купленные карточки)
+     */
+    openAssetsCatalog() {
+        // Создаем или показываем панель каталога активов
+        let assetsPanel = document.getElementById('assets-catalog-panel');
+        if (!assetsPanel) {
+            this.createAssetsCatalogPanel();
+            assetsPanel = document.getElementById('assets-catalog-panel');
+        }
+        
+        if (assetsPanel) {
+            const isVisible = assetsPanel.classList.contains('assets-catalog-visible');
+            assetsPanel.classList.toggle('assets-catalog-visible');
+            
+            // Обновляем данные при открытии
+            if (!isVisible) {
+                this.updateAssetsCatalog();
+            }
+        }
+    }
+    
+    /**
+     * Создание панели каталога активов
+     */
+    createAssetsCatalogPanel() {
+        const assetsPanel = document.createElement('div');
+        assetsPanel.id = 'assets-catalog-panel';
+        assetsPanel.className = 'assets-catalog-panel';
+        assetsPanel.innerHTML = `
+            <div class="assets-catalog-header">
+                <h3 class="assets-catalog-title">
+                    <span class="assets-catalog-icon">💼</span>
+                    <span>Каталог активов</span>
+                </h3>
+                <button class="assets-catalog-close-btn" id="assets-catalog-close-btn">✕</button>
+            </div>
+            <div class="assets-catalog-content" id="assets-catalog-content">
+                <div class="assets-catalog-loading">Загрузка активов...</div>
+            </div>
+        `;
+        document.body.appendChild(assetsPanel);
+        
+        // Обработчик закрытия
+        const closeBtn = document.getElementById('assets-catalog-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                assetsPanel.classList.remove('assets-catalog-visible');
+            });
+        }
+        
+        // Закрытие по клику на overlay
+        assetsPanel.addEventListener('click', (e) => {
+            if (e.target === assetsPanel) {
+                assetsPanel.classList.remove('assets-catalog-visible');
+            }
+        });
+        
+        // Добавляем стили для каталога активов
+        this.addAssetsCatalogStyles();
+    }
+    
+    /**
+     * Обновление каталога активов
+     */
+    updateAssetsCatalog() {
+        const assetsContent = document.getElementById('assets-catalog-content');
+        if (!assetsContent) return;
+        
+        const state = this.gameStateManager?.getState?.();
+        const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
+                             sessionStorage.getItem('userId') || 
+                             localStorage.getItem('userId');
+        
+        if (!state || !currentUserId) {
+            assetsContent.innerHTML = '<div class="assets-catalog-empty">Нет данных об активах</div>';
+            return;
+        }
+        
+        const currentPlayer = state.players?.find(p => p.id === currentUserId || p.userId === currentUserId);
+        if (!currentPlayer) {
+            assetsContent.innerHTML = '<div class="assets-catalog-empty">Игрок не найден</div>';
+            return;
+        }
+        
+        // Получаем активы игрока (купленные карточки)
+        const assets = currentPlayer.assets || [];
+        const totalValue = this.calculateAssetsTotal();
+        
+        if (assets.length === 0) {
+            assetsContent.innerHTML = `
+                <div class="assets-catalog-summary">
+                    <div class="assets-total">Общая стоимость: <span>$${totalValue.toLocaleString()}</span></div>
+                </div>
+                <div class="assets-catalog-empty">Нет активов</div>
+            `;
+            return;
+        }
+        
+        assetsContent.innerHTML = `
+            <div class="assets-catalog-summary">
+                <div class="assets-total">Общая стоимость: <span>$${totalValue.toLocaleString()}</span></div>
+                <div class="assets-count">Всего активов: <span>${assets.length}</span></div>
+            </div>
+            <div class="assets-catalog-list">
+                ${assets.map(asset => `
+                    <div class="assets-catalog-item">
+                        <div class="asset-item-icon">${asset.icon || '📦'}</div>
+                        <div class="asset-item-info">
+                            <div class="asset-item-name">${asset.name || 'Актив'}</div>
+                            ${asset.description ? `<div class="asset-item-description">${asset.description}</div>` : ''}
+                        </div>
+                        <div class="asset-item-value">$${asset.value ? asset.value.toLocaleString() : '0'}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    /**
+     * Добавление стилей для каталога активов
+     */
+    addAssetsCatalogStyles() {
+        if (document.getElementById('assets-catalog-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'assets-catalog-styles';
+        style.textContent = `
+            .assets-catalog-panel {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(10px);
+                z-index: 100001;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+            
+            .assets-catalog-panel.assets-catalog-visible {
+                display: flex;
+                opacity: 1;
+            }
+            
+            .assets-catalog-panel .assets-catalog-content {
+                background: rgba(15, 23, 42, 0.95);
+                border-radius: 1rem;
+                padding: 1.5rem;
+                max-width: 600px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                border: 1px solid rgba(148, 163, 184, 0.2);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            }
+            
+            .assets-catalog-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+                padding-bottom: 1rem;
+                border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            }
+            
+            .assets-catalog-title {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #f8fafc;
+                margin: 0;
+            }
+            
+            .assets-catalog-icon {
+                font-size: 1.5rem;
+            }
+            
+            .assets-catalog-close-btn {
+                background: rgba(239, 68, 68, 0.2);
+                border: 1px solid rgba(239, 68, 68, 0.4);
+                color: #f8fafc;
+                width: 2rem;
+                height: 2rem;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.25rem;
+                transition: all 0.2s ease;
+            }
+            
+            .assets-catalog-close-btn:hover {
+                background: rgba(239, 68, 68, 0.3);
+                transform: scale(1.1);
+            }
+            
+            .assets-catalog-summary {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 0.5rem;
+                margin-bottom: 1rem;
+            }
+            
+            .assets-total, .assets-count {
+                font-size: 1rem;
+                color: rgba(148, 163, 184, 0.9);
+            }
+            
+            .assets-total span, .assets-count span {
+                font-weight: 700;
+                color: #10b981;
+            }
+            
+            .assets-catalog-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .assets-catalog-item {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 1rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 0.75rem;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                transition: all 0.2s ease;
+            }
+            
+            .assets-catalog-item:hover {
+                background: rgba(255, 255, 255, 0.08);
+                border-color: rgba(99, 102, 241, 0.3);
+            }
+            
+            .asset-item-icon {
+                font-size: 2rem;
+                flex-shrink: 0;
+            }
+            
+            .asset-item-info {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .asset-item-name {
+                font-size: 1rem;
+                font-weight: 600;
+                color: #f8fafc;
+                margin-bottom: 0.25rem;
+            }
+            
+            .asset-item-description {
+                font-size: 0.875rem;
+                color: rgba(148, 163, 184, 0.8);
+            }
+            
+            .asset-item-value {
+                font-size: 1.125rem;
+                font-weight: 700;
+                color: #10b981;
+                flex-shrink: 0;
+            }
+            
+            .assets-catalog-empty {
+                text-align: center;
+                color: rgba(148, 163, 184, 0.7);
+                padding: 2rem;
+            }
+            
+            .assets-catalog-loading {
+                text-align: center;
+                color: rgba(148, 163, 184, 0.7);
+                padding: 2rem;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    /**
      * Переключение меню
      */
     toggleMenu() {
@@ -1861,11 +2151,19 @@ class PlayersPanel {
      */
     updateDesktopTimer() {
         const desktopTimerValue = document.getElementById('desktop-timer-value');
+        const desktopPanel = document.getElementById('desktop-dice-timer-panel');
+        
         if (!desktopTimerValue) return;
         
         const state = this.gameStateManager?.getState?.();
         if (!state) {
             desktopTimerValue.textContent = '0:00';
+            // Показываем панель на десктопе всегда
+            if (desktopPanel && window.innerWidth >= 1025) {
+                desktopPanel.style.display = 'flex';
+                desktopPanel.style.visibility = 'visible';
+                desktopPanel.style.opacity = '1';
+            }
             return;
         }
         
@@ -1887,6 +2185,13 @@ class PlayersPanel {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         desktopTimerValue.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        
+        // Показываем панель на десктопе всегда
+        if (desktopPanel && window.innerWidth >= 1025) {
+            desktopPanel.style.display = 'flex';
+            desktopPanel.style.visibility = 'visible';
+            desktopPanel.style.opacity = '1';
+        }
     }
     
     /**
