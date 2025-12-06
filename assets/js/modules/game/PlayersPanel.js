@@ -1708,7 +1708,6 @@ class PlayersPanel {
             }
             
             .menu-player-avatar {
-                grid-area: avatar;
                 width: 3.5rem;
                 height: 3.5rem;
                 border-radius: 50%;
@@ -1719,6 +1718,18 @@ class PlayersPanel {
                 font-size: 1.75rem;
                 flex-shrink: 0;
                 box-shadow: 0 2px 8px rgba(99, 102, 246, 0.3);
+                position: relative;
+                transition: all 0.3s ease;
+            }
+            
+            .menu-current-player.active-turn .menu-player-avatar {
+                box-shadow: 0 4px 20px rgba(99, 102, 246, 0.5), 0 0 30px rgba(99, 102, 246, 0.3);
+                animation: avatar-pulse 2s ease-in-out infinite;
+            }
+            
+            @keyframes avatar-pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
             }
             
             .menu-player-details {
@@ -1898,23 +1909,76 @@ class PlayersPanel {
             }
             
             .menu-player-item {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 0.75rem;
+                align-items: center;
+                padding: 0.875rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 0.5rem;
+                border: 1px solid rgba(148, 163, 184, 0.1);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                cursor: pointer;
                 position: relative;
             }
             
-            .menu-player-item.active {
-                border: 1px solid rgba(99, 102, 246, 0.5);
-                background: linear-gradient(135deg, rgba(99, 102, 246, 0.15), rgba(139, 92, 246, 0.15));
-                box-shadow: 0 2px 8px rgba(99, 102, 246, 0.3);
-                animation: active-pulse 2s ease-in-out infinite;
+            .menu-player-item::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 0;
+                background: linear-gradient(90deg, rgba(16, 185, 129, 0.3), transparent);
+                border-radius: 0.5rem 0 0 0.5rem;
+                transition: width 0.3s ease;
             }
             
-            @keyframes active-pulse {
-                0%, 100% { border-color: rgba(99, 102, 246, 0.5); }
-                50% { border-color: rgba(99, 102, 246, 0.8); }
+            .menu-player-item.active-turn {
+                border: 2px solid rgba(16, 185, 129, 0.8) !important;
+                background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2)) !important;
+                box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.2), inset 0 0 20px rgba(16, 185, 129, 0.1) !important;
+                animation: active-turn-pulse 2s ease-in-out infinite;
+                transform: scale(1.02);
+            }
+            
+            .menu-player-item.active-turn::before {
+                width: 4px;
+            }
+            
+            @keyframes active-turn-pulse {
+                0%, 100% { 
+                    border-color: rgba(16, 185, 129, 0.8);
+                    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.2), inset 0 0 20px rgba(16, 185, 129, 0.1);
+                }
+                50% { 
+                    border-color: rgba(16, 185, 129, 1);
+                    box-shadow: 0 4px 30px rgba(16, 185, 129, 0.6), 0 0 30px rgba(16, 185, 129, 0.4), inset 0 0 30px rgba(16, 185, 129, 0.2);
+                }
             }
             
             .menu-player-item.current {
-                border-left: 3px solid #10b981;
+                border-left: 4px solid #10b981;
+                background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), rgba(255, 255, 255, 0.05));
+            }
+            
+            .menu-player-item.current.active-turn {
+                border-left: 4px solid #10b981;
+                border-right: 2px solid rgba(16, 185, 129, 0.8);
+                border-top: 2px solid rgba(16, 185, 129, 0.8);
+                border-bottom: 2px solid rgba(16, 185, 129, 0.8);
+            }
+            
+            .menu-player-item:hover {
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.08));
+                transform: translateX(4px) translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(99, 102, 246, 0.2);
+                border-color: rgba(148, 163, 184, 0.3);
+            }
+            
+            .menu-player-item.active-turn:hover {
+                transform: translateX(6px) translateY(-2px) scale(1.01);
+                box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5), 0 0 30px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(16, 185, 129, 0.2);
             }
             
             .player-item-info {
@@ -1969,6 +2033,40 @@ class PlayersPanel {
             
             .player-item-credit {
                 color: #f59e0b;
+            }
+            
+            .player-item-avatar {
+                width: 2.5rem;
+                height: 2.5rem;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.05);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                position: relative;
+                transition: all 0.3s ease;
+            }
+            
+            .menu-player-item.active-turn .player-item-avatar {
+                background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.3));
+                box-shadow: 0 2px 12px rgba(16, 185, 129, 0.5), 0 0 20px rgba(16, 185, 129, 0.3);
+                animation: avatar-pulse-small 2s ease-in-out infinite;
+            }
+            
+            @keyframes avatar-pulse-small {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.08); }
+            }
+            
+            .menu-player-item:hover .player-item-avatar {
+                transform: scale(1.1);
+                box-shadow: 0 2px 8px rgba(99, 102, 246, 0.3);
+            }
+            
+            .menu-player-item.active-turn:hover .player-item-avatar {
+                transform: scale(1.15);
+                box-shadow: 0 4px 16px rgba(16, 185, 129, 0.6), 0 0 24px rgba(16, 185, 129, 0.4);
             }
             
             .asset-icon,
