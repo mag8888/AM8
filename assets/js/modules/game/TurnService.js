@@ -488,31 +488,46 @@ class TurnService extends EventTarget {
             const state = this.getState();
             const isMyTurn = this.isMyTurn();
             
+            // Если не мой ход, нельзя бросать
+            if (!isMyTurn) {
+                console.log('🎲 TurnService.canRoll -> false (не мой ход)');
+                return false;
+            }
+            
             // Проверяем состояние из GameStateManager (приоритет)
             if (this.gameStateManager) {
                 const gameState = this.gameStateManager.getState();
-                if (gameState && typeof gameState.canRoll === 'boolean') {
-                    const can = gameState.canRoll === true && isMyTurn;
-                    console.log('🎲 TurnService.canRoll ->', can, { isMyTurn, stateCanRoll: gameState.canRoll, source: 'GameStateManager' });
-                    return can;
+                if (gameState) {
+                    // Если canRoll явно false, запрещаем
+                    if (gameState.canRoll === false) {
+                        console.log('🎲 TurnService.canRoll -> false (state.canRoll === false)', { isMyTurn, stateCanRoll: gameState.canRoll, source: 'GameStateManager' });
+                        return false;
+                    }
+                    // Если canRoll === true или undefined/null, разрешаем (если это мой ход)
+                    if (gameState.canRoll === true || gameState.canRoll === undefined || gameState.canRoll === null) {
+                        console.log('🎲 TurnService.canRoll -> true', { isMyTurn, stateCanRoll: gameState.canRoll, source: 'GameStateManager' });
+                        return true;
+                    }
                 }
             }
             
             // Fallback: проверяем состояние из локального state
-            if (state && typeof state.canRoll === 'boolean') {
-                const can = state.canRoll === true && isMyTurn;
-                console.log('🎲 TurnService.canRoll ->', can, { isMyTurn, stateCanRoll: state.canRoll, source: 'localState' });
-                return can;
+            if (state) {
+                // Если canRoll явно false, запрещаем
+                if (state.canRoll === false) {
+                    console.log('🎲 TurnService.canRoll -> false (state.canRoll === false)', { isMyTurn, stateCanRoll: state.canRoll, source: 'localState' });
+                    return false;
+                }
+                // Если canRoll === true или undefined/null, разрешаем (если это мой ход)
+                if (state.canRoll === true || state.canRoll === undefined || state.canRoll === null) {
+                    console.log('🎲 TurnService.canRoll -> true', { isMyTurn, stateCanRoll: state.canRoll, source: 'localState' });
+                    return true;
+                }
             }
             
             // Если состояние не готово, но это мой ход - разрешаем (для начального состояния)
-            if (isMyTurn) {
-                console.log('🎲 TurnService.canRoll -> true (мой ход, состояние не готово)');
-                return true;
-            }
-            
-            console.log('🎲 TurnService.canRoll -> false (не мой ход или состояние не готово)');
-            return false;
+            console.log('🎲 TurnService.canRoll -> true (мой ход, состояние не готово)');
+            return true;
         } catch (e) {
             console.warn('⚠️ TurnService.canRoll: ошибка при проверке:', e);
             return false; // Безопаснее запретить бросок при ошибке
