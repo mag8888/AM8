@@ -906,8 +906,8 @@ class BankModuleServer {
                                         <label for="loan-amount-server">Кредит (шаг 1000)</label>
                                         <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
                                             <input type="number" id="loan-amount-server" class="form-input" placeholder="0" min="0" step="1000">
-                                            <button class="transfer-btn" id="loan-take-server" style="min-width:120px">ВЗЯТЬ</button>
-                                            <button class="transfer-reset" id="loan-repay-server" style="min-width:120px">ПОГАСИТЬ</button>
+                                            <button class="transfer-btn loan-btn" id="loan-take-server" style="min-width:120px">ВЗЯТЬ</button>
+                                            <button class="transfer-reset loan-btn" id="loan-repay-server" style="min-width:120px">ПОГАСИТЬ</button>
                                         </div>
                                         <div style="margin-top:8px;opacity:.85;display:flex;gap:16px">
                                             <div>Баланс: <span id="loan-balance">$0</span></div>
