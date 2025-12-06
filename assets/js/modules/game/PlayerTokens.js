@@ -2023,48 +2023,9 @@ class PlayerTokens {
                 token.style.setProperty('transform', 'translateZ(0)', 'important');
                 token.style.setProperty('isolation', 'isolate', 'important');
                 
-                // КРИТИЧНО: Принудительно позиционируем фишку на клетке #24 после добавления в DOM
-                // Используем двойной requestAnimationFrame для гарантии, что DOM полностью готов
-                requestAnimationFrame(() => {
-                    const cellPosition = 23;
-                    const isInner = true; // Внутренний трек (малый круг)
-                    const baseCoords = this.getCellBaseCoordinates(cellPosition, isInner);
-                    if (baseCoords && Number.isFinite(baseCoords.x) && Number.isFinite(baseCoords.y)) {
-                        const cellSize = Math.max(baseCoords.width || 50, baseCoords.height || 50);
-                        const offset = this.calculateOffset(0, 1, cellSize); // Для одной фишки offset = 0
-                        this.positionTokenElement(token, baseCoords, offset, 1, 0);
-                        
-                        // Дополнительная проверка через небольшую задержку
-                        setTimeout(() => {
-                            const rect = token.getBoundingClientRect();
-                            if (rect.width === 0 || rect.height === 0 || rect.left === 0 && rect.top === 0) {
-                                this._warn('Фишка не видна после позиционирования, повторяем', {
-                                    player: player.username,
-                                    rect: { width: rect.width, height: rect.height, left: rect.left, top: rect.top }
-                                });
-                                // Повторяем позиционирование
-                                this.positionTokenElement(token, baseCoords, offset, 1, 0);
-                            } else {
-                                this._info('✅ Фишка видна после позиционирования', {
-                                    player: player.username,
-                                    rect: { width: rect.width, height: rect.height, left: rect.left, top: rect.top }
-                                });
-                            }
-                        }, 100);
-                        
-                        this._info('Фишка принудительно позиционирована на клетке #24', {
-                            player: player.username,
-                            position: cellPosition,
-                            coords: baseCoords,
-                            offset
-                        });
-                    } else {
-                        this._warn('Не удалось получить координаты клетки #24 для принудительного позиционирования', {
-                            player: player.username,
-                            baseCoords
-                        });
-                    }
-                });
+                // ИСПРАВЛЕНО: Удален код принудительного позиционирования на клетку #24
+                // Позиция фишки должна приходить только с сервера через player.position и player.isInner
+                // Фишка уже позиционирована выше в коде на основе реальных данных игрока
             });
             
             // Принудительно устанавливаем стили для видимости ДО анимации с !important
