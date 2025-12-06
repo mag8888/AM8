@@ -373,12 +373,6 @@ class PlayersPanel {
                             <div class="btn-label">Банк</div>
                             <div class="btn-glow"></div>
                         </button>
-                        <button class="action-btn assets-btn" id="open-assets" type="button">
-                            <div class="btn-icon">💼</div>
-                            <div class="btn-label">Активы</div>
-                            <div class="btn-badge" id="assets-badge">$0</div>
-                            <div class="btn-glow"></div>
-                        </button>
                         <button class="action-btn roll-btn" id="roll-dice-btn" type="button" disabled>
                             <div class="btn-icon">🎲</div>
                             <div class="btn-label">Бросить</div>
@@ -392,6 +386,12 @@ class PlayersPanel {
                         <button class="action-btn pass-btn" id="pass-turn" type="button" disabled>
                             <div class="btn-icon">➡️</div>
                             <div class="btn-label">Передать</div>
+                            <div class="btn-glow"></div>
+                        </button>
+                        <button class="action-btn assets-btn assets-btn-horizontal" id="open-assets" type="button">
+                            <div class="btn-icon">💼</div>
+                            <div class="btn-label">Активы</div>
+                            <div class="btn-badge" id="assets-badge">$0</div>
                             <div class="btn-glow"></div>
                         </button>
                     </div>
@@ -3879,13 +3879,28 @@ class PlayersPanel {
                 gap: 1rem;
             }
             
-            /* Если кнопок 5, последняя занимает всю ширину или центрируется */
-            .actions-grid:has(button:nth-child(5)) {
-                grid-template-columns: repeat(3, 1fr);
+            /* Кнопка активов - горизонтальная, занимает всю ширину */
+            .assets-btn-horizontal {
+                grid-column: 1 / -1 !important; /* Занимает всю ширину сетки */
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 0.875rem 1.25rem !important;
             }
             
-            .actions-grid button:nth-child(5) {
-                grid-column: 2 / 3; /* Центрируем последнюю кнопку */
+            .assets-btn-horizontal .btn-icon {
+                margin-right: 0.5rem;
+            }
+            
+            .assets-btn-horizontal .btn-label {
+                flex: 1;
+                text-align: left;
+            }
+            
+            .assets-btn-horizontal .btn-badge {
+                position: static !important;
+                margin-left: auto;
+                margin-right: 0.5rem;
             }
             
             @media (max-width: 768px) {
@@ -3893,8 +3908,8 @@ class PlayersPanel {
                     grid-template-columns: repeat(2, 1fr);
                 }
                 
-                .actions-grid button:nth-child(5) {
-                    grid-column: 1 / -1; /* Последняя кнопка на всю ширину на мобиле */
+                .assets-btn-horizontal {
+                    grid-column: 1 / -1 !important;
                 }
             }
             
