@@ -210,6 +210,20 @@ class PlayersPanel {
             setInterval(() => {
                 this.updateAssetsBadge();
             }, 2000);
+            
+            // Показываем панель таймера и кубика на десктопе при инициализации
+            if (window.innerWidth >= 1025) {
+                setTimeout(() => {
+                    const desktopPanel = document.getElementById('desktop-dice-timer-panel');
+                    if (desktopPanel) {
+                        desktopPanel.style.display = 'flex';
+                        desktopPanel.style.visibility = 'visible';
+                        desktopPanel.style.opacity = '1';
+                        // Инициализируем значения
+                        this.updateDesktopTimer();
+                    }
+                }, 500);
+            }
         }
 
         // Подписываемся на обновления состояния игры
