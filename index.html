@@ -209,6 +209,18 @@
                         <div class="top-info-player-name" id="top-turn-player-name">-</div>
                     </div>
                     
+                    <!-- Кубик и таймер -->
+                    <div class="top-info-dice-timer">
+                        <div class="top-info-dice" id="top-dice-result">
+                            <span class="top-info-dice-icon">🎲</span>
+                            <span class="top-info-dice-value" id="top-dice-value">-</span>
+                        </div>
+                        <div class="top-info-timer" id="top-timer">
+                            <span class="top-info-timer-icon">⏱</span>
+                            <span class="top-info-timer-value" id="top-timer-value">2:00</span>
+                        </div>
+                    </div>
+                    
                     <!-- Банк мини -->
                     <div class="top-info-bank">
                         <div class="top-info-bank-balance" id="top-bank-balance">$0</div>
@@ -415,6 +427,8 @@
                     // Обновляем информацию при загрузке
                     updateTurnInfo();
                     updateBankInfo();
+                    updateDiceResult();
+                    updateTimer();
                     
                     // Подписываемся на события обновления состояния игры
                     const eventBus = window.app?.getEventBus?.();
@@ -422,21 +436,37 @@
                         eventBus.on('game:stateUpdated', () => {
                             updateTurnInfo();
                             updateBankInfo();
+                            updateDiceResult();
+                            updateTimer();
                         });
                         eventBus.on('game:playersUpdated', () => {
                             updateTurnInfo();
                             updateBankInfo();
+                            updateDiceResult();
+                            updateTimer();
                         });
                         eventBus.on('game:turnChanged', () => {
                             updateTurnInfo();
                             updateBankInfo();
+                            updateDiceResult();
+                            updateTimer();
+                        });
+                        eventBus.on('dice:rolled', () => {
+                            updateDiceResult();
+                        });
+                        eventBus.on('game:diceRolled', () => {
+                            updateDiceResult();
                         });
                     }
                     
-                    // Периодическое обновление (каждые 2 секунды)
+                    // Периодическое обновление (каждую секунду для таймера, каждые 2 секунды для остального)
+                    setInterval(() => {
+                        updateTimer();
+                    }, 1000);
                     setInterval(() => {
                         updateTurnInfo();
                         updateBankInfo();
+                        updateDiceResult();
                     }, 2000);
                 }
                 

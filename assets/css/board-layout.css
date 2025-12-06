@@ -62,6 +62,50 @@
   line-height: 1 !important;
 }
 
+.top-info-dice-timer {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+}
+
+.top-info-dice {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+}
+
+.top-info-dice-icon {
+  font-size: 1rem !important;
+}
+
+.top-info-dice-value {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: #fbbf24 !important;
+  min-width: 1.5rem !important;
+  text-align: center !important;
+}
+
+.top-info-timer {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+}
+
+.top-info-timer-icon {
+  font-size: 0.875rem !important;
+}
+
+.top-info-timer-value {
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: #10b981 !important;
+  font-variant-numeric: tabular-nums !important;
+  min-width: 2.5rem !important;
+  text-align: center !important;
+}
+
 /* Desktop: трехколоночная раскладка, поле по центру квадратом */
 @media (min-width: 1025px) {
   /* Скрываем верхнюю информационную панель на десктопе */
