@@ -916,6 +916,11 @@ class PlayersPanel {
         
         // Добавляем стили для меню
         this.addMenuStyles();
+        
+        // Принудительно обновляем данные при создании меню
+        setTimeout(() => {
+            this.updateMenuData();
+        }, 100);
     }
     
     /**
