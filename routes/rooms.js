@@ -467,6 +467,9 @@ router.post('/:id/move', (req, res, next) => {
     const { steps, isInner, track } = req.body || {};
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
+        
+        // ИСПРАВЛЕНО: Проверяем истечение времени перед движением
+        autoEndTurnIfExpired(id, state);
         const current = state.players[state.currentPlayerIndex];
         if (!current) return res.json({ success:true, moveResult:{ steps:0 }, state });
         if (state.canMove === false) {
