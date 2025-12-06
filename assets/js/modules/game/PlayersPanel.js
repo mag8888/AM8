@@ -426,6 +426,393 @@ class PlayersPanel {
     }
     
     /**
+     * Настройка обработчиков кнопок
+     */
+    setupControls() {
+        // Кнопка "Банк" - открываем банковский интерфейс
+        const openBankBtn = document.getElementById('open-bank');
+        if (openBankBtn) {
+            openBankBtn.addEventListener('click', () => {
+                console.log('🏦 PlayersPanel: Клик по кнопке "Банк"');
+                this.openBankModule();
+            });
+            console.log('✅ PlayersPanel: Обработчик кнопки банка привязан в setupControls');
+        }
+        
+        // Кнопка "Меню" - создаем меню с разделами
+        const menuBtn = document.getElementById('mobile-menu-bottom-btn');
+        if (menuBtn) {
+            menuBtn.addEventListener('click', () => {
+                console.log('📋 PlayersPanel: Клик по кнопке "Меню"');
+                this.toggleMenu();
+            });
+        }
+    }
+    
+    /**
+     * Переключение меню
+     */
+    toggleMenu() {
+        // Создаем или показываем меню, если его еще нет
+        let menuPanel = document.getElementById('game-menu-panel');
+        if (!menuPanel) {
+            this.createMenuPanel();
+            menuPanel = document.getElementById('game-menu-panel');
+        }
+        
+        if (menuPanel) {
+            const isVisible = menuPanel.classList.contains('menu-visible');
+            menuPanel.classList.toggle('menu-visible');
+            
+            // Обновляем данные при открытии
+            if (!isVisible) {
+                this.updateMenuData();
+            }
+        }
+    }
+    
+    /**
+     * Создание панели меню
+     */
+    createMenuPanel() {
+        const menuPanel = document.createElement('div');
+        menuPanel.id = 'game-menu-panel';
+        menuPanel.className = 'game-menu-panel';
+        menuPanel.innerHTML = `
+            <div class="menu-header">
+                <h3 class="menu-title">Меню</h3>
+                <button class="menu-close-btn" id="menu-close-btn">✕</button>
+            </div>
+            <div class="menu-content">
+                <div class="menu-section" id="menu-assets-section">
+                    <div class="menu-section-header">
+                        <span class="menu-section-icon">💼</span>
+                        <span class="menu-section-title">Активы</span>
+                    </div>
+                    <div class="menu-section-content" id="menu-assets-content">
+                        <div class="menu-loading">Загрузка активов...</div>
+                    </div>
+                </div>
+                <div class="menu-section" id="menu-players-section">
+                    <div class="menu-section-header">
+                        <span class="menu-section-icon">👥</span>
+                        <span class="menu-section-title">Игроки в комнате</span>
+                    </div>
+                    <div class="menu-section-content" id="menu-players-content">
+                        <div class="menu-loading">Загрузка игроков...</div>
+                    </div>
+                </div>
+                <div class="menu-section" id="menu-cards-section">
+                    <div class="menu-section-header">
+                        <span class="menu-section-icon">🃏</span>
+                        <span class="menu-section-title">Карточки сделок</span>
+                    </div>
+                    <div class="menu-section-content" id="menu-cards-content">
+                        <div class="menu-loading">Загрузка карточек...</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(menuPanel);
+        
+        // Обработчик закрытия меню
+        const closeBtn = menuPanel.querySelector('#menu-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                menuPanel.classList.remove('menu-visible');
+            });
+        }
+        
+        // Закрытие при клике вне меню
+        menuPanel.addEventListener('click', (e) => {
+            if (e.target === menuPanel) {
+                menuPanel.classList.remove('menu-visible');
+            }
+        });
+        
+        // Добавляем стили для меню
+        this.addMenuStyles();
+    }
+    
+    /**
+     * Обновление данных в меню
+     */
+    updateMenuData() {
+        this.updateMenuAssets();
+        this.updateMenuPlayers();
+        this.updateMenuCards();
+    }
+    
+    /**
+     * Обновление списка активов в меню
+     */
+    updateMenuAssets() {
+        const assetsContent = document.getElementById('menu-assets-content');
+        if (!assetsContent) return;
+        
+        const state = this.gameStateManager?.getState?.();
+        const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
+                             sessionStorage.getItem('userId') || 
+                             localStorage.getItem('userId');
+        
+        if (!state || !currentUserId) {
+            assetsContent.innerHTML = '<div class="menu-empty">Нет данных об активах</div>';
+            return;
+        }
+        
+        const currentPlayer = state.players?.find(p => p.id === currentUserId || p.userId === currentUserId);
+        if (!currentPlayer) {
+            assetsContent.innerHTML = '<div class="menu-empty">Игрок не найден</div>';
+            return;
+        }
+        
+        // Получаем активы игрока (если они есть в данных)
+        const assets = currentPlayer.assets || [];
+        
+        if (assets.length === 0) {
+            assetsContent.innerHTML = '<div class="menu-empty">Нет активов</div>';
+            return;
+        }
+        
+        assetsContent.innerHTML = assets.map(asset => `
+            <div class="menu-asset-item">
+                <span class="asset-icon">${asset.icon || '📦'}</span>
+                <span class="asset-name">${asset.name || 'Актив'}</span>
+                <span class="asset-value">${asset.value ? `$${asset.value}` : ''}</span>
+            </div>
+        `).join('');
+    }
+    
+    /**
+     * Обновление списка игроков в меню
+     */
+    updateMenuPlayers() {
+        const playersContent = document.getElementById('menu-players-content');
+        if (!playersContent) return;
+        
+        const state = this.gameStateManager?.getState?.();
+        if (!state || !state.players) {
+            playersContent.innerHTML = '<div class="menu-empty">Нет данных об игроках</div>';
+            return;
+        }
+        
+        const players = state.players || [];
+        if (players.length === 0) {
+            playersContent.innerHTML = '<div class="menu-empty">Нет игроков в комнате</div>';
+            return;
+        }
+        
+        playersContent.innerHTML = players.map(player => {
+            const isActive = state.activePlayer?.id === player.id || state.activePlayer?.userId === player.id;
+            return `
+                <div class="menu-player-item ${isActive ? 'active' : ''}">
+                    <span class="player-token">${player.token || '👤'}</span>
+                    <span class="player-name">${player.username || player.name || 'Игрок'}</span>
+                    <span class="player-balance">$${player.balance || 0}</span>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    /**
+     * Обновление карточек сделок в меню
+     */
+    updateMenuCards() {
+        const cardsContent = document.getElementById('menu-cards-content');
+        if (!cardsContent) return;
+        
+        // Получаем данные о карточках из CardDeckPanel
+        const cardDeckPanel = window.app?.getModule?.('cardDeckPanel');
+        if (!cardDeckPanel) {
+            cardsContent.innerHTML = '<div class="menu-empty">Модуль карточек не найден</div>';
+            return;
+        }
+        
+        // Пытаемся получить данные о колодах
+        const decks = cardDeckPanel.lastKnownDecks || [];
+        if (decks.length === 0) {
+            cardsContent.innerHTML = '<div class="menu-empty">Нет доступных карточек</div>';
+            return;
+        }
+        
+        cardsContent.innerHTML = decks.map(deck => `
+            <div class="menu-deck-item">
+                <span class="deck-icon">🃏</span>
+                <span class="deck-name">${deck.name || deck.id}</span>
+                <span class="deck-count">${deck.drawCount || 0} карт</span>
+            </div>
+        `).join('');
+    }
+    
+    /**
+     * Добавление стилей для меню
+     */
+    addMenuStyles() {
+        if (document.getElementById('game-menu-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'game-menu-styles';
+        style.textContent = `
+            .game-menu-panel {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(10px);
+                z-index: 100000;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+            
+            .game-menu-panel.menu-visible {
+                display: flex;
+                opacity: 1;
+            }
+            
+            .game-menu-panel .menu-content {
+                background: rgba(15, 23, 42, 0.95);
+                border-radius: 1rem;
+                padding: 1.5rem;
+                max-width: 600px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                border: 1px solid rgba(148, 163, 184, 0.2);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            }
+            
+            .menu-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+                padding-bottom: 1rem;
+                border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            }
+            
+            .menu-title {
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #f8fafc;
+                margin: 0;
+            }
+            
+            .menu-close-btn {
+                background: rgba(239, 68, 68, 0.2);
+                border: 1px solid rgba(239, 68, 68, 0.4);
+                color: #f8fafc;
+                width: 2rem;
+                height: 2rem;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.25rem;
+                transition: all 0.2s ease;
+            }
+            
+            .menu-close-btn:hover {
+                background: rgba(239, 68, 68, 0.3);
+                transform: scale(1.1);
+            }
+            
+            .menu-section {
+                margin-bottom: 1.5rem;
+            }
+            
+            .menu-section:last-child {
+                margin-bottom: 0;
+            }
+            
+            .menu-section-header {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.75rem;
+            }
+            
+            .menu-section-icon {
+                font-size: 1.25rem;
+            }
+            
+            .menu-section-title {
+                font-size: 1rem;
+                font-weight: 600;
+                color: #f8fafc;
+            }
+            
+            .menu-section-content {
+                background: rgba(255, 255, 255, 0.03);
+                border-radius: 0.5rem;
+                padding: 0.75rem;
+                min-height: 100px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            
+            .menu-loading,
+            .menu-empty {
+                text-align: center;
+                color: rgba(148, 163, 184, 0.7);
+                padding: 1rem;
+            }
+            
+            .menu-asset-item,
+            .menu-player-item,
+            .menu-deck-item {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 0.5rem;
+                margin-bottom: 0.5rem;
+                transition: all 0.2s ease;
+            }
+            
+            .menu-asset-item:hover,
+            .menu-player-item:hover,
+            .menu-deck-item:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            .menu-player-item.active {
+                border: 1px solid rgba(99, 102, 246, 0.5);
+                background: rgba(99, 102, 246, 0.1);
+            }
+            
+            .asset-icon,
+            .player-token,
+            .deck-icon {
+                font-size: 1.5rem;
+            }
+            
+            .asset-name,
+            .player-name,
+            .deck-name {
+                flex: 1;
+                color: #f8fafc;
+                font-weight: 500;
+            }
+            
+            .asset-value,
+            .player-balance,
+            .deck-count {
+                color: rgba(148, 163, 184, 0.8);
+                font-size: 0.875rem;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    /**
      * Обновление от GameStateManager
      * @param {Object} state - Состояние игры
      */
