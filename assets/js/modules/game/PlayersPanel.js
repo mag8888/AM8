@@ -1993,8 +1993,19 @@ class PlayersPanel {
             console.log('🎲 PlayersPanel: canRoll проверка:', canRoll);
             
             if (!canRoll) {
-                console.warn('⚠️ PlayersPanel: Бросок кубика недоступен');
+                console.warn('⚠️ PlayersPanel: Бросок кубика недоступен (canRoll=false)');
+                this._isRolling = false; // Сбрасываем флаг, если нельзя бросать
                 return;
+            }
+            
+            // Дополнительная проверка: проверяем состояние игры через GameStateManager
+            if (this.gameStateManager) {
+                const state = this.gameStateManager.getState();
+                if (state && state.canRoll === false) {
+                    console.warn('⚠️ PlayersPanel: Бросок кубика недоступен (state.canRoll=false)');
+                    this._isRolling = false; // Сбрасываем флаг
+                    return;
+                }
             }
             
             // Выполняем бросок кубиков
