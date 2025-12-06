@@ -936,13 +936,38 @@ class PlayersPanel {
                             <span class="menu-icon">👥</span>
                             <span>Игроки в комнате</span>
                             <div class="menu-sort-controls">
-                                <button class="menu-sort-btn" id="menu-sort-balance" type="button" title="Сортировать по балансу">💰</button>
-                                <button class="menu-sort-btn" id="menu-sort-position" type="button" title="Сортировать по позиции">📍</button>
-                                <button class="menu-sort-btn" id="menu-sort-name" type="button" title="Сортировать по имени">🔤</button>
+                                <button class="menu-sort-btn" id="menu-sort-balance" type="button" title="Сортировать по балансу" aria-label="Сортировать по балансу">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                    </svg>
+                                </button>
+                                <button class="menu-sort-btn" id="menu-sort-position" type="button" title="Сортировать по позиции" aria-label="Сортировать по позиции">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                        <circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                </button>
+                                <button class="menu-sort-btn" id="menu-sort-name" type="button" title="Сортировать по имени" aria-label="Сортировать по имени">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                        <path d="M8 10h8M8 14h6"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                         <div class="menu-players-list" id="menu-players-list">
                             ${this.renderPlayersList(state)}
+                        </div>
+                    </div>
+                    
+                    <!-- Карточки сделок -->
+                    <div class="menu-deals-section">
+                        <div class="menu-section-title">
+                            <span class="menu-icon">🃏</span>
+                            <span>Карточки сделок</span>
+                        </div>
+                        <div class="menu-deals-list" id="menu-deals-list">
+                            ${this.renderDealsList(state)}
                         </div>
                     </div>
                 </div>
@@ -992,6 +1017,49 @@ class PlayersPanel {
     }
     
     /**
+     * Рендеринг списка карточек сделок
+     */
+    renderDealsList(state) {
+        // Получаем данные о карточках из CardDeckPanel
+        const cardDeckPanel = window.app?.getModule?.('cardDeckPanel');
+        if (!cardDeckPanel) {
+            return '<div class="menu-empty">Модуль карточек не найден</div>';
+        }
+        
+        // Пытаемся получить данные о колодах
+        const decks = cardDeckPanel.lastKnownDecks || [];
+        if (decks.length === 0) {
+            return '<div class="menu-empty">Нет доступных карточек</div>';
+        }
+        
+        // Фильтруем только карточки сделок (opportunity cards)
+        const dealCards = decks.filter(deck => 
+            deck.type === 'opportunity' || 
+            deck.name?.toLowerCase().includes('сделка') ||
+            deck.name?.toLowerCase().includes('opportunity')
+        );
+        
+        if (dealCards.length === 0) {
+            return '<div class="menu-empty">Нет карточек сделок</div>';
+        }
+        
+        return dealCards.map((deck, index) => {
+            const cardCount = deck.drawCount || deck.count || 0;
+            const deckName = deck.name || deck.id || `Колода ${index + 1}`;
+            
+            return `
+                <div class="menu-deal-item" data-deck-id="${deck.id || index}">
+                    <div class="deal-item-icon">🃏</div>
+                    <div class="deal-item-info">
+                        <div class="deal-item-name">${deckName}</div>
+                        <div class="deal-item-count">${cardCount} карт</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    /**
      * Рендеринг списка игроков
      */
     renderPlayersList(state, sortBy = 'default') {
@@ -1036,7 +1104,7 @@ class PlayersPanel {
             const playerCredit = player.currentLoan || 0;
             
             return `
-                <div class="menu-player-item ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}" 
+                <div class="menu-player-item ${isActive ? 'active-turn' : ''} ${isCurrent ? 'current' : ''}" 
                      data-player-id="${player.id || player.userId}"
                      title="${isActive ? 'Активный ход' : ''} ${isCurrent ? '(Вы)' : ''}">
                     <div class="player-item-avatar">
@@ -1370,15 +1438,21 @@ class PlayersPanel {
             }
             
             .menu-current-player.active-turn {
-                background: linear-gradient(135deg, rgba(99, 102, 246, 0.3), rgba(139, 92, 246, 0.3));
-                border-color: rgba(99, 102, 246, 0.6);
-                box-shadow: 0 4px 20px rgba(99, 102, 246, 0.4), 0 0 20px rgba(99, 102, 246, 0.2);
-                animation: pulse-glow 2s ease-in-out infinite;
+                background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.25));
+                border-color: rgba(16, 185, 129, 0.7);
+                box-shadow: 0 4px 25px rgba(16, 185, 129, 0.5), 0 0 25px rgba(16, 185, 129, 0.3), inset 0 0 20px rgba(16, 185, 129, 0.1);
+                animation: current-player-pulse 2s ease-in-out infinite;
             }
             
-            @keyframes pulse-glow {
-                0%, 100% { box-shadow: 0 4px 20px rgba(99, 102, 246, 0.4), 0 0 20px rgba(99, 102, 246, 0.2); }
-                50% { box-shadow: 0 4px 30px rgba(99, 102, 246, 0.6), 0 0 30px rgba(99, 102, 246, 0.4); }
+            @keyframes current-player-pulse {
+                0%, 100% { 
+                    box-shadow: 0 4px 25px rgba(16, 185, 129, 0.5), 0 0 25px rgba(16, 185, 129, 0.3), inset 0 0 20px rgba(16, 185, 129, 0.1);
+                    border-color: rgba(16, 185, 129, 0.7);
+                }
+                50% { 
+                    box-shadow: 0 4px 35px rgba(16, 185, 129, 0.7), 0 0 35px rgba(16, 185, 129, 0.5), inset 0 0 30px rgba(16, 185, 129, 0.15);
+                    border-color: rgba(16, 185, 129, 1);
+                }
             }
             
             .menu-player-info {
@@ -1442,29 +1516,52 @@ class PlayersPanel {
                 position: absolute;
                 top: -4px;
                 right: -4px;
-                width: 12px;
-                height: 12px;
+                width: 14px;
+                height: 14px;
                 background: #10b981;
                 border-radius: 50%;
                 border: 2px solid rgba(15, 23, 42, 0.98);
-                animation: pulse 1.5s ease-in-out infinite;
+                animation: turn-indicator-pulse 1.5s ease-in-out infinite;
+                box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
             }
             
-            @keyframes pulse {
-                0%, 100% { transform: scale(1); opacity: 1; }
-                50% { transform: scale(1.2); opacity: 0.8; }
+            @keyframes turn-indicator-pulse {
+                0%, 100% { 
+                    transform: scale(1); 
+                    opacity: 1;
+                    box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+                }
+                50% { 
+                    transform: scale(1.3); 
+                    opacity: 0.9;
+                    box-shadow: 0 0 20px rgba(16, 185, 129, 1);
+                }
             }
             
             .turn-indicator-small {
                 position: absolute;
                 top: -2px;
                 right: -2px;
-                width: 8px;
-                height: 8px;
+                width: 10px;
+                height: 10px;
                 background: #10b981;
                 border-radius: 50%;
-                border: 1px solid rgba(255, 255, 255, 0.3);
-                animation: pulse 1.5s ease-in-out infinite;
+                border: 2px solid rgba(255, 255, 255, 0.4);
+                animation: turn-indicator-pulse-small 1.5s ease-in-out infinite;
+                box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+            }
+            
+            @keyframes turn-indicator-pulse-small {
+                0%, 100% { 
+                    transform: scale(1); 
+                    opacity: 1;
+                    box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+                }
+                50% { 
+                    transform: scale(1.4); 
+                    opacity: 0.85;
+                    box-shadow: 0 0 15px rgba(16, 185, 129, 1);
+                }
             }
             
             /* Быстрые действия */
@@ -1520,19 +1617,94 @@ class PlayersPanel {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 1rem;
+                padding: 0.25rem;
                 transition: all 0.2s ease;
+            }
+            
+            .menu-sort-btn svg {
+                width: 100%;
+                height: 100%;
+                stroke: currentColor;
             }
             
             .menu-sort-btn:hover {
                 background: rgba(255, 255, 255, 0.1);
                 color: #f8fafc;
+                transform: scale(1.1);
             }
             
             .menu-sort-btn.active {
                 background: rgba(99, 102, 246, 0.3);
                 border-color: rgba(99, 102, 246, 0.5);
                 color: #f8fafc;
+                box-shadow: 0 2px 8px rgba(99, 102, 246, 0.3);
+            }
+            
+            /* Секция карточек сделок */
+            .menu-deals-section {
+                display: grid;
+                grid-template-rows: auto 1fr;
+                gap: 0.75rem;
+            }
+            
+            .menu-deals-list {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+                background: rgba(255, 255, 255, 0.03);
+                border-radius: 0.5rem;
+                padding: 0.75rem;
+                max-height: 200px;
+                overflow-y: auto;
+            }
+            
+            .menu-deal-item {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 0.75rem;
+                align-items: center;
+                padding: 0.75rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 0.5rem;
+                border: 1px solid rgba(148, 163, 184, 0.1);
+                transition: all 0.2s ease;
+                cursor: pointer;
+            }
+            
+            .menu-deal-item:hover {
+                background: rgba(255, 255, 255, 0.1);
+                transform: translateX(4px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                border-color: rgba(148, 163, 184, 0.3);
+            }
+            
+            .deal-item-icon {
+                width: 2.5rem;
+                height: 2.5rem;
+                border-radius: 0.375rem;
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(99, 102, 246, 0.2));
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                border: 1px solid rgba(139, 92, 246, 0.3);
+            }
+            
+            .deal-item-info {
+                display: grid;
+                grid-template-rows: auto auto;
+                gap: 0.25rem;
+            }
+            
+            .deal-item-name {
+                color: #f8fafc;
+                font-weight: 500;
+                font-size: 0.875rem;
+            }
+            
+            .deal-item-count {
+                color: rgba(148, 163, 184, 0.7);
+                font-size: 0.75rem;
             }
             
             .menu-player-avatar {
