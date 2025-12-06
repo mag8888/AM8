@@ -1166,8 +1166,9 @@ class PlayersPanel {
             }
             
             .game-menu-panel.menu-visible {
-                display: flex;
-                opacity: 1;
+                display: flex !important;
+                opacity: 1 !important;
+                visibility: visible !important;
             }
             
             .game-menu-panel .menu-content {
