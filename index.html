@@ -424,6 +424,42 @@
                         }
                     }
                     
+                    // Обновление таймера
+                    function updateTimer() {
+                        const timerValue = document.getElementById('top-timer-value');
+                        if (!timerValue) return;
+                        
+                        const app = window.app;
+                        if (app && app.getModule) {
+                            const gameStateManager = app.getModule('gameStateManager');
+                            if (gameStateManager && typeof gameStateManager.getState === 'function') {
+                                const state = gameStateManager.getState();
+                                
+                                // Получаем turnTimeRemaining из состояния или вычисляем из turnStartTime и turnTimer
+                                let turnTimeRemaining = state?.turnTimeRemaining;
+                                
+                                // Если turnTimeRemaining не задан, вычисляем его из turnStartTime и turnTimer
+                                if (turnTimeRemaining === undefined || turnTimeRemaining === null) {
+                                    if (state?.turnStartTime && state?.turnTimer) {
+                                        const elapsed = Date.now() - state.turnStartTime;
+                                        turnTimeRemaining = Math.max(0, state.turnTimer - elapsed);
+                                    } else {
+                                        turnTimeRemaining = 0;
+                                    }
+                                }
+                                
+                                if (turnTimeRemaining > 0) {
+                                    const seconds = Math.floor(turnTimeRemaining / 1000);
+                                    const mins = Math.floor(seconds / 60);
+                                    const secs = seconds % 60;
+                                    timerValue.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                                } else {
+                                    timerValue.textContent = '0:00';
+                                }
+                            }
+                        }
+                    }
+                    
                     // Обновляем информацию при загрузке
                     updateTurnInfo();
                     updateBankInfo();
