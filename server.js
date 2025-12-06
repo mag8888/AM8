@@ -161,7 +161,22 @@ app.get(['/auth', '/auth/*', '/login', '/signin', '/pages/login', '/auth.html'],
 
 // Статические файлы (для продакшена)
 if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(process.cwd()));
+    // Настройка кэширования для статических файлов
+    app.use(express.static(process.cwd(), {
+        maxAge: 0, // Отключаем кэширование для обновлений
+        etag: false, // Отключаем ETag
+        lastModified: false // Отключаем Last-Modified
+    }));
+    
+    // Принудительно отключаем кэширование для JS и CSS файлов
+    app.use((req, res, next) => {
+        if (req.path.match(/\.(js|css)$/)) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+        next();
+    });
     
     // Обслуживание статических файлов для продакшена
     app.get('*', (req, res) => {
