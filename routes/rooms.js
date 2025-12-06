@@ -202,6 +202,80 @@ async function fetchOrCreateRoomState(roomId) {
 // Инициализируем PushService для уведомлений
 const pushService = new PushService();
 
+/**
+ * Автоматический переход хода при истечении времени
+ * @param {string} roomId - ID комнаты
+ * @param {Object} state - Состояние игры
+ */
+function autoEndTurnIfExpired(roomId, state) {
+    if (!state || !state.players || state.players.length === 0) {
+        return false;
+    }
+    
+    const turnTimeRemaining = calculateTurnTimeRemaining(state);
+    
+    // Если время истекло, автоматически переводим ход
+    if (turnTimeRemaining <= 0 && state.activePlayer) {
+        console.log(`⏰ Автоматический переход хода для комнаты ${roomId} - время истекло`);
+        
+        // Переводим ход следующему игроку
+        state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+        state.activePlayer = state.players[state.currentPlayerIndex] || null;
+        state.canRoll = true;
+        state.canMove = false;
+        state.canEndTurn = false;
+        state.lastDiceResult = null;
+        state.lastMove = null;
+        state.turnStartTime = Date.now();
+        
+        const newTurnTimeRemaining = calculateTurnTimeRemaining(state);
+        
+        // Отправляем push-уведомление о смене хода
+        pushService.broadcastPush('turn_changed', { 
+            roomId: roomId, 
+            activePlayer: state.activePlayer,
+            previousPlayer: state.players[state.currentPlayerIndex - 1] || state.players[state.players.length - 1],
+            state: {
+                currentPlayerIndex: state.currentPlayerIndex,
+                players: state.players,
+                canRoll: state.canRoll,
+                canMove: state.canMove,
+                canEndTurn: state.canEndTurn,
+                turnStartTime: state.turnStartTime,
+                turnTimeRemaining: newTurnTimeRemaining
+            },
+            reason: 'time_expired'
+        }).catch(err => console.error('❌ Ошибка отправки push о автоматической смене хода:', err));
+        
+        console.log(`✅ Ход автоматически переведен игроку ${state.activePlayer?.username || 'неизвестно'}`);
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Запуск серверного таймера для проверки истечения времени хода
+ * Проверяет все активные комнаты каждые 5 секунд
+ */
+function startTurnTimerService() {
+    setInterval(() => {
+        // Проверяем все активные комнаты
+        for (const [roomId, state] of gameStateByRoomId.entries()) {
+            try {
+                autoEndTurnIfExpired(roomId, state);
+            } catch (error) {
+                console.error(`❌ Ошибка при проверке таймера для комнаты ${roomId}:`, error);
+            }
+        }
+    }, 5000); // Проверяем каждые 5 секунд
+    
+    console.log('⏰ Серверный таймер хода запущен (проверка каждые 5 секунд)');
+}
+
+// Запускаем серверный таймер при загрузке модуля
+startTurnTimerService();
+
 function ensureGameState(db, roomId, cb) {
     if (gameStateByRoomId.has(roomId)) {
         const cachedState = gameStateByRoomId.get(roomId);

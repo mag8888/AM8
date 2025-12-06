@@ -1297,8 +1297,12 @@ class PlayersPanel {
         
         if (turnTimeRemaining <= 0) {
             timerText.textContent = '0:00';
-            // ИСПРАВЛЕНО: Автоматический переход хода при истечении времени
-            this.handleAutoEndTurn();
+            // ИСПРАВЛЕНО: Таймер работает на сервере, клиент только отображает
+            // Автоматический переход хода выполняется на сервере
+            // Обновляем состояние с сервера для получения нового хода
+            if (this.gameStateManager) {
+                this.gameStateManager.forceUpdate();
+            }
             return;
         }
 
@@ -1311,8 +1315,13 @@ class PlayersPanel {
             
             if (remainingMs <= 0) {
                 this.stopTurnTimer();
-                // ИСПРАВЛЕНО: Автоматический переход хода при истечении времени
-                this.handleAutoEndTurn();
+                // ИСПРАВЛЕНО: Таймер работает на сервере, клиент только отображает
+                // Автоматический переход хода выполняется на сервере
+                timerText.textContent = '0:00';
+                // Обновляем состояние с сервера для получения нового хода
+                if (this.gameStateManager) {
+                    this.gameStateManager.forceUpdate();
+                }
                 return;
             }
             
