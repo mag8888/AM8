@@ -209,6 +209,11 @@ class PlayersPanel {
             });
             this.gameStateManager.on('turn:changed', (data) => {
                 this.handleTurnChanged(data || {});
+                // ИСПРАВЛЕНО: Запускаем таймер при смене хода
+                const playerTimer = document.getElementById('player-timer');
+                if (playerTimer && data?.activePlayer) {
+                    this.startTurnTimer(playerTimer);
+                }
             });
             this.gameStateManager.on('players:updated', (players) => {
                 this.onPlayersUpdated(players);
