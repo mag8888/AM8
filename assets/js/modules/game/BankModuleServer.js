@@ -1353,6 +1353,87 @@ class BankModuleServer {
                 border-radius: 8px;
                 font-weight: 600;
                 cursor: pointer;
+                transition: all 0.3s ease;
+                min-height: 48px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            }
+            
+            .transfer-reset:hover {
+                background: rgba(255, 255, 255, 0.15);
+                border-color: rgba(255, 255, 255, 0.3);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+            
+            .transfer-reset:active {
+                transform: translateY(0);
+            }
+            
+            /* Единый стиль для всех кнопок кредита */
+            .credit-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin-top: 12px;
+            }
+            
+            .credit-btn {
+                width: 100%;
+                padding: 14px 20px;
+                border-radius: 8px;
+                border: none;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: all 0.3s ease;
+                min-height: 48px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            
+            .credit-btn.no-credit {
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            }
+            
+            .credit-btn.no-credit:hover {
+                background: linear-gradient(135deg, #059669, #047857);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+            }
+            
+            .credit-btn.take-credit {
+                background: linear-gradient(135deg, #ef4444, #dc2626);
+                color: white;
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            }
+            
+            .credit-btn.take-credit:hover {
+                background: linear-gradient(135deg, #dc2626, #b91c1c);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+            }
+            
+            .credit-btn:active {
+                transform: translateY(0);
+            }
+            
+            .credit-btn .btn-icon {
+                font-size: 1.2rem;
+            }
+            
+            /* Кнопки кредита в правой панели используют те же стили */
+            .loan-btn {
+                min-height: 48px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
             }
             
             .loan-inline input.form-input { 
