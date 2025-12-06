@@ -764,20 +764,28 @@ class TurnService extends EventTarget {
      * @private
      */
     _getCurrentUsername() {
+        // ИСПРАВЛЕНО: Используем общую утилиту CommonUtils вместо дублирования логики
+        if (window.CommonUtils && typeof window.CommonUtils.getCurrentUsername === 'function') {
+            const username = window.CommonUtils.getCurrentUsername();
+            if (username) {
+                // Кэшируем результат
+                this._cachedUsername = username;
+                return username;
+            }
+        }
+        
+        // Fallback для обратной совместимости
         try {
-            // Кэшируем результат для предотвращения спама
             if (this._cachedUsername) {
                 return this._cachedUsername;
             }
             
-            // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
                 const username = bundle?.currentUser?.username || bundle?.currentUser?.name;
                 if (username) {
                     this._cachedUsername = username;
-                    console.log('🔍 TurnService: Username из bundle:', username);
                     return username;
                 }
             }

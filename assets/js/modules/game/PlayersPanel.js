@@ -3094,57 +3094,23 @@ class PlayersPanel {
      * @returns {string|null} ID пользователя
      */
     getCurrentUserId() {
+        // ИСПРАВЛЕНО: Используем общую утилиту CommonUtils вместо дублирования логики
+        if (window.CommonUtils && typeof window.CommonUtils.getCurrentUserId === 'function') {
+            return window.CommonUtils.getCurrentUserId();
+        }
+        
+        // Fallback для обратной совместимости
         try {
-            // Используем ту же логику, что и TurnService
-            // Пытаемся получить из sessionStorage
             const bundleRaw = sessionStorage.getItem('am_player_bundle');
             if (bundleRaw) {
                 const bundle = JSON.parse(bundleRaw);
                 const userId = bundle?.currentUser?.id || bundle?.currentUser?.userId;
-                if (userId) {
-                    console.log('🔍 PlayersPanel: ID пользователя из bundle:', userId);
-                    return userId;
-                }
+                if (userId) return userId;
             }
             
-            // Пытаемся получить из localStorage
-            const userRaw = localStorage.getItem('aura_money_user');
-            if (userRaw) {
-                const user = JSON.parse(userRaw);
-                const userId = user?.id || user?.userId;
-                if (userId) {
-                    console.log('🔍 PlayersPanel: ID пользователя из localStorage:', userId);
-                    return userId;
-                }
-            }
-            
-            // Пытаемся получить из глобального объекта app
-            if (window.app && window.app.getModule) {
-                const userModel = window.app.getModule('userModel');
-                if (userModel && userModel.getCurrentUser) {
-                    const currentUser = userModel.getCurrentUser();
-                    if (currentUser && (currentUser.id || currentUser.userId)) {
-                        const userId = currentUser.id || currentUser.userId;
-                        console.log('🔍 PlayersPanel: ID пользователя из userModel:', userId);
-                        return userId;
-                    }
-                }
-            }
-            
-            // ДОПОЛНИТЕЛЬНЫЕ СПОСОБЫ: проверяем другие источники
             const directUserId = localStorage.getItem('userId');
-            if (directUserId) {
-                console.log('🔍 PlayersPanel: ID пользователя из localStorage (прямой):', directUserId);
-                return directUserId;
-            }
+            if (directUserId) return directUserId;
             
-            const directUsername = localStorage.getItem('username');
-            if (directUsername) {
-                console.log('🔍 PlayersPanel: Username из localStorage (прямой):', directUsername);
-                return directUsername;
-            }
-            
-            console.warn('⚠️ PlayersPanel: Не удалось получить ID пользователя');
             return null;
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка получения ID пользователя:', error);
