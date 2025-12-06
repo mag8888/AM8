@@ -188,7 +188,8 @@ class TurnManager extends EventTarget {
                         // Находим токен игрока
                         const token = playerTokens.tokens?.get(activePlayer.id);
                         if (token) {
-                            // Запускаем пошаговое движение
+                            // ИСПРАВЛЕНО: Запускаем пошаговое движение с правильными параметрами
+                            // Используем текущую позицию и финальную позицию
                             playerTokens.moveTokenStepByStep(
                                 token,
                                 activePlayer.id,
@@ -196,7 +197,14 @@ class TurnManager extends EventTarget {
                                 finalPosition,
                                 currentIsInner
                             );
+                        } else {
+                            console.warn('⚠️ TurnManager: Токен игрока не найден для пошагового движения', {
+                                playerId: activePlayer.id,
+                                tokensCount: playerTokens.tokens?.size || 0
+                            });
                         }
+                    } else {
+                        console.warn('⚠️ TurnManager: PlayerTokens или moveTokenStepByStep не найден');
                     }
                 }
                 

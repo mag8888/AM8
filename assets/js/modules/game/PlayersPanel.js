@@ -1444,10 +1444,14 @@ class PlayersPanel {
                 }
             }
             
-            // Показываем результат в панели действий
+            // ИСПРАВЛЕНО: Показываем результат в панели действий - число кубика
             if (diceResultValue) {
                 diceResultValue.textContent = displayText;
                 diceResultValue.classList.add('dice-rolled');
+                // Убеждаемся, что число видно
+                diceResultValue.style.display = 'block';
+                diceResultValue.style.visibility = 'visible';
+                diceResultValue.style.opacity = '1';
                 setTimeout(() => {
                     diceResultValue.classList.remove('dice-rolled');
                 }, 1000);
@@ -1455,6 +1459,8 @@ class PlayersPanel {
             
             if (diceResultDisplay) {
                 diceResultDisplay.style.display = 'flex';
+                diceResultDisplay.style.visibility = 'visible';
+                diceResultDisplay.style.opacity = '1';
             }
             
             // Добавляем результат в историю бросков (используем сумму для истории)
