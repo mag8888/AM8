@@ -320,7 +320,7 @@
     transform-origin: left center; 
   }
   
-  /* Центральная область: игровое поле - фиксированные размеры для предотвращения сдвига */
+  /* Центральная область: игровое поле - СТРОГО КВАДРАТНЫЙ контейнер */
   .game-board-container {
     grid-area: game-board !important;
     display: flex !important;
@@ -328,19 +328,26 @@
     align-items: center !important;
     min-width: 0 !important; /* Позволяет сжиматься в grid */
     min-height: 0 !important;
-    height: 100% !important; /* На всю высоту контейнера */
-    max-height: 100% !important;
-    width: 100% !important; /* Фиксируем ширину */
+    /* ИСПРАВЛЕНО: Делаем строго квадратным - используем меньшую сторону */
+    width: 100% !important;
+    height: 100% !important;
     max-width: 100% !important;
+    max-height: 100% !important;
+    /* Гарантируем квадратную форму через aspect-ratio */
+    aspect-ratio: 1 / 1 !important;
+    /* Размер определяется по меньшей стороне контейнера */
+    width: min(100%, 100%) !important;
+    height: min(100%, 100%) !important;
     padding: 0.5rem !important;
     box-sizing: border-box !important;
     overflow: hidden !important; /* Скрываем переполнение */
     position: relative !important;
     /* Предотвращаем изменение размеров после загрузки */
-    flex: 1 1 auto !important;
+    flex: 0 0 auto !important; /* Не растягивается, использует aspect-ratio */
     /* Фиксируем позицию для предотвращения сдвига */
     left: 0 !important;
     right: 0 !important;
+    margin: auto !important; /* Центрирование */
   }
   
   /* Квадратная доска - фиксированные размеры для предотвращения сдвига */
