@@ -423,14 +423,51 @@
                         // Получаем информацию о банке
                         const app = window.app;
                         if (app && app.getModule) {
+                            // Сначала пытаемся получить данные из BankModuleServer (если он открыт)
+                            const bankModule = app.getModule('bankModuleServer');
+                            if (bankModule && bankModule.bankState) {
+                                const balance = bankModule.bankState.balance || 0;
+                                const credit = bankModule.bankState.credit || 0;
+                                bankBalance.textContent = `$${balance.toLocaleString()}`;
+                                bankCredit.textContent = `Кр: $${credit.toLocaleString()}`;
+                                return;
+                            }
+                            
+                            // Fallback: получаем данные из GameStateManager для текущего пользователя
                             const gameStateManager = app.getModule('gameStateManager');
                             if (gameStateManager && typeof gameStateManager.getState === 'function') {
                                 const state = gameStateManager.getState();
-                                if (state && state.activePlayer) {
-                                    const balance = state.activePlayer.money || 0;
-                                    const credit = state.activePlayer.currentLoan || 0;
-                                    bankBalance.textContent = `$${balance.toLocaleString()}`;
-                                    bankCredit.textContent = `Кр: $${credit.toLocaleString()}`;
+                                if (state && state.players && state.players.length > 0) {
+                                    // Получаем ID текущего пользователя
+                                    const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
+                                                         sessionStorage.getItem('userId') || 
+                                                         localStorage.getItem('userId');
+                                    
+                                    // Ищем текущего пользователя в списке игроков
+                                    const currentPlayer = currentUserId 
+                                        ? state.players.find(p => 
+                                            p.id === currentUserId || 
+                                            p.userId === currentUserId ||
+                                            String(p.id) === String(currentUserId) ||
+                                            String(p.userId) === String(currentUserId)
+                                        )
+                                        : null;
+                                    
+                                    if (currentPlayer) {
+                                        const balance = currentPlayer.money || currentPlayer.balance || 0;
+                                        const credit = currentPlayer.currentLoan || 0;
+                                        bankBalance.textContent = `$${balance.toLocaleString()}`;
+                                        bankCredit.textContent = `Кр: $${credit.toLocaleString()}`;
+                                    } else if (state.activePlayer) {
+                                        // Fallback на активного игрока
+                                        const balance = state.activePlayer.money || 0;
+                                        const credit = state.activePlayer.currentLoan || 0;
+                                        bankBalance.textContent = `$${balance.toLocaleString()}`;
+                                        bankCredit.textContent = `Кр: $${credit.toLocaleString()}`;
+                                    } else {
+                                        bankBalance.textContent = '$0';
+                                        bankCredit.textContent = 'Кр: $0';
+                                    }
                                 } else {
                                     bankBalance.textContent = '$0';
                                     bankCredit.textContent = 'Кр: $0';
