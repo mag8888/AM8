@@ -1418,7 +1418,7 @@ class PlayersPanel {
                 padding: 1.5rem;
                 overflow-y: auto;
                 display: grid;
-                grid-template-rows: auto auto 1fr;
+                grid-template-rows: auto auto auto 1fr;
                 gap: 1.5rem;
             }
             
