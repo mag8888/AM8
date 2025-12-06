@@ -1623,9 +1623,10 @@ class PlayersPanel {
         
         // Логика для кнопки "Бросить" - активна если это мой ход И можно бросать
         if (rollBtn) {
-            // ИСПРАВЛЕНО: Кнопка активна только если это мой ход И state.canRoll !== false
+            // ИСПРАВЛЕНО: Кнопка активна если это мой ход И (state.canRoll === true ИЛИ state.canRoll === undefined)
             // После броска state.canRoll становится false, и кнопка отключается до следующего хода
-            const canRoll = isMyTurn && (state.canRoll !== false);
+            // При начале нового хода state.canRoll должен быть true или undefined
+            const canRoll = isMyTurn && (state.canRoll === true || state.canRoll === undefined || state.canRoll === null);
             
             console.log('🎲 PlayersPanel: Обновление кнопки бросить:', {
                 isMyTurn,
@@ -1698,25 +1699,20 @@ class PlayersPanel {
             this.forceUpdateButtonUI(passBtn);
         }
         
-        // Кнопка броска - активна если это мой ход (упрощенная логика)
+        // Кнопка броска - активна если это мой ход И можно бросать (та же логика что и для rollBtn)
         if (moveBtn) {
-            // ПРОСТАЯ ЛОГИКА: если это мой ход - кнопка активна (игнорируем state.canRoll)
-            const shouldActivate = isMyTurn;
+            // ИСПРАВЛЕНО: Используем ту же логику что и для rollBtn
+            // Кнопка активна если это мой ход И (state.canRoll === true ИЛИ state.canRoll === undefined)
+            const shouldActivate = isMyTurn && (state.canRoll === true || state.canRoll === undefined || state.canRoll === null);
             moveBtn.disabled = !shouldActivate;
             
-            // ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ: если кнопка все еще отключена, но это ход игрока
-            if (moveBtn.disabled && isMyTurn) {
-                console.log('🔧 PlayersPanel: ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ кнопки "Бросок"');
-                moveBtn.disabled = false;
-                moveBtn.classList.add('active');
-            }
-            
-            console.log('🎲 PlayersPanel: УПРОЩЕННАЯ активация кнопки "Бросок":', {
+            console.log('🎲 PlayersPanel: Активация кнопки "🎲🎲 Бросок":', {
                 moveBtn: !!moveBtn,
                 isMyTurn,
+                stateCanRoll: state.canRoll,
                 shouldActivate,
                 disabled: moveBtn.disabled,
-                note: 'Кнопка активна если isMyTurn = true'
+                note: 'Кнопка активна если isMyTurn = true И state.canRoll !== false'
             });
             
             if (shouldActivate) {
