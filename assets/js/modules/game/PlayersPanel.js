@@ -1106,9 +1106,9 @@ class PlayersPanel {
     }
     
     /**
-     * Добавление стилей для меню
+     * Инъекция стилей для нового меню
      */
-    addMenuStyles() {
+    injectMenuStyles() {
         // Удаляем старые стили если они есть (для обновления)
         const oldStyle = document.getElementById('game-menu-styles');
         if (oldStyle) {
