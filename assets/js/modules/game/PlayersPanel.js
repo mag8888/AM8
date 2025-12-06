@@ -1374,6 +1374,11 @@ class PlayersPanel {
      * @param {number} result - Результат броска
      */
     updateDiceResult(result) {
+        // Защита от повторных вызовов
+        if (this._isUpdatingDice) {
+            return;
+        }
+        
         // Обрабатываем как объект с результатами кубиков или как число
         let diceResults = [];
         let total = 0;
@@ -1399,12 +1404,21 @@ class PlayersPanel {
             total = numericValue;
         }
         
-        // Дебаунсинг
+        // Улучшенный дебаунсинг - проверяем и значение, и время
         const now = Date.now();
         const resultKey = diceResults.join(',');
-        if (this._lastDiceResult === resultKey && this._lastDiceResultTime && now - this._lastDiceResultTime < 500) {
-            return;
+        
+        // Проверяем, не обновляли ли мы уже это значение недавно
+        if (this._lastDiceResult === resultKey && this._lastDiceResultTime && now - this._lastDiceResultTime < 2000) {
+            // Также проверяем, не отображается ли уже это значение в DOM
+            const diceResultValue = document.getElementById('dice-result-value');
+            if (diceResultValue && diceResultValue.textContent === String(total)) {
+                return; // Значение уже отображено, пропускаем
+            }
         }
+        
+        // Устанавливаем флаг обновления
+        this._isUpdatingDice = true;
         this._lastDiceResult = resultKey;
         this._lastDiceResultTime = now;
         
@@ -1446,7 +1460,11 @@ class PlayersPanel {
             // Добавляем результат в историю бросков (используем сумму для истории)
             this.addToRollHistory(total, rollHistory);
             
-            console.log('🎲 PlayersPanel: Результат броска отображен:', { diceResults, total, displayText });
+            // Логируем только при первом обновлении
+            if (!this._lastLoggedDiceResult || this._lastLoggedDiceResult !== resultKey) {
+                console.log('🎲 PlayersPanel: Результат броска отображен:', { diceResults, total, displayText });
+                this._lastLoggedDiceResult = resultKey;
+            }
         } else {
             // Скрываем результат, если значение некорректно
             if (diceResultDisplay) {
@@ -1462,6 +1480,7 @@ class PlayersPanel {
         if (oldDiceResult) {
             const diceFace = oldDiceResult.querySelector('.dice-face');
             const diceNumber = diceFace?.querySelector('.dice-number');
+            const numericValue = total; // Используем total вместо неопределенной переменной
             
             if (Number.isFinite(numericValue) && numericValue >= 1 && numericValue <= 6) {
                 if (diceNumber) {
@@ -1479,6 +1498,11 @@ class PlayersPanel {
                 }
             }
         }
+        
+        // Сбрасываем флаг обновления после небольшой задержки
+        setTimeout(() => {
+            this._isUpdatingDice = false;
+        }, 100);
     }
 
     /**
