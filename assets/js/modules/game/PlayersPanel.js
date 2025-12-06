@@ -2346,8 +2346,10 @@ class PlayersPanel {
                 desktopDiceValue.textContent = displayText;
                 // Показываем панель на десктопе
                 const desktopPanel = document.getElementById('desktop-dice-timer-panel');
-                if (desktopPanel) {
+                if (desktopPanel && window.innerWidth >= 1025) {
                     desktopPanel.style.display = 'flex';
+                    desktopPanel.style.visibility = 'visible';
+                    desktopPanel.style.opacity = '1';
                 }
             }
             
