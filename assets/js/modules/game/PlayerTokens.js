@@ -1639,14 +1639,17 @@ class PlayerTokens {
             if (gameStateManager && typeof gameStateManager.getState === 'function') {
                 const state = gameStateManager.getState();
                 if (state && state.players && state.players.length > 0) {
-                    // Принудительно устанавливаем позицию 0 для всех игроков
-                    const playersWithPosition0 = state.players.map(player => ({
+                    // Используем реальные позиции из состояния игры с сервера
+                    const playersWithRealPositions = state.players.map(player => ({
                         ...player,
-                        position: 0,
-                        isInner: false // Начинаем с внешнего трека
+                        position: Number(player.position) || 0, // Используем реальную позицию из сервера
+                        isInner: Boolean(player.isInner) // Используем реальный трек из сервера
                     }));
-                    this._info('Получены данные из GameStateManager, устанавливаем позицию 0 для всех игроков', playersWithPosition0.length);
-                    this.updateTokens(playersWithPosition0);
+                    this._info('Получены данные из GameStateManager, используем реальные позиции игроков', {
+                        playersCount: playersWithRealPositions.length,
+                        positions: playersWithRealPositions.map(p => ({ id: p.id, position: p.position, isInner: p.isInner }))
+                    });
+                    this.updateTokens(playersWithRealPositions);
                     return;
                 } else {
                     this._warn('GameStateManager не содержит игроков', { hasState: !!state, playersCount: state?.players?.length || 0 });
@@ -1658,14 +1661,17 @@ class PlayerTokens {
         
         // Пробуем получить из gameState напрямую
         if (this.gameState && this.gameState.players && this.gameState.players.length > 0) {
-            // Принудительно устанавливаем позицию 0 для всех игроков
-            const playersWithPosition0 = this.gameState.players.map(player => ({
+            // Используем реальные позиции из состояния игры
+            const playersWithRealPositions = this.gameState.players.map(player => ({
                 ...player,
-                position: 0,
-                isInner: false // Начинаем с внешнего трека
+                position: Number(player.position) || 0, // Используем реальную позицию
+                isInner: Boolean(player.isInner) // Используем реальный трек
             }));
-            this._info('Получены данные из gameState, устанавливаем позицию 0 для всех игроков', playersWithPosition0.length);
-            this.updateTokens(playersWithPosition0);
+            this._info('Получены данные из gameState, используем реальные позиции игроков', {
+                playersCount: playersWithRealPositions.length,
+                positions: playersWithRealPositions.map(p => ({ id: p.id, position: p.position, isInner: p.isInner }))
+            });
+            this.updateTokens(playersWithRealPositions);
             return;
         }
         
@@ -1815,13 +1821,16 @@ class PlayerTokens {
             }
             seen.add(key);
             
-            // ВСЕ фишки генерируются к клетке #24 внутреннего круга (позиция 23)
-            // Игнорируем позицию из данных игрока, всегда ставим 23
+            // Используем реальную позицию из данных игрока, если она есть
+            // Если позиция не указана, используем стартовую позицию 0 (внешний трек)
+            const playerPosition = Number(player.position);
+            const playerIsInner = typeof player.isInner === 'boolean' ? player.isInner : false;
+            
             result.push({
                 ...player,
                 id: player.id || player.userId || key,
-                position: 23, // ВСЕГДА клетка #24 (позиция 23) внутреннего круга
-                isInner: true, // ВСЕГДА внутренний трек (малый круг)
+                position: Number.isFinite(playerPosition) ? playerPosition : 0, // Используем реальную позицию или 0 по умолчанию
+                isInner: playerIsInner, // Используем реальный трек из данных
                 token: player.token || this.getDefaultTokenForPlayer(player, idx)
             });
         });

@@ -1615,20 +1615,20 @@ class PlayersPanel {
             }
         });
         
-        // Логика для кнопки "Бросить" - активна если это мой ход (упрощенная логика)
+        // Логика для кнопки "Бросить" - активна если это мой ход И canRoll === true
         if (rollBtn) {
-            // УПРОЩЕННАЯ ЛОГИКА: если это мой ход - кнопка активна (игнорируем state.canRoll)
-            const canRoll = isMyTurn;
+            // Проверяем и isMyTurn, и state.canRoll из сервера
+            const canRoll = isMyTurn && state.canRoll === true;
             
             console.log('🎲 PlayersPanel: Обновление кнопки бросить:', {
                 isMyTurn,
-                canRoll,
                 stateCanRoll: state.canRoll,
+                canRoll,
                 disabled: !canRoll
             });
             
-            // АГРЕССИВНАЯ АКТИВАЦИЯ: если это мой ход, кнопка всегда активна
-            if (isMyTurn) {
+            // Активация кнопки только если это мой ход И можно бросать
+            if (canRoll) {
                 rollBtn.disabled = false;
                 rollBtn.removeAttribute('disabled'); // Принудительно убираем атрибут disabled
                 rollBtn.classList.add('active');
@@ -1669,8 +1669,16 @@ class PlayersPanel {
         
         // Кнопка передачи хода - активна если это мой ход (по умолчанию true если не указано иное)
         if (passBtn) {
-            const canEndTurn = isMyTurn && (state.canEndTurn !== false);
+            // Проверяем и isMyTurn, и state.canEndTurn из сервера
+            const canEndTurn = isMyTurn && state.canEndTurn === true;
             passBtn.disabled = !canEndTurn;
+            
+            console.log('🔄 PlayersPanel: Обновление кнопки передачи хода:', {
+                isMyTurn,
+                stateCanEndTurn: state.canEndTurn,
+                canEndTurn,
+                disabled: !canEndTurn
+            });
             
             if (canEndTurn) {
                 passBtn.classList.add('active');
