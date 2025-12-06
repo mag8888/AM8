@@ -1046,10 +1046,11 @@ class PlayersPanel {
         return dealCards.map((deck, index) => {
             const cardCount = deck.drawCount || deck.count || 0;
             const deckName = deck.name || deck.id || `Колода ${index + 1}`;
+            const deckIcon = this.getDeckIcon(deck.id || deck.name || '');
             
             return `
                 <div class="menu-deal-item" data-deck-id="${deck.id || index}">
-                    <div class="deal-item-icon">🃏</div>
+                    <div class="deal-item-icon">${deckIcon}</div>
                     <div class="deal-item-info">
                         <div class="deal-item-name">${deckName}</div>
                         <div class="deal-item-count">${cardCount} карт</div>
@@ -1057,6 +1058,30 @@ class PlayersPanel {
                 </div>
             `;
         }).join('');
+    }
+    
+    /**
+     * Получение иконки для колоды карт
+     */
+    getDeckIcon(deckId) {
+        const icons = {
+            'deal': '🃏',
+            'big_deal': '🎯',
+            'expenses': '💸',
+            'market': '📈',
+            'малая сделка': '🃏',
+            'большие сделки': '🎯',
+            'расходы': '💸',
+            'рынок': '📈'
+        };
+        
+        const lowerId = (deckId || '').toLowerCase();
+        for (const [key, icon] of Object.entries(icons)) {
+            if (lowerId.includes(key)) {
+                return icon;
+            }
+        }
+        return '🃏';
     }
     
     /**
