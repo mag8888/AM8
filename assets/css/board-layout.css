@@ -165,8 +165,20 @@
 
 /* Desktop: трехколоночная раскладка, поле по центру квадратом */
 @media (min-width: 1025px) {
-  /* ИСПРАВЛЕНО: Верхняя панель видна на десктопе, скрываем только мобильные элементы */
-  /* Верхняя панель с таймером и кубиком теперь видна на всех устройствах */
+  /* Скрываем верхнюю информационную панель на десктопе */
+  #top-info-panel,
+  .top-info-panel {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+  
+  /* Показываем панель кубика и таймера для десктопа */
+  .desktop-dice-timer-panel {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
   
   /* Скрываем ВСЕ мобильные элементы на десктоп версии - максимальная специфичность и агрессивное скрытие */
   nav.mobile-bottom-menu,
