@@ -767,24 +767,24 @@ class PlayerTokens {
     
     /**
      * Создание DOM элемента фишки
-     * Фишка всегда создается для клетки #24 (позиция 23)
+     * Использует реальную позицию игрока из данных
      */
     createPlayerToken(player, index, totalPlayers) {
         const token = document.createElement('div');
         token.className = 'player-token';
         
-        // ВСЕ фишки создаются для клетки #24 (позиция 23) на внешнем треке
-        const cellPosition = 23; // Клетка #24 (позиции начинаются с 0)
-        const isInnerTrack = false; // Внешний трек
+        // Используем реальную позицию игрока из данных, или 0 по умолчанию
+        const cellPosition = Number.isFinite(Number(player.position)) ? Number(player.position) : 0;
+        const isInnerTrack = typeof player.isInner === 'boolean' ? player.isInner : false;
         
         token.classList.add(isInnerTrack ? 'inner' : 'outer');
         token.classList.toggle('inner-track', isInnerTrack);
         token.classList.toggle('outer-track', !isInnerTrack);
         token.dataset.playerId = player.id;
         token.dataset.playerName = player.username;
-        token.setAttribute('data-position', cellPosition); // ВСЕГДА позиция 23 (клетка #24)
+        token.setAttribute('data-position', cellPosition); // Используем реальную позицию игрока
         token.dataset.isInner = String(isInnerTrack);
-        token.dataset.cellNumber = '24'; // Номер клетки для отображения
+        token.dataset.cellNumber = String(cellPosition + 1); // Номер клетки для отображения (позиция + 1)
         
         // Устанавливаем все стили сразу при создании с !important - улучшенная версия
         token.style.setProperty('position', 'absolute', 'important');
