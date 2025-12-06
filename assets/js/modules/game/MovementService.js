@@ -246,7 +246,7 @@ class MovementService {
             if (newPosition.position >= this.outerTrackSize) {
                 // Переходим на внутренний трек
                 newPosition.track = 'inner';
-                newPosition.position = 0; // Начинаем с первой клетки внутреннего трека
+                newPosition.position = 23; // Клетка #24 внутреннего трека (последняя клетка)
                 
                 if (this.eventBus) {
                     this.eventBus.emit('movement:track_changed', {
@@ -262,7 +262,7 @@ class MovementService {
             if (newPosition.position >= this.innerTrackSize) {
                 // Завершаем внутренний круг, возвращаемся на внешний
                 newPosition.track = 'outer';
-                newPosition.position = 0;
+                newPosition.position = 23; // Клетка #24 внутреннего трека (последняя клетка)
                 
                 if (this.eventBus) {
                     this.eventBus.emit('movement:inner_circle_completed', {

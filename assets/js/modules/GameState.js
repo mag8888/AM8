@@ -226,8 +226,8 @@ class GameState {
      */
     startGame(players = [{ 
         name: 'Игрок 1', 
-        position: 0, 
-        isInner: false, 
+        position: 23, 
+        isInner: true, 
         money: 5000,
         salary: 5000,
         totalIncome: 0,
@@ -686,7 +686,7 @@ class GameState {
                 id: 'player1',
                 username: 'TestUser',
                 token: 'eagle',
-                position: 0,
+                position: 23, // Клетка #24 внутреннего трека
                 isInner: true, // Начинаем с малого круга
                 money: 5000,
                 salary: 5000,
@@ -699,7 +699,7 @@ class GameState {
                 id: 'player2',
                 username: 'Roman',
                 token: 'fox',
-                position: 0,
+                position: 23, // Клетка #24 внутреннего трека
                 isInner: true, // Начинаем с малого круга
                 money: 5000, // Одинаковый стартовый баланс
                 salary: 4000,
