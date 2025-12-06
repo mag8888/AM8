@@ -402,6 +402,9 @@ router.post('/:id/roll', (req, res, next) => {
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
         
+        // ИСПРАВЛЕНО: Проверяем истечение времени перед броском
+        autoEndTurnIfExpired(id, state);
+        
         // Проверяем, можно ли бросать кубик
         // Если canRoll явно false и есть результат кубика, значит уже бросили
         // НО: если lastDiceResult старый (старше 30 секунд), разрешаем новый бросок
