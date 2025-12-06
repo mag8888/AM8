@@ -777,21 +777,27 @@ class PlayersPanel {
      * Переключение меню
      */
     toggleMenu() {
+        console.log('📋 PlayersPanel: toggleMenu вызван');
         // Создаем или показываем меню, если его еще нет
         let menuPanel = document.getElementById('game-menu-panel');
         if (!menuPanel) {
+            console.log('📋 PlayersPanel: Меню не найдено, создаем новое');
             this.createMenuPanel();
             menuPanel = document.getElementById('game-menu-panel');
         }
         
         if (menuPanel) {
             const isVisible = menuPanel.classList.contains('menu-visible');
+            console.log('📋 PlayersPanel: Текущее состояние меню:', { isVisible, menuPanelExists: !!menuPanel });
             menuPanel.classList.toggle('menu-visible');
             
             // Обновляем данные при открытии
             if (!isVisible) {
+                console.log('📋 PlayersPanel: Обновляем данные меню');
                 this.updateMenuData();
             }
+        } else {
+            console.error('❌ PlayersPanel: Не удалось создать или найти меню');
         }
     }
     
