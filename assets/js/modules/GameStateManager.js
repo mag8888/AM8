@@ -919,6 +919,10 @@ class GameStateManager {
             canEndTurn: false,
             gameStarted: false,
             lastDiceResult: null,
+            // ИСПРАВЛЕНО: Добавляем поля таймера
+            turnTimeRemaining: null,
+            turnStartTime: null,
+            turnTimer: null,
             updatedAt: Date.now(),
             ...overrides
         };
