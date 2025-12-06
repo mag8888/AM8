@@ -920,13 +920,11 @@ class PlayersPanel {
                     
                     <!-- Быстрые действия -->
                     <div class="menu-quick-actions">
-                        <button class="menu-action-btn" id="menu-bank-btn" type="button" title="Открыть банк">
+                        <button class="menu-action-btn" id="menu-bank-btn" type="button" title="Открыть банк" aria-label="Открыть банк">
                             <span class="menu-action-icon">🏦</span>
-                            <span class="menu-action-text">Банк</span>
                         </button>
-                        <button class="menu-action-btn" id="menu-assets-btn" type="button" title="Просмотр активов">
+                        <button class="menu-action-btn" id="menu-assets-btn" type="button" title="Просмотр активов" aria-label="Просмотр активов">
                             <span class="menu-action-icon">💼</span>
-                            <span class="menu-action-text">Активы</span>
                         </button>
                     </div>
                     
@@ -972,11 +970,10 @@ class PlayersPanel {
                     </div>
                 </div>
                 
-                <!-- Кнопка выхода в самом низу -->
+                    <!-- Кнопка выхода в самом низу -->
                 <div class="menu-footer">
-                    <button class="menu-exit-btn" id="menu-exit-btn" type="button">
+                    <button class="menu-exit-btn" id="menu-exit-btn" type="button" aria-label="Выход из игры">
                         <span class="menu-exit-icon">🚪</span>
-                        <span class="menu-exit-text">Выход</span>
                     </button>
                 </div>
             </div>
@@ -1591,30 +1588,28 @@ class PlayersPanel {
             }
             
             .menu-action-btn {
-                display: grid;
-                grid-template-columns: auto 1fr;
-                gap: 0.5rem;
+                display: flex;
                 align-items: center;
-                padding: 0.75rem 1rem;
+                justify-content: center;
+                padding: 1rem;
                 background: rgba(255, 255, 255, 0.05);
                 border: 1px solid rgba(148, 163, 184, 0.2);
                 border-radius: 0.5rem;
                 color: #f8fafc;
-                font-size: 0.875rem;
-                font-weight: 500;
                 cursor: pointer;
                 transition: all 0.2s ease;
+                aspect-ratio: 1;
             }
             
             .menu-action-btn:hover {
                 background: rgba(255, 255, 255, 0.1);
                 border-color: rgba(99, 102, 246, 0.4);
-                transform: translateY(-2px);
+                transform: translateY(-2px) scale(1.05);
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             }
             
             .menu-action-icon {
-                font-size: 1.25rem;
+                font-size: 2rem;
             }
             
             /* Сортировка */
