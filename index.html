@@ -731,25 +731,9 @@
                     });
                 }
                 
-                // Кнопка "Меню" в нижнем меню
-                const mobileMenuBottomBtn = document.getElementById('mobile-menu-bottom-btn');
-                const cardDecksPanel = document.getElementById('card-decks-panel');
-                const topPanelContainer = document.querySelector('.top-panel-container');
-                
-                if (mobileMenuBottomBtn && cardDecksPanel) {
-                    mobileMenuBottomBtn.addEventListener('click', function() {
-                        const isMenuVisible = cardDecksPanel.classList.contains('menu-visible');
-                        
-                        if (cardDecksPanel) {
-                            cardDecksPanel.classList.toggle('menu-visible');
-                        }
-                        if (topPanelContainer) {
-                            topPanelContainer.classList.toggle('menu-visible');
-                        }
-                        
-                        mobileMenuBottomBtn.classList.toggle('active');
-                    });
-                }
+                // Кнопка "Меню" в нижнем меню - ИСПРАВЛЕНО: теперь использует PlayersPanel.toggleMenu()
+                // Обработчик перенесен в PlayersPanel.js для использования нового меню
+                // Старый обработчик удален, чтобы избежать конфликтов
                 
                 // Обновление данных банка в мобильной кнопке
                 function updateMobileBankData() {
