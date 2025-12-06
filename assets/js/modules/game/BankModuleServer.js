@@ -693,6 +693,21 @@ class BankModuleServer {
             maxCreditElement.textContent = `$${CommonUtils.formatNumber(this.bankState.maxCredit)}`;
         }
         
+        // Обновляем кнопки кредита в зависимости от состояния
+        const noCreditBtn = this.getCachedElement('#no-credit-btn');
+        const takeCreditBtn = this.getCachedElement('#take-credit-btn');
+        if (noCreditBtn && takeCreditBtn) {
+            if (this.bankState.credit === 0) {
+                // Нет кредитов - показываем зеленую кнопку "БЕЗ КРЕДИТОВ"
+                noCreditBtn.style.display = 'flex';
+                takeCreditBtn.style.display = 'flex';
+            } else {
+                // Есть кредиты - скрываем зеленую кнопку, показываем только красную "ВЗЯТЬ"
+                noCreditBtn.style.display = 'none';
+                takeCreditBtn.style.display = 'flex';
+            }
+        }
+        
         // Обновляем мини-блок кредита
         const loanBalance = this.getCachedElement('#loan-balance');
         if (loanBalance) {
