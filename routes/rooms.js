@@ -1545,16 +1545,19 @@ router.post('/:id/start', async (req, res, next) => {
 
                 console.log('✅ Mongo start: Статус комнаты обновлен');
 
-                // ensure game state
-                const state = gameStateByRoomId.get(id) || buildState(room.players || []);
-                if (!state.players || !state.players.length) {
-                    const rebuilt = buildState(room.players || []);
-                    gameStateByRoomId.set(id, rebuilt);
-                    console.log('✅ Mongo start: Игровое состояние пересоздано');
-                } else {
-                    gameStateByRoomId.set(id, state);
-                    console.log('✅ Mongo start: Игровое состояние обновлено');
-                }
+                // ensure game state - при старте игры сбрасываем позиции игроков на 0
+                const playersWithResetPositions = (room.players || []).map(player => ({
+                    ...player,
+                    position: 0, // Сбрасываем позицию при старте игры
+                    isInner: false // Начинаем с внешнего трека
+                }));
+                const state = buildState(playersWithResetPositions);
+                state.canRoll = true; // При старте игры можно бросать кубик
+                state.canMove = false;
+                state.canEndTurn = false;
+                state.turnStartTime = Date.now();
+                gameStateByRoomId.set(id, state);
+                console.log('✅ Mongo start: Игровое состояние создано с позициями 0 для всех игроков');
 
                 // push notify (safe)
                 pushService.broadcastPush('game_started', {
