@@ -420,11 +420,53 @@
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
+    transform-origin: center center !important; /* Гарантируем центрирование относительно центра */
     margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
     aspect-ratio: 1 / 1 !important;
     border-radius: 50% !important;
+    /* Фиксируем позицию для предотвращения сдвига */
+    will-change: transform !important;
+    backface-visibility: hidden !important;
+  }
+  
+  /* Центральная область и логотип - идеальное центрирование */
+  .game-page .board-wrapper .center-area,
+  .game-page .board-wrapper #center-area,
+  #game-page .board-wrapper .center-area,
+  #game-page .board-wrapper #center-area {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    transform-origin: center center !important;
+    z-index: 10 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 200px !important;
+    height: 200px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    will-change: transform !important;
+    backface-visibility: hidden !important;
+  }
+  
+  .game-page .board-wrapper .logo-center,
+  .game-page .board-wrapper #logo-center,
+  #game-page .board-wrapper .logo-center,
+  #game-page .board-wrapper #logo-center {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 2 !important;
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   /* Клетки - абсолютное позиционирование, не влияют на размеры */
