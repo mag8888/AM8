@@ -232,11 +232,18 @@ class App {
     }
 
     /**
-     * Загрузка игровых модулей
+     * Загрузка игровых модулей (оптимизированная версия с lazy loading)
      * @private
      */
     _loadGameModules() {
         console.log('🔍 App: _loadGameModules вызван');
+        
+        // Используем ModuleLoader для оптимизированной загрузки
+        if (window.ModuleLoader) {
+            // Остальные модули загружаем по требованию
+            this._loadGameModulesLazy();
+            return;
+        }
         // ИСПРАВЛЕНО: Создаем GameState только если его нет (избегаем дубликатов)
         if (window.GameState && !this.modules.has('gameState')) {
             const gameState = new window.GameState(this.getEventBus());

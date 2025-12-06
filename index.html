@@ -313,6 +313,9 @@
     </main>
 
     <!-- Оптимизированная загрузка скриптов -->
+    <!-- ModuleLoader для оптимизированной загрузки -->
+    <script src="assets/js/module-loader.js?v=1"></script>
+    
     <!-- Критические модули загружаются синхронно БЕЗ defer -->
     <script src="assets/js/modules/game/BoardConfig.js?v=11"></script>
     <script src="assets/js/utils/CommonUtils.js?v=11"></script>
@@ -347,14 +350,15 @@
     <script src="assets/js/modules/game/PlayerTokenRenderer.js?v=12" defer></script>
     <script src="assets/js/modules/game/TurnController.js?v=10" defer></script>
     <script src="assets/js/modules/game/BalanceManager.js?v=10" defer></script>
-    <script src="assets/js/modules/game/PlayersPanel.js?v=24" defer></script>
-    <script src="assets/js/modules/game/PlayerTokens.js?v=48" defer></script>
+    <!-- Большие модули загружаются по требованию через ModuleLoader -->
+    <!-- <script src="assets/js/modules/game/PlayersPanel.js?v=24" defer></script> -->
+    <!-- <script src="assets/js/modules/game/PlayerTokens.js?v=48" defer></script> -->
     <script src="assets/js/modules/game/DiceDisplay.js?v=10" defer></script>
     <script src="assets/js/modules/game/ProfessionSystem.js?v=10" defer></script>
     <script src="assets/js/modules/game/PlayerBalanceDisplay.js?v=10" defer></script>
-    <script src="assets/js/modules/game/BankModule.js?v=11" defer></script>
-    <script src="assets/js/modules/game/BankModuleServer.js?v=14" defer></script>
-    <script src="assets/js/modules/game/BankPreview.js?v=15" defer></script>
+    <!-- <script src="assets/js/modules/game/BankModule.js?v=11" defer></script> -->
+    <!-- <script src="assets/js/modules/game/BankModuleServer.js?v=14" defer></script> -->
+    <!-- <script src="assets/js/modules/game/BankPreview.js?v=15" defer></script> -->
     <script src="assets/js/modules/game/DealModule.js?v=10" defer></script>
     <script src="assets/js/modules/game/CellPopup.js?v=10" defer></script>
     <script src="assets/js/modules/game/PushClient.js?v=10" defer></script>
