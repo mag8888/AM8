@@ -2230,14 +2230,16 @@ class PlayerTokens {
         const top = centerY + offsetY - halfSize;
         
         // Логируем позиционирование для отладки
-        this._debug('Позиционирование фишки в клетке', {
+        this._info('🎯 Позиционирование фишки в клетке', {
             playerId: token.dataset.playerId,
             position,
+            index,
+            totalPlayers,
             cellSize: { width: cellWidth, height: cellHeight },
             center: { x: centerX, y: centerY },
             offset: { x: offsetX, y: offsetY },
-            final: { left, top },
-            totalPlayers
+            final: { left: left.toFixed(2) + 'px', top: top.toFixed(2) + 'px' },
+            offsetDistance: Math.sqrt(offsetX * offsetX + offsetY * offsetY).toFixed(2) + 'px'
         });
         
         // Устанавливаем все стили
