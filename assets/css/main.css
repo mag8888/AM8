@@ -59,6 +59,7 @@
 }
 
 /* Центральное игровое поле - максимальный размер по высоте */
+/* ИСПРАВЛЕНО: Правила для квадратного контейнера определены в board-layout.css для десктопа */
 .game-board-container {
     flex: 1;
     display: flex;
@@ -68,6 +69,13 @@
     height: auto;
     min-height: 0;
     position: relative;
+}
+
+/* На десктопе правила из board-layout.css имеют приоритет через !important */
+@media (min-width: 1025px) {
+    .game-board-container {
+        /* Правила определены в board-layout.css с !important */
+    }
 }
 
 .game-board-only .game-board-container {
