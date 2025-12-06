@@ -888,7 +888,8 @@ class GameStateManager {
 
     _extractGameFlags(source) {
         const flags = {};
-        const keys = ['canRoll', 'canMove', 'canEndTurn', 'gameStarted', 'lastDiceResult'];
+        // ИСПРАВЛЕНО: Добавляем поля таймера
+        const keys = ['canRoll', 'canMove', 'canEndTurn', 'gameStarted', 'lastDiceResult', 'turnTimeRemaining', 'turnStartTime', 'turnTimer'];
         for (const key of keys) {
             if (Object.prototype.hasOwnProperty.call(source, key)) {
                 flags[key] = source[key];
