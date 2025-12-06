@@ -173,8 +173,15 @@
     opacity: 0 !important;
   }
   
-  /* Показываем панель кубика и таймера для десктопа */
+  /* Показываем панель кубика и таймера для десктопа - всегда видна */
   .desktop-dice-timer-panel {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Убеждаемся, что панель видна даже если нет данных */
+  #desktop-dice-timer-panel {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
