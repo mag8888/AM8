@@ -187,8 +187,11 @@ if (process.env.NODE_ENV === 'production') {
         });
     });
 } else {
-    // В development режиме просто отдаем index.html
-    app.get('/', (req, res) => {
+    // В development режиме отдаем статические файлы и index.html
+    app.use(express.static(process.cwd()));
+    
+    // Отдаем index.html для корня и /index.html
+    app.get(['/', '/index.html'], (req, res) => {
         res.sendFile(path.join(__dirname, 'index.html'));
     });
 }
