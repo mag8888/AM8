@@ -58,7 +58,7 @@ function normalizePlayer(source, index = 0) {
         userId: source.userId || source.id || source.playerId || id,
         username,
         name: source.name || username,
-        position: toNumber(source.position, 24), // Начальная позиция 24 (клетка #25 внутреннего трека)
+        position: toNumber(source.position, 23), // Начальная позиция 23 (клетка #24 внутреннего трека, последняя клетка)
         track,
         isInner,
         token: source.token || source.avatar || source.icon || '🎲',
@@ -1545,10 +1545,10 @@ router.post('/:id/start', async (req, res, next) => {
 
                 console.log('✅ Mongo start: Статус комнаты обновлен');
 
-                // ensure game state - при старте игры устанавливаем начальную позицию 24
+                // ensure game state - при старте игры устанавливаем начальную позицию 23 (клетка #24)
                 const playersWithResetPositions = (room.players || []).map(player => ({
                     ...player,
-                    position: 24, // Начальная позиция 24 (клетка #25 внутреннего трека)
+                    position: 23, // Начальная позиция 23 (клетка #24 внутреннего трека, последняя клетка)
                     isInner: true // Начинаем с внутреннего трека
                 }));
                 const state = buildState(playersWithResetPositions);
