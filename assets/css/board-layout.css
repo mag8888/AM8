@@ -330,13 +330,16 @@
     min-height: 0 !important;
     /* ИСПРАВЛЕНО: Делаем строго квадратным - используем меньшую сторону доступного пространства */
     /* Размер определяется по меньшей стороне (ширина или высота grid-ячейки) */
-    /* Используем calc для правильного вычисления размера */
+    /* Используем calc для правильного вычисления размера и min() для выбора меньшей стороны */
     width: min(100%, calc(100vh - 2rem)) !important; /* Минимум из ширины ячейки и высоты экрана */
     height: min(100%, calc(100vh - 2rem)) !important; /* Минимум из высоты ячейки и высоты экрана */
-    /* Гарантируем квадратную форму через aspect-ratio */
+    /* Гарантируем квадратную форму через aspect-ratio - это заставит браузер использовать меньшую сторону */
     aspect-ratio: 1 / 1 !important;
     max-width: min(100%, calc(100vh - 2rem)) !important;
     max-height: min(100%, calc(100vh - 2rem)) !important;
+    /* Дополнительно: если ширина больше высоты, используем высоту */
+    width: min(100%, 100%, calc(100vh - 2rem)) !important;
+    height: min(100%, 100%, calc(100vh - 2rem)) !important;
     padding: 0.5rem !important;
     box-sizing: border-box !important;
     overflow: hidden !important; /* Скрываем переполнение */
