@@ -1048,17 +1048,23 @@ class App {
             }
         }
 
-        const ensureModule = async (name, factory, { forceRecreate = shouldForce, lazyLoad = false } = {}) => {
+        const ensureModule = (name, factory, { forceRecreate = shouldForce, lazyLoad = false } = {}) => {
             if (forceRecreate) {
                 this._destroyModule(name);
             }
             if (!this.modules.get(name)) {
-                // Если модуль требует ленивой загрузки, загружаем его сначала
+                // Если модуль требует ленивой загрузки, загружаем его сначала (синхронно)
                 if (lazyLoad && window.ModuleLoader && this._lazyModulesMap && this._lazyModulesMap[name]) {
                     const modulePath = this._lazyModulesMap[name];
                     if (!window.ModuleLoader.isLoaded(modulePath)) {
                         console.log(`⚡ App: Загружаем модуль ${name} по требованию...`);
-                        await window.ModuleLoader.loadModule(modulePath);
+                        // Синхронная загрузка для критических модулей
+                        const script = document.createElement('script');
+                        script.src = `assets/js/${modulePath}?v=${Date.now()}`;
+                        script.async = false;
+                        document.head.appendChild(script);
+                        // Помечаем как загруженный
+                        window.ModuleLoader.loadedModules.add(modulePath);
                     }
                 }
                 
