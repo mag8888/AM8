@@ -241,6 +241,17 @@ class PlayersPanel {
                         desktopPanel.style.opacity = '1';
                         // Инициализируем значения
                         this.updateDesktopTimer();
+                        // Инициализируем кубик из состояния
+                        const state = this.gameStateManager?.getState?.();
+                        if (state?.lastDiceResult) {
+                            this.updateDiceResult(state.lastDiceResult);
+                        } else {
+                            // Устанавливаем дефолтное значение
+                            const desktopDiceValue = document.getElementById('desktop-dice-value');
+                            if (desktopDiceValue) {
+                                desktopDiceValue.textContent = '-';
+                            }
+                        }
                     }
                 }, 500);
             }
@@ -2166,6 +2177,18 @@ class PlayersPanel {
         // Обновляем кнопки управления
         this.updateControlButtons(state);
 
+        // ИСПРАВЛЕНО: Обновляем десктопную панель кубика и таймера
+        if (window.innerWidth >= 1025) {
+            // Обновляем кубик из lastDiceResult
+            if (state?.lastDiceResult) {
+                this.updateDiceResult(state.lastDiceResult);
+            }
+            // Обновляем таймер
+            if (typeof this.updateDesktopTimer === 'function') {
+                this.updateDesktopTimer();
+            }
+        }
+
         // Дебаунсинг для UI обновлений
         if (this._uiUpdateTimeout) {
             clearTimeout(this._uiUpdateTimeout);
@@ -2255,8 +2278,8 @@ class PlayersPanel {
                     if (cachedData) {
                         this.updatePlayersList(cachedData, this.gameStateManager?.getState?.()?.activePlayer);
                     }
-                    return;
-                }
+            return;
+        }
 
         // Используем GameStateManager для безопасного запроса
         if (this.gameStateManager && typeof this.gameStateManager.fetchGameState === 'function') {
@@ -3162,12 +3185,12 @@ class PlayersPanel {
     async openBankModule() {
         console.log('🏦 PlayersPanel: Попытка открыть банк...');
         
-        try {
-            // Используем уже созданный BankModule или создаем новый
-            if (!this.bankModule) {
-                console.log('🏦 PlayersPanel: BankModule не создан, создаем...');
-                this.createBankModule();
-                
+            try {
+                // Используем уже созданный BankModule или создаем новый
+                if (!this.bankModule) {
+                    console.log('🏦 PlayersPanel: BankModule не создан, создаем...');
+                    this.createBankModule();
+                    
                 // Ждем создания модуля с таймаутом
                 let attempts = 0;
                 while (!this.bankModule && attempts < 10) {
@@ -3177,29 +3200,29 @@ class PlayersPanel {
             }
             
             if (this.bankModule && typeof this.bankModule.open === 'function') {
-                console.log('🏦 PlayersPanel: Открываем BankModule...');
-                await this.bankModule.open();
-                console.log('✅ PlayersPanel: Банк модуль успешно открыт');
-            } else {
-                console.error('❌ PlayersPanel: BankModule не найден или не имеет метода open');
-                
-                // Попытка создать заново
-                this.bankModule = null;
-                this.createBankModule();
-                
-                if (this.bankModule && typeof this.bankModule.open === 'function') {
+                    console.log('🏦 PlayersPanel: Открываем BankModule...');
                     await this.bankModule.open();
-                    console.log('✅ PlayersPanel: Банк модуль открыт после повторной попытки');
+                    console.log('✅ PlayersPanel: Банк модуль успешно открыт');
                 } else {
-                    console.error('❌ PlayersPanel: Критическая ошибка - BankModule не может быть создан');
+                console.error('❌ PlayersPanel: BankModule не найден или не имеет метода open');
+                    
+                // Попытка создать заново
+                    this.bankModule = null;
+                        this.createBankModule();
+                    
+                if (this.bankModule && typeof this.bankModule.open === 'function') {
+                        await this.bankModule.open();
+                        console.log('✅ PlayersPanel: Банк модуль открыт после повторной попытки');
+                    } else {
+                        console.error('❌ PlayersPanel: Критическая ошибка - BankModule не может быть создан');
                     if (window.showNotification) {
                         window.showNotification('Не удалось открыть банк. Попробуйте обновить страницу.', 'error');
                     }
+                    }
                 }
-            }
-        } catch (error) {
-            console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
-            console.error('❌ PlayersPanel: Детали ошибки:', error.stack);
+            } catch (error) {
+                console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
+                console.error('❌ PlayersPanel: Детали ошибки:', error.stack);
             
             // Предотвращаем перезагрузку страницы
             if (window.showNotification) {
@@ -3424,9 +3447,9 @@ class PlayersPanel {
         if (activePlayer) {
             // Проверка по ID (разные варианты)
             if (currentUserId) {
-                isMyTurn = 
-                    activePlayer.id === currentUserId ||
-                    activePlayer.userId === currentUserId ||
+            isMyTurn = 
+                activePlayer.id === currentUserId ||
+                activePlayer.userId === currentUserId ||
                     String(activePlayer.id) === String(currentUserId) ||
                     String(activePlayer.userId) === String(currentUserId);
             }
@@ -5423,7 +5446,7 @@ class PlayersPanel {
                 e.stopPropagation();
                 console.log('🏦 PlayersPanel: Клик по кнопке банка (из setupControls)');
                 try {
-                    this.openBankModule();
+                this.openBankModule();
                 } catch (error) {
                     console.error('❌ PlayersPanel: Ошибка открытия банка:', error);
                 }
@@ -5670,11 +5693,11 @@ class PlayersPanel {
                     shouldActivate = false;
                 }
                 
-                console.log('🔧 PlayersPanel: TurnService проверка:', {
+                console.log('🔧 PlayersPanel: TurnService проверка:', { 
                     canRoll,
                     isMyTurn,
                     stateCanRoll: state?.canRoll,
-                    shouldActivate
+                    shouldActivate 
                 });
                 
                 // Допуск в одиночной игре/демо: если игроков <= 1 или нет активного игрока — разрешаем бросок
