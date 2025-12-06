@@ -871,6 +871,17 @@ class PlayersPanel {
         const playerName = currentPlayer?.username || currentPlayer?.name || currentUsername || 'Игрок';
         const playerBalance = currentPlayer?.money || currentPlayer?.balance || 0;
         const playerToken = currentPlayer?.token || '👤';
+        const playerPosition = currentPlayer?.position ?? 23;
+        const playerIsInner = currentPlayer?.isInner ?? true;
+        const playerProfession = currentPlayer?.profession || null;
+        const playerAssets = currentPlayer?.assets || [];
+        const assetsTotal = playerAssets.reduce((sum, asset) => sum + (asset.value || 0), 0);
+        const playerCredit = currentPlayer?.currentLoan || 0;
+        const playerSalary = currentPlayer?.salary || 0;
+        const isActiveTurn = state?.activePlayer && (
+            state.activePlayer.id === currentUserId || 
+            state.activePlayer.userId === currentUserId
+        );
         
         // Создаем HTML меню
         menuPanel.innerHTML = `
@@ -878,17 +889,45 @@ class PlayersPanel {
             <div class="menu-container">
                 <div class="menu-header">
                     <h3 class="menu-title">Меню</h3>
-                    <button class="menu-close-btn" id="menu-close-btn" type="button">✕</button>
+                    <button class="menu-close-btn" id="menu-close-btn" type="button" aria-label="Закрыть меню">✕</button>
                 </div>
                 
                 <div class="menu-body">
                     <!-- Имя игрока с балансом в самом верху -->
-                    <div class="menu-current-player">
-                        <div class="menu-player-avatar">${playerToken}</div>
-                        <div class="menu-player-info">
-                            <div class="menu-player-name">${playerName}</div>
-                            <div class="menu-player-balance">$${playerBalance.toLocaleString()}</div>
+                    <div class="menu-current-player ${isActiveTurn ? 'active-turn' : ''}">
+                        <div class="menu-player-avatar">
+                            ${playerToken}
+                            ${isActiveTurn ? '<span class="turn-indicator" aria-label="Ваш ход"></span>' : ''}
                         </div>
+                        <div class="menu-player-info">
+                            <div class="menu-player-name-row">
+                                <div class="menu-player-name">${playerName}</div>
+                                ${playerProfession ? `<div class="menu-player-profession" title="Профессия">${this.getProfessionIcon(playerProfession)} ${playerProfession}</div>` : ''}
+                            </div>
+                            <div class="menu-player-stats">
+                                <div class="menu-player-balance">$${playerBalance.toLocaleString()}</div>
+                                <div class="menu-player-position">Клетка #${playerPosition + 1} ${playerIsInner ? '(внутр.)' : '(внешн.)'}</div>
+                            </div>
+                            ${assetsTotal > 0 || playerCredit > 0 ? `
+                                <div class="menu-player-additional">
+                                    ${assetsTotal > 0 ? `<div class="menu-player-assets">💼 Активы: $${assetsTotal.toLocaleString()}</div>` : ''}
+                                    ${playerCredit > 0 ? `<div class="menu-player-credit">💳 Кредит: $${playerCredit.toLocaleString()}</div>` : ''}
+                                    ${playerSalary > 0 ? `<div class="menu-player-salary">💰 Доход: $${playerSalary.toLocaleString()}/мес</div>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- Быстрые действия -->
+                    <div class="menu-quick-actions">
+                        <button class="menu-action-btn" id="menu-bank-btn" type="button" title="Открыть банк">
+                            <span class="menu-action-icon">🏦</span>
+                            <span class="menu-action-text">Банк</span>
+                        </button>
+                        <button class="menu-action-btn" id="menu-assets-btn" type="button" title="Просмотр активов">
+                            <span class="menu-action-icon">💼</span>
+                            <span class="menu-action-text">Активы</span>
+                        </button>
                     </div>
                     
                     <!-- Список всех игроков -->
@@ -896,6 +935,11 @@ class PlayersPanel {
                         <div class="menu-section-title">
                             <span class="menu-icon">👥</span>
                             <span>Игроки в комнате</span>
+                            <div class="menu-sort-controls">
+                                <button class="menu-sort-btn" id="menu-sort-balance" type="button" title="Сортировать по балансу">💰</button>
+                                <button class="menu-sort-btn" id="menu-sort-position" type="button" title="Сортировать по позиции">📍</button>
+                                <button class="menu-sort-btn" id="menu-sort-name" type="button" title="Сортировать по имени">🔤</button>
+                            </div>
                         </div>
                         <div class="menu-players-list" id="menu-players-list">
                             ${this.renderPlayersList(state)}
@@ -931,9 +975,26 @@ class PlayersPanel {
     }
     
     /**
+     * Получение иконки профессии
+     */
+    getProfessionIcon(profession) {
+        const icons = {
+            'Предприниматель': '💼',
+            'Врач': '⚕️',
+            'Учитель': '📚',
+            'Инженер': '🔧',
+            'Юрист': '⚖️',
+            'Бухгалтер': '📊',
+            'Менеджер': '👔',
+            'Дизайнер': '🎨'
+        };
+        return icons[profession] || '💼';
+    }
+    
+    /**
      * Рендеринг списка игроков
      */
-    renderPlayersList(state) {
+    renderPlayersList(state, sortBy = 'default') {
         if (!state || !state.players || state.players.length === 0) {
             return '<div class="menu-empty">Нет игроков в комнате</div>';
         }
@@ -942,7 +1003,22 @@ class PlayersPanel {
                              sessionStorage.getItem('userId') || 
                              localStorage.getItem('userId');
         
-        return state.players.map(player => {
+        let players = [...state.players];
+        
+        // Сортировка
+        if (sortBy === 'balance') {
+            players.sort((a, b) => (b.money || b.balance || 0) - (a.money || a.balance || 0));
+        } else if (sortBy === 'position') {
+            players.sort((a, b) => (a.position ?? 23) - (b.position ?? 23));
+        } else if (sortBy === 'name') {
+            players.sort((a, b) => {
+                const nameA = (a.username || a.name || '').toLowerCase();
+                const nameB = (b.username || b.name || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+        }
+        
+        return players.map(player => {
             const isActive = state.activePlayer && (
                 state.activePlayer.id === player.id || 
                 state.activePlayer.userId === player.id ||
@@ -952,12 +1028,37 @@ class PlayersPanel {
             const playerToken = player.token || '👤';
             const playerName = player.username || player.name || 'Игрок';
             const playerBalance = player.money || player.balance || 0;
+            const playerPosition = player.position ?? 23;
+            const playerIsInner = player.isInner ?? true;
+            const playerProfession = player.profession || null;
+            const playerAssets = player.assets || [];
+            const assetsTotal = playerAssets.reduce((sum, asset) => sum + (asset.value || 0), 0);
+            const playerCredit = player.currentLoan || 0;
             
             return `
-                <div class="menu-player-item ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}">
-                    <div class="player-item-avatar">${playerToken}</div>
-                    <div class="player-item-name">${playerName}</div>
-                    <div class="player-item-balance">$${playerBalance.toLocaleString()}</div>
+                <div class="menu-player-item ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}" 
+                     data-player-id="${player.id || player.userId}"
+                     title="${isActive ? 'Активный ход' : ''} ${isCurrent ? '(Вы)' : ''}">
+                    <div class="player-item-avatar">
+                        ${playerToken}
+                        ${isActive ? '<span class="turn-indicator-small"></span>' : ''}
+                    </div>
+                    <div class="player-item-info">
+                        <div class="player-item-name-row">
+                            <div class="player-item-name">${playerName}</div>
+                            ${playerProfession ? `<div class="player-item-profession">${this.getProfessionIcon(playerProfession)}</div>` : ''}
+                        </div>
+                        <div class="player-item-details">
+                            <div class="player-item-balance">$${playerBalance.toLocaleString()}</div>
+                            <div class="player-item-position">Кл. #${playerPosition + 1}</div>
+                        </div>
+                        ${assetsTotal > 0 || playerCredit > 0 ? `
+                            <div class="player-item-extras">
+                                ${assetsTotal > 0 ? `<span class="player-item-assets">💼 $${assetsTotal.toLocaleString()}</span>` : ''}
+                                ${playerCredit > 0 ? `<span class="player-item-credit">💳 $${playerCredit.toLocaleString()}</span>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
             `;
         }).join('');
@@ -983,6 +1084,55 @@ class PlayersPanel {
             });
         }
         
+        // Быстрые действия
+        const bankBtn = menuPanel.querySelector('#menu-bank-btn');
+        if (bankBtn) {
+            bankBtn.addEventListener('click', () => {
+                this.closeMenu();
+                if (this.bankModuleServer) {
+                    this.bankModuleServer.open();
+                }
+            });
+        }
+        
+        const assetsBtn = menuPanel.querySelector('#menu-assets-btn');
+        if (assetsBtn) {
+            assetsBtn.addEventListener('click', () => {
+                this.closeMenu();
+                this.openAssetsCatalog();
+            });
+        }
+        
+        // Сортировка
+        const sortBalanceBtn = menuPanel.querySelector('#menu-sort-balance');
+        const sortPositionBtn = menuPanel.querySelector('#menu-sort-position');
+        const sortNameBtn = menuPanel.querySelector('#menu-sort-name');
+        const playersList = menuPanel.querySelector('#menu-players-list');
+        
+        if (sortBalanceBtn && playersList) {
+            sortBalanceBtn.addEventListener('click', () => {
+                this.updateSortButtons(menuPanel, 'balance');
+                const state = this.gameStateManager?.getState?.();
+                playersList.innerHTML = this.renderPlayersList(state, 'balance');
+            });
+        }
+        
+        if (sortPositionBtn && playersList) {
+            sortPositionBtn.addEventListener('click', () => {
+                this.updateSortButtons(menuPanel, 'position');
+                const state = this.gameStateManager?.getState?.();
+                playersList.innerHTML = this.renderPlayersList(state, 'position');
+            });
+        }
+        
+        if (sortNameBtn && playersList) {
+            sortNameBtn.addEventListener('click', () => {
+                this.updateSortButtons(menuPanel, 'name');
+                const state = this.gameStateManager?.getState?.();
+                playersList.innerHTML = this.renderPlayersList(state, 'name');
+            });
+        }
+        
         // Закрытие по клику на overlay
         const overlay = menuPanel.querySelector('.menu-overlay');
         if (overlay) {
@@ -999,6 +1149,23 @@ class PlayersPanel {
         };
         document.addEventListener('keydown', escHandler);
         menuPanel._escHandler = escHandler; // Сохраняем для удаления
+    }
+    
+    /**
+     * Обновление кнопок сортировки
+     */
+    updateSortButtons(menuPanel, activeSort) {
+        const buttons = {
+            balance: menuPanel.querySelector('#menu-sort-balance'),
+            position: menuPanel.querySelector('#menu-sort-position'),
+            name: menuPanel.querySelector('#menu-sort-name')
+        };
+        
+        Object.keys(buttons).forEach(key => {
+            if (buttons[key]) {
+                buttons[key].classList.toggle('active', key === activeSort);
+            }
+        });
     }
     
     /**
@@ -1141,36 +1308,193 @@ class PlayersPanel {
                 visibility: visible !important;
             }
             
-            .game-menu-panel .menu-content {
-                background: rgba(15, 23, 42, 0.95);
-                border-radius: 1rem;
+            .menu-body {
                 padding: 1.5rem;
-                max-width: 600px;
-                width: 90%;
-                max-height: 85vh;
                 overflow-y: auto;
-                border: 1px solid rgba(148, 163, 184, 0.2);
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-                display: grid !important;
-                grid-template-columns: 1fr !important;
-                grid-template-rows: auto 1fr auto !important;
-                gap: 1.5rem !important;
-                margin-top: 1rem;
+                display: grid;
+                grid-template-rows: auto auto 1fr;
+                gap: 1.5rem;
             }
             
             /* Информация о текущем игроке вверху - Grid layout */
-            .menu-player-info {
-                display: grid !important;
-                grid-template-columns: auto 1fr !important;
-                grid-template-areas: 
-                    "avatar details" !important;
-                align-items: center;
+            .menu-current-player {
+                display: grid;
+                grid-template-columns: auto 1fr;
                 gap: 1rem;
+                align-items: center;
                 padding: 1.25rem;
-                background: linear-gradient(135deg, rgba(99, 102, 246, 0.2), rgba(139, 92, 246, 0.2));
+                background: linear-gradient(135deg, rgba(99, 102, 246, 0.15), rgba(139, 92, 246, 0.15));
                 border-radius: 0.75rem;
                 border: 1px solid rgba(99, 102, 246, 0.3);
                 box-shadow: 0 4px 12px rgba(99, 102, 246, 0.2);
+                transition: all 0.3s ease;
+                position: relative;
+            }
+            
+            .menu-current-player.active-turn {
+                background: linear-gradient(135deg, rgba(99, 102, 246, 0.3), rgba(139, 92, 246, 0.3));
+                border-color: rgba(99, 102, 246, 0.6);
+                box-shadow: 0 4px 20px rgba(99, 102, 246, 0.4), 0 0 20px rgba(99, 102, 246, 0.2);
+                animation: pulse-glow 2s ease-in-out infinite;
+            }
+            
+            @keyframes pulse-glow {
+                0%, 100% { box-shadow: 0 4px 20px rgba(99, 102, 246, 0.4), 0 0 20px rgba(99, 102, 246, 0.2); }
+                50% { box-shadow: 0 4px 30px rgba(99, 102, 246, 0.6), 0 0 30px rgba(99, 102, 246, 0.4); }
+            }
+            
+            .menu-player-info {
+                display: grid;
+                grid-template-rows: auto auto auto;
+                gap: 0.5rem;
+            }
+            
+            .menu-player-name-row {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 0.5rem;
+                align-items: center;
+            }
+            
+            .menu-player-profession {
+                font-size: 0.75rem;
+                color: rgba(148, 163, 184, 0.8);
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+            
+            .menu-player-stats {
+                display: grid;
+                grid-template-columns: auto auto;
+                gap: 1rem;
+                align-items: center;
+            }
+            
+            .menu-player-position {
+                font-size: 0.875rem;
+                color: rgba(148, 163, 184, 0.7);
+            }
+            
+            .menu-player-additional {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 0.25rem;
+                margin-top: 0.5rem;
+                padding-top: 0.5rem;
+                border-top: 1px solid rgba(148, 163, 184, 0.1);
+            }
+            
+            .menu-player-assets,
+            .menu-player-credit,
+            .menu-player-salary {
+                font-size: 0.75rem;
+                color: rgba(148, 163, 184, 0.8);
+            }
+            
+            .menu-player-assets {
+                color: #10b981;
+            }
+            
+            .menu-player-credit {
+                color: #f59e0b;
+            }
+            
+            .turn-indicator {
+                position: absolute;
+                top: -4px;
+                right: -4px;
+                width: 12px;
+                height: 12px;
+                background: #10b981;
+                border-radius: 50%;
+                border: 2px solid rgba(15, 23, 42, 0.98);
+                animation: pulse 1.5s ease-in-out infinite;
+            }
+            
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.2); opacity: 0.8; }
+            }
+            
+            .turn-indicator-small {
+                position: absolute;
+                top: -2px;
+                right: -2px;
+                width: 8px;
+                height: 8px;
+                background: #10b981;
+                border-radius: 50%;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                animation: pulse 1.5s ease-in-out infinite;
+            }
+            
+            /* Быстрые действия */
+            .menu-quick-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+            
+            .menu-action-btn {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 0.5rem;
+                align-items: center;
+                padding: 0.75rem 1rem;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(148, 163, 184, 0.2);
+                border-radius: 0.5rem;
+                color: #f8fafc;
+                font-size: 0.875rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .menu-action-btn:hover {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: rgba(99, 102, 246, 0.4);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+            
+            .menu-action-icon {
+                font-size: 1.25rem;
+            }
+            
+            /* Сортировка */
+            .menu-sort-controls {
+                display: grid;
+                grid-template-columns: repeat(3, auto);
+                gap: 0.5rem;
+                margin-left: auto;
+            }
+            
+            .menu-sort-btn {
+                width: 2rem;
+                height: 2rem;
+                border-radius: 0.375rem;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(148, 163, 184, 0.2);
+                color: rgba(148, 163, 184, 0.7);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1rem;
+                transition: all 0.2s ease;
+            }
+            
+            .menu-sort-btn:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: #f8fafc;
+            }
+            
+            .menu-sort-btn.active {
+                background: rgba(99, 102, 246, 0.3);
+                border-color: rgba(99, 102, 246, 0.5);
+                color: #f8fafc;
             }
             
             .menu-player-avatar {
@@ -1363,10 +1687,78 @@ class PlayersPanel {
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             }
             
+            .menu-player-item {
+                position: relative;
+            }
+            
             .menu-player-item.active {
                 border: 1px solid rgba(99, 102, 246, 0.5);
                 background: linear-gradient(135deg, rgba(99, 102, 246, 0.15), rgba(139, 92, 246, 0.15));
                 box-shadow: 0 2px 8px rgba(99, 102, 246, 0.3);
+                animation: active-pulse 2s ease-in-out infinite;
+            }
+            
+            @keyframes active-pulse {
+                0%, 100% { border-color: rgba(99, 102, 246, 0.5); }
+                50% { border-color: rgba(99, 102, 246, 0.8); }
+            }
+            
+            .menu-player-item.current {
+                border-left: 3px solid #10b981;
+            }
+            
+            .player-item-info {
+                display: grid;
+                grid-template-rows: auto auto auto;
+                gap: 0.25rem;
+                flex: 1;
+            }
+            
+            .player-item-name-row {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 0.5rem;
+                align-items: center;
+            }
+            
+            .player-item-profession {
+                font-size: 0.75rem;
+                opacity: 0.7;
+            }
+            
+            .player-item-details {
+                display: grid;
+                grid-template-columns: auto auto;
+                gap: 0.75rem;
+                align-items: center;
+            }
+            
+            .player-item-position {
+                font-size: 0.75rem;
+                color: rgba(148, 163, 184, 0.6);
+            }
+            
+            .player-item-extras {
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+                margin-top: 0.25rem;
+            }
+            
+            .player-item-assets,
+            .player-item-credit {
+                font-size: 0.7rem;
+                padding: 0.125rem 0.375rem;
+                border-radius: 0.25rem;
+                background: rgba(255, 255, 255, 0.05);
+            }
+            
+            .player-item-assets {
+                color: #10b981;
+            }
+            
+            .player-item-credit {
+                color: #f59e0b;
             }
             
             .asset-icon,
