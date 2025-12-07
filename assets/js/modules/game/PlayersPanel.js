@@ -214,10 +214,17 @@ class PlayersPanel {
             });
             
             // Обработчик для обновления кубика
+            // ИСПРАВЛЕНО: Подписка на dice:rolled с дебаунсингом
+            let diceRolledTimeout = null;
             this.eventBus.on('dice:rolled', (data) => {
                 if (data) {
-                    // Передаем полный объект с результатами кубиков
-                    this.updateDiceResult(data);
+                    // Дебаунсинг для предотвращения множественных вызовов
+                    if (diceRolledTimeout) {
+                        clearTimeout(diceRolledTimeout);
+                    }
+                    diceRolledTimeout = setTimeout(() => {
+                        this.updateDiceResult(data);
+                    }, 100);
                 }
             });
             
@@ -2184,9 +2191,15 @@ class PlayersPanel {
 
         // ИСПРАВЛЕНО: Обновляем десктопную панель кубика и таймера
         if (window.innerWidth >= 1025) {
-            // Обновляем кубик из lastDiceResult
+            // Обновляем кубик из lastDiceResult с дебаунсингом
             if (state?.lastDiceResult) {
-                this.updateDiceResult(state.lastDiceResult);
+                // Дебаунсинг для предотвращения множественных вызовов
+                if (this._updateDiceResultTimeout) {
+                    clearTimeout(this._updateDiceResultTimeout);
+                }
+                this._updateDiceResultTimeout = setTimeout(() => {
+                    this.updateDiceResult(state.lastDiceResult);
+                }, 200);
             } else {
                 // ИСПРАВЛЕНО: Сбрасываем иконку кнопки "Бросок" на эмодзи, если нет результата
                 const moveBtn = document.getElementById('move-btn');
@@ -3275,8 +3288,6 @@ class PlayersPanel {
             return;
         }
         
-        console.log('🎲 PlayersPanel: updateDiceResult вызван с:', result);
-        
         // Обрабатываем как объект с результатами кубиков или как число
         let diceResults = [];
         let total = 0;
@@ -3302,22 +3313,20 @@ class PlayersPanel {
             total = numericValue;
         }
         
-        console.log('🎲 PlayersPanel: Обработанный результат:', { diceResults, total });
-        
-        // Улучшенный дебаунсинг - проверяем и значение, и время
+        // Улучшенный дебаунсинг - проверяем и значение, и время ДО обработки
         const now = Date.now();
         const resultKey = diceResults.join(',');
         
-        // Проверяем, не обновляли ли мы уже это значение недавно (увеличено до 5 секунд)
-        if (this._lastDiceResult === resultKey && this._lastDiceResultTime && now - this._lastDiceResultTime < 5000) {
+        // Проверяем, не обновляли ли мы уже это значение недавно (увеличено до 10 секунд)
+        if (this._lastDiceResult === resultKey && this._lastDiceResultTime && now - this._lastDiceResultTime < 10000) {
             // Также проверяем, не отображается ли уже это значение в DOM
             const diceResultValue = document.getElementById('dice-result-value');
             const moveBtn = document.getElementById('move-btn');
             const btnIcon = moveBtn?.querySelector('.btn-icon');
             if (diceResultValue && diceResultValue.textContent === String(total)) {
-                if (btnIcon && btnIcon.textContent === String(total)) {
-                    console.log('🎲 PlayersPanel: Пропускаем обновление - значение уже отображено');
-                    return; // Значение уже отображено, пропускаем
+                if (btnIcon && (btnIcon.textContent === String(total) || btnIcon.textContent === '🎲🎲')) {
+                    // Значение уже отображено, пропускаем БЕЗ логирования
+                    return;
                 }
             }
         }
@@ -3655,13 +3664,8 @@ class PlayersPanel {
                 passBtnLabel.textContent = 'Далее';
             }
             
-            console.log('🔄 PlayersPanel: Обновление кнопки "Далее":', {
-                isMyTurn,
-                stateCanRoll: state.canRoll,
-                hasRolled,
-                canEndTurn,
-                disabled: !canEndTurn
-            });
+            // Логирование убрано для уменьшения спама - раскомментировать при отладке
+            // console.log('🔄 PlayersPanel: Обновление кнопки "Далее":', { isMyTurn, stateCanRoll: state.canRoll, hasRolled, canEndTurn, disabled: !canEndTurn });
             
             if (canEndTurn) {
                 passBtn.classList.add('active');
@@ -3692,15 +3696,8 @@ class PlayersPanel {
             const shouldActivate = isMyTurn && state.canRoll !== false;
             moveBtn.disabled = !shouldActivate;
             
-            console.log('🎲 PlayersPanel: Активация кнопки "Бросок":', {
-                moveBtn: !!moveBtn,
-                isMyTurn,
-                stateCanRoll: state.canRoll,
-                hasRolled,
-                shouldActivate,
-                disabled: moveBtn.disabled,
-                note: 'Кнопка активна если isMyTurn = true И state.canRoll !== false'
-            });
+            // Логирование убрано для уменьшения спама - раскомментировать при отладке
+            // console.log('🎲 PlayersPanel: Активация кнопки "Бросок":', { moveBtn: !!moveBtn, isMyTurn, stateCanRoll: state.canRoll, hasRolled, shouldActivate, disabled: moveBtn.disabled });
             
             if (shouldActivate) {
                 moveBtn.classList.add('active');
@@ -3725,24 +3722,8 @@ class PlayersPanel {
         
         
         
-        console.log('🎯 PlayersPanel: Обновлены кнопки управления:', {
-            currentUserId,
-            activePlayerId: activePlayer?.id,
-            activePlayerUsername: activePlayer?.username,
-            activePlayerUserId: activePlayer?.userId,
-            isMyTurn,
-            canRoll: state.canRoll,
-            canEndTurn: state.canEndTurn,
-            passBtnDisabled: passBtn?.disabled,
-            rollBtnDisabled: rollBtn?.disabled,
-            moveBtnDisabled: moveBtn?.disabled,
-            shouldBeDisabled: !isMyTurn || !state.canEndTurn,
-            turnCheckDetails: {
-                idMatch: activePlayer?.id === currentUserId,
-                userIdMatch: activePlayer?.userId === currentUserId,
-                usernameMatch: activePlayer?.username === currentUserId
-            }
-        });
+        // Логирование убрано для уменьшения спама - раскомментировать при отладке
+        // console.log('🎯 PlayersPanel: Обновлены кнопки управления:', { currentUserId, activePlayerId: activePlayer?.id, isMyTurn, canRoll: state.canRoll });
     }
 
     /**
@@ -4156,7 +4137,8 @@ class PlayersPanel {
                 }
             }
             
-            console.log('✅ PlayersPanel: Все кнопки обновлены принудительно');
+            // Логирование убрано для уменьшения спама - раскомментировать при отладке
+            // console.log('✅ PlayersPanel: Все кнопки обновлены принудительно');
             
         } catch (error) {
             console.error('❌ PlayersPanel: Ошибка принудительного обновления всех кнопок:', error);
@@ -5664,11 +5646,21 @@ class PlayersPanel {
                 turnService.on('roll:start', () => {
                     this._showRollingAnimation();
                 });
+                // ИСПРАВЛЕНО: Подписка на roll:success с дебаунсингом
+                let rollSuccessTimeout = null;
                 turnService.on('roll:success', (response) => {
                     const serverValue = response && (response.serverValue ?? response.diceResult?.value);
                     const localValue = response && response.localRoll && (response.localRoll.value || response.localRoll.total);
                     const value = serverValue ?? localValue ?? null;
-                    if (value != null) this.updateDiceResult(value);
+                    if (value != null) {
+                        // Дебаунсинг для предотвращения множественных вызовов
+                        if (rollSuccessTimeout) {
+                            clearTimeout(rollSuccessTimeout);
+                        }
+                        rollSuccessTimeout = setTimeout(() => {
+                            this.updateDiceResult(value);
+                        }, 100);
+                    }
                 });
                 turnService.on('roll:finish', () => {
                     this._hideRollingAnimation();
@@ -5862,12 +5854,8 @@ class PlayersPanel {
                     }
                 }
                 
-                console.log('🔧 PlayersPanel: TurnService проверка:', { 
-                    canRoll,
-                    isMyTurn,
-                    stateCanRoll: state?.canRoll,
-                    shouldActivate 
-                });
+                // Логирование убрано для уменьшения спама - раскомментировать при отладке
+                // console.log('🔧 PlayersPanel: TurnService проверка:', { canRoll, isMyTurn, stateCanRoll: state?.canRoll, shouldActivate });
                 
                 // Допуск в одиночной игре/демо: если игроков <= 1 или нет активного игрока — разрешаем бросок
                 if (!shouldActivate) {
@@ -5891,13 +5879,8 @@ class PlayersPanel {
             const isAdminTurn = activePlayerText.includes('admin') && currentUsername === 'admin';
             const isRomanTurn = activePlayerText.includes('roman') && currentUsername === 'roman';
             shouldActivate = isAdminTurn || isRomanTurn;
-            console.log('🔧 PlayersPanel: Fallback проверка:', { 
-                activePlayerText, 
-                currentUsername, 
-                isAdminTurn, 
-                isRomanTurn, 
-                shouldActivate 
-            });
+            // Логирование убрано для уменьшения спама - раскомментировать при отладке
+            // console.log('🔧 PlayersPanel: Fallback проверка:', { activePlayerText, currentUsername, isAdminTurn, isRomanTurn, shouldActivate });
         }
         
         return shouldActivate;
@@ -5911,7 +5894,8 @@ class PlayersPanel {
      */
     activateDiceButton(button, buttonName, shouldActivate) {
         if (shouldActivate) {
-            console.log(`🔧 PlayersPanel: Активация кнопки "${buttonName}"`);
+            // Логирование убрано для уменьшения спама - раскомментировать при отладке
+            // console.log(`🔧 PlayersPanel: Активация кнопки "${buttonName}"`);
             button.disabled = false;
             button.classList.add('active');
             button.style.opacity = '1';
@@ -5921,7 +5905,8 @@ class PlayersPanel {
             button.style.color = 'white';
             button.removeAttribute('disabled');
         } else {
-            console.log(`🔧 PlayersPanel: Кнопка "${buttonName}" остается отключенной`);
+            // Логирование убрано для уменьшения спама
+            // console.log(`🔧 PlayersPanel: Кнопка "${buttonName}" остается отключенной`);
         }
         
         this.forceUpdateButtonUI(button);
