@@ -114,7 +114,8 @@ class PlayersPanel {
         
         // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА через 1 секунду для надежности
         setTimeout(() => {
-            console.log('🔧 PlayersPanel: Дополнительная проверка активации кнопки');
+            // Логирование убрано для уменьшения спама - раскомментировать при отладке
+            // console.log('🔧 PlayersPanel: Дополнительная проверка активации кнопки');
             this.forceUpdateAllButtons();
         }, 1000);
         
@@ -3579,19 +3580,8 @@ class PlayersPanel {
             }
         }
         
-        console.log('🔍 PlayersPanel: Проверка isMyTurn:', {
-            currentUserId,
-            currentUsername,
-            activePlayerId: activePlayer?.id,
-            activePlayerUserId: activePlayer?.userId,
-            activePlayerUsername: activePlayer?.username,
-            isMyTurn,
-            comparison: {
-                idMatch: activePlayer?.id === currentUserId,
-                userIdMatch: activePlayer?.userId === currentUserId,
-                usernameMatch: activePlayer?.username === currentUsername
-            }
-        });
+        // Логирование убрано для уменьшения спама - раскомментировать при отладке
+        // console.log('🔍 PlayersPanel: Проверка isMyTurn:', { currentUserId, currentUsername, activePlayerId: activePlayer?.id, isMyTurn });
         
         // Логика для кнопки "Бросить" - активна если это мой ход И можно бросать
         if (rollBtn) {
