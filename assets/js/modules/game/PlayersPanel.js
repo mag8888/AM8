@@ -430,7 +430,7 @@ class PlayersPanel {
                         </button>
                         <button class="action-btn pass-btn" id="pass-turn" type="button" disabled>
                             <div class="btn-icon">➡️</div>
-                            <div class="btn-label">Передать</div>
+                            <div class="btn-label">Далее</div>
                             <div class="btn-glow"></div>
                         </button>
                         <button class="action-btn assets-btn assets-btn-horizontal" id="open-assets" type="button">
@@ -3343,6 +3343,16 @@ class PlayersPanel {
                 }
             }
             
+            // НОВОЕ: Обновляем иконку кнопки "Бросок" с результатом кубика
+            const moveBtn = document.getElementById('move-btn');
+            if (moveBtn) {
+                const btnIcon = moveBtn.querySelector('.btn-icon');
+                if (btnIcon) {
+                    // Отображаем результат кубика вместо эмодзи
+                    btnIcon.textContent = displayText;
+                }
+            }
+            
             // Добавляем результат в историю бросков (используем сумму для истории)
             this.addToRollHistory(total, rollHistory);
             
@@ -3359,7 +3369,21 @@ class PlayersPanel {
             if (diceResultValue) {
                 diceResultValue.textContent = '-';
             }
+            
+            // Сбрасываем иконку кнопки "Бросок" на эмодзи, если нет результата
+            const moveBtn = document.getElementById('move-btn');
+            if (moveBtn) {
+                const btnIcon = moveBtn.querySelector('.btn-icon');
+                if (btnIcon && btnIcon.textContent !== '🎲🎲') {
+                    btnIcon.textContent = '🎲🎲';
+                }
+            }
         }
+        
+        // НОВОЕ: После обновления результата кубика обновляем кнопки
+        setTimeout(() => {
+            this.forceUpdateAllButtons();
+        }, 100);
         
         // Старый код для совместимости (если есть другие элементы)
         const oldDiceResult = document.getElementById('dice-result-value-old');
@@ -3567,16 +3591,27 @@ class PlayersPanel {
             
         }
         
-        // Кнопка передачи хода - активна если это мой ход
+        // НОВОЕ: Проверяем, был ли выполнен бросок (есть результат кубика)
+        const hasDiceResult = state?.lastDiceResult != null;
+        const hasRolled = hasDiceResult && state.canRoll === false;
+        
+        // Кнопка передачи хода - активна если это мой ход И был выполнен бросок
         if (passBtn) {
-            // ИСПРАВЛЕНО: Упрощенная логика - если это мой ход, кнопка активна
-            // Если state.canEndTurn не определен или false, но это мой ход - разрешаем (для начального состояния)
-            const canEndTurn = isMyTurn && (state.canEndTurn !== false);
+            // ИСПРАВЛЕНО: Кнопка "Далее" активна если это мой ход И был выполнен бросок (canRoll === false)
+            const canEndTurn = isMyTurn && hasRolled;
             passBtn.disabled = !canEndTurn;
             
-            console.log('🔄 PlayersPanel: Обновление кнопки передачи хода:', {
+            // Обновляем текст кнопки на "Далее"
+            const passBtnLabel = passBtn.querySelector('.btn-label');
+            if (passBtnLabel && passBtnLabel.textContent !== 'Далее') {
+                passBtnLabel.textContent = 'Далее';
+            }
+            
+            console.log('🔄 PlayersPanel: Обновление кнопки "Далее":', {
                 isMyTurn,
-                stateCanEndTurn: state.canEndTurn,
+                hasDiceResult,
+                stateCanRoll: state.canRoll,
+                hasRolled,
                 canEndTurn,
                 disabled: !canEndTurn
             });
@@ -3591,19 +3626,21 @@ class PlayersPanel {
             this.forceUpdateButtonUI(passBtn);
         }
         
-        // Кнопка броска - активна если это мой ход И можно бросать (та же логика что и для rollBtn)
+        // Кнопка броска - активна если это мой ход И можно бросать (еще не бросили)
         if (moveBtn) {
-            // ИСПРАВЛЕНО: Упрощенная логика - если мой ход, активируем, если state.canRoll !== false
-            const shouldActivate = isMyTurn && state.canRoll !== false;
+            // ИСПРАВЛЕНО: Кнопка активна только если это мой ход И еще не бросили (canRoll !== false)
+            const shouldActivate = isMyTurn && !hasRolled && (state.canRoll === true || state.canRoll === undefined || state.canRoll === null);
             moveBtn.disabled = !shouldActivate;
             
-            console.log('🎲 PlayersPanel: Активация кнопки "🎲🎲 Бросок":', {
+            console.log('🎲 PlayersPanel: Активация кнопки "Бросок":', {
                 moveBtn: !!moveBtn,
                 isMyTurn,
+                hasDiceResult,
                 stateCanRoll: state.canRoll,
+                hasRolled,
                 shouldActivate,
                 disabled: moveBtn.disabled,
-                note: 'Кнопка активна если isMyTurn = true И state.canRoll !== false'
+                note: 'Кнопка активна если isMyTurn = true И еще не бросили'
             });
             
             if (shouldActivate) {
@@ -3672,7 +3709,7 @@ class PlayersPanel {
             </button>
             <button class="action-btn pass-btn" id="pass-turn" type="button" disabled>
                 <div class="btn-icon">➡️</div>
-                <div class="btn-label">Передать</div>
+                <div class="btn-label">Далее</div>
                 <div class="btn-glow"></div>
             </button>
             <button class="action-btn exit-btn" id="exit-game" type="button">
@@ -3992,13 +4029,37 @@ class PlayersPanel {
                 this.activateDiceButton(rollBtn, 'Бросить', shouldActivate);
             }
             
+            // НОВОЕ: Получаем состояние для проверки броска
+            const state = this.gameStateManager?.getState?.() || {};
+            const hasDiceResult = state?.lastDiceResult != null;
+            const hasRolled = hasDiceResult && state.canRoll === false;
+            
+            // Кнопка "Далее" - активна если был выполнен бросок
             if (passBtn) {
+                const isMyTurn = this.checkIfShouldActivateDiceButtons();
+                const canEndTurn = isMyTurn && hasRolled;
+                passBtn.disabled = !canEndTurn;
+                
+                // Обновляем текст кнопки на "Далее"
+                const passBtnLabel = passBtn.querySelector('.btn-label');
+                if (passBtnLabel && passBtnLabel.textContent !== 'Далее') {
+                    passBtnLabel.textContent = 'Далее';
+                }
+                
+                if (canEndTurn) {
+                    passBtn.classList.add('active');
+                } else {
+                    passBtn.classList.remove('active');
+                }
+                
                 this.forceUpdateButtonUI(passBtn);
             }
             
             // Активация кнопки "🎲🎲 Бросок" (move-btn) - основная кнопка в интерфейсе
+            // Кнопка активна только если еще не бросили
+            const shouldActivateMoveBtn = shouldActivate && !hasRolled;
             if (moveBtn) {
-                this.activateDiceButton(moveBtn, '🎲🎲 Бросок', shouldActivate);
+                this.activateDiceButton(moveBtn, '🎲🎲 Бросок', shouldActivateMoveBtn);
                 
                 // ДОПОЛНИТЕЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ для move-btn
                 if (shouldActivate && moveBtn.disabled) {
