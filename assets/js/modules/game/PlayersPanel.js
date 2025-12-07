@@ -4164,9 +4164,18 @@ class PlayersPanel {
             }
             
             // Активация кнопки "🎲🎲 Бросок" (move-btn) - основная кнопка в интерфейсе
-            // ИСПРАВЛЕНО: Кнопка активна если это мой ход И state.canRoll !== false
-            const shouldActivateMoveBtn = shouldActivate && state.canRoll !== false;
+            // ИСПРАВЛЕНО: Кнопка активна если это мой ход И (state.canRoll === true ИЛИ state.canRoll === undefined ИЛИ state.canRoll === null)
+            const shouldActivateMoveBtn = shouldActivate && (state.canRoll === true || state.canRoll === undefined || state.canRoll === null);
             if (moveBtn) {
+                // ВРЕМЕННОЕ логирование для отладки
+                if (shouldActivate) {
+                    console.log('🎲 PlayersPanel: _performButtonUpdate - кнопка "Бросок":', { 
+                        isMyTurn: shouldActivate, 
+                        stateCanRoll: state.canRoll, 
+                        shouldActivateMoveBtn, 
+                        disabled: !shouldActivateMoveBtn 
+                    });
+                }
                 this.activateDiceButton(moveBtn, '🎲🎲 Бросок', shouldActivateMoveBtn);
                 
                 // ДОПОЛНИТЕЛЬНАЯ ПРИНУДИТЕЛЬНАЯ АКТИВАЦИЯ для move-btn
