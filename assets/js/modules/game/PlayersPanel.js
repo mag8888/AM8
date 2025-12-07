@@ -4111,8 +4111,23 @@ class PlayersPanel {
             if (passBtn) {
                 const isMyTurn = this.checkIfShouldActivateDiceButtons();
                 // ИСПРАВЛЕНО: Используем state.canEndTurn с сервера (приоритет), fallback на клиентскую логику
+                // Если сервер явно разрешает (canEndTurn === true) - используем это
+                // Если сервер не запрещает (canEndTurn !== false) И был выполнен бросок - разрешаем
                 const canEndTurn = isMyTurn && (serverCanEndTurn || (hasRolled && state.canEndTurn !== false));
                 passBtn.disabled = !canEndTurn;
+                
+                // ВРЕМЕННОЕ логирование для отладки проблемы с исчезающей кнопкой
+                if (isMyTurn && hasRolled) {
+                    console.log('🔄 PlayersPanel: _performButtonUpdate - кнопка "Далее":', { 
+                        isMyTurn, 
+                        stateCanRoll: state.canRoll, 
+                        stateCanEndTurn: state.canEndTurn,
+                        serverCanEndTurn,
+                        hasRolled, 
+                        canEndTurn, 
+                        disabled: !canEndTurn 
+                    });
+                }
                 
                 // Обновляем текст кнопки на "Далее"
                 const passBtnLabel = passBtn.querySelector('.btn-label');
