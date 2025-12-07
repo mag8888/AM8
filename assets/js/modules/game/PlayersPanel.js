@@ -3275,6 +3275,8 @@ class PlayersPanel {
             return;
         }
         
+        console.log('🎲 PlayersPanel: updateDiceResult вызван с:', result);
+        
         // Обрабатываем как объект с результатами кубиков или как число
         let diceResults = [];
         let total = 0;
@@ -3299,6 +3301,8 @@ class PlayersPanel {
             diceResults = [numericValue];
             total = numericValue;
         }
+        
+        console.log('🎲 PlayersPanel: Обработанный результат:', { diceResults, total });
         
         // Улучшенный дебаунсинг - проверяем и значение, и время
         const now = Date.now();
