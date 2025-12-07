@@ -4091,13 +4091,15 @@ class PlayersPanel {
             
             // НОВОЕ: Получаем состояние для проверки броска
             const state = this.gameStateManager?.getState?.() || {};
-            // ИСПРАВЛЕНО: Проверяем только canRoll, а не наличие результата
+            // ИСПРАВЛЕНО: Используем состояние с сервера для определения возможности завершения хода
+            const serverCanEndTurn = state.canEndTurn === true;
             const hasRolled = state.canRoll === false;
             
-            // Кнопка "Далее" - активна если был выполнен бросок
+            // Кнопка "Далее" - активна если сервер разрешает завершение хода
             if (passBtn) {
                 const isMyTurn = this.checkIfShouldActivateDiceButtons();
-                const canEndTurn = isMyTurn && hasRolled;
+                // ИСПРАВЛЕНО: Используем state.canEndTurn с сервера (приоритет), fallback на клиентскую логику
+                const canEndTurn = isMyTurn && (serverCanEndTurn || (hasRolled && state.canEndTurn !== false));
                 passBtn.disabled = !canEndTurn;
                 
                 // Обновляем текст кнопки на "Далее"
