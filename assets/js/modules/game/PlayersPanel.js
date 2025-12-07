@@ -5689,13 +5689,27 @@ class PlayersPanel {
                 const isMyTurn = turnService.isMyTurn();
                 const canRoll = turnService.canRoll();
                 
-                // Упрощенная проверка: если мой ход И можно бросать (по TurnService), активируем
-                // state.canRoll может быть undefined на начальном этапе, поэтому не требуем его строго
-                shouldActivate = Boolean(isMyTurn && canRoll);
-                
-                // Если state.canRoll явно false, отключаем кнопку
-                if (state?.canRoll === false) {
-                    shouldActivate = false;
+                // ИСПРАВЛЕНО: Упрощенная проверка - если мой ход, активируем кнопку
+                // Разрешаем бросок, если:
+                // 1. Это мой ход (isMyTurn === true)
+                // 2. И state.canRoll !== false (т.е. true, undefined, или null)
+                // Запрещаем только если state.canRoll явно false И не было недавнего броска
+                if (isMyTurn) {
+                    // Если canRoll из TurnService разрешает, активируем
+                    if (canRoll) {
+                        shouldActivate = true;
+                    } else {
+                        // Если TurnService запрещает, но это может быть из-за state.canRoll === false
+                        // Проверяем: если state.canRoll === false, но это начальное состояние (нет lastDiceResult),
+                        // то все равно разрешаем для первого броска
+                        if (state?.canRoll === false && !state?.lastDiceResult) {
+                            // Это может быть начальное состояние - разрешаем первый бросок
+                            shouldActivate = true;
+                        } else if (state?.canRoll !== false) {
+                            // Если state.canRoll !== false (т.е. true, undefined, null), разрешаем
+                            shouldActivate = true;
+                        }
+                    }
                 }
                 
                 console.log('🔧 PlayersPanel: TurnService проверка:', { 
