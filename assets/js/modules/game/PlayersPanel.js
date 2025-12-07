@@ -284,6 +284,15 @@ class PlayersPanel {
                 }
                 // ИСПРАВЛЕНО: Обновляем десктопную панель таймера
                 this.updateDesktopTimer();
+                
+                // ИСПРАВЛЕНО: Принудительно обновляем кнопки после смены хода
+                // Это гарантирует, что кнопки обновятся даже если TurnService уже инициализирован
+                setTimeout(() => {
+                    const currentState = this.gameStateManager?.getState?.();
+                    if (currentState) {
+                        this.updateControlButtons(currentState);
+                    }
+                }, 100);
             });
             this.gameStateManager.on('players:updated', (players) => {
                 this.onPlayersUpdated(players);
