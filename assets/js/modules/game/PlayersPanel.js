@@ -3662,7 +3662,6 @@ class PlayersPanel {
             // ИСПРАВЛЕНО: Используем ТОЛЬКО серверное значение state.canEndTurn
             // Убрана клиентская логика проверки hasRolled - используем только серверное значение
             const canEndTurn = isMyTurn && state.canEndTurn === true;
-            passBtn.disabled = !canEndTurn;
             
             // Обновляем текст кнопки на "Далее"
             const passBtnLabel = passBtn.querySelector('.btn-label');
@@ -3681,7 +3680,10 @@ class PlayersPanel {
                 });
             }
             
+            // ИСПРАВЛЕНО: Принудительно активируем/деактивируем кнопку
             if (canEndTurn) {
+                passBtn.disabled = false;
+                passBtn.removeAttribute('disabled'); // Принудительно убираем атрибут disabled
                 passBtn.classList.add('active');
                 // Принудительно применяем стили для активной кнопки
                 passBtn.style.opacity = '1';
@@ -3689,13 +3691,24 @@ class PlayersPanel {
                 passBtn.style.pointerEvents = 'auto';
                 passBtn.style.backgroundColor = '#4CAF50';
                 passBtn.style.color = 'white';
-                passBtn.removeAttribute('disabled');
+                passBtn.style.transform = 'scale(1.05)';
+                passBtn.setAttribute('tabindex', '0');
+                
+                console.log('✅ PlayersPanel: Кнопка "Далее" АКТИВИРОВАНА', {
+                    disabled: passBtn.disabled,
+                    hasDisabledAttr: passBtn.hasAttribute('disabled'),
+                    pointerEvents: passBtn.style.pointerEvents
+                });
             } else {
+                passBtn.disabled = true;
                 passBtn.classList.remove('active');
                 // Принудительно применяем стили для неактивной кнопки
                 passBtn.style.opacity = '0.5';
                 passBtn.style.cursor = 'not-allowed';
                 passBtn.style.pointerEvents = 'none';
+                passBtn.style.backgroundColor = '';
+                passBtn.style.color = '';
+                passBtn.style.transform = '';
             }
             
             // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI для кнопки передачи хода
