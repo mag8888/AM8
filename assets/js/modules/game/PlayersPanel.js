@@ -4082,13 +4082,11 @@ class PlayersPanel {
                 passBtn.disabled = !canEndTurn;
                 
                 // ВРЕМЕННОЕ логирование для отладки проблемы с исчезающей кнопкой
-                if (isMyTurn && hasRolled) {
+                if (isMyTurn) {
                     console.log('🔄 PlayersPanel: _performButtonUpdate - кнопка "Далее":', { 
                         isMyTurn, 
                         stateCanRoll: state.canRoll, 
                         stateCanEndTurn: state.canEndTurn,
-                        serverCanEndTurn,
-                        hasRolled, 
                         canEndTurn, 
                         disabled: !canEndTurn 
                     });
