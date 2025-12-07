@@ -361,10 +361,13 @@ class PlayersPanel {
             this.container.innerHTML = '';
         }
         
-        // Оптимизация: проверяем, нужно ли обновлять DOM
-        if (this._lastRenderContent && this.container.children.length > 0) {
-            console.log('⚡ PlayersPanel: Пропускаем рендеринг, контент уже существует');
-            return; // Уже отрендерено
+        // ИСПРАВЛЕНО: Убрана оптимизация, которая блокировала рендеринг
+        // Всегда рендерим, если контейнер пустой или имеет только placeholder
+        const hasContent = this.container.children.length > 0 && 
+                          this.container.querySelector('.game-right-panel');
+        if (hasContent) {
+            // Контент уже отрендерен, пропускаем
+            return;
         }
         
         // Используем DocumentFragment для ускорения DOM операций
@@ -3352,7 +3355,8 @@ class PlayersPanel {
         
         // Обновляем отображение в панели действий
         const diceResultDisplay = document.getElementById('dice-result-display');
-        const diceResultValue = document.getElementById('dice-result-value');
+        // ИСПРАВЛЕНО: diceResultValue уже объявлен выше, используем существующую переменную
+        // const diceResultValue = document.getElementById('dice-result-value');
         const rollHistory = document.getElementById('roll-history');
         
         // Проверяем валидность результатов
