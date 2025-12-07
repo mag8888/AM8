@@ -1147,7 +1147,11 @@ class BoardLayout {
     }
 
     _info(message, meta) {
-        this._log('info', message, meta);
+        // ИСПРАВЛЕНО: Отключаем избыточное логирование для уменьшения спама
+        // Логирование только при явном включении debug режима
+        if (this.debugEnabled) {
+            this._log('info', message, meta);
+        }
     }
 
     _warn(message, meta) {
