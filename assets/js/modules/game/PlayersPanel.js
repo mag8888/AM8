@@ -50,7 +50,7 @@ class PlayersPanel {
         // Защита от повторных вызовов броска кубика
         this._isRolling = false;
         
-        console.log('👥 PlayersPanel v2.0: Инициализация');
+        console.log('👥 PlayersPanel v3.0: Инициализация (PlayersPanel.js v58)');
         this.init();
     }
     
@@ -130,7 +130,7 @@ class PlayersPanel {
         // Вызываем немедленно без debounce для быстрой загрузки
         this.loadPlayersViaGameStateManager(true);
         
-        console.log('✅ PlayersPanel v2.0: Инициализирован');
+        console.log('✅ PlayersPanel v3.0: Инициализирован (PlayersPanel.js v58)');
     }
     
     /**
