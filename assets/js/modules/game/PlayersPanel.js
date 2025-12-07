@@ -3664,15 +3664,13 @@ class PlayersPanel {
             }
             
             // ВРЕМЕННОЕ логирование для отладки проблемы с исчезающей кнопкой
-            if (isMyTurn && hasRolled) {
+            if (isMyTurn && state.canRoll === false) { // Log only after a roll
                 console.log('🔄 PlayersPanel: Обновление кнопки "Далее":', { 
                     isMyTurn, 
                     stateCanRoll: state.canRoll, 
                     stateCanEndTurn: state.canEndTurn,
-                    serverCanEndTurn,
-                    hasRolled, 
                     canEndTurn, 
-                    disabled: !canEndTurn 
+                    disabled: !canEndTurn
                 });
             }
             

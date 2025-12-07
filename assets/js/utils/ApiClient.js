@@ -254,4 +254,4 @@ class ApiClient {
 // Создаем глобальный экземпляр API клиента
 window.apiClient = new ApiClient();
 
-console.log('✅ ApiClient загружен');
+console.log('✅ ApiClient v2.0 загружен (ApiClient.js v2)');

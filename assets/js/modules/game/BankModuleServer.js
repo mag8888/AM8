@@ -41,7 +41,7 @@ class BankModuleServer {
         // Кэш DOM элементов для оптимизации производительности
         this._elementCache = new Map();
         
-        console.log('🏦 BankModuleServer: Инициализирован (v2.0.0)');
+        console.log('🏦 BankModuleServer: Инициализирован (v2.0.0, BankModuleServer.js v15)');
         this.init();
     }
     
