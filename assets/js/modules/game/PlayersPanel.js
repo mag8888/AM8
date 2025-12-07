@@ -3597,11 +3597,15 @@ class PlayersPanel {
             // Используем ТОЛЬКО серверное значение state.canRoll, без клиентских вычислений
             const canRoll = isMyTurn && state.canRoll === true;
             
+            // ВРЕМЕННОЕ логирование для отладки - показываем также доступность TurnService
             console.log('🎲 PlayersPanel: Обновление кнопки бросить:', {
                 isMyTurn,
                 stateCanRoll: state.canRoll,
                 canRoll,
-                disabled: !canRoll
+                disabled: !canRoll,
+                turnServiceAvailable,
+                activePlayerId: state.activePlayer?.id,
+                currentUserId: this.getCurrentUserId()
             });
             
             // Активация кнопки если это мой ход
