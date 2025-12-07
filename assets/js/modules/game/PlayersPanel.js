@@ -194,6 +194,11 @@ class PlayersPanel {
      * Настройка обработчиков событий
      */
     setupEventListeners() {
+        // ИСПРАВЛЕНО: Проверяем, были ли уже созданы подписки
+        if (this._eventListenersSetup) {
+            return; // Подписки уже созданы
+        }
+        
         if (this.eventBus) {
             // Обратная совместимость с существующими событиями
             this.eventBus.on('game:started', (data) => {
@@ -215,17 +220,17 @@ class PlayersPanel {
             });
             
             // Обработчик для обновления кубика
-            // ИСПРАВЛЕНО: Подписка на dice:rolled с дебаунсингом
-            let diceRolledTimeout = null;
+            // ИСПРАВЛЕНО: Подписка на dice:rolled с улучшенным дебаунсингом
+            this._diceRolledTimeout = null;
             this.eventBus.on('dice:rolled', (data) => {
                 if (data) {
-                    // Дебаунсинг для предотвращения множественных вызовов
-                    if (diceRolledTimeout) {
-                        clearTimeout(diceRolledTimeout);
+                    // Дебаунсинг для предотвращения множественных вызовов (увеличено до 500ms)
+                    if (this._diceRolledTimeout) {
+                        clearTimeout(this._diceRolledTimeout);
                     }
-                    diceRolledTimeout = setTimeout(() => {
+                    this._diceRolledTimeout = setTimeout(() => {
                         this.updateDiceResult(data);
-                    }, 100);
+                    }, 500);
                 }
             });
             
@@ -286,13 +291,16 @@ class PlayersPanel {
             this.gameStateManager.on('game:playersUpdated', (players) => {
                 this.onPlayersUpdated(players);
             });
+            
+            // Отмечаем, что подписки созданы
+            this._eventListenersSetup = true;
         }
         
         // Подписываемся на push-уведомления для принудительного обновления
         if (this.eventBus && typeof this.eventBus.on === 'function') {
             this.eventBus.on('push:message', (message) => {
                 if (message.type === 'turn_changed' || message.type === 'game_state_updated') {
-                    console.log('🎯 PlayersPanel: Получено push-уведомление о смене хода');
+                    // Логирование убрано для уменьшения спама
                     // Принудительно обновляем состояние
                     if (this.gameStateManager && typeof this.gameStateManager.forceUpdate === 'function') {
                         this.gameStateManager.forceUpdate();
@@ -2192,15 +2200,15 @@ class PlayersPanel {
 
         // ИСПРАВЛЕНО: Обновляем десктопную панель кубика и таймера
         if (window.innerWidth >= 1025) {
-            // Обновляем кубик из lastDiceResult с дебаунсингом
+            // Обновляем кубик из lastDiceResult с улучшенным дебаунсингом
             if (state?.lastDiceResult) {
-                // Дебаунсинг для предотвращения множественных вызовов
+                // Дебаунсинг для предотвращения множественных вызовов (увеличено до 1000ms)
                 if (this._updateDiceResultTimeout) {
                     clearTimeout(this._updateDiceResultTimeout);
                 }
                 this._updateDiceResultTimeout = setTimeout(() => {
                     this.updateDiceResult(state.lastDiceResult);
-                }, 200);
+                }, 1000);
             } else {
                 // ИСПРАВЛЕНО: Сбрасываем иконку кнопки "Бросок" на эмодзи, если нет результата
                 const moveBtn = document.getElementById('move-btn');
@@ -3318,18 +3326,23 @@ class PlayersPanel {
         const now = Date.now();
         const resultKey = diceResults.join(',');
         
-        // Проверяем, не обновляли ли мы уже это значение недавно (увеличено до 10 секунд)
-        if (this._lastDiceResult === resultKey && this._lastDiceResultTime && now - this._lastDiceResultTime < 10000) {
-            // Также проверяем, не отображается ли уже это значение в DOM
-            const diceResultValue = document.getElementById('dice-result-value');
-            const moveBtn = document.getElementById('move-btn');
-            const btnIcon = moveBtn?.querySelector('.btn-icon');
-            if (diceResultValue && diceResultValue.textContent === String(total)) {
-                if (btnIcon && (btnIcon.textContent === String(total) || btnIcon.textContent === '🎲🎲')) {
-                    // Значение уже отображено, пропускаем БЕЗ логирования
-                    return;
-                }
+        // ИСПРАВЛЕНО: Более агрессивная проверка - проверяем DOM ПЕРЕД проверкой времени
+        const diceResultValue = document.getElementById('dice-result-value');
+        const moveBtn = document.getElementById('move-btn');
+        const btnIcon = moveBtn?.querySelector('.btn-icon');
+        
+        // Проверяем, не отображается ли уже это значение в DOM
+        if (diceResultValue && diceResultValue.textContent === String(total)) {
+            if (btnIcon && (btnIcon.textContent === String(total) || btnIcon.textContent === '🎲🎲')) {
+                // Значение уже отображено, пропускаем БЕЗ логирования
+                return;
             }
+        }
+        
+        // Проверяем, не обновляли ли мы уже это значение недавно (увеличено до 15 секунд)
+        if (this._lastDiceResult === resultKey && this._lastDiceResultTime && now - this._lastDiceResultTime < 15000) {
+            // Значение уже было обработано недавно, пропускаем
+            return;
         }
         
         // Устанавливаем флаг обновления
@@ -5629,6 +5642,11 @@ class PlayersPanel {
         }
         
         // Подписываемся на события TurnService для обновления UI
+        // ИСПРАВЛЕНО: Проверяем, были ли уже созданы подписки на TurnService
+        if (this._turnServiceListenersSetup) {
+            return; // Подписки уже созданы
+        }
+        
         try {
             const app = window.app;
             const turnService = app && app.getModule ? app.getModule('turnService') : null;
@@ -5636,25 +5654,26 @@ class PlayersPanel {
                 turnService.on('roll:start', () => {
                     this._showRollingAnimation();
                 });
-                // ИСПРАВЛЕНО: Подписка на roll:success с дебаунсингом
-                let rollSuccessTimeout = null;
+                // ИСПРАВЛЕНО: Подписка на roll:success с улучшенным дебаунсингом
+                this._rollSuccessTimeout = null;
                 turnService.on('roll:success', (response) => {
                     const serverValue = response && (response.serverValue ?? response.diceResult?.value);
                     const localValue = response && response.localRoll && (response.localRoll.value || response.localRoll.total);
                     const value = serverValue ?? localValue ?? null;
                     if (value != null) {
-                        // Дебаунсинг для предотвращения множественных вызовов
-                        if (rollSuccessTimeout) {
-                            clearTimeout(rollSuccessTimeout);
+                        // Дебаунсинг для предотвращения множественных вызовов (увеличено до 500ms)
+                        if (this._rollSuccessTimeout) {
+                            clearTimeout(this._rollSuccessTimeout);
                         }
-                        rollSuccessTimeout = setTimeout(() => {
+                        this._rollSuccessTimeout = setTimeout(() => {
                             this.updateDiceResult(value);
-                        }, 100);
+                        }, 500);
                     }
                 });
                 turnService.on('roll:finish', () => {
                     this._hideRollingAnimation();
                 });
+                this._turnServiceListenersSetup = true;
             }
         } catch (e) {
             console.warn('⚠️ PlayersPanel: Не удалось подписаться на события TurnService', e);
