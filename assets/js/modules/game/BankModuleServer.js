@@ -175,6 +175,7 @@ class BankModuleServer {
         // ИСПРАВЛЕНО: Используем ApiClient вместо прямого fetch для единообразия таймаутов/заголовков/ретраев
         try {
             const apiClient = window.apiClient || new ApiClient();
+            // ИСПРАВЛЕНО: Правильный порядок параметров для ApiClient.get(url, params, options)
             const data = await apiClient.get(`/api/rooms/${roomId}/game-state`, {
                 'Cache-Control': 'no-cache'
             }, {
@@ -2283,10 +2284,11 @@ class BankModuleServer {
                 timeoutMs: 8000,
                 deduplicate: true // Дедупликация GET запросов
             });
-            if (data.success && data.data && Array.isArray(data.data.transactions)) {
+            
+            if (data && data.success && data.data && Array.isArray(data.data.transactions)) {
                 this.bankState.transactions = data.data.transactions;
                 console.log('📋 BankModuleServer: История операций загружена:', this.bankState.transactions.length);
-            } else if (data.success && Array.isArray(data.transactions)) {
+            } else if (data && data.success && Array.isArray(data.transactions)) {
                 // Fallback для старого формата
                 this.bankState.transactions = data.transactions;
                 console.log('📋 BankModuleServer: История операций загружена (fallback):', this.bankState.transactions.length);
@@ -2294,7 +2296,12 @@ class BankModuleServer {
                 this.bankState.transactions = [];
             }
         } catch (error) {
-            console.error('❌ BankModuleServer: Ошибка загрузки истории операций:', error);
+            // ИСПРАВЛЕНО: Нормализованная обработка ошибок от ApiClient
+            if (error.status === 404 || error.isTimeout) {
+                console.warn('⚠️ BankModuleServer: История операций недоступна:', error.message);
+            } else {
+                console.error('❌ BankModuleServer: Ошибка загрузки истории операций:', error);
+            }
             this.bankState.transactions = [];
         }
     }
