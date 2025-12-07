@@ -3350,7 +3350,16 @@ class PlayersPanel {
                 if (btnIcon) {
                     // Отображаем результат кубика вместо эмодзи
                     btnIcon.textContent = displayText;
+                    // Добавляем стиль для лучшей видимости числа
+                    btnIcon.style.fontSize = '1.5em';
+                    btnIcon.style.fontWeight = 'bold';
                 }
+                // Деактивируем кнопку после броска
+                moveBtn.disabled = true;
+                moveBtn.classList.remove('active');
+                moveBtn.style.opacity = '0.5';
+                moveBtn.style.cursor = 'not-allowed';
+                moveBtn.style.pointerEvents = 'none';
             }
             
             // Добавляем результат в историю бросков (используем сумму для истории)
@@ -3374,8 +3383,13 @@ class PlayersPanel {
             const moveBtn = document.getElementById('move-btn');
             if (moveBtn) {
                 const btnIcon = moveBtn.querySelector('.btn-icon');
-                if (btnIcon && btnIcon.textContent !== '🎲🎲') {
-                    btnIcon.textContent = '🎲🎲';
+                if (btnIcon) {
+                    if (btnIcon.textContent !== '🎲🎲') {
+                        btnIcon.textContent = '🎲🎲';
+                    }
+                    // Сбрасываем стили
+                    btnIcon.style.fontSize = '';
+                    btnIcon.style.fontWeight = '';
                 }
             }
         }
@@ -3618,8 +3632,19 @@ class PlayersPanel {
             
             if (canEndTurn) {
                 passBtn.classList.add('active');
+                // Принудительно применяем стили для активной кнопки
+                passBtn.style.opacity = '1';
+                passBtn.style.cursor = 'pointer';
+                passBtn.style.pointerEvents = 'auto';
+                passBtn.style.backgroundColor = '#4CAF50';
+                passBtn.style.color = 'white';
+                passBtn.removeAttribute('disabled');
             } else {
                 passBtn.classList.remove('active');
+                // Принудительно применяем стили для неактивной кнопки
+                passBtn.style.opacity = '0.5';
+                passBtn.style.cursor = 'not-allowed';
+                passBtn.style.pointerEvents = 'none';
             }
             
             // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI для кнопки передачи хода
@@ -4048,8 +4073,19 @@ class PlayersPanel {
                 
                 if (canEndTurn) {
                     passBtn.classList.add('active');
+                    // Принудительно применяем стили для активной кнопки
+                    passBtn.style.opacity = '1';
+                    passBtn.style.cursor = 'pointer';
+                    passBtn.style.pointerEvents = 'auto';
+                    passBtn.style.backgroundColor = '#4CAF50';
+                    passBtn.style.color = 'white';
+                    passBtn.removeAttribute('disabled');
                 } else {
                     passBtn.classList.remove('active');
+                    // Принудительно применяем стили для неактивной кнопки
+                    passBtn.style.opacity = '0.5';
+                    passBtn.style.cursor = 'not-allowed';
+                    passBtn.style.pointerEvents = 'none';
                 }
                 
                 this.forceUpdateButtonUI(passBtn);
