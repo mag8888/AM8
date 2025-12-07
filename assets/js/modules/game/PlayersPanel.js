@@ -1284,7 +1284,12 @@ class PlayersPanel {
         if (confirm('Вы уверены, что хотите выйти из игры?')) {
             // Очищаем данные игры
             if (this.gameStateManager) {
-                this.gameStateManager.clearState();
+                // Используем метод clear() вместо clearState()
+                if (typeof this.gameStateManager.clear === 'function') {
+                    this.gameStateManager.clear();
+                } else if (typeof this.gameStateManager.destroy === 'function') {
+                    this.gameStateManager.destroy();
+                }
             }
             
             // Очищаем localStorage и sessionStorage
