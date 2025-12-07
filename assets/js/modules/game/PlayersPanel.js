@@ -3711,14 +3711,22 @@ class PlayersPanel {
         
         // Кнопка броска - активна если это мой ход И можно бросать (еще не бросили)
         if (moveBtn) {
-            // ИСПРАВЛЕНО: Кнопка активна если это мой ход И state.canRoll !== false
-            // Если canRoll === false, значит бросок уже был выполнен в этом ходе
-            // Если canRoll === true, undefined или null, значит можно бросать
-            const shouldActivate = isMyTurn && state.canRoll !== false;
+            // ИСПРАВЛЕНО: Кнопка активна если это мой ход И (state.canRoll === true ИЛИ state.canRoll === undefined ИЛИ state.canRoll === null)
+            // Если canRoll === false, значит бросок уже был выполнен в этом ходе - кнопка неактивна
+            // Если canRoll === true, undefined или null, значит можно бросать - кнопка активна
+            const shouldActivate = isMyTurn && (state.canRoll === true || state.canRoll === undefined || state.canRoll === null);
             moveBtn.disabled = !shouldActivate;
             
-            // Логирование убрано для уменьшения спама - раскомментировать при отладке
-            // console.log('🎲 PlayersPanel: Активация кнопки "Бросок":', { moveBtn: !!moveBtn, isMyTurn, stateCanRoll: state.canRoll, hasRolled, shouldActivate, disabled: moveBtn.disabled });
+            // ВРЕМЕННОЕ логирование для отладки проблемы с неактивной кнопкой
+            if (isMyTurn) {
+                console.log('🎲 PlayersPanel: Активация кнопки "Бросок":', { 
+                    moveBtn: !!moveBtn, 
+                    isMyTurn, 
+                    stateCanRoll: state.canRoll, 
+                    shouldActivate, 
+                    disabled: moveBtn.disabled 
+                });
+            }
             
             if (shouldActivate) {
                 moveBtn.classList.add('active');
