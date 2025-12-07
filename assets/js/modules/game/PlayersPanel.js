@@ -4072,16 +4072,13 @@ class PlayersPanel {
             // НОВОЕ: Получаем состояние для проверки броска
             const state = this.gameStateManager?.getState?.() || {};
             // ИСПРАВЛЕНО: Используем состояние с сервера для определения возможности завершения хода
-            const serverCanEndTurn = state.canEndTurn === true;
-            const hasRolled = state.canRoll === false;
-            
+            // ИСПРАВЛЕНО: Используем ТОЛЬКО серверное значение canEndTurn (логика на сервере)
             // Кнопка "Далее" - активна если сервер разрешает завершение хода
             if (passBtn) {
                 const isMyTurn = this.checkIfShouldActivateDiceButtons();
-                // ИСПРАВЛЕНО: Используем state.canEndTurn с сервера (приоритет), fallback на клиентскую логику
-                // Если сервер явно разрешает (canEndTurn === true) - используем это
-                // Если сервер не запрещает (canEndTurn !== false) И был выполнен бросок - разрешаем
-                const canEndTurn = isMyTurn && (serverCanEndTurn || (hasRolled && state.canEndTurn !== false));
+                // ИСПРАВЛЕНО: Используем ТОЛЬКО серверное значение state.canEndTurn
+                // Убрана клиентская логика проверки hasRolled - используем только серверное значение
+                const canEndTurn = isMyTurn && state.canEndTurn === true;
                 passBtn.disabled = !canEndTurn;
                 
                 // ВРЕМЕННОЕ логирование для отладки проблемы с исчезающей кнопкой
