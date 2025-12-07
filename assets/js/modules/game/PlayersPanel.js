@@ -3655,15 +3655,16 @@ class PlayersPanel {
             
         }
         
-        // НОВОЕ: Проверяем, был ли выполнен бросок в ТЕКУЩЕМ ходе
-        // Важно: проверяем не просто наличие результата, а состояние canRoll
-        // Если canRoll === false, значит бросок уже был выполнен в этом ходе
+        // ИСПРАВЛЕНО: Используем состояние с сервера для определения возможности завершения хода
+        // Логика хода должна управляться сервером, а не клиентом
+        // Проверяем state.canEndTurn из сервера (приоритет) или fallback на клиентскую логику
+        const serverCanEndTurn = state.canEndTurn === true;
         const hasRolled = state.canRoll === false;
         
-        // Кнопка передачи хода - активна если это мой ход И был выполнен бросок
+        // Кнопка передачи хода - активна если это мой ход И сервер разрешает завершение хода
         if (passBtn) {
-            // ИСПРАВЛЕНО: Кнопка "Далее" активна если это мой ход И был выполнен бросок (canRoll === false)
-            const canEndTurn = isMyTurn && hasRolled;
+            // ИСПРАВЛЕНО: Используем state.canEndTurn с сервера (приоритет), fallback на клиентскую логику
+            const canEndTurn = isMyTurn && (serverCanEndTurn || (hasRolled && state.canEndTurn !== false));
             passBtn.disabled = !canEndTurn;
             
             // Обновляем текст кнопки на "Далее"
