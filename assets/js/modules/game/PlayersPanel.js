@@ -3198,31 +3198,28 @@ class PlayersPanel {
         const desktopTimerValue = document.getElementById('desktop-timer-value');
         const desktopPanel = document.getElementById('desktop-dice-timer-panel');
         
+        // ИСПРАВЛЕНО: Всегда показываем панель на десктопе ПЕРЕД проверкой состояния
+        if (desktopPanel && window.innerWidth >= 1025) {
+            desktopPanel.style.display = 'flex';
+            desktopPanel.style.visibility = 'visible';
+            desktopPanel.style.opacity = '1';
+        }
+        
         if (!desktopTimerValue) return;
         
         const state = this.gameStateManager?.getState?.();
         if (!state) {
             desktopTimerValue.textContent = '0:00';
-            // Показываем панель на десктопе всегда
-            if (desktopPanel && window.innerWidth >= 1025) {
-                desktopPanel.style.display = 'flex';
-                desktopPanel.style.visibility = 'visible';
-                desktopPanel.style.opacity = '1';
-            }
             return;
         }
         
-        // Получаем turnTimeRemaining из состояния или вычисляем из turnStartTime и turnTimer
+        // ИСПРАВЛЕНО: Получаем turnTimeRemaining ТОЛЬКО с сервера (не вычисляем на клиенте)
+        // Логика таймера должна управляться сервером
         let turnTimeRemaining = state?.turnTimeRemaining;
         
-        // Если turnTimeRemaining не задан, вычисляем его из turnStartTime и turnTimer
+        // Если turnTimeRemaining не задан с сервера, показываем 0:00 (не вычисляем на клиенте)
         if (turnTimeRemaining === undefined || turnTimeRemaining === null) {
-            if (state?.turnStartTime && state?.turnTimer) {
-                const elapsed = Date.now() - state.turnStartTime;
-                turnTimeRemaining = Math.max(0, state.turnTimer - elapsed);
-            } else {
-                turnTimeRemaining = 0;
-            }
+            turnTimeRemaining = 0;
         }
         
         // Всегда показываем время в формате MM:SS, даже если 0
@@ -3231,7 +3228,7 @@ class PlayersPanel {
         const secs = seconds % 60;
         desktopTimerValue.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
         
-        // Показываем панель на десктопе всегда
+        // ИСПРАВЛЕНО: Дополнительно убеждаемся, что панель видна после обновления
         if (desktopPanel && window.innerWidth >= 1025) {
             desktopPanel.style.display = 'flex';
             desktopPanel.style.visibility = 'visible';
@@ -3541,72 +3538,40 @@ class PlayersPanel {
             return;
         }
         
-        // Проверяем, мой ли это ход
-        const currentUserId = this.getCurrentUserId();
-        const currentUsername = this.getCurrentUsername();
-        const activePlayer = state.activePlayer;
-        
-        // Расширенная проверка isMyTurn с дополнительными проверками
+        // ИСПРАВЛЕНО: Используем ТОЛЬКО TurnService для определения isMyTurn (логика на сервере)
+        // Убрана клиентская логика проверки isMyTurn - используем только серверное значение через TurnService
         let isMyTurn = false;
-        if (activePlayer) {
-            // Проверка по ID (разные варианты)
-            if (currentUserId) {
-            isMyTurn = 
-                activePlayer.id === currentUserId ||
-                activePlayer.userId === currentUserId ||
-                    String(activePlayer.id) === String(currentUserId) ||
-                    String(activePlayer.userId) === String(currentUserId);
-            }
-            
-            // Проверка по username (если не совпало по ID)
-            if (!isMyTurn && currentUsername && activePlayer.username) {
-                isMyTurn = 
-                    activePlayer.username === currentUsername ||
-                    activePlayer.username.toLowerCase() === currentUsername.toLowerCase();
-            }
-        }
-        
-        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если isMyTurn все еще false, попробуем альтернативные способы
-        if (!isMyTurn && activePlayer) {
-            // Проверяем через localStorage
-            const storedUserId = localStorage.getItem('userId');
-            const storedUsername = localStorage.getItem('username');
-            const storedCurrentUser = localStorage.getItem('currentUser');
-            
-            if (storedUserId && (activePlayer.id === storedUserId || activePlayer.userId === storedUserId)) {
-                isMyTurn = true;
-                console.log('🔧 PlayersPanel: isMyTurn определен через localStorage userId');
-            } else if (storedUsername && activePlayer.username === storedUsername) {
-                isMyTurn = true;
-                console.log('🔧 PlayersPanel: isMyTurn определен через localStorage username');
-            } else if (storedCurrentUser) {
-                try {
-                    const currentUser = JSON.parse(storedCurrentUser);
-                    const userId = currentUser.id || currentUser.userId;
-                    const username = currentUser.username || currentUser.name;
-                    
-                    if (userId && (activePlayer.id === userId || activePlayer.userId === userId)) {
-                        isMyTurn = true;
-                        console.log('🔧 PlayersPanel: isMyTurn определен через currentUser id');
-                    } else if (username && activePlayer.username === username) {
-                        isMyTurn = true;
-                        console.log('🔧 PlayersPanel: isMyTurn определен через currentUser username');
-                    }
-                } catch (e) {
-                    console.warn('⚠️ PlayersPanel: Ошибка парсинга currentUser:', e);
+        try {
+            const turnService = window.app?.getModule?.('turnService');
+            if (turnService && typeof turnService.isMyTurn === 'function') {
+                isMyTurn = turnService.isMyTurn();
+            } else {
+                // Fallback: если TurnService недоступен, используем простую проверку
+                const currentUserId = this.getCurrentUserId();
+                const activePlayer = state.activePlayer;
+                if (activePlayer && currentUserId) {
+                    isMyTurn = activePlayer.id === currentUserId || activePlayer.userId === currentUserId;
                 }
+            }
+        } catch (error) {
+            console.warn('⚠️ PlayersPanel: Ошибка при проверке isMyTurn через TurnService:', error);
+            // Fallback на простую проверку
+            const currentUserId = this.getCurrentUserId();
+            const activePlayer = state.activePlayer;
+            if (activePlayer && currentUserId) {
+                isMyTurn = activePlayer.id === currentUserId || activePlayer.userId === currentUserId;
             }
         }
         
         // Логирование убрано для уменьшения спама - раскомментировать при отладке
         // console.log('🔍 PlayersPanel: Проверка isMyTurn:', { currentUserId, currentUsername, activePlayerId: activePlayer?.id, isMyTurn });
         
-        // Логика для кнопки "Бросить" - активна если это мой ход И можно бросать
+        // ИСПРАВЛЕНО: Логика для кнопки "Бросить" - используем ТОЛЬКО серверные значения
+        // Логика хода должна управляться сервером, а не клиентом
         if (rollBtn) {
-            // ИСПРАВЛЕНО: Кнопка активна если это мой ход И (state.canRoll === true ИЛИ state.canRoll === undefined)
-            // После броска state.canRoll становится false, и кнопка отключается до следующего хода
-            // При начале нового хода state.canRoll должен быть true или undefined
-            const canRoll = isMyTurn && (state.canRoll === true || state.canRoll === undefined || state.canRoll === null);
+            // Кнопка активна если это мой ход И сервер разрешает бросок (canRoll === true)
+            // Используем ТОЛЬКО серверное значение state.canRoll, без клиентских вычислений
+            const canRoll = isMyTurn && state.canRoll === true;
             
             console.log('🎲 PlayersPanel: Обновление кнопки бросить:', {
                 isMyTurn,
@@ -3655,18 +3620,13 @@ class PlayersPanel {
             
         }
         
-        // ИСПРАВЛЕНО: Используем состояние с сервера для определения возможности завершения хода
+        // ИСПРАВЛЕНО: Используем ТОЛЬКО серверное значение canEndTurn (логика на сервере)
         // Логика хода должна управляться сервером, а не клиентом
-        // Проверяем state.canEndTurn из сервера (приоритет) или fallback на клиентскую логику
-        const serverCanEndTurn = state.canEndTurn === true;
-        const hasRolled = state.canRoll === false;
-        
         // Кнопка передачи хода - активна если это мой ход И сервер разрешает завершение хода
         if (passBtn) {
-            // ИСПРАВЛЕНО: Используем state.canEndTurn с сервера (приоритет), fallback на клиентскую логику
-            // Если сервер явно разрешает (canEndTurn === true) - используем это
-            // Если сервер не запрещает (canEndTurn !== false) И был выполнен бросок - разрешаем
-            const canEndTurn = isMyTurn && (serverCanEndTurn || (hasRolled && state.canEndTurn !== false));
+            // ИСПРАВЛЕНО: Используем ТОЛЬКО серверное значение state.canEndTurn
+            // Убрана клиентская логика проверки hasRolled - используем только серверное значение
+            const canEndTurn = isMyTurn && state.canEndTurn === true;
             passBtn.disabled = !canEndTurn;
             
             // Обновляем текст кнопки на "Далее"
@@ -3709,12 +3669,12 @@ class PlayersPanel {
             this.forceUpdateButtonUI(passBtn);
         }
         
-        // Кнопка броска - активна если это мой ход И можно бросать (еще не бросили)
+        // ИСПРАВЛЕНО: Кнопка броска - используем ТОЛЬКО серверные значения
+        // Логика хода должна управляться сервером, а не клиентом
         if (moveBtn) {
-            // ИСПРАВЛЕНО: Кнопка активна если это мой ход И (state.canRoll === true ИЛИ state.canRoll === undefined ИЛИ state.canRoll === null)
-            // Если canRoll === false, значит бросок уже был выполнен в этом ходе - кнопка неактивна
-            // Если canRoll === true, undefined или null, значит можно бросать - кнопка активна
-            const shouldActivate = isMyTurn && (state.canRoll === true || state.canRoll === undefined || state.canRoll === null);
+            // Кнопка активна если это мой ход И сервер разрешает бросок (canRoll === true)
+            // Используем ТОЛЬКО серверное значение state.canRoll, без клиентских вычислений
+            const shouldActivate = isMyTurn && state.canRoll === true;
             moveBtn.disabled = !shouldActivate;
             
             // ВРЕМЕННОЕ логирование для отладки проблемы с неактивной кнопкой
