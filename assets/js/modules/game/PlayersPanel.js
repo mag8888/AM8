@@ -3541,16 +3541,31 @@ class PlayersPanel {
         // ИСПРАВЛЕНО: Используем ТОЛЬКО TurnService для определения isMyTurn (логика на сервере)
         // Убрана клиентская логика проверки isMyTurn - используем только серверное значение через TurnService
         let isMyTurn = false;
+        let turnServiceAvailable = false;
         try {
             const turnService = window.app?.getModule?.('turnService');
             if (turnService && typeof turnService.isMyTurn === 'function') {
                 isMyTurn = turnService.isMyTurn();
+                turnServiceAvailable = true;
             } else {
-                // Fallback: если TurnService недоступен, используем простую проверку
+                // ИСПРАВЛЕНО: Если TurnService недоступен, используем fallback, но планируем перепроверку
                 const currentUserId = this.getCurrentUserId();
                 const activePlayer = state.activePlayer;
                 if (activePlayer && currentUserId) {
                     isMyTurn = activePlayer.id === currentUserId || activePlayer.userId === currentUserId;
+                }
+                
+                // Если TurnService еще не инициализирован, планируем перепроверку через 500ms
+                if (!turnService && !this._turnServiceCheckScheduled) {
+                    this._turnServiceCheckScheduled = true;
+                    setTimeout(() => {
+                        this._turnServiceCheckScheduled = false;
+                        // Перепроверяем кнопки после инициализации TurnService
+                        const currentState = this.gameStateManager?.getState?.();
+                        if (currentState) {
+                            this.updateControlButtons(currentState);
+                        }
+                    }, 500);
                 }
             }
         } catch (error) {
