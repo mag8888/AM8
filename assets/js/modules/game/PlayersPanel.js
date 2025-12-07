@@ -291,6 +291,13 @@ class PlayersPanel {
                     const currentState = this.gameStateManager?.getState?.();
                     if (currentState) {
                         this.updateControlButtons(currentState);
+                        // Дополнительное принудительное обновление через 200ms для гарантии
+                        setTimeout(() => {
+                            const state = this.gameStateManager?.getState?.();
+                            if (state) {
+                                this.updateControlButtons(state);
+                            }
+                        }, 200);
                     }
                 }, 100);
             });
