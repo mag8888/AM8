@@ -2187,6 +2187,17 @@ class PlayersPanel {
             // Обновляем кубик из lastDiceResult
             if (state?.lastDiceResult) {
                 this.updateDiceResult(state.lastDiceResult);
+            } else {
+                // ИСПРАВЛЕНО: Сбрасываем иконку кнопки "Бросок" на эмодзи, если нет результата
+                const moveBtn = document.getElementById('move-btn');
+                if (moveBtn) {
+                    const btnIcon = moveBtn.querySelector('.btn-icon');
+                    if (btnIcon && btnIcon.textContent !== '🎲🎲') {
+                        btnIcon.textContent = '🎲🎲';
+                        btnIcon.style.fontSize = '';
+                        btnIcon.style.fontWeight = '';
+                    }
+                }
             }
             // Обновляем таймер
             if (typeof this.updateDesktopTimer === 'function') {
@@ -2680,6 +2691,24 @@ class PlayersPanel {
         
         // Обновляем информацию об активном игроке
         this.updateActivePlayerInfo(data.activePlayer);
+        
+        // ИСПРАВЛЕНО: Сбрасываем иконку кнопки "Бросок" на эмодзи при смене хода
+        const moveBtn = document.getElementById('move-btn');
+        if (moveBtn) {
+            const btnIcon = moveBtn.querySelector('.btn-icon');
+            if (btnIcon) {
+                // Сбрасываем на эмодзи кубика
+                btnIcon.textContent = '🎲🎲';
+                // Сбрасываем стили
+                btnIcon.style.fontSize = '';
+                btnIcon.style.fontWeight = '';
+            }
+        }
+        
+        // Принудительно обновляем кнопки после смены хода
+        setTimeout(() => {
+            this.forceUpdateAllButtons();
+        }, 100);
     }
     
     /**
@@ -3354,12 +3383,7 @@ class PlayersPanel {
                     btnIcon.style.fontSize = '1.5em';
                     btnIcon.style.fontWeight = 'bold';
                 }
-                // Деактивируем кнопку после броска
-                moveBtn.disabled = true;
-                moveBtn.classList.remove('active');
-                moveBtn.style.opacity = '0.5';
-                moveBtn.style.cursor = 'not-allowed';
-                moveBtn.style.pointerEvents = 'none';
+                // НЕ деактивируем кнопку здесь - это делается в updateControlButtons
             }
             
             // Добавляем результат в историю бросков (используем сумму для истории)
@@ -3670,8 +3694,19 @@ class PlayersPanel {
             
             if (shouldActivate) {
                 moveBtn.classList.add('active');
+                // Принудительно применяем стили для активной кнопки
+                moveBtn.style.opacity = '1';
+                moveBtn.style.cursor = 'pointer';
+                moveBtn.style.pointerEvents = 'auto';
+                moveBtn.style.backgroundColor = '#4CAF50';
+                moveBtn.style.color = 'white';
+                moveBtn.removeAttribute('disabled');
             } else {
                 moveBtn.classList.remove('active');
+                // Принудительно применяем стили для неактивной кнопки
+                moveBtn.style.opacity = '0.5';
+                moveBtn.style.cursor = 'not-allowed';
+                moveBtn.style.pointerEvents = 'none';
             }
             
             // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ UI для кнопки движения
