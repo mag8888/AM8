@@ -3900,27 +3900,36 @@ class PlayersPanel {
                 return;
             }
             
-            // Проверяем, можем ли мы бросить кубики (упрощенная проверка)
-            const canRoll = turnService.canRoll && typeof turnService.canRoll === 'function'
-                ? turnService.canRoll()
-                : true; // По умолчанию разрешаем бросок
+            // ИСПРАВЛЕНО: Проверяем, можем ли мы бросить кубики
+            // Разрешаем бросок, если:
+            // 1. Это мой ход (isMyTurn === true)
+            // 2. И либо state.canRoll !== false, либо это начальное состояние (нет lastDiceResult)
+            const isMyTurn = turnService.isMyTurn && typeof turnService.isMyTurn === 'function'
+                ? turnService.isMyTurn()
+                : false;
+            
+            const state = this.gameStateManager?.getState?.();
+            const hasLastDiceResult = state?.lastDiceResult != null;
+            
+            // Разрешаем бросок, если это мой ход И (state.canRoll !== false ИЛИ нет предыдущего результата)
+            const canRoll = isMyTurn && (state?.canRoll !== false || !hasLastDiceResult);
                 
-            console.log('🎲 PlayersPanel: canRoll проверка:', canRoll);
+            console.log('🎲 PlayersPanel: canRoll проверка:', {
+                canRoll,
+                isMyTurn,
+                stateCanRoll: state?.canRoll,
+                hasLastDiceResult,
+                note: 'Разрешаем бросок если isMyTurn=true И (state.canRoll !== false ИЛИ нет lastDiceResult)'
+            });
             
             if (!canRoll) {
-                console.warn('⚠️ PlayersPanel: Бросок кубика недоступен (canRoll=false)');
+                console.warn('⚠️ PlayersPanel: Бросок кубика недоступен (canRoll=false)', {
+                    isMyTurn,
+                    stateCanRoll: state?.canRoll,
+                    hasLastDiceResult
+                });
                 this._isRolling = false; // Сбрасываем флаг, если нельзя бросать
                 return;
-            }
-            
-            // Дополнительная проверка: проверяем состояние игры через GameStateManager
-            if (this.gameStateManager) {
-                const state = this.gameStateManager.getState();
-                if (state && state.canRoll === false) {
-                    console.warn('⚠️ PlayersPanel: Бросок кубика недоступен (state.canRoll=false)');
-                    this._isRolling = false; // Сбрасываем флаг
-                    return;
-                }
             }
             
             // Выполняем бросок кубиков
