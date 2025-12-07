@@ -172,48 +172,38 @@ class BankModuleServer {
             return null;
         }
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
+        // ИСПРАВЛЕНО: Используем ApiClient вместо прямого fetch для единообразия таймаутов/заголовков/ретраев
         try {
-            const response = await fetch(`/api/rooms/${roomId}/game-state`, {
-                signal: controller.signal,
-                headers: {
-                    'Cache-Control': 'no-cache',
-                    'Accept': 'application/json'
-                }
+            const apiClient = window.apiClient || new ApiClient();
+            const data = await apiClient.get(`/api/rooms/${roomId}/game-state`, {
+                'Cache-Control': 'no-cache'
+            }, {
+                timeoutMs: 8000,
+                deduplicate: true // Дедупликация запросов по roomId
             });
-            clearTimeout(timeoutId);
 
-            if (!response.ok) {
-                if (response.status === 404) {
+            if (!data || !data.success) {
+                if (data && data.status === 404) {
                     console.warn('⚠️ BankModuleServer: Комната не найдена, используем локальные данные');
                     return null;
                 }
-                throw new Error(`Ошибка загрузки состояния игры: ${response.status}`);
-            }
-
-            let data;
-            try {
-                data = await response.json();
-            } catch (jsonError) {
-                console.warn('⚠️ BankModuleServer: Ошибка парсинга JSON ответа:', jsonError);
-                return null;
-            }
-
-            if (!data.success) {
-                throw new Error(data.message || 'Ошибка получения данных игры');
+                throw new Error(data?.message || 'Ошибка получения данных игры');
             }
 
             return data.state;
         } catch (error) {
-            clearTimeout(timeoutId);
-            if (error.name === 'AbortError') {
+            // ИСПРАВЛЕНО: Нормализованная обработка ошибок от ApiClient
+            if (error.isTimeout || error.status === 408) {
                 console.warn('⚠️ BankModuleServer: Таймаут загрузки данных, используем локальные данные');
                 return null;
             }
+            
+            if (error.status === 404) {
+                console.warn('⚠️ BankModuleServer: Комната не найдена, используем локальные данные');
+                return null;
+            }
 
-            if (error.message?.includes('Load failed') || error.name === 'TypeError') {
+            if (error.message?.includes('Load failed') || error.name === 'TypeError' || error.status === 0) {
                 console.warn('⚠️ BankModuleServer: Сетевая ошибка, используем локальные данные');
                 return null;
             }
@@ -1972,41 +1962,18 @@ class BankModuleServer {
             const apiUrl = window.ApiUrlHelper?.getBankUrl('transfer') || '/api/bank/transfer';
             console.log('🌐 BankModuleServer: URL для перевода:', apiUrl);
             
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    roomId: this.bankState.roomId,
-                    fromPlayerId: serverFromPlayerId,
-                    toPlayerId: serverToPlayerId,
-                    amount: amount,
-                    description: `Перевод через BankModuleServer`
-                })
+            // ИСПРАВЛЕНО: Используем ApiClient вместо прямого fetch
+            const apiClient = window.apiClient || new ApiClient();
+            const result = await apiClient.post(apiUrl, {
+                roomId: this.bankState.roomId,
+                fromPlayerId: serverFromPlayerId,
+                toPlayerId: serverToPlayerId,
+                amount: amount,
+                description: `Перевод через BankModuleServer`
+            }, {
+                timeoutMs: 8000,
+                deduplicate: false // POST запросы не дедуплицируем
             });
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                let errorData;
-                try {
-                    errorData = JSON.parse(errorText);
-                } catch {
-                    errorData = { message: errorText || `HTTP ${response.status}` };
-                }
-                
-                console.error('❌ BankModuleServer: Ошибка ответа сервера:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    errorText: errorText,
-                    errorData: errorData
-                });
-                
-                const errorMessage = errorData.message || errorData.error || errorData.details || `Ошибка сервера: ${response.status}`;
-                throw new Error(errorMessage);
-            }
-            
-            const result = await response.json();
             
             if (result.success) {
                 this.showNotification(`Перевод $${CommonUtils.formatNumber(amount)} выполнен`, 'success');
@@ -2070,19 +2037,16 @@ class BankModuleServer {
         
         this._isTakingLoan = true;
         try {
-            const response = await fetch('/api/bank/loan/take', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    roomId: this.bankState.roomId,
-                    playerId: this.bankState.playerId,
-                    amount: amount
-                })
+            // ИСПРАВЛЕНО: Используем ApiClient вместо прямого fetch
+            const apiClient = window.apiClient || new ApiClient();
+            const result = await apiClient.post('/api/bank/loan/take', {
+                roomId: this.bankState.roomId,
+                playerId: this.bankState.playerId,
+                amount: amount
+            }, {
+                timeoutMs: 8000,
+                deduplicate: false // POST запросы не дедуплицируем
             });
-            
-            const result = await response.json();
             
             if (result.success) {
                 this.showNotification(`Кредит $${CommonUtils.formatNumber(amount)} взят успешно`, 'success');
@@ -2143,19 +2107,16 @@ class BankModuleServer {
         
         this._isRepayingLoan = true;
         try {
-            const response = await fetch('/api/bank/loan/repay', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    roomId: this.bankState.roomId,
-                    playerId: this.bankState.playerId,
-                    amount: amount
-                })
+            // ИСПРАВЛЕНО: Используем ApiClient вместо прямого fetch
+            const apiClient = window.apiClient || new ApiClient();
+            const result = await apiClient.post('/api/bank/loan/repay', {
+                roomId: this.bankState.roomId,
+                playerId: this.bankState.playerId,
+                amount: amount
+            }, {
+                timeoutMs: 8000,
+                deduplicate: false // POST запросы не дедуплицируем
             });
-            
-            const result = await response.json();
             
             if (result.success) {
                 this.showNotification(`Кредит погашен на $${CommonUtils.formatNumber(amount)}`, 'success');
@@ -2316,15 +2277,12 @@ class BankModuleServer {
                 return;
             }
 
-            // Загружаем историю операций с сервера
-            const response = await fetch(`/api/bank/transactions/${roomId}/${playerId}`);
-            if (!response.ok) {
-                console.warn('⚠️ BankModuleServer: Не удалось загрузить историю операций:', response.status);
-                this.bankState.transactions = [];
-                return;
-            }
-
-            const data = await response.json();
+            // ИСПРАВЛЕНО: Используем ApiClient вместо прямого fetch
+            const apiClient = window.apiClient || new ApiClient();
+            const data = await apiClient.get(`/api/bank/transactions/${roomId}/${playerId}`, {}, {
+                timeoutMs: 8000,
+                deduplicate: true // Дедупликация GET запросов
+            });
             if (data.success && data.data && Array.isArray(data.data.transactions)) {
                 this.bankState.transactions = data.data.transactions;
                 console.log('📋 BankModuleServer: История операций загружена:', this.bankState.transactions.length);

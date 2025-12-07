@@ -307,7 +307,8 @@
     padding: 1rem !important;
     box-sizing: border-box !important;
     z-index: 1 !important;
-    overflow: hidden !important; /* Убираем прокрутку у контейнера */
+    overflow-y: auto !important; /* ИСПРАВЛЕНО: Возвращаем прокрутку для доступа к контенту */
+    overflow-x: hidden !important;
     gap: 1rem !important; /* Отступ между банком и карточками */
     /* Предотвращаем изменение размеров после загрузки */
     contain: layout size !important; /* Изоляция layout */
@@ -677,26 +678,45 @@
 
 /* Mobile/tablet: вертикальная компоновка: игроки → поле → банк → колоды */
 @media (max-width: 1024px) {
-  /* На мобильной версии скрываем все кроме игрового поля и мобильных элементов управления */
+  /* ИСПРАВЛЕНО: На мобильной версии уводим панели за экран через transform вместо display: none
+     Это позволяет JS-тогглеру показывать их при необходимости */
   #card-decks-panel,
-  #card-decks-panel *,
   .card-decks-container,
-  .card-decks-container *,
   #bank-section,
-  #bank-section *,
   #bank-preview-container,
-  #bank-preview-container *,
   .top-panel-container,
-  .top-panel-container *,
   #players-panel,
-  #players-panel *,
-  #players-list-container,
-  #players-list-container *,
-  .toggle-menu-btn,
-  .toggle-menu-btn * {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
+  #players-list-container {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80vw !important;
+    max-width: 320px !important;
+    height: 100vh !important;
+    z-index: 1000 !important;
+    background: rgba(15, 23, 42, 0.98) !important;
+    transition: transform 0.3s ease-in-out !important;
+    transform: translateX(-100%) !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Кнопка переключения меню должна быть видна */
+  .toggle-menu-btn {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 1001 !important;
+  }
+  
+  /* Класс для показа меню (добавляется через JS) */
+  #card-decks-panel.menu-open,
+  .card-decks-container.menu-open,
+  #players-panel.menu-open,
+  .top-panel-container.menu-open {
+    transform: translateX(0) !important;
   }
   
   /* Фишки игроков должны быть видны на мобильной версии */
@@ -726,9 +746,10 @@
     opacity: 1 !important;
   }
   
-  /* Игровое поле по центру экрана на мобильной версии */
-  #game-page,
-  .game-page {
+  /* ИСПРАВЛЕНО: Игровое поле по центру экрана на мобильной версии
+     Используем .active класс для предотвращения перекрытия других страниц */
+  #game-page.active,
+  .game-page.active {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -742,6 +763,12 @@
     top: 0 !important;
     left: 0 !important;
     z-index: 1 !important;
+  }
+  
+  /* Скрываем неактивную страницу игры */
+  #game-page:not(.active),
+  .game-page:not(.active) {
+    display: none !important;
   }
   
   .game-board-container {

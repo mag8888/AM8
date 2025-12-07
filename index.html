@@ -650,14 +650,15 @@
                     }
                 }
                 
-                // Обновляем информацию о ходе
+                // ИСПРАВЛЕНО: Обновляем информацию о ходе только по событиям, без интервалов
                 updateTurnInfo();
-                setInterval(updateTurnInfo, 2000);
                 
-                // Слушаем изменения состояния игры
+                // Слушаем изменения состояния игры через eventBus
                 if (window.eventBus && typeof window.eventBus.on === 'function') {
                     window.eventBus.on('game:turnChanged', updateTurnInfo);
                     window.eventBus.on('game:playerChanged', updateTurnInfo);
+                    window.eventBus.on('game:stateUpdated', updateTurnInfo);
+                    window.eventBus.on('game:playersUpdated', updateTurnInfo);
                 }
                 
                 // Кнопки нижнего меню
@@ -756,15 +757,21 @@
                     }
                 }
                 
-                // Обновляем данные при загрузке и изменениях
+                // ИСПРАВЛЕНО: Обновляем данные только по событиям, без интервалов
                 setTimeout(updateMobileBankData, 1000);
-                setInterval(updateMobileBankData, 2000);
                 
-                // Слушаем изменения в DOM
+                // Слушаем изменения в DOM и через eventBus
                 const bankObserver = new MutationObserver(updateMobileBankData);
                 const bankContainer = document.getElementById('bank-preview-container');
                 if (bankContainer) {
                     bankObserver.observe(bankContainer, { childList: true, subtree: true, characterData: true });
+                }
+                
+                // Обновляем по событиям от GameStateManager
+                if (window.eventBus && typeof window.eventBus.on === 'function') {
+                    window.eventBus.on('game:stateUpdated', updateMobileBankData);
+                    window.eventBus.on('game:playersUpdated', updateMobileBankData);
+                    window.eventBus.on('bank:updated', updateMobileBankData);
                 }
             }
             
