@@ -3593,9 +3593,8 @@ class PlayersPanel {
         
         // Кнопка броска - активна если это мой ход И можно бросать (та же логика что и для rollBtn)
         if (moveBtn) {
-            // ИСПРАВЛЕНО: Используем ту же логику что и для rollBtn
-            // Кнопка активна если это мой ход И (state.canRoll === true ИЛИ state.canRoll === undefined)
-            const shouldActivate = isMyTurn && (state.canRoll === true || state.canRoll === undefined || state.canRoll === null);
+            // ИСПРАВЛЕНО: Упрощенная логика - если мой ход, активируем, если state.canRoll !== false
+            const shouldActivate = isMyTurn && state.canRoll !== false;
             moveBtn.disabled = !shouldActivate;
             
             console.log('🎲 PlayersPanel: Активация кнопки "🎲🎲 Бросок":', {
