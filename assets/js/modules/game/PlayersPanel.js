@@ -3664,6 +3664,8 @@ class PlayersPanel {
         // Кнопка передачи хода - активна если это мой ход И сервер разрешает завершение хода
         if (passBtn) {
             // ИСПРАВЛЕНО: Используем state.canEndTurn с сервера (приоритет), fallback на клиентскую логику
+            // Если сервер явно разрешает (canEndTurn === true) - используем это
+            // Если сервер не запрещает (canEndTurn !== false) И был выполнен бросок - разрешаем
             const canEndTurn = isMyTurn && (serverCanEndTurn || (hasRolled && state.canEndTurn !== false));
             passBtn.disabled = !canEndTurn;
             
@@ -3673,8 +3675,18 @@ class PlayersPanel {
                 passBtnLabel.textContent = 'Далее';
             }
             
-            // Логирование убрано для уменьшения спама - раскомментировать при отладке
-            // console.log('🔄 PlayersPanel: Обновление кнопки "Далее":', { isMyTurn, stateCanRoll: state.canRoll, hasRolled, canEndTurn, disabled: !canEndTurn });
+            // ВРЕМЕННОЕ логирование для отладки проблемы с исчезающей кнопкой
+            if (isMyTurn && hasRolled) {
+                console.log('🔄 PlayersPanel: Обновление кнопки "Далее":', { 
+                    isMyTurn, 
+                    stateCanRoll: state.canRoll, 
+                    stateCanEndTurn: state.canEndTurn,
+                    serverCanEndTurn,
+                    hasRolled, 
+                    canEndTurn, 
+                    disabled: !canEndTurn 
+                });
+            }
             
             if (canEndTurn) {
                 passBtn.classList.add('active');
