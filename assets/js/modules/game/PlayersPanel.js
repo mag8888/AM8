@@ -1031,18 +1031,18 @@ class PlayersPanel {
         // Получаем данные о карточках из CardDeckPanel
         const cardDeckPanel = window.app?.getModule?.('cardDeckPanel');
         if (!cardDeckPanel) {
-            return '<div class="menu-empty">Модуль карточек не найден</div>';
+            return '<div class="menu-empty"><span class="menu-empty-icon">⚠️</span></div>';
         }
         
         // Пытаемся получить данные о колодах
         const decks = cardDeckPanel.lastKnownDecks || [];
         if (decks.length === 0) {
-            return '<div class="menu-empty">Нет доступных карточек</div>';
+            return '<div class="menu-empty"><span class="menu-empty-icon">🃏</span></div>';
         }
         
         // Показываем все колоды карт
         if (decks.length === 0) {
-            return '<div class="menu-empty">Нет доступных карточек</div>';
+            return '<div class="menu-empty"><span class="menu-empty-icon">🃏</span></div>';
         }
         
         return decks.map((deck, index) => {
@@ -1091,7 +1091,7 @@ class PlayersPanel {
      */
     renderPlayersList(state, sortBy = 'default') {
         if (!state || !state.players || state.players.length === 0) {
-            return '<div class="menu-empty">Нет игроков в комнате</div>';
+            return '<div class="menu-empty"><span class="menu-empty-icon">👥</span></div>';
         }
         
         const currentUserId = window.CommonUtils?.getCurrentUserId?.() || 
