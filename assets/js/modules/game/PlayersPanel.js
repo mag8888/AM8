@@ -2231,14 +2231,14 @@ class PlayersPanel {
             }
         }
 
-        // Дебаунсинг для UI обновлений
+        // ИСПРАВЛЕНО: Дебаунсинг для UI обновлений с увеличенной задержкой для предотвращения мигания кнопок
         if (this._uiUpdateTimeout) {
             clearTimeout(this._uiUpdateTimeout);
         }
-        // Увеличена задержка для снижения нагрузки
+        // Увеличена задержка до 500ms для предотвращения мигания кнопок при частых обновлениях состояния
         this._uiUpdateTimeout = setTimeout(() => {
             this.forceUpdateAllButtons();
-        }, Math.max(this._uiUpdateDelay, 300)); // Минимум 300ms
+        }, Math.max(this._uiUpdateDelay, 500)); // Минимум 500ms для стабильности
         
         // Обновляем список игроков
         if (state.players && Array.isArray(state.players)) {
