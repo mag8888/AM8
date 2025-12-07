@@ -4124,8 +4124,9 @@ class PlayersPanel {
             }
             
             // Активация кнопки "🎲🎲 Бросок" (move-btn) - основная кнопка в интерфейсе
-            // ИСПРАВЛЕНО: Кнопка активна если это мой ход И (state.canRoll === true ИЛИ state.canRoll === undefined ИЛИ state.canRoll === null)
-            const shouldActivateMoveBtn = shouldActivate && (state.canRoll === true || state.canRoll === undefined || state.canRoll === null);
+            // ИСПРАВЛЕНО: Кнопка активна если это мой ход И сервер разрешает бросок (canRoll === true)
+            // Используем ТОЛЬКО серверное значение state.canRoll, без клиентских вычислений
+            const shouldActivateMoveBtn = shouldActivate && state.canRoll === true;
             if (moveBtn) {
                 // ВРЕМЕННОЕ логирование для отладки
                 if (shouldActivate) {
