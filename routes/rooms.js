@@ -370,34 +370,41 @@ function ensureGameState(db, roomId, cb) {
     if (gameStateByRoomId.has(roomId)) {
         const cachedState = gameStateByRoomId.get(roomId);
         const refreshed = buildState(cachedState.players || []);
-        refreshed.currentPlayerIndex = cachedState.currentPlayerIndex || 0;
+        
+        // ИСПРАВЛЕНО: Нормализуем индекс игрока
+        refreshed.currentPlayerIndex = normalizePlayerIndex(
+            cachedState.currentPlayerIndex || 0, 
+            refreshed.players.length
+        );
+        
+        // Восстанавливаем состояние хода
         refreshed.lastDiceResult = cachedState.lastDiceResult || null;
+        refreshed.lastMove = cachedState.lastMove || null;
+        refreshed.turnStartTime = cachedState.turnStartTime || Date.now();
+        refreshed.turnTimer = cachedState.turnTimer || 120 * 1000;
         
-        // Логика для canRoll: если нет результата кубика, можно бросать
-        if (refreshed.lastDiceResult === null) {
-            refreshed.canRoll = true;
-            refreshed.canMove = false;
-            refreshed.canEndTurn = false;
-        } else {
-            // Если есть результат кубика, используем сохраненное значение или false
-            refreshed.canRoll = typeof cachedState.canRoll === 'boolean' ? cachedState.canRoll : false;
-            refreshed.canMove = typeof cachedState.canMove === 'boolean' ? cachedState.canMove : true;
-            refreshed.canEndTurn = typeof cachedState.canEndTurn === 'boolean' ? cachedState.canEndTurn : false;
-        }
+        // ИСПРАВЛЕНО: Устанавливаем activePlayer на основе currentPlayerIndex
+        refreshed.activePlayer = refreshed.players[refreshed.currentPlayerIndex] || null;
         
-        // Если canEndTurn не установлен, устанавливаем из кэша или false
-        if (typeof refreshed.canEndTurn !== 'boolean') {
-            refreshed.canEndTurn = typeof cachedState.canEndTurn === 'boolean' ? cachedState.canEndTurn : false;
-        }
-
-        if (cachedState.activePlayer) {
+        // Если был сохранен activePlayer, пытаемся найти его в обновленном списке
+        if (cachedState.activePlayer && refreshed.activePlayer) {
             const activeCandidate = refreshed.players.find(
                 player =>
                     player.id === cachedState.activePlayer.id ||
-                    player.userId === cachedState.activePlayer.userId
+                    player.userId === cachedState.activePlayer.userId ||
+                    player.username === cachedState.activePlayer.username
             );
-            refreshed.activePlayer = activeCandidate || refreshed.players[refreshed.currentPlayerIndex] || null;
+            if (activeCandidate) {
+                // Обновляем индекс, если нашли игрока
+                refreshed.currentPlayerIndex = refreshed.players.indexOf(activeCandidate);
+                refreshed.activePlayer = activeCandidate;
+            }
         }
+        
+        // ИСПРАВЛЕНО: Используем централизованные функции для вычисления флагов
+        refreshed.canRoll = calculateCanRoll(refreshed);
+        refreshed.canMove = calculateCanMove(refreshed);
+        refreshed.canEndTurn = calculateCanEndTurn(refreshed);
 
         gameStateByRoomId.set(roomId, refreshed);
         return cb(null, refreshed);
