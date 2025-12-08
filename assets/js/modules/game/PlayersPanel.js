@@ -990,11 +990,9 @@ class PlayersPanel {
                     
                     <!-- Быстрые действия -->
                     <div class="menu-quick-actions">
-                        <button class="menu-action-btn" id="menu-bank-btn" type="button" title="Открыть банк" aria-label="Открыть банк">
-                            <span class="menu-action-icon">🏦</span>
-                        </button>
-                        <button class="menu-action-btn" id="menu-assets-btn" type="button" title="Просмотр активов" aria-label="Просмотр активов">
+                        <button class="menu-action-btn menu-assets-btn-full" id="menu-assets-btn" type="button" title="Просмотр активов" aria-label="Просмотр активов">
                             <span class="menu-action-icon">💼</span>
+                            <span class="menu-action-label">Активы</span>
                         </button>
                     </div>
                     
@@ -1262,16 +1260,6 @@ class PlayersPanel {
         }
         
         // Быстрые действия
-        const bankBtn = menuPanel.querySelector('#menu-bank-btn');
-        if (bankBtn) {
-            bankBtn.addEventListener('click', () => {
-                this.closeMenu();
-                if (this.bankModuleServer) {
-                    this.bankModuleServer.open();
-                }
-            });
-        }
-        
         const assetsBtn = menuPanel.querySelector('#menu-assets-btn');
         if (assetsBtn) {
             assetsBtn.addEventListener('click', () => {
