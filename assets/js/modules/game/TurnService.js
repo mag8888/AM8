@@ -145,6 +145,10 @@ class TurnService extends EventTarget {
                 this.lastRollValue = null;
             }
 
+            // ИСПРАВЛЕНО: Сохраняем информацию о том, что это был наш ход ДО обновления GameStateManager
+            // Это нужно для автоматического движения, так как сервер может изменить активного игрока в ответе
+            const wasMyTurnBeforeUpdate = this.isMyTurn();
+            
             // Эмит успешного результата
             const payload = { ...response, serverValue: this.lastRollValue, diceResult: diceResult };
             this.emit('roll:success', payload);
@@ -159,7 +163,26 @@ class TurnService extends EventTarget {
                 });
             }
             
-            // Обновляем GameStateManager после действия игрока (бросок кубика)
+            console.log('🎮 TurnService: Кубик брошен успешно, значение =', this.lastRollValue);
+
+            const autoMoveValue = this.lastRollValue;
+            const shouldAutoMove = options.autoMove !== false && Number.isFinite(autoMoveValue) && payload?.state?.canMove !== false;
+            
+            // ИСПРАВЛЕНО: Выполняем автоматическое движение ДО обновления GameStateManager
+            // чтобы не потерять информацию о том, что это был наш ход
+            if (shouldAutoMove && wasMyTurnBeforeUpdate) {
+                try {
+                    console.log('🎯 TurnService: Выполняем автоматическое движение для текущего пользователя');
+                    await this.move(autoMoveValue, { requireMyTurn: false }); // requireMyTurn: false, так как мы уже проверили выше
+                } catch (moveError) {
+                    console.error('⚠️ TurnService: Автоматическое перемещение не удалось:', moveError);
+                }
+            } else if (shouldAutoMove && !wasMyTurnBeforeUpdate) {
+                console.warn('⚠️ TurnService: Автоматическое движение заблокировано - не ваш ход');
+            }
+            
+            // Обновляем GameStateManager ПОСЛЕ выполнения движения (если было)
+            // Это гарантирует, что состояние обновится после всех действий
             if (response?.state && this.gameStateManager && typeof this.gameStateManager.updateFromServer === 'function') {
                 this.gameStateManager.updateFromServer(response.state);
                 console.log('🔄 TurnService: GameStateManager обновлен после броска кубика');
@@ -168,25 +191,6 @@ class TurnService extends EventTarget {
             // Эмит события для обновления карточек и других компонентов
             if (this.eventBus && typeof this.eventBus.emit === 'function') {
                 this.eventBus.emit('game:diceRolled', { value: this.lastRollValue, state: response?.state });
-            }
-
-            console.log('🎮 TurnService: Кубик брошен успешно, значение =', this.lastRollValue);
-
-            const autoMoveValue = this.lastRollValue;
-            const shouldAutoMove = options.autoMove !== false && Number.isFinite(autoMoveValue) && payload?.state?.canMove !== false;
-            if (shouldAutoMove) {
-                try {
-                    // ВАЖНО: Проверяем, что это действительно ход текущего пользователя перед автоматическим движением
-                    if (!this.isMyTurn()) {
-                        console.warn('⚠️ TurnService: Автоматическое движение заблокировано - не ваш ход');
-                        return payload;
-                    }
-                    
-                    console.log('🎯 TurnService: Выполняем автоматическое движение для текущего пользователя');
-                    await this.move(autoMoveValue, { requireMyTurn: true });
-                } catch (moveError) {
-                    console.error('⚠️ TurnService: Автоматическое перемещение не удалось:', moveError);
-                }
             }
 
             return payload;
