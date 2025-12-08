@@ -387,7 +387,7 @@ function ensureGameState(db, roomId, cb) {
         refreshed.activePlayer = refreshed.players[refreshed.currentPlayerIndex] || null;
         
         // Если был сохранен activePlayer, пытаемся найти его в обновленном списке
-        if (cachedState.activePlayer && refreshed.activePlayer) {
+        if (cachedState.activePlayer) {
             const activeCandidate = refreshed.players.find(
                 player =>
                     player.id === cachedState.activePlayer.id ||
@@ -399,6 +399,12 @@ function ensureGameState(db, roomId, cb) {
                 refreshed.currentPlayerIndex = refreshed.players.indexOf(activeCandidate);
                 refreshed.activePlayer = activeCandidate;
             }
+        }
+        
+        // ИСПРАВЛЕНО: Если activePlayer все еще null, устанавливаем первого игрока
+        if (!refreshed.activePlayer && refreshed.players.length > 0) {
+            refreshed.currentPlayerIndex = 0;
+            refreshed.activePlayer = refreshed.players[0];
         }
         
         // ИСПРАВЛЕНО: Используем централизованные функции для вычисления флагов
