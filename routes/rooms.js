@@ -478,6 +478,24 @@ router.get('/:id/game-state', (req, res, next) => {
                 } else if (!state.players || !state.players.length) {
                     state = buildState(room?.players || []);
                     gameStateByRoomId.set(id, state);
+                } else {
+                    // ИСПРАВЛЕНО: Обновляем список игроков, сохраняя состояние хода
+                    const currentIndex = normalizePlayerIndex(
+                        state.currentPlayerIndex || 0,
+                        room?.players?.length || state.players.length
+                    );
+                    const refreshed = buildState(room?.players || []);
+                    refreshed.currentPlayerIndex = currentIndex;
+                    refreshed.activePlayer = refreshed.players[currentIndex] || null;
+                    refreshed.lastDiceResult = state.lastDiceResult || null;
+                    refreshed.lastMove = state.lastMove || null;
+                    refreshed.turnStartTime = state.turnStartTime || Date.now();
+                    refreshed.turnTimer = state.turnTimer || 120 * 1000;
+                    refreshed.canRoll = calculateCanRoll(refreshed);
+                    refreshed.canMove = calculateCanMove(refreshed);
+                    refreshed.canEndTurn = calculateCanEndTurn(refreshed);
+                    state = refreshed;
+                    gameStateByRoomId.set(id, state);
                 }
                 // ИСПРАВЛЕНО: Проверяем истечение времени перед отправкой состояния
                 autoEndTurnIfExpired(id, state);
