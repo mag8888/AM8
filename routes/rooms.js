@@ -786,11 +786,12 @@ router.put('/:id/active-player', (req, res, next) => {
         if (err) return next(err);
         const idx = state.players.findIndex(p => p.id === playerId);
         if (idx === -1) return res.status(404).json({ success:false, message:'Игрок не найден' });
-        state.currentPlayerIndex = idx;
-        state.activePlayer = state.players[idx];
-        state.canRoll = true;
-        state.canMove = false;
-        state.canEndTurn = false;
+        state.currentPlayerIndex = normalizePlayerIndex(idx, state.players.length);
+        state.activePlayer = state.players[state.currentPlayerIndex] || null;
+        // ИСПРАВЛЕНО: Используем централизованные функции для вычисления флагов
+        state.canRoll = calculateCanRoll(state);
+        state.canMove = calculateCanMove(state);
+        state.canEndTurn = calculateCanEndTurn(state);
         res.json({ success:true, state });
     });
 });
