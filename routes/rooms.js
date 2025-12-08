@@ -497,6 +497,13 @@ router.get('/:id/game-state', (req, res, next) => {
                     refreshed.lastMove = state.lastMove || null;
                     refreshed.turnStartTime = state.turnStartTime || Date.now();
                     refreshed.turnTimer = state.turnTimer || 120 * 1000;
+                    
+                    // ИСПРАВЛЕНО: Если activePlayer все еще null, устанавливаем первого игрока
+                    if (!refreshed.activePlayer && refreshed.players.length > 0) {
+                        refreshed.currentPlayerIndex = 0;
+                        refreshed.activePlayer = refreshed.players[0];
+                    }
+                    
                     refreshed.canRoll = calculateCanRoll(refreshed);
                     refreshed.canMove = calculateCanMove(refreshed);
                     refreshed.canEndTurn = calculateCanEndTurn(refreshed);
