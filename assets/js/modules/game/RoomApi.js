@@ -401,11 +401,23 @@ class RoomApi {
     async rollDice(roomId, diceChoice, isReroll) {
         const endpoint = `/${roomId}/roll`;
         
-        console.log(`🎲 RoomApi: Бросок кубика в комнате ${roomId}`, { diceChoice, isReroll });
+        // Получаем userId для валидации на сервере
+        let userId = null;
+        try {
+            const storedUser = localStorage.getItem('aura_money_user') || sessionStorage.getItem('aura_money_user');
+            if (storedUser) {
+                const parsed = JSON.parse(storedUser);
+                userId = parsed?.id || parsed?.userId || null;
+            }
+        } catch (error) {
+            console.warn('RoomApi: Не удалось получить userId для rollDice', error);
+        }
+        
+        console.log(`🎲 RoomApi: Бросок кубика в комнате ${roomId}`, { diceChoice, isReroll, userId });
         
         return await this.request(endpoint, {
             method: 'POST',
-            body: JSON.stringify({ diceChoice, isReroll })
+            body: JSON.stringify({ diceChoice, isReroll, userId })
         });
     }
     
