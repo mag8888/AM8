@@ -324,7 +324,7 @@ function autoEndTurnIfExpired(roomId, state) {
         pushService.broadcastPush('turn_changed', { 
             roomId: roomId, 
             activePlayer: state.activePlayer,
-            previousPlayer: state.players[state.currentPlayerIndex - 1] || state.players[state.players.length - 1],
+            previousPlayer: state.players[normalizePlayerIndex(state.currentPlayerIndex - 1, state.players.length)],
             state: {
                 currentPlayerIndex: state.currentPlayerIndex,
                 players: state.players,
@@ -704,7 +704,7 @@ router.post('/:id/end-turn', (req, res, next) => {
         pushService.broadcastPush('turn_changed', { 
             roomId: id, 
             activePlayer: state.activePlayer,
-            previousPlayer: state.players[state.currentPlayerIndex - 1] || state.players[state.players.length - 1],
+            previousPlayer: state.players[normalizePlayerIndex(state.currentPlayerIndex - 1, state.players.length)],
             state: {
                 currentPlayerIndex: state.currentPlayerIndex,
                 players: state.players,
