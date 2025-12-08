@@ -110,6 +110,36 @@ function buildState(players = []) {
 }
 
 /**
+ * Нормализует индекс игрока (защита от выхода за границы)
+ * @param {number} index - Индекс игрока
+ * @param {number} playersLength - Количество игроков
+ * @returns {number} Нормализованный индекс
+ */
+function normalizePlayerIndex(index, playersLength) {
+    if (!playersLength || playersLength === 0) {
+        return 0;
+    }
+    // Используем правильную нормализацию для отрицательных чисел
+    return ((index % playersLength) + playersLength) % playersLength;
+}
+
+/**
+ * Проверяет, является ли пользователь активным игроком
+ * @param {Object} state - Состояние игры
+ * @param {string} userId - ID пользователя
+ * @returns {boolean} true если это ход пользователя
+ */
+function isActivePlayer(state, userId) {
+    if (!state || !state.activePlayer || !userId) {
+        return false;
+    }
+    const activePlayer = state.activePlayer;
+    return activePlayer.userId === userId || 
+           activePlayer.id === userId ||
+           (activePlayer.username && userId && activePlayer.username === userId);
+}
+
+/**
  * Вычисляет оставшееся время хода
  * @param {Object} state - Состояние игры
  * @returns {number} Оставшееся время в миллисекундах (0 если время истекло)
@@ -219,7 +249,7 @@ function autoEndTurnIfExpired(roomId, state) {
         console.log(`⏰ Автоматический переход хода для комнаты ${roomId} - время истекло`);
         
         // Переводим ход следующему игроку
-        state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+        state.currentPlayerIndex = normalizePlayerIndex(state.currentPlayerIndex + 1, state.players.length);
         state.activePlayer = state.players[state.currentPlayerIndex] || null;
         state.canRoll = true;
         state.canMove = false;
@@ -401,11 +431,25 @@ router.get('/:id/game-state', (req, res, next) => {
 router.post('/:id/roll', (req, res, next) => {
     const db = getDatabase();
     const { id } = req.params;
+    const { userId } = req.body || {};
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
         
         // ИСПРАВЛЕНО: Проверяем истечение времени перед броском
         autoEndTurnIfExpired(id, state);
+        
+        // ВАЛИДАЦИЯ: Проверяем, что это ход запрашивающего игрока
+        if (!isActivePlayer(state, userId)) {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Not your turn',
+                message: 'Сейчас не ваш ход',
+                state: {
+                    activePlayer: state.activePlayer,
+                    canRoll: state.canRoll
+                }
+            });
+        }
         
         // Проверяем, можно ли бросать кубик
         // Если canRoll явно false и есть результат кубика, значит уже бросили
@@ -464,12 +508,26 @@ router.post('/:id/roll', (req, res, next) => {
 router.post('/:id/move', (req, res, next) => {
     const db = getDatabase();
     const { id } = req.params;
-    const { steps, isInner, track } = req.body || {};
+    const { steps, isInner, track, userId } = req.body || {};
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
         
         // ИСПРАВЛЕНО: Проверяем истечение времени перед движением
         autoEndTurnIfExpired(id, state);
+        
+        // ВАЛИДАЦИЯ: Проверяем, что это ход запрашивающего игрока
+        if (!isActivePlayer(state, userId)) {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Not your turn',
+                message: 'Сейчас не ваш ход',
+                state: {
+                    activePlayer: state.activePlayer,
+                    canMove: state.canMove
+                }
+            });
+        }
+        
         const current = state.players[state.currentPlayerIndex];
         if (!current) return res.json({ success:true, moveResult:{ steps:0 }, state });
         if (state.canMove === false) {
@@ -547,12 +605,29 @@ router.post('/:id/move', (req, res, next) => {
 router.post('/:id/end-turn', (req, res, next) => {
     const db = getDatabase();
     const { id } = req.params;
+    const { userId } = req.body || {};
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
+        
+        // ВАЛИДАЦИЯ: Проверяем, что это ход запрашивающего игрока
+        if (!isActivePlayer(state, userId)) {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Not your turn',
+                message: 'Сейчас не ваш ход',
+                state: {
+                    activePlayer: state.activePlayer,
+                    canEndTurn: state.canEndTurn
+                }
+            });
+        }
+        
         if (state.canEndTurn === false) {
             return res.status(400).json({ success:false, message:'Завершение хода сейчас недоступно', state });
         }
-        state.currentPlayerIndex = (state.currentPlayerIndex + 1) % (state.players.length || 1);
+        
+        // ИСПРАВЛЕНО: Используем нормализованный индекс
+        state.currentPlayerIndex = normalizePlayerIndex(state.currentPlayerIndex + 1, state.players.length);
         state.activePlayer = state.players[state.currentPlayerIndex] || null;
         state.canRoll = true;
         state.canMove = false;
