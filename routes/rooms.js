@@ -311,12 +311,13 @@ function autoEndTurnIfExpired(roomId, state) {
         // Переводим ход следующему игроку
         state.currentPlayerIndex = normalizePlayerIndex(state.currentPlayerIndex + 1, state.players.length);
         state.activePlayer = state.players[state.currentPlayerIndex] || null;
-        state.canRoll = true;
-        state.canMove = false;
-        state.canEndTurn = false;
         state.lastDiceResult = null;
         state.lastMove = null;
         state.turnStartTime = Date.now();
+        // ИСПРАВЛЕНО: Используем централизованные функции для вычисления флагов
+        state.canRoll = calculateCanRoll(state);
+        state.canMove = calculateCanMove(state);
+        state.canEndTurn = calculateCanEndTurn(state);
         
         const newTurnTimeRemaining = calculateTurnTimeRemaining(state);
         
