@@ -111,10 +111,23 @@ class RoomApi {
     async endTurn(roomId) {
         const endpoint = `/${roomId}/end-turn`;
         
-        console.log(`🏁 RoomApi: Завершение хода в комнате ${roomId}`);
+        // Получаем userId для валидации на сервере
+        let userId = null;
+        try {
+            const storedUser = localStorage.getItem('aura_money_user') || sessionStorage.getItem('aura_money_user');
+            if (storedUser) {
+                const parsed = JSON.parse(storedUser);
+                userId = parsed?.id || parsed?.userId || null;
+            }
+        } catch (error) {
+            console.warn('RoomApi: Не удалось получить userId для endTurn', error);
+        }
+        
+        console.log(`🏁 RoomApi: Завершение хода в комнате ${roomId}`, { userId });
         
         return await this.request(endpoint, {
-            method: 'POST'
+            method: 'POST',
+            body: JSON.stringify({ userId })
         });
     }
     
