@@ -92,14 +92,12 @@ function buildState(players = []) {
 
     const DEFAULT_TURN_TIME_MS = 120 * 1000; // 120 секунд (2 минуты) по умолчанию
 
-    return {
+    const initialState = {
         players: normalized,
         currentPlayerIndex: 0,
         activePlayer: normalized[0] || null,
         lastDiceResult: null,
-        canRoll: true,
-        canMove: false,
-        canEndTurn: false,
+        lastMove: null,
         turnStartTime: Date.now(), // Время начала текущего хода
         turnTimer: DEFAULT_TURN_TIME_MS, // Время на ход в миллисекундах
         board: {
@@ -107,6 +105,68 @@ function buildState(players = []) {
             outerLength: OUTER_TRACK_LENGTH
         }
     };
+    
+    // Вычисляем флаги на основе начального состояния
+    initialState.canRoll = calculateCanRoll(initialState);
+    initialState.canMove = calculateCanMove(initialState);
+    initialState.canEndTurn = calculateCanEndTurn(initialState);
+    
+    return initialState;
+}
+
+/**
+ * Вычисляет, может ли активный игрок бросать кубик
+ * @param {Object} state - Состояние игры
+ * @returns {boolean} true если можно бросать
+ */
+function calculateCanRoll(state) {
+    if (!state || !state.activePlayer) {
+        return false;
+    }
+    // Можно бросать если:
+    // 1. Есть активный игрок
+    // 2. Нет результата броска в этом ходе (или результат устарел)
+    // 3. Игрок еще не двигался в этом ходе
+    const diceResultAge = state.lastDiceResult?.at ? Date.now() - state.lastDiceResult.at : Infinity;
+    const isOldDiceResult = diceResultAge > 30000; // 30 секунд
+    
+    return !state.lastDiceResult || isOldDiceResult;
+}
+
+/**
+ * Вычисляет, может ли активный игрок двигаться
+ * @param {Object} state - Состояние игры
+ * @returns {boolean} true если можно двигаться
+ */
+function calculateCanMove(state) {
+    if (!state || !state.activePlayer) {
+        return false;
+    }
+    // Можно двигаться если:
+    // 1. Есть результат броска (не устаревший)
+    // 2. Игрок еще не двигался в этом ходе
+    const diceResultAge = state.lastDiceResult?.at ? Date.now() - state.lastDiceResult.at : Infinity;
+    const isOldDiceResult = diceResultAge > 30000;
+    
+    return !!state.lastDiceResult && !isOldDiceResult && !state.lastMove;
+}
+
+/**
+ * Вычисляет, может ли активный игрок завершить ход
+ * @param {Object} state - Состояние игры
+ * @returns {boolean} true если можно завершить ход
+ */
+function calculateCanEndTurn(state) {
+    if (!state || !state.activePlayer) {
+        return false;
+    }
+    // Можно завершить ход если:
+    // 1. Игрок уже двигался (или пропустил движение)
+    // 2. Или есть результат броска, но движение невозможно (например, пропуск)
+    const diceResultAge = state.lastDiceResult?.at ? Date.now() - state.lastDiceResult.at : Infinity;
+    const isOldDiceResult = diceResultAge > 30000;
+    
+    return !!state.lastMove || (!!state.lastDiceResult && !isOldDiceResult && !calculateCanMove(state));
 }
 
 /**
@@ -477,9 +537,10 @@ router.post('/:id/roll', (req, res, next) => {
         
         const value = Math.floor(Math.random()*6)+1;
         state.lastDiceResult = { value, at: Date.now() };
-        state.canRoll = false;
-        state.canMove = true;
-        state.canEndTurn = false;
+        // Обновляем флаги на основе нового состояния
+        state.canRoll = calculateCanRoll(state);
+        state.canMove = calculateCanMove(state);
+        state.canEndTurn = calculateCanEndTurn(state);
         
         // Отправляем push-уведомление о броске кубика с полным состоянием для синхронизации всех клиентов
         pushService.broadcastPush('dice_rolled', { 
@@ -566,10 +627,11 @@ router.post('/:id/move', (req, res, next) => {
         current.position = (normalizedPosition + moveSteps) % maxIndex;
         state.activePlayer = current;
         
-        state.canRoll = false;
-        state.canMove = false;
-        state.canEndTurn = true;
         state.lastMove = { steps: moveSteps, at: Date.now() };
+        // Обновляем флаги на основе нового состояния
+        state.canRoll = calculateCanRoll(state);
+        state.canMove = calculateCanMove(state);
+        state.canEndTurn = calculateCanEndTurn(state);
         
         // Отправляем push-уведомление о движении с полным состоянием для синхронизации всех клиентов
         pushService.broadcastPush('player_moved', { 
@@ -629,13 +691,14 @@ router.post('/:id/end-turn', (req, res, next) => {
         // ИСПРАВЛЕНО: Используем нормализованный индекс
         state.currentPlayerIndex = normalizePlayerIndex(state.currentPlayerIndex + 1, state.players.length);
         state.activePlayer = state.players[state.currentPlayerIndex] || null;
-        state.canRoll = true;
-        state.canMove = false;
-        state.canEndTurn = false;
         state.lastDiceResult = null;
         state.lastMove = null;
         // Устанавливаем время начала нового хода
         state.turnStartTime = Date.now();
+        // Обновляем флаги на основе нового состояния
+        state.canRoll = calculateCanRoll(state);
+        state.canMove = calculateCanMove(state);
+        state.canEndTurn = calculateCanEndTurn(state);
         const turnTimeRemaining = calculateTurnTimeRemaining(state);
         // Отправляем push-уведомление о смене хода с полным состоянием для синхронизации всех клиентов
         pushService.broadcastPush('turn_changed', { 
