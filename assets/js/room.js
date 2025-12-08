@@ -1180,7 +1180,14 @@ function updatePlayersList() {
         
         // Используем name или username для отображения
         const playerName = player.name || player.username || 'Неизвестный игрок';
-        const avatar = player.avatar || playerName.charAt(0).toUpperCase();
+        // Используем токен игрока для аватара, если доступен
+        let avatar = player.avatar || playerName.charAt(0).toUpperCase();
+        if (player.token && typeof window.PlayerStatusUtils !== 'undefined') {
+            const tokenIcon = window.PlayerStatusUtils.getPlayerToken(player);
+            if (tokenIcon && tokenIcon !== '🎲') {
+                avatar = tokenIcon;
+            }
+        }
         // Определяем статус игрока более точно
         // Игрок считается готовым ТОЛЬКО если:
         // 1. isReady = true И

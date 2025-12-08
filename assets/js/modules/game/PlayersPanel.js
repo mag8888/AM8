@@ -952,8 +952,14 @@ class PlayersPanel {
                                 ${playerProfession ? `<div class="menu-player-profession" title="Профессия">${this.getProfessionIcon(playerProfession)} ${playerProfession}</div>` : ''}
                             </div>
                             <div class="menu-player-stats">
-                                <div class="menu-player-balance">$${playerBalance.toLocaleString()}</div>
-                                <div class="menu-player-position">Клетка #${playerPosition + 1} ${playerIsInner ? '(внутр.)' : '(внешн.)'}</div>
+                                <div class="menu-player-balance">
+                                    <span class="balance-icon">💰</span>
+                                    <span class="balance-amount">$${playerBalance.toLocaleString()}</span>
+                                </div>
+                                <div class="menu-player-position">
+                                    <span class="position-icon">📍</span>
+                                    <span class="position-text">Клетка #${playerPosition + 1} ${playerIsInner ? '(внутр.)' : '(внешн.)'}</span>
+                                </div>
                             </div>
                             ${assetsTotal > 0 || playerCredit > 0 ? `
                                 <div class="menu-player-additional">
@@ -1180,8 +1186,14 @@ class PlayersPanel {
                             ${playerProfession ? `<div class="player-item-profession">${this.getProfessionIcon(playerProfession)}</div>` : ''}
                         </div>
                         <div class="player-item-details">
-                            <div class="player-item-balance">$${playerBalance.toLocaleString()}</div>
-                            <div class="player-item-position">Кл. #${playerPosition + 1}</div>
+                            <div class="player-item-balance">
+                                <span class="balance-icon">💰</span>
+                                <span class="balance-amount">$${playerBalance.toLocaleString()}</span>
+                            </div>
+                            <div class="player-item-position">
+                                <span class="position-icon">📍</span>
+                                <span class="position-text">Кл. #${playerPosition + 1}</span>
+                            </div>
                         </div>
                         ${assetsTotal > 0 || playerCredit > 0 ? `
                             <div class="player-item-extras">
