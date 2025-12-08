@@ -433,7 +433,19 @@ class RoomApi {
     async move(roomId, steps, options = {}) {
         const endpoint = `/${roomId}/move`;
         
-        const payload = { steps };
+        // Получаем userId для валидации на сервере
+        let userId = null;
+        try {
+            const storedUser = localStorage.getItem('aura_money_user') || sessionStorage.getItem('aura_money_user');
+            if (storedUser) {
+                const parsed = JSON.parse(storedUser);
+                userId = parsed?.id || parsed?.userId || null;
+            }
+        } catch (error) {
+            console.warn('RoomApi: Не удалось получить userId для move', error);
+        }
+        
+        const payload = { steps, userId };
         if (typeof options.isInner === 'boolean') {
             payload.isInner = options.isInner;
         }
