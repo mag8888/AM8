@@ -1162,7 +1162,24 @@ class PlayersPanel {
                 (state.activePlayer.username && player.username && state.activePlayer.username === player.username)
             );
             const isCurrent = player.id === currentUserId || player.userId === currentUserId;
-            const playerToken = player.token || '👤';
+            // ИСПРАВЛЕНО: Используем PlayerStatusUtils для получения иконки токена вместо текста
+            let playerToken = '👤';
+            if (player.token) {
+                if (typeof window.PlayerStatusUtils !== 'undefined' && typeof window.PlayerStatusUtils.getPlayerToken === 'function') {
+                    playerToken = window.PlayerStatusUtils.getPlayerToken(player);
+                } else if (/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(player.token)) {
+                    // Если токен уже является эмодзи, используем его
+                    playerToken = player.token;
+                } else {
+                    // Fallback: маппинг токенов вручную
+                    const tokenIcons = {
+                        'lion': '🦁', 'eagle': '🦅', 'fox': '🦊', 'bear': '🐻',
+                        'tiger': '🐅', 'wolf': '🐺', 'elephant': '🐘', 'shark': '🦈',
+                        'owl': '🦉', 'dolphin': '🐬'
+                    };
+                    playerToken = tokenIcons[player.token] || '👤';
+                }
+            }
             const playerName = player.username || player.name || 'Игрок';
             const playerBalance = player.money || player.balance || 0;
             const playerPosition = player.position ?? 23;
