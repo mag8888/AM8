@@ -56,10 +56,24 @@ function normalizePlayer(source, index = 0) {
         2000
     );
 
+    const normalizedUserId = userId || id;
+    
+    // Логируем нормализацию для отладки
+    if (index === 0 || !source.userId) {
+        console.log('🔄 normalizePlayer:', {
+            index,
+            sourceUserId: source.userId,
+            sourceId: source.id,
+            normalizedUserId,
+            finalId: id,
+            username
+        });
+    }
+    
     const player = {
         id,
         // ИСПРАВЛЕНО: userId должен быть приоритетным и всегда установлен
-        userId: userId || id,
+        userId: normalizedUserId,
         username,
         name: source.name || username,
         position: toNumber(source.position, 23), // Начальная позиция 23 (клетка #24 внутреннего трека, последняя клетка)
