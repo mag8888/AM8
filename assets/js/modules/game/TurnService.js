@@ -658,6 +658,9 @@ class TurnService extends EventTarget {
                     matchesUserId,
                     matchesId,
                     matchesUsername,
+                    isCurrentUserInRoom,
+                    hasCurrentUserId,
+                    playersInRoom: state.players?.map(p => ({ userId: p.userId, id: p.id, username: p.username })),
                     reason: isMyTurn ? 'Ход совпадает' : 'Ход не совпадает'
                 });
                 this._lastIsMyTurnLog = isMyTurn;
