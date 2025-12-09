@@ -600,14 +600,25 @@ class TurnService extends EventTarget {
             // Сравниваем с активным игроком
             const activePlayer = state.activePlayer;
             
-            // ИСПРАВЛЕНИЕ: Добавляем дополнительную проверку по username
-            // Если ID не совпадают, но username совпадает - это тоже наш ход
-            const isMyTurn = 
-                activePlayer.id === currentUserId ||
-                activePlayer.userId === currentUserId ||
-                (activePlayer.username && currentUsername && activePlayer.username === currentUsername) ||
-                // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если username совпадает, считаем это нашим ходом
-                (activePlayer.username === currentUsername);
+            // ИСПРАВЛЕНО: Приоритет проверки по userId, username только как fallback
+            // Нормализуем значения для сравнения
+            const normalizedActiveUserId = String(activePlayer.userId || activePlayer.id || '').trim();
+            const normalizedActiveId = String(activePlayer.id || '').trim();
+            const normalizedCurrentUserId = String(currentUserId || '').trim();
+            const normalizedActiveUsername = String(activePlayer.username || '').trim();
+            const normalizedCurrentUsername = String(currentUsername || '').trim();
+            
+            // Проверяем по userId (приоритет)
+            const matchesUserId = normalizedActiveUserId === normalizedCurrentUserId && normalizedActiveUserId !== '';
+            const matchesId = normalizedActiveId === normalizedCurrentUserId && normalizedActiveId !== '';
+            
+            // Проверка по username только если userId не совпадает И username не пустой
+            const matchesUsername = !matchesUserId && !matchesId && 
+                normalizedActiveUsername !== '' && 
+                normalizedCurrentUsername !== '' &&
+                normalizedActiveUsername === normalizedCurrentUsername;
+            
+            const isMyTurn = matchesUserId || matchesId || matchesUsername;
             
             // Разрешаем ход в демо/одиночном режиме для удобства тестирования
             const playersCount = Array.isArray(state.players) ? state.players.length : 0;
@@ -621,9 +632,13 @@ class TurnService extends EventTarget {
             if (this._lastIsMyTurnLog !== isMyTurn) {
                 console.log('🎯 TurnService.isMyTurn:', isMyTurn, { 
                     activePlayerId: activePlayer.id,
+                    activePlayerUserId: activePlayer.userId,
                     activePlayerUsername: activePlayer.username,
                     currentUserId: currentUserId,
                     currentUsername: currentUsername,
+                    matchesUserId,
+                    matchesId,
+                    matchesUsername,
                     reason: isMyTurn ? 'Ход совпадает' : 'Ход не совпадает'
                 });
                 this._lastIsMyTurnLog = isMyTurn;
