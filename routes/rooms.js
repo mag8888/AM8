@@ -190,13 +190,38 @@ function normalizePlayerIndex(index, playersLength) {
  * @returns {boolean} true если это ход пользователя
  */
 function isActivePlayer(state, userId) {
-    if (!state || !state.activePlayer || !userId) {
+    if (!state) {
+        console.log('⚠️ isActivePlayer: state отсутствует');
         return false;
     }
+    if (!state.activePlayer) {
+        console.log('⚠️ isActivePlayer: activePlayer отсутствует в state');
+        return false;
+    }
+    if (!userId) {
+        console.log('⚠️ isActivePlayer: userId отсутствует в запросе');
+        return false;
+    }
+    
     const activePlayer = state.activePlayer;
-    return activePlayer.userId === userId || 
-           activePlayer.id === userId ||
-           (activePlayer.username && userId && activePlayer.username === userId);
+    const matchesUserId = activePlayer.userId === userId;
+    const matchesId = activePlayer.id === userId;
+    const matchesUsername = activePlayer.username && userId && activePlayer.username === userId;
+    
+    const isActive = matchesUserId || matchesId || matchesUsername;
+    
+    console.log('🔍 isActivePlayer: Проверка:', {
+        requestedUserId: userId,
+        activePlayerUserId: activePlayer.userId,
+        activePlayerId: activePlayer.id,
+        activePlayerUsername: activePlayer.username,
+        matchesUserId,
+        matchesId,
+        matchesUsername,
+        isActive
+    });
+    
+    return isActive;
 }
 
 /**
