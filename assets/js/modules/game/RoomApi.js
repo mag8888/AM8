@@ -417,16 +417,44 @@ class RoomApi {
         // Получаем userId для валидации на сервере
         let userId = null;
         try {
-            const storedUser = localStorage.getItem('aura_money_user') || sessionStorage.getItem('aura_money_user');
-            if (storedUser) {
-                const parsed = JSON.parse(storedUser);
-                userId = parsed?.id || parsed?.userId || null;
+            // Пытаемся получить из sessionStorage (приоритет)
+            const bundleRaw = sessionStorage.getItem('am_player_bundle');
+            if (bundleRaw) {
+                const bundle = JSON.parse(bundleRaw);
+                userId = bundle?.currentUser?.id || bundle?.currentUser?.userId || bundle?.userId || null;
+                console.log('🎲 RoomApi: userId из am_player_bundle:', userId);
+            }
+            
+            // Fallback к localStorage
+            if (!userId) {
+                const storedUser = localStorage.getItem('aura_money_user') || sessionStorage.getItem('aura_money_user');
+                if (storedUser) {
+                    const parsed = JSON.parse(storedUser);
+                    userId = parsed?.id || parsed?.userId || null;
+                    console.log('🎲 RoomApi: userId из aura_money_user:', userId);
+                }
+            }
+            
+            // Дополнительный fallback через CommonUtils
+            if (!userId && window.CommonUtils) {
+                userId = window.CommonUtils.getCurrentUserId();
+                console.log('🎲 RoomApi: userId из CommonUtils:', userId);
             }
         } catch (error) {
             console.warn('RoomApi: Не удалось получить userId для rollDice', error);
         }
         
-        console.log(`🎲 RoomApi: Бросок кубика в комнате ${roomId}`, { diceChoice, isReroll, userId });
+        console.log(`🎲 RoomApi: Бросок кубика в комнате ${roomId}`, { 
+            diceChoice, 
+            isReroll, 
+            userId,
+            hasUserId: !!userId,
+            userIdType: typeof userId
+        });
+        
+        if (!userId) {
+            console.error('❌ RoomApi: userId не найден! Проверьте localStorage/sessionStorage');
+        }
         
         return await this.request(endpoint, {
             method: 'POST',
