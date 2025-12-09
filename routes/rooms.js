@@ -41,6 +41,9 @@ function normalizePlayer(source, index = 0) {
         return null;
     }
 
+    // ИСПРАВЛЕНО: Приоритет userId для идентификации игрока
+    // userId должен быть основным идентификатором, id - вторичным
+    const userId = source.userId || source.id || source.playerId || null;
     const id = source.id || source.userId || source.playerId || source._id || `player_${index + 1}`;
     const username = source.username || source.name || source.displayName || `player${index + 1}`;
     const track = source.track || (typeof source.isInner === 'boolean' ? (source.isInner ? 'inner' : 'outer') : 'inner');
@@ -55,7 +58,8 @@ function normalizePlayer(source, index = 0) {
 
     const player = {
         id,
-        userId: source.userId || source.id || source.playerId || id,
+        // ИСПРАВЛЕНО: userId должен быть приоритетным и всегда установлен
+        userId: userId || id,
         username,
         name: source.name || username,
         position: toNumber(source.position, 23), // Начальная позиция 23 (клетка #24 внутреннего трека, последняя клетка)
