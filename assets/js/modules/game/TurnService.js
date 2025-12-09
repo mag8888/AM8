@@ -612,8 +612,11 @@ class TurnService extends EventTarget {
             const matchesUserId = normalizedActiveUserId === normalizedCurrentUserId && normalizedActiveUserId !== '';
             const matchesId = normalizedActiveId === normalizedCurrentUserId && normalizedActiveId !== '';
             
-            // Проверка по username только если userId не совпадает И username не пустой
-            const matchesUsername = !matchesUserId && !matchesId && 
+            // ИСПРАВЛЕНО: Проверка по username только если userId не найден у текущего пользователя
+            // Но если userId есть, он должен совпадать - иначе это другой пользователь
+            const hasCurrentUserId = normalizedCurrentUserId !== '';
+            const matchesUsername = !hasCurrentUserId && // Только если userId не найден
+                !matchesUserId && !matchesId && 
                 normalizedActiveUsername !== '' && 
                 normalizedCurrentUsername !== '' &&
                 normalizedActiveUsername === normalizedCurrentUsername;
