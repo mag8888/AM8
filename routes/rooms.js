@@ -204,21 +204,44 @@ function isActivePlayer(state, userId) {
     }
     
     const activePlayer = state.activePlayer;
-    const matchesUserId = activePlayer.userId === userId;
-    const matchesId = activePlayer.id === userId;
-    const matchesUsername = activePlayer.username && userId && activePlayer.username === userId;
+    
+    // ИСПРАВЛЕНО: Нормализуем userId для сравнения (приводим к строке и обрезаем пробелы)
+    const normalizedRequestedUserId = String(userId).trim();
+    const normalizedActiveUserId = String(activePlayer.userId || '').trim();
+    const normalizedActiveId = String(activePlayer.id || '').trim();
+    const normalizedActiveUsername = String(activePlayer.username || '').trim();
+    
+    const matchesUserId = normalizedActiveUserId === normalizedRequestedUserId && normalizedActiveUserId !== '';
+    const matchesId = normalizedActiveId === normalizedRequestedUserId && normalizedActiveId !== '';
+    const matchesUsername = normalizedActiveUsername === normalizedRequestedUserId && normalizedActiveUsername !== '';
+    
+    // Дополнительная проверка: проверяем все игроки на случай, если activePlayer не совпадает
+    let foundInPlayers = false;
+    if (!matchesUserId && !matchesId && !matchesUsername) {
+        foundInPlayers = state.players.some(player => {
+            const playerUserId = String(player.userId || '').trim();
+            const playerId = String(player.id || '').trim();
+            return playerUserId === normalizedRequestedUserId || playerId === normalizedRequestedUserId;
+        });
+    }
     
     const isActive = matchesUserId || matchesId || matchesUsername;
     
-    console.log('🔍 isActivePlayer: Проверка:', {
-        requestedUserId: userId,
-        activePlayerUserId: activePlayer.userId,
-        activePlayerId: activePlayer.id,
-        activePlayerUsername: activePlayer.username,
+    console.log('🔍 isActivePlayer: Детальная проверка:', {
+        requestedUserId: normalizedRequestedUserId,
+        activePlayerUserId: normalizedActiveUserId,
+        activePlayerId: normalizedActiveId,
+        activePlayerUsername: normalizedActiveUsername,
         matchesUserId,
         matchesId,
         matchesUsername,
-        isActive
+        foundInPlayers,
+        isActive,
+        allPlayers: state.players.map(p => ({
+            id: p.id,
+            userId: p.userId,
+            username: p.username
+        }))
     });
     
     return isActive;
