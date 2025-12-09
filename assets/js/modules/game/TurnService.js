@@ -608,20 +608,36 @@ class TurnService extends EventTarget {
             const normalizedActiveUsername = String(activePlayer.username || '').trim();
             const normalizedCurrentUsername = String(currentUsername || '').trim();
             
+            // ИСПРАВЛЕНО: Проверяем, что текущий userId есть среди игроков комнаты
+            // Если userId не найден в списке игроков, это не наш ход
+            let isCurrentUserInRoom = false;
+            if (normalizedCurrentUserId !== '' && Array.isArray(state.players)) {
+                isCurrentUserInRoom = state.players.some(player => {
+                    const playerUserId = String(player.userId || player.id || '').trim();
+                    return playerUserId === normalizedCurrentUserId;
+                });
+            }
+            
             // Проверяем по userId (приоритет)
             const matchesUserId = normalizedActiveUserId === normalizedCurrentUserId && normalizedActiveUserId !== '';
             const matchesId = normalizedActiveId === normalizedCurrentUserId && normalizedActiveId !== '';
             
             // ИСПРАВЛЕНО: Проверка по username только если userId не найден у текущего пользователя
-            // Но если userId есть, он должен совпадать - иначе это другой пользователь
+            // И только если текущий пользователь есть в комнате (проверка по username)
             const hasCurrentUserId = normalizedCurrentUserId !== '';
             const matchesUsername = !hasCurrentUserId && // Только если userId не найден
                 !matchesUserId && !matchesId && 
                 normalizedActiveUsername !== '' && 
                 normalizedCurrentUsername !== '' &&
-                normalizedActiveUsername === normalizedCurrentUsername;
+                normalizedActiveUsername === normalizedCurrentUsername &&
+                // Дополнительная проверка: username должен совпадать с одним из игроков
+                Array.isArray(state.players) && state.players.some(p => 
+                    String(p.username || '').trim() === normalizedCurrentUsername
+                );
             
-            const isMyTurn = matchesUserId || matchesId || matchesUsername;
+            // ИСПРАВЛЕНО: Если userId есть, но не найден в комнате - это не наш ход
+            const isMyTurn = (matchesUserId || matchesId || matchesUsername) && 
+                (hasCurrentUserId ? isCurrentUserInRoom : true);
             
             // Разрешаем ход в демо/одиночном режиме для удобства тестирования
             const playersCount = Array.isArray(state.players) ? state.players.length : 0;
