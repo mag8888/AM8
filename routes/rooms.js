@@ -614,8 +614,10 @@ router.post('/:id/roll', (req, res, next) => {
     console.log('🎲 POST /:id/roll - Запрос на бросок:', {
         roomId: id,
         userId: userId,
+        userIdType: typeof userId,
         bodyKeys: Object.keys(req.body || {}),
-        hasUserId: !!userId
+        hasUserId: !!userId,
+        fullBody: req.body
     });
     
     ensureGameState(db, id, (err, state) => {
@@ -628,33 +630,59 @@ router.post('/:id/roll', (req, res, next) => {
             activePlayer: state.activePlayer ? {
                 id: state.activePlayer.id,
                 userId: state.activePlayer.userId,
-                username: state.activePlayer.username
+                username: state.activePlayer.username,
+                idType: typeof state.activePlayer.id,
+                userIdType: typeof state.activePlayer.userId
             } : null,
             currentPlayerIndex: state.currentPlayerIndex,
             playersCount: state.players.length,
-            players: state.players.map(p => ({
+            players: state.players.map((p, idx) => ({
+                index: idx,
                 id: p.id,
                 userId: p.userId,
-                username: p.username
+                username: p.username,
+                idType: typeof p.id,
+                userIdType: typeof p.userId
             })),
             canRoll: state.canRoll
         });
         
         // ВАЛИДАЦИЯ: Проверяем, что это ход запрашивающего игрока
         const isActive = isActivePlayer(state, userId);
-        console.log('🎲 POST /:id/roll - Проверка активного игрока:', {
-            userId,
-            isActive,
-            activePlayerUserId: state.activePlayer?.userId,
-            activePlayerId: state.activePlayer?.id,
-            activePlayerUsername: state.activePlayer?.username
-        });
         
         if (!isActive) {
+            console.error('❌ POST /:id/roll - ОТКЛОНЕНО: Не активный игрок', {
+                requestedUserId: userId,
+                requestedUserIdType: typeof userId,
+                activePlayer: state.activePlayer ? {
+                    id: state.activePlayer.id,
+                    userId: state.activePlayer.userId,
+                    username: state.activePlayer.username
+                } : null,
+                allPlayers: state.players.map(p => ({
+                    id: p.id,
+                    userId: p.userId,
+                    username: p.username
+                }))
+            });
+            
             return res.status(403).json({ 
                 success: false, 
                 error: 'Not your turn',
                 message: 'Сейчас не ваш ход',
+                debug: {
+                    requestedUserId: userId,
+                    activePlayer: state.activePlayer ? {
+                        id: state.activePlayer.id,
+                        userId: state.activePlayer.userId,
+                        username: state.activePlayer.username
+                    } : null,
+                    allPlayers: state.players.map(p => ({
+                        id: p.id,
+                        userId: p.userId,
+                        username: p.username
+                    }))
+                },
                 state: {
                     activePlayer: state.activePlayer,
                     canRoll: state.canRoll
