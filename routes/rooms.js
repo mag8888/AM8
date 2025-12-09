@@ -412,6 +412,21 @@ function ensureGameState(db, roomId, cb) {
         // ИСПРАВЛЕНО: Устанавливаем activePlayer на основе currentPlayerIndex
         refreshed.activePlayer = refreshed.players[refreshed.currentPlayerIndex] || null;
         
+        console.log('🔄 ensureGameState: Установка activePlayer:', {
+            currentPlayerIndex: refreshed.currentPlayerIndex,
+            playersCount: refreshed.players.length,
+            activePlayerBefore: refreshed.activePlayer ? {
+                id: refreshed.activePlayer.id,
+                userId: refreshed.activePlayer.userId,
+                username: refreshed.activePlayer.username
+            } : null,
+            cachedActivePlayer: cachedState.activePlayer ? {
+                id: cachedState.activePlayer.id,
+                userId: cachedState.activePlayer.userId,
+                username: cachedState.activePlayer.username
+            } : null
+        });
+        
         // Если был сохранен activePlayer, пытаемся найти его в обновленном списке
         if (cachedState.activePlayer) {
             const activeCandidate = refreshed.players.find(
@@ -424,6 +439,14 @@ function ensureGameState(db, roomId, cb) {
                 // Обновляем индекс, если нашли игрока
                 refreshed.currentPlayerIndex = refreshed.players.indexOf(activeCandidate);
                 refreshed.activePlayer = activeCandidate;
+                console.log('🔄 ensureGameState: Найден активный игрок из кэша:', {
+                    index: refreshed.currentPlayerIndex,
+                    player: {
+                        id: activeCandidate.id,
+                        userId: activeCandidate.userId,
+                        username: activeCandidate.username
+                    }
+                });
             }
         }
         
@@ -431,6 +454,14 @@ function ensureGameState(db, roomId, cb) {
         if (!refreshed.activePlayer && refreshed.players.length > 0) {
             refreshed.currentPlayerIndex = 0;
             refreshed.activePlayer = refreshed.players[0];
+            console.log('🔄 ensureGameState: Установлен первый игрок как activePlayer:', {
+                index: 0,
+                player: {
+                    id: refreshed.activePlayer.id,
+                    userId: refreshed.activePlayer.userId,
+                    username: refreshed.activePlayer.username
+                }
+            });
         }
         
         // ИСПРАВЛЕНО: Используем централизованные функции для вычисления флагов
