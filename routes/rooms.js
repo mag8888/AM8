@@ -531,14 +531,47 @@ router.post('/:id/roll', (req, res, next) => {
     const db = getDatabase();
     const { id } = req.params;
     const { userId } = req.body || {};
+    
+    console.log('🎲 POST /:id/roll - Запрос на бросок:', {
+        roomId: id,
+        userId: userId,
+        bodyKeys: Object.keys(req.body || {}),
+        hasUserId: !!userId
+    });
+    
     ensureGameState(db, id, (err, state) => {
         if (err) return next(err);
         
         // ИСПРАВЛЕНО: Проверяем истечение времени перед броском
         autoEndTurnIfExpired(id, state);
         
+        console.log('🎲 POST /:id/roll - Состояние игры:', {
+            activePlayer: state.activePlayer ? {
+                id: state.activePlayer.id,
+                userId: state.activePlayer.userId,
+                username: state.activePlayer.username
+            } : null,
+            currentPlayerIndex: state.currentPlayerIndex,
+            playersCount: state.players.length,
+            players: state.players.map(p => ({
+                id: p.id,
+                userId: p.userId,
+                username: p.username
+            })),
+            canRoll: state.canRoll
+        });
+        
         // ВАЛИДАЦИЯ: Проверяем, что это ход запрашивающего игрока
-        if (!isActivePlayer(state, userId)) {
+        const isActive = isActivePlayer(state, userId);
+        console.log('🎲 POST /:id/roll - Проверка активного игрока:', {
+            userId,
+            isActive,
+            activePlayerUserId: state.activePlayer?.userId,
+            activePlayerId: state.activePlayer?.id,
+            activePlayerUsername: state.activePlayer?.username
+        });
+        
+        if (!isActive) {
             return res.status(403).json({ 
                 success: false, 
                 error: 'Not your turn',
